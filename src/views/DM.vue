@@ -1,0 +1,272 @@
+<script setup>
+import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const username = localStorage.getItem('username') || ''
+const activeTab = ref('players')
+
+const playerList = ref([
+  { id: 1, name: '阿尔伯特', job: '战士', faction: '统治者', isWeak: false, isOverworked: false, isInjured: false },
+  { id: 2, name: '莉莉丝', job: '法师', faction: '反叛者', isWeak: false, isOverworked: true, isInjured: false },
+  { id: 3, name: '罗宾', job: '盗贼', faction: '冒险者', isWeak: true, isOverworked: false, isInjured: false },
+  { id: 4, name: '亚瑟', job: '牧师', faction: '杀戮者', isWeak: false, isOverworked: false, isInjured: true },
+  { id: 5, name: '艾米丽', job: '猎人', faction: '平民', isWeak: false, isOverworked: false, isInjured: false }
+])
+
+const filterForm = reactive({
+  name: '',
+  job: '',
+  faction: ''
+})
+
+const getFactionColor = (faction) => {
+  const colors = {
+    '统治者': 'text-amber-400 bg-amber-500/20',
+    '反叛者': 'text-red-400 bg-red-500/20',
+    '冒险者': 'text-emerald-400 bg-emerald-500/20',
+    '杀戮者': 'text-purple-400 bg-purple-500/20',
+    '平民': 'text-gray-400 bg-gray-500/20'
+  }
+  return colors[faction] || colors['平民']
+}
+
+const getStatusBadges = (player) => {
+  const badges = []
+  if (player.isWeak) badges.push({ text: '虚弱', color: 'text-amber-400 bg-amber-500/20' })
+  if (player.isOverworked) badges.push({ text: '过劳', color: 'text-blue-400 bg-blue-500/20' })
+  if (player.isInjured) badges.push({ text: '受伤', color: 'text-red-400 bg-red-500/20' })
+  if (badges.length === 0) badges.push({ text: '健康', color: 'text-emerald-400 bg-emerald-500/20' })
+  return badges
+}
+
+const handleLogout = () => {
+  localStorage.removeItem('userRole')
+  localStorage.removeItem('username')
+  localStorage.removeItem('playerId')
+  router.push('/')
+}
+
+const handleDelete = (id) => {
+  playerList.value = playerList.value.filter(item => item.id !== id)
+}
+
+const handleFilter = () => {
+  console.log('Filter applied', filterForm)
+}
+
+const resetFilter = () => {
+  filterForm.name = ''
+  filterForm.job = ''
+  filterForm.faction = ''
+}
+
+onMounted(() => {
+  console.log('DM page mounted')
+})
+</script>
+
+<template>
+  <div class="min-h-screen bg-[#0a0e1a] flex">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-[#0f1419] border-r border-[#1f2937] flex flex-col">
+      <div class="p-6 border-b border-[#1f2937]">
+        <h2 class="text-white tracking-tight text-lg">DM管理中心</h2>
+      </div>
+
+      <nav class="flex-1 p-4">
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'players' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'players'"
+        >
+          玩家管理
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'settings' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'settings'"
+        >
+          游戏设置
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'tasks' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'tasks'"
+        >
+          任务管理
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl transition-colors font-medium"
+          :class="activeTab === 'logs' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'logs'"
+        >
+          系统日志
+        </button>
+      </nav>
+
+      <div class="p-4 border-t border-[#1f2937]">
+        <div class="flex items-center justify-between">
+          <span class="text-gray-400 text-sm">{{ username }}</span>
+          <button
+            type="button"
+            class="text-gray-500 hover:text-white text-sm transition-colors"
+            @click="handleLogout"
+          >
+            退出
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-8 overflow-auto">
+      <!-- Players Tab -->
+      <div v-if="activeTab === 'players'" class="max-w-7xl">
+        <div class="mb-6 flex items-center justify-between">
+          <div>
+            <h1 class="text-white mb-1 tracking-tight text-2xl">玩家管理</h1>
+            <p class="text-gray-500 text-sm">Player Management</p>
+          </div>
+          <button
+            type="button"
+            class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-xl transition-all text-sm shadow-lg shadow-blue-500/30"
+          >
+            添加玩家
+          </button>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-2xl p-5 mb-6">
+          <div class="flex flex-wrap gap-4 items-end">
+            <div class="flex-1 min-w-[200px]">
+              <label class="block text-gray-400 text-xs mb-2">姓名</label>
+              <input
+                v-model="filterForm.name"
+                type="text"
+                placeholder="请输入玩家姓名"
+                class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-gray-200 text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500/50"
+              />
+            </div>
+            <div class="flex-1 min-w-[200px]">
+              <label class="block text-gray-400 text-xs mb-2">职业</label>
+              <select
+                v-model="filterForm.job"
+                class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50"
+              >
+                <option value="">全部职业</option>
+                <option value="战士">战士</option>
+                <option value="法师">法师</option>
+                <option value="盗贼">盗贼</option>
+                <option value="牧师">牧师</option>
+                <option value="猎人">猎人</option>
+              </select>
+            </div>
+            <div class="flex-1 min-w-[200px]">
+              <label class="block text-gray-400 text-xs mb-2">阵营</label>
+              <select
+                v-model="filterForm.faction"
+                class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50"
+              >
+                <option value="">全部阵营</option>
+                <option value="统治者">统治者</option>
+                <option value="反叛者">反叛者</option>
+                <option value="冒险者">冒险者</option>
+                <option value="杀戮者">杀戮者</option>
+                <option value="平民">平民</option>
+              </select>
+            </div>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 px-4 py-2.5 rounded-xl text-sm transition-all"
+                @click="handleFilter"
+              >
+                筛选
+              </button>
+              <button
+                type="button"
+                class="bg-white/5 hover:bg-white/10 text-gray-400 px-4 py-2.5 rounded-xl text-sm transition-all"
+                @click="resetFilter"
+              >
+                重置
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Player Table -->
+        <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-2xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-white/5">
+                <tr>
+                  <th class="text-left text-gray-400 text-xs font-medium px-6 py-4">ID</th>
+                  <th class="text-left text-gray-400 text-xs font-medium px-6 py-4">姓名</th>
+                  <th class="text-left text-gray-400 text-xs font-medium px-6 py-4">职业</th>
+                  <th class="text-left text-gray-400 text-xs font-medium px-6 py-4">阵营</th>
+                  <th class="text-left text-gray-400 text-xs font-medium px-6 py-4">状态</th>
+                  <th class="text-left text-gray-400 text-xs font-medium px-6 py-4">操作</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/5">
+                <tr v-for="player in playerList" :key="player.id" class="hover:bg-white/5 transition-colors">
+                  <td class="px-6 py-4 text-gray-300 text-sm">{{ player.id }}</td>
+                  <td class="px-6 py-4 text-white text-sm font-medium">{{ player.name }}</td>
+                  <td class="px-6 py-4 text-gray-300 text-sm">{{ player.job }}</td>
+                  <td class="px-6 py-4">
+                    <span :class="['text-xs px-2 py-1 rounded-full', getFactionColor(player.faction)]">
+                      {{ player.faction }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="flex gap-1">
+                      <span
+                        v-for="badge in getStatusBadges(player)"
+                        :key="badge.text"
+                        :class="['text-xs px-2 py-1 rounded-full', badge.color]"
+                      >
+                        {{ badge.text }}
+                      </span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="flex gap-2">
+                      <button
+                        type="button"
+                        class="text-blue-400 hover:text-blue-300 text-sm transition-colors"
+                      >
+                        编辑
+                      </button>
+                      <button
+                        type="button"
+                        class="text-red-400 hover:text-red-300 text-sm transition-colors"
+                        @click="handleDelete(player.id)"
+                      >
+                        删除
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Other Tabs -->
+      <div v-else>
+        <h1 class="text-white mb-6 tracking-tight text-2xl">
+          {{ activeTab === 'settings' ? '游戏设置' : activeTab === 'tasks' ? '任务管理' : '系统日志' }}
+        </h1>
+        <div class="bg-[#0f1419] border border-[#1f2937] rounded-xl p-6">
+          <p class="text-gray-500 font-normal">功能开发中...</p>
+        </div>
+      </div>
+    </main>
+  </div>
+</template>

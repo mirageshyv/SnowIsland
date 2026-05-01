@@ -70,7 +70,7 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.example.snowisland.SnowIslandApplication</mainClass>
-                    <skip>true</skip>
+                    <skip>false</skip>
                 </configuration>
                 <executions>
                     <execution>
