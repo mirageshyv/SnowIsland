@@ -16,7 +16,7 @@ public class Skill {
     @Column(name = "function", columnDefinition = "TEXT", nullable = false)
     private String function;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = SkillFactionConverter.class)
     @Column(name = "faction", nullable = false, length = 20)
     private Faction faction;
 
