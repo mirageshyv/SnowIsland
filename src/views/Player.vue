@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import MaterialsPanel from './MaterialsPanel.vue'
 import TradePanel from './TradePanel.vue'
@@ -22,6 +22,16 @@ const isEditing = ref(false)
 const editForm = ref(null)
 const saving = ref(false)
 const saveMessage = ref(null)
+
+/** 仅冒险者可见「方舟建造进度」 */
+const showArkTab = computed(() => playerInfo.value?.faction === '冒险者')
+/** 仅统治者可见「统治者避难所」 */
+const showShelterTab = computed(() => playerInfo.value?.faction === '统治者')
+
+watch([showArkTab, showShelterTab, activeTab], () => {
+  if (activeTab.value === 'ark' && !showArkTab.value) activeTab.value = 'info'
+  if (activeTab.value === 'shelter' && !showShelterTab.value) activeTab.value = 'info'
+})
 
 let pollTimer = null
 
@@ -187,6 +197,7 @@ onUnmounted(() => {
           物资管理
         </button>
         <button
+          v-if="showArkTab"
           type="button"
           class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
           :class="activeTab === 'ark' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
@@ -195,6 +206,7 @@ onUnmounted(() => {
           方舟建造进度
         </button>
         <button
+          v-if="showShelterTab"
           type="button"
           class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
           :class="activeTab === 'shelter' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
@@ -444,11 +456,11 @@ onUnmounted(() => {
         <MaterialsPanel />
       </div>
 
-      <div v-else-if="activeTab === 'ark'">
+      <div v-else-if="activeTab === 'ark' && showArkTab">
         <ArkProgressView />
       </div>
 
-      <div v-else-if="activeTab === 'shelter'">
+      <div v-else-if="activeTab === 'shelter' && showShelterTab">
         <ShelterProgressView />
       </div>
 

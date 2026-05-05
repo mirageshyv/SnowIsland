@@ -1,0 +1,80 @@
+package com.example.snowisland.entity;
+
+import javax.persistence.*;
+import java.time.LocalDateTime;
+
+/**
+ * 统治者避难所物资库存一行一类物资（item_key 与前端图鉴 id 一致）。
+ */
+@Entity
+@Table(name = "shelter_stock")
+public class ShelterStock {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(name = "item_key", nullable = false, unique = true, length = 64)
+    private String itemKey;
+
+    @Column(nullable = false)
+    private Integer quantity = 0;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getItemKey() {
+        return itemKey;
+    }
+
+    public void setItemKey(String itemKey) {
+        this.itemKey = itemKey;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+}

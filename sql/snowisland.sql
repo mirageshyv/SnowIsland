@@ -225,6 +225,72 @@ INSERT INTO `player_items` VALUES ('37', '5', 'material', '12', '1', '2026-04-27
 INSERT INTO `player_items` VALUES ('38', '1', 'material', '5', '1', '2026-05-01 10:54:53', '2026-05-01 10:54:53');
 
 -- ----------------------------
+-- Table structure for shelter_progress（统治者避难所：当前建造值）
+-- ----------------------------
+DROP TABLE IF EXISTS `shelter_progress`;
+CREATE TABLE `shelter_progress` (
+  `id` int(11) NOT NULL COMMENT '固定为 1，全局唯一进度行',
+  `current_build_value` int(11) NOT NULL DEFAULT '0' COMMENT '当前建造值',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='统治者避难所建造进度';
+
+-- ----------------------------
+-- Records of shelter_progress（与前端演示日志累加值一致，可按游戏调整）
+-- ----------------------------
+INSERT INTO `shelter_progress` (`id`, `current_build_value`, `created_at`, `updated_at`) VALUES
+(1, 76, '2026-05-05 00:00:00', '2026-05-05 00:00:00');
+
+-- ----------------------------
+-- Table structure for shelter_stock（统治者避难所：物资库存，item_key 与前端图鉴 id 一致）
+-- ----------------------------
+DROP TABLE IF EXISTS `shelter_stock`;
+CREATE TABLE `shelter_stock` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `item_key` varchar(64) NOT NULL COMMENT '物资键，如 medical_kit、wood',
+  `quantity` int(11) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_item_key` (`item_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='统治者避难所物资库存';
+
+-- ----------------------------
+-- Records of shelter_stock
+-- ----------------------------
+INSERT INTO `shelter_stock` (`item_key`, `quantity`, `created_at`, `updated_at`) VALUES
+('wood', 45, NOW(), NOW()),
+('stone', 32, NOW(), NOW()),
+('medical_kit', 8, NOW(), NOW()),
+('flashlight', 4, NOW(), NOW()),
+('handcuffs', 2, NOW(), NOW()),
+('whistle', 3, NOW(), NOW()),
+('body_armor', 1, NOW(), NOW()),
+('composite_shield', 1, NOW(), NOW()),
+('flare_gun', 1, NOW(), NOW()),
+('repair_kit', 5, NOW(), NOW()),
+('contract', 2, NOW(), NOW()),
+('rum', 10, NOW(), NOW()),
+('herbs', 12, NOW(), NOW()),
+('fishing_net', 2, NOW(), NOW()),
+('candle', 18, NOW(), NOW()),
+('rubbing_alcohol', 3, NOW(), NOW()),
+('matches', 6, NOW(), NOW()),
+('pencil', 4, NOW(), NOW()),
+('tattered_chart', 1, NOW(), NOW()),
+('service_pistol', 1, NOW(), NOW()),
+('hunting_shotgun', 1, NOW(), NOW()),
+('baton', 2, NOW(), NOW()),
+('bayonet', 1, NOW(), NOW()),
+('harpoon_spear', 1, NOW(), NOW()),
+('hunting_bow', 1, NOW(), NOW()),
+('pickaxe', 2, NOW(), NOW()),
+('axe', 1, NOW(), NOW()),
+('plank', 24, NOW(), NOW()),
+('rope', 35, NOW(), NOW());
+
+-- ----------------------------
 -- Table structure for skill
 -- ----------------------------
 DROP TABLE IF EXISTS `skill`;

@@ -76,6 +76,11 @@ export const playerAPI = {
   })
 }
 
+/** 统治者避难所：当前建造值 + 库存 */
+export const shelterAPI = {
+  getSummary: () => request(`${API_BASE}/shelter`),
+}
+
 export const tradeAPI = {
   getByPlayer: (playerId) => request(`${API_BASE}/trades/player/${playerId}`),
   getIncoming: (playerId) => request(`${API_BASE}/trades/incoming/${playerId}`),
