@@ -1,14 +1,12 @@
 package com.example.snowisland.controller;
 
 import com.example.snowisland.entity.Skill;
-import com.example.snowisland.entity.Skill.Faction;
 import com.example.snowisland.service.SkillService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -33,22 +31,6 @@ public class SkillController {
         } else {
             return ResponseEntity.notFound().build();
         }
-    }
-
-    @GetMapping("/by-faction")
-    public ResponseEntity<Map<String, Object>> getSkillsByFaction(@RequestParam String faction) {
-        Map<String, Object> result = skillService.getSkillsByFactionName(faction);
-        if ((Boolean) result.get("success")) {
-            return ResponseEntity.ok(result);
-        } else {
-            return ResponseEntity.badRequest().body(result);
-        }
-    }
-
-    @GetMapping("/grouped")
-    public ResponseEntity<Map<String, Object>> getSkillsGroupedByFaction() {
-        Map<String, Object> result = skillService.getSkillsGroupedByFaction();
-        return ResponseEntity.ok(result);
     }
 
     @PostMapping

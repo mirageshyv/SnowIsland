@@ -150,13 +150,29 @@ public class PlayerService {
                 return result;
             }
             
-            existingPlayer.setName(player.getName());
-            existingPlayer.setIsWeak(player.getIsWeak());
-            existingPlayer.setIsOverworked(player.getIsOverworked());
-            existingPlayer.setIsInjured(player.getIsInjured());
-            existingPlayer.setJobId(player.getJobId());
-            existingPlayer.setSkillId(player.getSkillId());
-            existingPlayer.setFaction(player.getFaction());
+            // Partial update: frontend (e.g. Player.vue profile save) only sends edited fields.
+            // Do not overwrite with null — would violate NOT NULL on faction / clear job & skill.
+            if (player.getName() != null) {
+                existingPlayer.setName(player.getName());
+            }
+            if (player.getIsWeak() != null) {
+                existingPlayer.setIsWeak(player.getIsWeak());
+            }
+            if (player.getIsOverworked() != null) {
+                existingPlayer.setIsOverworked(player.getIsOverworked());
+            }
+            if (player.getIsInjured() != null) {
+                existingPlayer.setIsInjured(player.getIsInjured());
+            }
+            if (player.getJobId() != null) {
+                existingPlayer.setJobId(player.getJobId());
+            }
+            if (player.getSkillId() != null) {
+                existingPlayer.setSkillId(player.getSkillId());
+            }
+            if (player.getFaction() != null) {
+                existingPlayer.setFaction(player.getFaction());
+            }
             
             playerRepository.save(existingPlayer);
             result.put("success", true);
