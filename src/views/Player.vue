@@ -146,13 +146,14 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#0a0e1a] flex">
-    <aside class="w-64 bg-[#0f1419] border-r border-[#1f2937] flex flex-col">
-      <div class="p-6 border-b border-[#1f2937]">
+  <!-- h-screen + overflow-hidden：侧栏固定；仅右侧 main 纵向滚动 -->
+  <div class="flex h-screen max-h-[100dvh] overflow-hidden bg-[#0a0e1a]">
+    <aside class="flex h-full w-64 shrink-0 flex-col border-r border-[#1f2937] bg-[#0f1419]">
+      <div class="shrink-0 border-b border-[#1f2937] p-6">
         <h2 class="text-white tracking-tight text-lg">玩家中心</h2>
       </div>
 
-      <nav class="flex-1 p-4">
+      <nav class="min-h-0 flex-1 overflow-y-auto p-4">
         <button
           type="button"
           class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
@@ -224,7 +225,7 @@ onUnmounted(() => {
         </button>
       </nav>
 
-      <div class="p-4 border-t border-[#1f2937]">
+      <div class="shrink-0 border-t border-[#1f2937] p-4">
         <div class="flex items-center justify-between">
           <span class="text-gray-400 text-sm">{{ username }}</span>
           <button
@@ -238,7 +239,7 @@ onUnmounted(() => {
       </div>
     </aside>
 
-    <main class="flex-1 p-8 overflow-auto">
+    <main class="min-h-0 min-w-0 flex-1 overflow-y-auto p-8">
       <div v-if="activeTab === 'info'" class="max-w-4xl">
         <div class="mb-6 flex items-center justify-between">
           <div>

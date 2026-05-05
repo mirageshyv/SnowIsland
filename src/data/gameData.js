@@ -1,8 +1,17 @@
 /**
- * 统治者避难所的库存与建造日志数据。
- * 后端可只返回 [{ id, quantity }]，前端通过图鉴补全展示信息。
+ * 项目统一数据文件（避免 src/data 下零散多个 .js）。
+ *
+ * 包含：
+ * - 物资管理页：后端 item / weapon / ammo / material 的 id 与本地素材对应关系
+ * - 统治者避难所：图鉴、默认库存、建造日志、工具函数
+ *
+ * 说明：
+ * - 如果某个 id 暂时没有对应 PNG，会返回 null，界面应回退为 emoji/占位。
  */
 
+// -----------------------------
+// 素材（assets）
+// -----------------------------
 import imgMedicalKit from '@/assets/医疗包.png?url'
 import imgFlashlight from '@/assets/手电筒.png?url'
 import imgHandcuffs from '@/assets/手铐.png?url'
@@ -28,11 +37,97 @@ import imgHarpoon from '@/assets/鱼叉:矛.png?url'
 import imgHuntingBow from '@/assets/猎弓.png?url'
 import imgPickaxe from '@/assets/十字镐.png?url'
 import imgAxe from '@/assets/斧头.png?url'
+import imgRifle from '@/assets/步枪.png?url'
 import imgWood from '@/assets/木材.png?url'
 import imgStone from '@/assets/石料.png?url'
 import imgPlank from '@/assets/木板.png?url'
 import imgRope from '@/assets/绳索.png?url'
 
+// -----------------------------
+// 物资管理页：图片映射
+// -----------------------------
+const ITEM_IMAGES = {
+  1: imgMedicalKit,
+  2: imgFlashlight,
+  3: imgHandcuffs,
+  4: imgWhistle,
+  5: imgBodyArmor,
+  6: imgCompositeShield,
+  7: imgFlareGun,
+  8: imgRepairKit,
+  9: imgContract,
+  10: imgRum,
+  11: imgHerbs,
+  12: imgFishingNet,
+  13: imgCandle,
+  14: imgAlcohol,
+  15: imgMatches,
+  16: imgPencil,
+  17: imgSeaChart,
+}
+
+const WEAPON_IMAGES = {
+  1: imgServicePistol,
+  2: imgHuntingShotgun,
+  3: imgBaton,
+  4: imgBayonet,
+  // 5 水手刀暂无素材，先用刺刀占位
+  5: imgBayonet,
+  6: imgHarpoon,
+  7: imgHuntingBow,
+  8: imgPickaxe,
+  9: imgAxe,
+  // 10 电锯暂无素材，先用斧头占位
+  10: imgAxe,
+}
+
+const AMMO_IMAGES = {
+  // 弹药暂无独立素材，先用对应武器素材占位
+  1: imgServicePistol,
+  2: imgHuntingShotgun,
+  3: imgFlareGun,
+  4: imgHuntingBow,
+}
+
+const MATERIAL_IMAGES = {
+  // material 表当前只准备了部分素材
+  2: imgWood,
+  3: imgRope,
+  4: imgPlank,
+  7: imgStone,
+}
+
+const MATERIAL_MAPS = {
+  item: ITEM_IMAGES,
+  weapon: WEAPON_IMAGES,
+  ammo: AMMO_IMAGES,
+  material: MATERIAL_IMAGES,
+}
+
+/**
+ * 获取物资图片 url；若没有对应素材返回 null。
+ * @param {'item'|'weapon'|'ammo'|'material'} type
+ * @param {number} id
+ * @returns {string | null}
+ */
+export function getMaterialImageUrl(type, id) {
+  const table = MATERIAL_MAPS[type]
+  if (!table) return null
+  const url = table[id]
+  return url ?? null
+}
+
+/** 筛选标签 / 标题旁的小图（可选） */
+export function getTypeTabImage(type) {
+  if (type === 'weapon') return imgRifle
+  if (type === 'ammo') return imgServicePistol
+  if (type === 'material') return imgWood
+  return imgMedicalKit
+}
+
+// -----------------------------
+// 统治者避难所：图鉴 / 库存 / 日志
+// -----------------------------
 export const SHELTER_ITEM_CATALOG = {
   medical_kit: { id: 'medical_kit', name: '医疗包', category: 'prop', description: '急救包，提供基础医疗支援。', imageUrl: imgMedicalKit },
   flashlight: { id: 'flashlight', name: '手电筒', category: 'prop', description: '夜间行动照明工具。', imageUrl: imgFlashlight },
@@ -134,3 +229,4 @@ export function resolveShelterInventoryRows(items) {
 export function shelterTotalBuildValue(logs) {
   return logs.reduce((sum, day) => sum + day.workers.reduce((s, worker) => s + worker.value, 0), 0)
 }
+

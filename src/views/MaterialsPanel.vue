@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { playerAPI } from '../utils/api.js'
+import { getMaterialImageUrl, getTypeTabImage } from '../data/gameData.js'
 
 const playerId = localStorage.getItem('playerId') || '1'
 const loading = ref(true)
@@ -286,7 +287,7 @@ const loadMaterials = async () => {
 
 // 转换物品数据
 const transformItem = (type, item) => {
-  const itemId = item.id
+  const itemId = Number(item.id)
   return {
     id: itemId,
     name: itemNamesMap[type]?.[itemId] || '未知物品',
@@ -294,6 +295,7 @@ const transformItem = (type, item) => {
     quantity: item.quantity,
     remark: itemRemarksMap[type]?.[itemId] || '',
     icon: itemIconMap[type]?.[itemId] || '📦',
+    imageUrl: getMaterialImageUrl(type, itemId),
     threat_level: type === 'weapon' ? weaponThreatMap[itemId] : undefined,
     weapon_name: type === 'ammo' ? ammoWeaponMap[itemId] : undefined
   }
@@ -444,7 +446,11 @@ onUnmounted(() => {
           :class="selectedTypes.includes(type) ? `bg-${config.color}-500/30 text-${config.color}-400 border border-${config.color}-500/50` : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'"
           @click="toggleType(type)"
         >
-          <span>{{ config.icon }}</span>
+          <img
+            :src="getTypeTabImage(type)"
+            alt=""
+            class="w-7 h-7 object-contain shrink-0 opacity-90"
+          />
           <span>{{ config.label }}</span>
           <span 
             v-if="type === 'item' && currentItems.length > 0"
@@ -479,8 +485,8 @@ onUnmounted(() => {
       <!-- 道具区域 -->
       <div v-if="selectedTypes.includes('item') && filteredData.item?.length > 0">
         <div class="flex items-center gap-3 mb-4">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400/20 to-blue-500/20 flex items-center justify-center text-xl">
-            📦
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400/20 to-blue-500/20 flex items-center justify-center p-1.5">
+            <img :src="getTypeTabImage('item')" alt="" class="w-7 h-7 object-contain" />
           </div>
           <div>
             <h2 class="text-white text-lg font-medium">道具</h2>
@@ -500,8 +506,16 @@ onUnmounted(() => {
             <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-all" />
             
             <div class="relative flex items-start gap-4">
-              <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-400/20 to-blue-500/20 flex items-center justify-center text-2xl flex-shrink-0">
-                {{ item.icon }}
+              <div
+                class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-400/20 to-blue-500/20 flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden p-1"
+              >
+                <img
+                  v-if="item.imageUrl"
+                  :src="item.imageUrl"
+                  :alt="item.name"
+                  class="w-full h-full object-contain"
+                />
+                <span v-else>{{ item.icon }}</span>
               </div>
               
               <div class="flex-1 min-w-0">
@@ -525,8 +539,8 @@ onUnmounted(() => {
       <!-- 武器区域 -->
       <div v-if="selectedTypes.includes('weapon') && filteredData.weapon?.length > 0">
         <div class="flex items-center gap-3 mb-4">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-400/20 to-red-500/20 flex items-center justify-center text-xl">
-            ⚔️
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-400/20 to-red-500/20 flex items-center justify-center p-1.5">
+            <img :src="getTypeTabImage('weapon')" alt="" class="w-7 h-7 object-contain" />
           </div>
           <div>
             <h2 class="text-white text-lg font-medium">武器</h2>
@@ -546,8 +560,16 @@ onUnmounted(() => {
             <div class="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full blur-2xl group-hover:bg-red-500/10 transition-all" />
             
             <div class="relative flex items-start gap-4">
-              <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-red-400/20 to-red-500/20 flex items-center justify-center text-2xl flex-shrink-0">
-                {{ weapon.icon }}
+              <div
+                class="w-14 h-14 rounded-xl bg-gradient-to-br from-red-400/20 to-red-500/20 flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden p-1"
+              >
+                <img
+                  v-if="weapon.imageUrl"
+                  :src="weapon.imageUrl"
+                  :alt="weapon.name"
+                  class="w-full h-full object-contain"
+                />
+                <span v-else>{{ weapon.icon }}</span>
               </div>
               
               <div class="flex-1 min-w-0">
@@ -576,8 +598,8 @@ onUnmounted(() => {
       <!-- 子弹区域 -->
       <div v-if="selectedTypes.includes('ammo') && filteredData.ammo?.length > 0">
         <div class="flex items-center gap-3 mb-4">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-500/20 flex items-center justify-center text-xl">
-            🎯
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-500/20 flex items-center justify-center p-1.5">
+            <img :src="getTypeTabImage('ammo')" alt="" class="w-7 h-7 object-contain" />
           </div>
           <div>
             <h2 class="text-white text-lg font-medium">子弹</h2>
@@ -597,8 +619,16 @@ onUnmounted(() => {
             <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl group-hover:bg-amber-500/10 transition-all" />
             
             <div class="relative flex items-start gap-4">
-              <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-500/20 flex items-center justify-center text-2xl flex-shrink-0">
-                {{ ammo.icon }}
+              <div
+                class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-500/20 flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden p-1"
+              >
+                <img
+                  v-if="ammo.imageUrl"
+                  :src="ammo.imageUrl"
+                  :alt="ammo.name"
+                  class="w-full h-full object-contain"
+                />
+                <span v-else>{{ ammo.icon }}</span>
               </div>
               
               <div class="flex-1 min-w-0">
@@ -627,8 +657,8 @@ onUnmounted(() => {
       <!-- 基础物资区域 -->
       <div v-if="selectedTypes.includes('material') && filteredData.material?.length > 0">
         <div class="flex items-center gap-3 mb-4">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400/20 to-emerald-500/20 flex items-center justify-center text-xl">
-            🔧
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400/20 to-emerald-500/20 flex items-center justify-center p-1.5">
+            <img :src="getTypeTabImage('material')" alt="" class="w-7 h-7 object-contain" />
           </div>
           <div>
             <h2 class="text-white text-lg font-medium">基础物资</h2>
@@ -648,8 +678,16 @@ onUnmounted(() => {
             <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-all" />
             
             <div class="relative flex items-start gap-4">
-              <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400/20 to-emerald-500/20 flex items-center justify-center text-2xl flex-shrink-0">
-                {{ material.icon }}
+              <div
+                class="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400/20 to-emerald-500/20 flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden p-1"
+              >
+                <img
+                  v-if="material.imageUrl"
+                  :src="material.imageUrl"
+                  :alt="material.name"
+                  class="w-full h-full object-contain"
+                />
+                <span v-else>{{ material.icon }}</span>
               </div>
               
               <div class="flex-1 min-w-0">

@@ -5,7 +5,7 @@ import {
   SHELTER_DAILY_LOGS,
   resolveShelterInventoryRows,
   shelterTotalBuildValue,
-} from '../data/shelterInventoryData.js'
+} from '../data/gameData.js'
 
 // 避难所库存（后续可直接由后端返回替换）
 const shelterInventory = ref(DEFAULT_SHELTER_INVENTORY.map((row) => ({ ...row })))
