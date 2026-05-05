@@ -1,81 +1,80 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import MaterialsPanel from './MaterialsPanel.vue'
 import TradePanel from './TradePanel.vue'
+import { tradeAPI, playerAPI } from '../utils/api.js'
 
 const router = useRouter()
 const username = localStorage.getItem('username') || ''
-const playerId = localStorage.getItem('playerId') || '1'
+const playerId = parseInt(localStorage.getItem('playerId') || '1')
 const activeTab = ref('info')
 
-// 交易面板引用
 const tradePanelRef = ref(null)
 
-// 待处理交易数量（初始显示2个）
-const pendingTradesCount = ref(2)
+const pendingTradesCount = ref(0)
+const loading = ref(false)
+const error = ref(null)
+const playerInfo = ref(null)
+const isEditing = ref(false)
+const editForm = ref(null)
+const saving = ref(false)
+const saveMessage = ref(null)
 
-const playerInfoMap = {
-  '1': {
-    name: '阿尔伯特',
-    job: '战士',
-    faction: '统治者',
-    isWeak: false,
-    isOverworked: false,
-    isInjured: false,
-    jobSkills: '近战攻击、防御、武器精通',
-    personalSkill: '力量增强',
-    avatar: '⚔️'
-  },
-  '2': {
-    name: '莉莉丝',
-    job: '法师',
-    faction: '反叛者',
-    isWeak: false,
-    isOverworked: true,
-    isInjured: false,
-    jobSkills: '元素魔法、法术护盾、远程攻击',
-    personalSkill: '魔法抗性',
-    avatar: '🔮'
-  },
-  '3': {
-    name: '罗宾',
-    job: '盗贼',
-    faction: '冒险者',
-    isWeak: true,
-    isOverworked: false,
-    isInjured: false,
-    jobSkills: '潜行、开锁、背刺',
-    personalSkill: '敏捷提升',
-    avatar: '🗡️'
-  },
-  '4': {
-    name: '亚瑟',
-    job: '牧师',
-    faction: '杀戮者',
-    isWeak: false,
-    isOverworked: false,
-    isInjured: true,
-    jobSkills: '治疗、祝福、神圣魔法',
-    personalSkill: '生命恢复',
-    avatar: '✨'
-  },
-  '5': {
-    name: '艾米丽',
-    job: '猎人',
-    faction: '平民',
-    isWeak: false,
-    isOverworked: false,
-    isInjured: false,
-    jobSkills: '远程攻击、追踪、宠物驯养',
-    personalSkill: '幸运加成',
-    avatar: '🏹'
+let pollTimer = null
+
+const fetchPendingTradesCount = async () => {
+  try {
+    const result = await tradeAPI.getIncoming(playerId)
+    if (Array.isArray(result)) {
+      const pendingCount = result.filter(t => t.status === 'pending').length
+      if (pendingCount !== pendingTradesCount.value) {
+        console.log('Pending trades count updated:', pendingCount)
+        pendingTradesCount.value = pendingCount
+      }
+    }
+  } catch (error) {
+    console.log('Failed to fetch pending trades:', error.message)
   }
 }
 
-const playerInfo = computed(() => playerInfoMap[playerId] || playerInfoMap['1'])
+const fetchPlayerInfo = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    const result = await playerAPI.getDetails(playerId)
+    if (result && result.success) {
+      playerInfo.value = result
+    } else {
+      error.value = result?.message || '获取玩家信息失败'
+    }
+  } catch (err) {
+    error.value = '网络请求失败，请稍后重试'
+    console.error('Failed to fetch player info:', err)
+  } finally {
+    loading.value = false
+  }
+}
 
-const getStatusColor = (status) => {
+const startPolling = () => {
+  fetchPendingTradesCount()
+  pollTimer = setInterval(fetchPendingTradesCount, 3000)
+}
+
+const stopPolling = () => {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+}
+
+const handleTradeTabClick = () => {
+  activeTab.value = 'trade'
+  fetchPendingTradesCount()
+}
+
+const getStatusColor = () => {
+  const faction = playerInfo.value?.faction
   const colors = {
     '统治者': 'text-amber-400 bg-amber-500/20',
     '反叛者': 'text-red-400 bg-red-500/20',
@@ -83,7 +82,47 @@ const getStatusColor = (status) => {
     '杀戮者': 'text-purple-400 bg-purple-500/20',
     '平民': 'text-gray-400 bg-gray-500/20'
   }
-  return colors[playerInfo.value.faction] || colors['平民']
+  return colors[faction] || colors['平民']
+}
+
+const startEdit = () => {
+  editForm.value = {
+    name: playerInfo.value?.name || '',
+    isWeak: playerInfo.value?.isWeak || false,
+    isOverworked: playerInfo.value?.isOverworked || false,
+    isInjured: playerInfo.value?.isInjured || false
+  }
+  isEditing.value = true
+  saveMessage.value = null
+}
+
+const cancelEdit = () => {
+  isEditing.value = false
+  editForm.value = null
+  saveMessage.value = null
+}
+
+const saveEdit = async () => {
+  if (!editForm.value) return
+  saving.value = true
+  saveMessage.value = null
+  try {
+    const result = await playerAPI.update(playerId, editForm.value)
+    if (result && result.success) {
+      saveMessage.value = { type: 'success', text: '保存成功！' }
+      await fetchPlayerInfo()
+      isEditing.value = false
+      editForm.value = null
+      setTimeout(() => { saveMessage.value = null }, 3000)
+    } else {
+      saveMessage.value = { type: 'error', text: result?.message || '保存失败' }
+    }
+  } catch (err) {
+    saveMessage.value = { type: 'error', text: '网络请求失败，请稍后重试' }
+    console.error('Failed to save player info:', err)
+  } finally {
+    saving.value = false
+  }
 }
 
 const handleLogout = () => {
@@ -94,13 +133,18 @@ const handleLogout = () => {
 }
 
 onMounted(() => {
-  console.log('Player page mounted', { playerId, playerInfo: playerInfo.value })
+  console.log('Player page mounted, playerId:', playerId)
+  fetchPlayerInfo()
+  startPolling()
+})
+
+onUnmounted(() => {
+  stopPolling()
 })
 </script>
 
 <template>
   <div class="min-h-screen bg-[#0a0e1a] flex">
-    <!-- Sidebar -->
     <aside class="w-64 bg-[#0f1419] border-r border-[#1f2937] flex flex-col">
       <div class="p-6 border-b border-[#1f2937]">
         <h2 class="text-white tracking-tight text-lg">玩家中心</h2>
@@ -141,17 +185,22 @@ onMounted(() => {
         </button>
         <button
           type="button"
-          class="w-full text-left px-4 py-3 rounded-xl transition-colors font-medium relative"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium relative group"
           :class="activeTab === 'trade' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'trade'"
+          @click="handleTradeTabClick"
         >
           <span class="flex items-center justify-between">
-            <span>交易管理</span>
+            <span class="flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+              <span>交易管理</span>
+            </span>
             <span
               v-if="pendingTradesCount > 0"
-              class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full"
+              class="bg-gradient-to-r from-red-600 to-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg shadow-red-500/50 animate-pulse min-w-[20px] text-center"
             >
-              {{ pendingTradesCount }}
+              {{ pendingTradesCount > 9 ? '9+' : pendingTradesCount }}
             </span>
           </span>
         </button>
@@ -171,68 +220,193 @@ onMounted(() => {
       </div>
     </aside>
 
-    <!-- Main Content -->
     <main class="flex-1 p-8 overflow-auto">
-      <!-- Personal Info Tab -->
       <div v-if="activeTab === 'info'" class="max-w-4xl">
-        <div class="mb-6">
-          <h1 class="text-white mb-1 tracking-tight text-2xl">个人信息</h1>
-          <p class="text-gray-500 text-sm">Player Information</p>
+        <div class="mb-6 flex items-center justify-between">
+          <div>
+            <h1 class="text-white mb-1 tracking-tight text-2xl">个人信息</h1>
+            <p class="text-gray-500 text-sm">Player Information</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <button
+              v-if="!loading && playerInfo && !isEditing"
+              @click="fetchPlayerInfo"
+              class="px-4 py-2 text-sm text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              刷新
+            </button>
+            <button
+              v-if="!loading && playerInfo && !isEditing"
+              @click="startEdit"
+              class="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              编辑
+            </button>
+          </div>
         </div>
 
-        <!-- Character Card -->
-        <div class="relative bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-6 mb-6 overflow-hidden">
-          <div class="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
-          <div class="relative">
-            <div class="flex items-start justify-between mb-6">
-              <div class="flex items-center gap-5">
-                <div class="relative">
-                  <div class="absolute inset-0 bg-blue-500/20 rounded-2xl blur-xl" />
-                  <div class="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 flex items-center justify-center shadow-2xl text-4xl">
-                    {{ playerInfo.avatar }}
-                  </div>
-                </div>
+        <div v-if="loading" class="flex items-center justify-center py-20">
+          <div class="text-center">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
+            <p class="text-gray-400">加载中...</p>
+          </div>
+        </div>
+
+        <div v-else-if="error" class="bg-red-500/10 border border-red-500/30 rounded-xl p-6">
+          <div class="flex items-center gap-3 mb-4">
+            <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p class="text-red-400 font-medium">{{ error }}</p>
+          </div>
+          <button
+            @click="fetchPlayerInfo"
+            class="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+          >
+            重试
+          </button>
+        </div>
+
+        <div v-else-if="playerInfo" class="relative bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-6 overflow-hidden">
+          <div class="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
+
+          <div v-if="saveMessage" class="relative z-10 mb-4">
+            <div :class="['px-4 py-3 rounded-lg flex items-center gap-3', saveMessage.type === 'success' ? 'bg-green-500/20 border border-green-500/30' : 'bg-red-500/20 border border-red-500/30']">
+              <svg v-if="saveMessage.type === 'success'" class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <svg v-else class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span :class="saveMessage.type === 'success' ? 'text-green-400' : 'text-red-400'">{{ saveMessage.text }}</span>
+            </div>
+          </div>
+
+          <div class="relative z-10">
+            <template v-if="isEditing">
+              <div class="space-y-6">
                 <div>
-                  <h2 class="text-white mb-1 tracking-tight text-xl">{{ playerInfo.name }}</h2>
-                  <p class="text-gray-400 text-sm mb-3">{{ playerInfo.job }}</p>
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-300 bg-white/10 px-3 py-1 rounded-full backdrop-blur">
-                      {{ playerInfo.personalSkill }}
-                    </span>
-                    <span :class="['text-xs px-3 py-1 rounded-full flex items-center gap-1.5 backdrop-blur', getStatusColor()]">
-                      <span class="w-1.5 h-1.5 rounded-full bg-current shadow-lg" />
-                      {{ playerInfo.faction }}
-                    </span>
+                  <label class="block text-gray-400 text-sm mb-2">姓名</label>
+                  <input
+                    v-model="editForm.name"
+                    type="text"
+                    class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
+                    placeholder="请输入姓名"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-gray-400 text-sm mb-3">状态</label>
+                  <div class="space-y-3">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                      <input
+                        v-model="editForm.isWeak"
+                        type="checkbox"
+                        class="w-5 h-5 rounded bg-white/5 border-white/10 text-amber-500 focus:ring-amber-500/50"
+                      />
+                      <span class="text-gray-300">虚弱</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                      <input
+                        v-model="editForm.isOverworked"
+                        type="checkbox"
+                        class="w-5 h-5 rounded bg-white/5 border-white/10 text-blue-500 focus:ring-blue-500/50"
+                      />
+                      <span class="text-gray-300">过劳</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                      <input
+                        v-model="editForm.isInjured"
+                        type="checkbox"
+                        class="w-5 h-5 rounded bg-white/5 border-white/10 text-red-500 focus:ring-red-500/50"
+                      />
+                      <span class="text-gray-300">受伤</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                  <button
+                    @click="cancelEdit"
+                    :disabled="saving"
+                    class="px-6 py-3 text-gray-300 bg-white/5 hover:bg-white/10 rounded-xl transition-colors disabled:opacity-50"
+                  >
+                    取消
+                  </button>
+                  <button
+                    @click="saveEdit"
+                    :disabled="saving"
+                    class="px-6 py-3 text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    <div v-if="saving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    {{ saving ? '保存中...' : '保存' }}
+                  </button>
+                </div>
+              </div>
+            </template>
+
+            <template v-else>
+              <div class="flex items-start justify-between mb-6">
+                <div class="flex items-center gap-5">
+                  <div class="relative">
+                    <div class="absolute inset-0 bg-blue-500/20 rounded-2xl blur-xl"></div>
+                    <div class="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 flex items-center justify-center shadow-2xl text-4xl">
+                      {{ playerInfo.avatar || '🧑' }}
+                    </div>
+                  </div>
+                  <div>
+                    <h2 class="text-white mb-1 tracking-tight text-xl">{{ playerInfo.name }}</h2>
+                    <p class="text-gray-400 text-sm mb-3">{{ playerInfo.job || '未设定职业' }}</p>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-gray-300 bg-white/10 px-3 py-1 rounded-full backdrop-blur">
+                        {{ playerInfo.personalSkill || '未设定技能' }}
+                      </span>
+                      <span :class="['text-xs px-3 py-1 rounded-full flex items-center gap-1.5 backdrop-blur', getStatusColor()]">
+                        <span class="w-1.5 h-1.5 rounded-full bg-current shadow-lg"></span>
+                        {{ playerInfo.faction || '未设定阵营' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl px-4 py-3">
+                  <p class="text-gray-400 text-xs mb-1">状态</p>
+                  <div class="flex gap-2">
+                    <span v-if="playerInfo.isWeak" class="text-xs text-amber-400 bg-amber-500/20 px-2 py-1 rounded">虚弱</span>
+                    <span v-if="playerInfo.isOverworked" class="text-xs text-blue-400 bg-blue-500/20 px-2 py-1 rounded">过劳</span>
+                    <span v-if="playerInfo.isInjured" class="text-xs text-red-400 bg-red-500/20 px-2 py-1 rounded">受伤</span>
+                    <span v-if="!playerInfo.isWeak && !playerInfo.isOverworked && !playerInfo.isInjured" class="text-xs text-emerald-400 bg-emerald-500/20 px-2 py-1 rounded">健康</span>
                   </div>
                 </div>
               </div>
 
-              <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl px-4 py-3">
-                <p class="text-gray-400 text-xs mb-1">状态</p>
-                <div class="flex gap-2">
-                  <span v-if="playerInfo.isWeak" class="text-xs text-amber-400 bg-amber-500/20 px-2 py-1 rounded">虚弱</span>
-                  <span v-if="playerInfo.isOverworked" class="text-xs text-blue-400 bg-blue-500/20 px-2 py-1 rounded">过劳</span>
-                  <span v-if="playerInfo.isInjured" class="text-xs text-red-400 bg-red-500/20 px-2 py-1 rounded">受伤</span>
-                  <span v-if="!playerInfo.isWeak && !playerInfo.isOverworked && !playerInfo.isInjured" class="text-xs text-emerald-400 bg-emerald-500/20 px-2 py-1 rounded">健康</span>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4">
+                  <p class="text-gray-400 text-xs mb-2">职业技能</p>
+                  <p class="text-gray-200 text-sm">{{ playerInfo.jobSkills || '暂无' }}</p>
+                </div>
+                <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4">
+                  <p class="text-gray-400 text-xs mb-2">个人技能</p>
+                  <p class="text-gray-200 text-sm">{{ playerInfo.personalSkill || '暂无' }}</p>
                 </div>
               </div>
-            </div>
 
-            <div class="grid grid-cols-2 gap-4">
-              <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4">
-                <p class="text-gray-400 text-xs mb-2">职业技能</p>
-                <p class="text-gray-200 text-sm">{{ playerInfo.jobSkills }}</p>
+              <div class="mt-6 pt-6 border-t border-white/10">
+                <p class="text-gray-500 text-xs">
+                  最后更新: {{ playerInfo.updatedAt ? new Date(playerInfo.updatedAt).toLocaleString('zh-CN') : '未知' }}
+                </p>
               </div>
-              <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4">
-                <p class="text-gray-400 text-xs mb-2">个人技能</p>
-                <p class="text-gray-200 text-sm">{{ playerInfo.personalSkill }}</p>
-              </div>
-            </div>
+            </template>
           </div>
         </div>
       </div>
 
-      <!-- Status Tab -->
       <div v-else-if="activeTab === 'status'">
         <h1 class="text-white mb-6 tracking-tight text-2xl">游戏状态</h1>
         <div class="bg-[#0f1419] border border-[#1f2937] rounded-xl p-6">
@@ -240,7 +414,6 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Tasks Tab -->
       <div v-else-if="activeTab === 'tasks'">
         <h1 class="text-white mb-6 tracking-tight text-2xl">任务列表</h1>
         <div class="bg-[#0f1419] border border-[#1f2937] rounded-xl p-6">
@@ -248,12 +421,10 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Materials Tab -->
       <div v-else-if="activeTab === 'materials'">
         <MaterialsPanel />
       </div>
 
-      <!-- Trade Tab -->
       <div v-else-if="activeTab === 'trade'">
         <TradePanel ref="tradePanelRef" />
       </div>

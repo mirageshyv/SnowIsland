@@ -25,6 +25,11 @@ public class PlayerController {
         return playerService.getPlayerById(id);
     }
 
+    @GetMapping("/{id}/details")
+    public Map<String, Object> getPlayerDetails(@PathVariable Integer id) {
+        return playerService.getPlayerDetails(id);
+    }
+
     @GetMapping("/{id}/items")
     public List<Map<String, Object>> getPlayerItems(@PathVariable Integer id) {
         return playerService.getPlayerItems(id);

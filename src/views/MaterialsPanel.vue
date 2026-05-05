@@ -1,7 +1,10 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { playerAPI } from '../utils/api.js'
 
 const playerId = localStorage.getItem('playerId') || '1'
+const loading = ref(true)
+const rawMaterials = ref([])
 
 // 筛选状态
 const selectedTypes = ref(['item', 'weapon', 'ammo', 'material'])
@@ -14,102 +17,304 @@ const typeConfig = {
   material: { label: '基础物资', color: 'emerald', icon: '🔧' }
 }
 
-// 道具数据
-const itemsMap = {
-  '1': [
-    { id: 1, name: '医疗包', unit: '个', quantity: 3, remark: '恢复生命值', icon: '🏥' },
-    { id: 2, name: '手电筒', unit: '个', quantity: 1, remark: '提供光源', icon: '🔦' },
-    { id: 5, name: '防弹衣', unit: '件', quantity: 1, remark: '减少伤害', icon: '🛡️' }
-  ],
-  '2': [
-    { id: 4, name: '哨子', unit: '个', quantity: 2, remark: '发出信号', icon: '📢' },
-    { id: 7, name: '信号枪', unit: '把', quantity: 1, remark: '发射信号', icon: '🔫' }
-  ],
-  '3': [
-    { id: 8, name: '维修工具包', unit: '个', quantity: 1, remark: '修复物品', icon: '🔧' },
-    { id: 10, name: '朗姆酒', unit: '瓶', quantity: 2, remark: '恢复精力', icon: '🍾' }
-  ],
-  '4': [
-    { id: 3, name: '手铐', unit: '个', quantity: 1, remark: '限制行动', icon: '⛓️' },
-    { id: 12, name: '渔网', unit: '张', quantity: 1, remark: '捕鱼工具', icon: '🕸️' }
-  ],
-  '5': [
-    { id: 6, name: '复合盾', unit: '个', quantity: 1, remark: '提供防护', icon: '🛡️' },
-    { id: 14, name: '医用酒精', unit: '升', quantity: 1, remark: '消毒用品', icon: '🧴' }
-  ]
+// 物品名称映射
+const itemNamesMap = {
+  item: {
+    1: '医疗包',
+    2: '手电筒',
+    3: '手铐',
+    4: '哨子',
+    5: '防弹衣',
+    6: '复合盾',
+    7: '信号枪',
+    8: '维修工具包',
+    9: '交易凭证',
+    10: '朗姆酒',
+    11: '医疗材料',
+    12: '渔网',
+    13: '照明工具',
+    14: '医用酒精',
+    15: '点火工具',
+    16: '书写工具',
+    17: '导航工具',
+    18: '食物补给'
+  },
+  weapon: {
+    1: '制式手枪',
+    2: '猎枪',
+    3: '警棍',
+    4: '刺刀',
+    5: '水手刀',
+    6: '鱼叉/矛',
+    7: '猎弓',
+    8: '十字镐',
+    9: '斧头',
+    10: '电锯'
+  },
+  ammo: {
+    1: '手枪弹',
+    2: '猎枪弹',
+    3: '信号弹',
+    4: '箭矢'
+  },
+  material: {
+    1: '金属制品',
+    2: '木材',
+    3: '绳索',
+    4: '木板',
+    5: '食物',
+    6: '沥青',
+    7: '石料',
+    8: '燃料',
+    9: '帆布',
+    10: '发动机',
+    11: '螺旋桨',
+    12: '发电机'
+  }
 }
 
-// 武器数据
-const weaponsMap = {
-  '1': [
-    { id: 1, name: '制式手枪', unit: '把', quantity: 1, threat_level: 5, remark: '标准配备', icon: '🔫' },
-    { id: 3, name: '警棍', unit: '个', quantity: 1, threat_level: 3, remark: '非致命武器', icon: '🏒' }
-  ],
-  '2': [
-    { id: 2, name: '猎枪', unit: '把', quantity: 1, threat_level: 8, remark: '威力较大', icon: '🔫' },
-    { id: 6, name: '鱼叉/矛', unit: '个', quantity: 1, threat_level: 6, remark: '狩猎工具', icon: '🔱' }
-  ],
-  '3': [
-    { id: 4, name: '刺刀', unit: '把', quantity: 1, threat_level: 4, remark: '近战武器', icon: '🗡️' },
-    { id: 8, name: '十字镐', unit: '把', quantity: 1, threat_level: 4, remark: '挖掘工具', icon: '⛏️' }
-  ],
-  '4': [
-    { id: 5, name: '水手刀', unit: '把', quantity: 1, threat_level: 3, remark: '多功能刀具', icon: '🗡️' },
-    { id: 7, name: '猎弓', unit: '张', quantity: 1, threat_level: 5, remark: '远程武器', icon: '🏹' }
-  ],
-  '5': [
-    { id: 9, name: '斧头', unit: '把', quantity: 1, threat_level: 6, remark: '砍伐工具', icon: '🪓' },
-    { id: 10, name: '电锯', unit: '把', quantity: 1, threat_level: 7, remark: '切割工具', icon: '⚙️' }
-  ]
+// 物品单位映射
+const itemUnitsMap = {
+  item: {
+    1: '个',
+    2: '个',
+    3: '个',
+    4: '个',
+    5: '件',
+    6: '个',
+    7: '把',
+    8: '个',
+    9: '个',
+    10: '瓶',
+    11: '份',
+    12: '张',
+    13: '套',
+    14: '升',
+    15: '个',
+    16: '套',
+    17: '个',
+    18: '份'
+  },
+  weapon: {
+    1: '把',
+    2: '把',
+    3: '个',
+    4: '把',
+    5: '把',
+    6: '个',
+    7: '张',
+    8: '把',
+    9: '把',
+    10: '把'
+  },
+  ammo: {
+    1: '枚',
+    2: '枚',
+    3: '枚',
+    4: '枝'
+  },
+  material: {
+    1: 'kg',
+    2: 'kg',
+    3: '米',
+    4: 'kg',
+    5: 'kg',
+    6: 'kg',
+    7: 'kg',
+    8: 'kg',
+    9: '米',
+    10: '个',
+    11: '个',
+    12: '个'
+  }
 }
 
-// 子弹数据
-const ammoMap = {
-  '1': [
-    { id: 1, name: '手枪弹', unit: '枚', quantity: 30, weapon_name: '制式手枪', remark: '制式手枪子弹', icon: '🎯' }
-  ],
-  '2': [
-    { id: 2, name: '猎枪弹', unit: '枚', quantity: 10, weapon_name: '猎枪', remark: '猎枪子弹', icon: '🎯' },
-    { id: 3, name: '信号弹', unit: '枚', quantity: 5, weapon_name: '信号枪', remark: '信号枪子弹', icon: '🎆' }
-  ],
-  '4': [
-    { id: 4, name: '箭矢', unit: '枝', quantity: 20, weapon_name: '猎弓', remark: '猎弓箭矢', icon: '📍' }
-  ],
-  '3': [],
-  '5': []
+// 物品备注映射
+const itemRemarksMap = {
+  item: {
+    1: '恢复生命值',
+    2: '提供光源',
+    3: '限制行动',
+    4: '发出信号',
+    5: '减少伤害',
+    6: '提供防护',
+    7: '发射信号',
+    8: '修复物品',
+    9: '交易凭证',
+    10: '恢复精力',
+    11: '医疗材料',
+    12: '捕鱼工具',
+    13: '照明工具',
+    14: '消毒用品',
+    15: '点火工具',
+    16: '书写工具',
+    17: '导航工具',
+    18: '食物补给'
+  },
+  weapon: {
+    1: '标准配备',
+    2: '威力较大',
+    3: '非致命武器',
+    4: '近战武器',
+    5: '多功能刀具',
+    6: '狩猎工具',
+    7: '远程武器',
+    8: '挖掘工具',
+    9: '砍伐工具',
+    10: '切割工具'
+  },
+  ammo: {
+    1: '制式手枪子弹',
+    2: '猎枪子弹',
+    3: '信号枪子弹',
+    4: '猎弓箭矢'
+  },
+  material: {
+    1: '可用于制作工具',
+    2: '可用于建造',
+    3: '多种用途',
+    4: '建筑材料',
+    5: '恢复饥饿',
+    6: '建筑材料',
+    7: '建筑材料',
+    8: '提供能源',
+    9: '制作帐篷',
+    10: '机械动力',
+    11: '船只推进',
+    12: '发电设备'
+  }
 }
 
-// 基础物资数据
-const materialsMap = {
-  '1': [
-    { id: 1, name: '金属制品', unit: 'kg', quantity: 5, remark: '可用于制作工具', icon: '🔩' },
-    { id: 2, name: '木材', unit: 'kg', quantity: 10, remark: '可用于建造', icon: '🪵' }
-  ],
-  '2': [
-    { id: 3, name: '绳索', unit: '米', quantity: 20, remark: '多种用途', icon: '🪢' },
-    { id: 5, name: '食物', unit: 'kg', quantity: 8, remark: '恢复饥饿', icon: '🍞' }
-  ],
-  '3': [
-    { id: 4, name: '木板', unit: 'kg', quantity: 15, remark: '建筑材料', icon: '🪵' },
-    { id: 6, name: '沥青', unit: 'kg', quantity: 5, remark: '建筑材料', icon: '🛢️' },
-    { id: 9, name: '帆布', unit: '米', quantity: 10, remark: '制作帐篷', icon: '⛺' }
-  ],
-  '4': [
-    { id: 7, name: '石料', unit: 'kg', quantity: 20, remark: '建筑材料', icon: '🪨' },
-    { id: 8, name: '燃料', unit: 'kg', quantity: 10, remark: '提供能源', icon: '⛽' }
-  ],
-  '5': [
-    { id: 10, name: '发动机', unit: '个', quantity: 1, remark: '机械动力', icon: '⚙️' },
-    { id: 11, name: '螺旋桨', unit: '个', quantity: 1, remark: '船只推进', icon: '⚓' },
-    { id: 12, name: '发电机', unit: '个', quantity: 1, remark: '发电设备', icon: '🔌' }
-  ]
+// 武器威胁值映射
+const weaponThreatMap = {
+  1: 5,
+  2: 8,
+  3: 3,
+  4: 4,
+  5: 3,
+  6: 6,
+  7: 5,
+  8: 4,
+  9: 6,
+  10: 7
+}
+
+// 弹药适用武器映射
+const ammoWeaponMap = {
+  1: '制式手枪',
+  2: '猎枪',
+  3: '信号枪',
+  4: '猎弓'
+}
+
+// 物品图标映射
+const itemIconMap = {
+  item: {
+    1: '🏥',
+    2: '🔦',
+    3: '⛓️',
+    4: '📢',
+    5: '🛡️',
+    6: '🛡️',
+    7: '🔫',
+    8: '🔧',
+    9: '💴',
+    10: '🍾',
+    11: '💊',
+    12: '🕸️',
+    13: '💡',
+    14: '🧴',
+    15: '🔥',
+    16: '✏️',
+    17: '🧭',
+    18: '🍞'
+  },
+  weapon: {
+    1: '🔫',
+    2: '🔫',
+    3: '🏒',
+    4: '🗡️',
+    5: '🗡️',
+    6: '🔱',
+    7: '🏹',
+    8: '⛏️',
+    9: '🪓',
+    10: '⚙️'
+  },
+  ammo: {
+    1: '🎯',
+    2: '🎯',
+    3: '🎆',
+    4: '📍'
+  },
+  material: {
+    1: '🔩',
+    2: '🪵',
+    3: '🪢',
+    4: '🪵',
+    5: '🍞',
+    6: '🛢️',
+    7: '🪨',
+    8: '⛽',
+    9: '⛺',
+    10: '⚙️',
+    11: '⚓',
+    12: '🔌'
+  }
+}
+
+// 加载物资数据
+const loadMaterials = async () => {
+  loading.value = true
+  try {
+    console.log('Loading materials for player', playerId)
+    const result = await playerAPI.getItems(playerId)
+    console.log('API result:', result)
+    
+    if (Array.isArray(result)) {
+      rawMaterials.value = result
+      console.log('Loaded materials:', rawMaterials.value.length, 'items')
+    } else {
+      console.log('Result is not an array:', result)
+    }
+  } catch (error) {
+    console.error('Failed to load materials:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 转换物品数据
+const transformItem = (type, item) => {
+  const itemId = item.id
+  return {
+    id: itemId,
+    name: itemNamesMap[type]?.[itemId] || '未知物品',
+    unit: itemUnitsMap[type]?.[itemId] || '个',
+    quantity: item.quantity,
+    remark: itemRemarksMap[type]?.[itemId] || '',
+    icon: itemIconMap[type]?.[itemId] || '📦',
+    threat_level: type === 'weapon' ? weaponThreatMap[itemId] : undefined,
+    weapon_name: type === 'ammo' ? ammoWeaponMap[itemId] : undefined
+  }
 }
 
 // 计算属性：获取当前玩家的各类物资
-const currentItems = computed(() => itemsMap[playerId] || [])
-const currentWeapons = computed(() => weaponsMap[playerId] || [])
-const currentAmmo = computed(() => ammoMap[playerId] || [])
-const currentMaterials = computed(() => materialsMap[playerId] || [])
+const currentItems = computed(() => {
+  return rawMaterials.value.filter(i => i.type === 'item').map(i => transformItem('item', i))
+})
+
+const currentWeapons = computed(() => {
+  return rawMaterials.value.filter(i => i.type === 'weapon').map(i => transformItem('weapon', i))
+})
+
+const currentAmmo = computed(() => {
+  return rawMaterials.value.filter(i => i.type === 'ammo').map(i => transformItem('ammo', i))
+})
+
+const currentMaterials = computed(() => {
+  return rawMaterials.value.filter(i => i.type === 'material').map(i => transformItem('material', i))
+})
 
 // 计算属性：根据筛选条件显示的物资
 const filteredData = computed(() => {
@@ -185,8 +390,22 @@ const getItemBgColor = (type) => {
   return colors[type] || colors.item
 }
 
+// 页面可见性改变时刷新
+const handleVisibilityChange = () => {
+  if (!document.hidden) {
+    console.log('Page visible, refreshing materials')
+    loadMaterials()
+  }
+}
+
 onMounted(() => {
+  loadMaterials()
+  document.addEventListener('visibilitychange', handleVisibilityChange)
   console.log('Materials panel mounted', { playerId, selectedTypes: selectedTypes.value })
+})
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>
 

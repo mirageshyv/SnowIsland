@@ -351,6 +351,7 @@ const viewTradeDetail = (trade) => {
     fromPlayerId: trade.fromPlayerId,
     fromPlayerName: trade.fromPlayerName,
     toPlayerId: trade.toPlayerId,
+    toPlayerName: trade.toPlayerName || players.value.find(p => p.id === trade.toPlayerId)?.name || '玩家',
     status: trade.status,
     remark: trade.remark,
     createdAt: trade.createdAt,
@@ -390,6 +391,7 @@ const loadTrades = async () => {
       trades.value = result.map(t => ({
         ...t,
         fromPlayerName: players.value.find(p => p.id === t.fromPlayerId)?.name || '玩家',
+        toPlayerName: players.value.find(p => p.id === t.toPlayerId)?.name || '玩家',
         items: t.items || []
       }))
       console.log('loaded from API')
@@ -405,6 +407,7 @@ const loadTrades = async () => {
         fromPlayerId: 2,
         fromPlayerName: '莉莉丝',
         toPlayerId: playerId,
+        toPlayerName: '阿尔伯特',
         status: 'pending',
         remark: '需要一些食物',
         createdAt: new Date(Date.now() - 3600000).toISOString(),
@@ -419,6 +422,7 @@ const loadTrades = async () => {
         fromPlayerId: 3,
         fromPlayerName: '罗宾',
         toPlayerId: playerId,
+        toPlayerName: '阿尔伯特',
         status: 'accepted',
         remark: '换一些工具',
         createdAt: new Date(Date.now() - 7200000).toISOString(),
@@ -432,6 +436,7 @@ const loadTrades = async () => {
         fromPlayerId: 5,
         fromPlayerName: '艾米丽',
         toPlayerId: playerId,
+        toPlayerName: '阿尔伯特',
         status: 'completed',
         remark: '完成了交易',
         createdAt: new Date(Date.now() - 86400000).toISOString(),
@@ -597,7 +602,7 @@ defineExpose({
               <div>
                 <p class="text-gray-200 text-sm">
                   {{ trade.fromPlayerId === playerId ? '向 ' : '来自 ' }}
-                  {{ trade.fromPlayerName }}
+                  {{ trade.fromPlayerId === playerId ? trade.toPlayerName : trade.fromPlayerName }}
                 </p>
                 <p class="text-gray-500 text-xs">{{ formatTime(trade.createdAt) }}</p>
               </div>
@@ -836,7 +841,8 @@ defineExpose({
                 <div class="flex items-center justify-between">
                   <span class="text-gray-500 text-sm">交易对象</span>
                   <span class="text-gray-200 text-sm">
-                    {{ selectedTrade.fromPlayerId === playerId ? '向 ' : '来自 ' }}{{ selectedTrade.fromPlayerName }}
+                    {{ selectedTrade.fromPlayerId === playerId ? '向 ' : '来自 ' }}
+                    {{ selectedTrade.fromPlayerId === playerId ? selectedTrade.toPlayerName : selectedTrade.fromPlayerName }}
                   </span>
                 </div>
                 <div class="flex items-center justify-between">

@@ -1,5 +1,6 @@
 package com.example.snowisland.service;
 
+import com.example.snowisland.entity.TradeItem.ItemType;
 import com.example.snowisland.entity.PlayerItem;
 import com.example.snowisland.entity.Trade;
 import com.example.snowisland.entity.TradeItem;
@@ -234,33 +235,23 @@ public class TradeService {
     }
 
     private int reducePlayerItem(Integer playerId, TradeItem.ItemType itemType, Integer itemId, Integer quantity) {
-        return playerItemRepository.updateQuantity(playerId, convertItemType(itemType), itemId, -quantity);
+        return playerItemRepository.updateQuantity(playerId, itemType, itemId, -quantity);
     }
 
     private int addPlayerItem(Integer playerId, TradeItem.ItemType itemType, Integer itemId, Integer quantity) {
         Optional<PlayerItem> existingOpt = playerItemRepository.findByPlayerIdAndItemTypeAndItemId(
-            playerId, convertItemType(itemType), itemId);
+            playerId, itemType, itemId);
 
         if (existingOpt.isPresent()) {
-            return playerItemRepository.updateQuantity(playerId, convertItemType(itemType), itemId, quantity);
+            return playerItemRepository.updateQuantity(playerId, itemType, itemId, quantity);
         } else {
             PlayerItem newItem = new PlayerItem();
             newItem.setPlayerId(playerId);
-            newItem.setItemType(convertItemType(itemType));
+            newItem.setItemType(itemType);
             newItem.setItemId(itemId);
             newItem.setQuantity(quantity);
             playerItemRepository.save(newItem);
             return 1;
-        }
-    }
-
-    private PlayerItem.ItemType convertItemType(TradeItem.ItemType itemType) {
-        switch (itemType) {
-            case item: return PlayerItem.ItemType.item;
-            case weapon: return PlayerItem.ItemType.weapon;
-            case ammo: return PlayerItem.ItemType.ammo;
-            case material: return PlayerItem.ItemType.material;
-            default: return PlayerItem.ItemType.item;
         }
     }
 

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { playerAPI } from '../../utils/api.js'
 
 const materials = ref([])
@@ -56,9 +56,17 @@ const getIconByType = (type) => {
 const loadMaterials = async () => {
   loading.value = true
   try {
+    console.log('=== loadMaterials called, playerId:', playerId)
     const result = await playerAPI.getItems(playerId)
+    console.log('=== API result:', result)
+    console.log('=== Is array:', Array.isArray(result))
+    
     if (Array.isArray(result)) {
-      materials.value = result.filter(item => item.type === 'material').map(item => ({
+      console.log('=== All items from API:', JSON.stringify(result, null, 2))
+      const filtered = result.filter(item => item.type === 'material')
+      console.log('=== Filtered material items:', JSON.stringify(filtered, null, 2))
+      
+      materials.value = filtered.map(item => ({
         id: item.id,
         name: item.name,
         unit: item.unit,
@@ -66,6 +74,10 @@ const loadMaterials = async () => {
         icon: getIconByType('material'),
         remark: getRemarkByMaterial(item.id)
       }))
+      console.log('=== Materials after mapping:', JSON.stringify(materials.value, null, 2))
+      console.log('Materials refreshed:', materials.value.length, 'items')
+    } else {
+      console.log('=== Result is not an array:', typeof result)
     }
   } catch (error) {
     console.error('Failed to load materials:', error)
@@ -74,10 +86,24 @@ const loadMaterials = async () => {
   }
 }
 
+const handleVisibilityChange = () => {
+  if (!document.hidden) {
+    console.log('Page visible, refreshing materials...')
+    loadMaterials()
+  }
+}
+
 onMounted(() => {
   loadMaterials()
-  console.log('Player basic materials loaded from API', { playerId })
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  console.log('Player basic materials component mounted', { playerId })
 })
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+})
+
+defineExpose({ refresh: loadMaterials })
 </script>
 
 <template>

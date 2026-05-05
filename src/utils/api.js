@@ -21,11 +21,6 @@ async function checkBackend() {
 }
 
 async function request(url, options = {}) {
-  // 如果后端不可用，直接返回失败，避免网络错误
-  if (!backendAvailable && checkedBackend) {
-    return { success: false, message: '后端服务不可用' }
-  }
-
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000)
@@ -38,18 +33,20 @@ async function request(url, options = {}) {
       ...options
     })
     clearTimeout(timeoutId)
+    backendAvailable = true
+    checkedBackend = true
     return await response.json()
   } catch (error) {
+    backendAvailable = false
+    checkedBackend = true
     if (error.name === 'AbortError') {
       console.log('请求超时:', url)
     } else if (error.message.includes('Failed to fetch')) {
-      backendAvailable = false
-      checkedBackend = true
-      console.log('后端服务不可用，使用本地mock数据')
+      console.log('后端服务不可用:', url)
     } else {
       console.log('API请求失败:', error.message, '- URL:', url)
     }
-    return { success: false, message: '网络连接失败' }
+    return null
   }
 }
 
@@ -63,6 +60,7 @@ export const authAPI = {
 export const playerAPI = {
   getAll: () => request(`${API_BASE}/players`),
   get: (id) => request(`${API_BASE}/players/${id}`),
+  getDetails: (id) => request(`${API_BASE}/players/${id}/details`),
   getItems: (id) => request(`${API_BASE}/players/${id}/items`),
   create: (player, loginUsername) =>
     request(`${API_BASE}/players?loginUsername=${encodeURIComponent(loginUsername)}`, {

@@ -1,5 +1,6 @@
 package com.example.snowisland.entity;
 
+import com.example.snowisland.entity.TradeItem.ItemType;
 import javax.persistence.*;
 
 @Entity
@@ -21,10 +22,6 @@ public class PlayerItem {
 
     @Column(nullable = false)
     private Integer quantity = 0;
-
-    public enum ItemType {
-        item, weapon, ammo, material
-    }
 
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }

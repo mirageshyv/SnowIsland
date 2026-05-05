@@ -3,9 +3,13 @@ package com.example.snowisland.service;
 import com.example.snowisland.entity.Player;
 import com.example.snowisland.entity.PlayerItem;
 import com.example.snowisland.entity.User;
+import com.example.snowisland.entity.Job;
+import com.example.snowisland.entity.Skill;
 import com.example.snowisland.repository.PlayerItemRepository;
 import com.example.snowisland.repository.PlayerRepository;
 import com.example.snowisland.repository.UserRepository;
+import com.example.snowisland.repository.JobRepository;
+import com.example.snowisland.repository.SkillRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +28,12 @@ public class PlayerService {
 
     @Autowired
     private PlayerItemRepository playerItemRepository;
+
+    @Autowired
+    private JobRepository jobRepository;
+
+    @Autowired
+    private SkillRepository skillRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -66,8 +76,13 @@ public class PlayerService {
     }
 
     public List<Map<String, Object>> getPlayerItems(Integer playerId) {
+        System.out.println("=== getPlayerItems called for playerId: " + playerId);
         loadItemNames();
+        System.out.println("=== itemNames loaded, material size: " + itemNames.get("material").size());
+        
         List<PlayerItem> playerItems = playerItemRepository.findByPlayerId(playerId);
+        System.out.println("=== Found " + playerItems.size() + " player items for player " + playerId);
+        
         List<Map<String, Object>> result = new ArrayList<>();
 
         for (PlayerItem pi : playerItems) {
@@ -76,11 +91,15 @@ public class PlayerService {
             item.put("type", pi.getItemType().name().toLowerCase());
             item.put("quantity", pi.getQuantity());
             String type = pi.getItemType().name().toLowerCase();
-            item.put("name", itemNames.get(type).getOrDefault(pi.getItemId(), "未知物品"));
+            String name = itemNames.get(type).getOrDefault(pi.getItemId(), "未知物品");
+            item.put("name", name);
             item.put("unit", itemUnits.get(type).getOrDefault(pi.getItemId(), "个"));
             result.add(item);
+            
+            System.out.println("=== Added item: itemId=" + pi.getItemId() + ", type=" + type + ", quantity=" + pi.getQuantity() + ", name=" + name);
         }
 
+        System.out.println("=== Returning " + result.size() + " items");
         return result;
     }
 
@@ -163,6 +182,64 @@ public class PlayerService {
         } catch (Exception e) {
             result.put("success", false);
             result.put("message", "删除失败: " + e.getMessage());
+        }
+        
+        return result;
+    }
+
+    public Map<String, Object> getPlayerDetails(Integer id) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            Player player = playerRepository.findById(id).orElse(null);
+            if (player == null) {
+                result.put("success", false);
+                result.put("message", "玩家不存在");
+                return result;
+            }
+
+            result.put("success", true);
+            result.put("id", player.getId());
+            result.put("name", player.getName());
+            result.put("isWeak", player.getIsWeak());
+            result.put("isOverworked", player.getIsOverworked());
+            result.put("isInjured", player.getIsInjured());
+            result.put("faction", player.getFaction() != null ? player.getFaction().name() : null);
+            result.put("jobId", player.getJobId());
+            result.put("skillId", player.getSkillId());
+            result.put("createdAt", player.getCreatedAt());
+            result.put("updatedAt", player.getUpdatedAt());
+
+            if (player.getJobId() != null) {
+                Job job = jobRepository.findById(player.getJobId()).orElse(null);
+                if (job != null) {
+                    result.put("job", job.getName());
+                    result.put("jobSkills", job.getSkills());
+                }
+            }
+
+            if (player.getSkillId() != null) {
+                Skill skill = skillRepository.findById(player.getSkillId()).orElse(null);
+                if (skill != null) {
+                    result.put("personalSkill", skill.getName());
+                }
+            }
+
+            String avatar = "🧑";
+            if (player.getFaction() != null) {
+                switch (player.getFaction()) {
+                    case 统治者: avatar = "⚔️"; break;
+                    case 反叛者: avatar = "🔮"; break;
+                    case 冒险者: avatar = "🗡️"; break;
+                    case 杀戮者: avatar = "✨"; break;
+                    case 平民: avatar = "🏹"; break;
+                }
+            }
+            result.put("avatar", avatar);
+            
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "获取玩家信息失败: " + e.getMessage());
         }
         
         return result;

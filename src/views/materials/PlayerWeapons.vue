@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { playerAPI } from '../../utils/api.js'
 
 const weapons = ref([])
@@ -72,6 +72,7 @@ const loadWeaponsAndAmmo = async () => {
           icon: '🎯'
         }
       })
+      console.log('Weapons/Ammo refreshed:', weapons.value.length, 'weapons', ammo.value.length, 'ammo')
     }
   } catch (error) {
     console.error('Failed to load weapons and ammo:', error)
@@ -80,10 +81,24 @@ const loadWeaponsAndAmmo = async () => {
   }
 }
 
+const handleVisibilityChange = () => {
+  if (!document.hidden) {
+    console.log('Page visible, refreshing weapons and ammo...')
+    loadWeaponsAndAmmo()
+  }
+}
+
 onMounted(() => {
   loadWeaponsAndAmmo()
-  console.log('Player weapons and ammo loaded from API', { playerId })
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  console.log('Player weapons component mounted', { playerId })
 })
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+})
+
+defineExpose({ refresh: loadWeaponsAndAmmo })
 </script>
 
 <template>

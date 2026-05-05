@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { playerAPI } from '../../utils/api.js'
 
 const items = ref([])
@@ -19,6 +19,7 @@ const loadItems = async () => {
         icon: getIconByType('item'),
         remark: getRemarkByItem(item.id)
       }))
+      console.log('Items refreshed:', items.value.length, 'items')
     }
   } catch (error) {
     console.error('Failed to load items:', error)
@@ -61,10 +62,24 @@ const getRemarkByItem = (itemId) => {
   return remarks[itemId] || '道具'
 }
 
+const handleVisibilityChange = () => {
+  if (!document.hidden) {
+    console.log('Page visible, refreshing items...')
+    loadItems()
+  }
+}
+
 onMounted(() => {
   loadItems()
-  console.log('Player items loaded from API', { playerId })
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  console.log('Player items component mounted', { playerId })
 })
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+})
+
+defineExpose({ refresh: loadItems })
 </script>
 
 <template>

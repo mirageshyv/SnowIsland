@@ -31,4 +31,15 @@ build/
 
 ### VS Code ###
 .vscode/
-node_modules
+node_modules/
+
+### npm ###
+package-lock.json
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### logs ###
+*.log
+logs/
