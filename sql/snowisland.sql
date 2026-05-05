@@ -232,7 +232,6 @@ CREATE TABLE `skill` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(50) NOT NULL,
   `function` text NOT NULL,
-  `faction` varchar(20) NOT NULL DEFAULT '平民',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -242,16 +241,16 @@ CREATE TABLE `skill` (
 -- ----------------------------
 -- Records of skill
 -- ----------------------------
-INSERT INTO `skill` VALUES ('1', '力量增强', '临时提高力量属性', '平民', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
-INSERT INTO `skill` VALUES ('2', '魔法抗性', '减少魔法伤害', '平民', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
-INSERT INTO `skill` VALUES ('3', '敏捷提升', '提高移动速度和闪避', '平民', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
-INSERT INTO `skill` VALUES ('4', '生命恢复', '缓慢恢复生命值', '平民', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
-INSERT INTO `skill` VALUES ('5', '幸运加成', '提高暴击率和掉落率', '平民', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
-INSERT INTO `skill` VALUES ('6', '洞察术', '发现隐藏的宝藏和陷阱', '平民', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
-INSERT INTO `skill` VALUES ('7', '冥想', '恢复魔法值', '平民', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
-INSERT INTO `skill` VALUES ('8', '鼓舞士气', '提高团队战斗力', '平民', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
-INSERT INTO `skill` VALUES ('9', '伪装', '融入环境避免被发现', '平民', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
-INSERT INTO `skill` VALUES ('10', '急救', '快速处理伤口', '平民', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
+INSERT INTO `skill` VALUES ('1', '力量增强', '临时提高力量属性', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
+INSERT INTO `skill` VALUES ('2', '魔法抗性', '减少魔法伤害', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
+INSERT INTO `skill` VALUES ('3', '敏捷提升', '提高移动速度和闪避', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
+INSERT INTO `skill` VALUES ('4', '生命恢复', '缓慢恢复生命值', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
+INSERT INTO `skill` VALUES ('5', '幸运加成', '提高暴击率和掉落率', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
+INSERT INTO `skill` VALUES ('6', '洞察术', '发现隐藏的宝藏和陷阱', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
+INSERT INTO `skill` VALUES ('7', '冥想', '恢复魔法值', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
+INSERT INTO `skill` VALUES ('8', '鼓舞士气', '提高团队战斗力', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
+INSERT INTO `skill` VALUES ('9', '伪装', '融入环境避免被发现', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
+INSERT INTO `skill` VALUES ('10', '急救', '快速处理伤口', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
 
 -- ----------------------------
 -- Table structure for trade
