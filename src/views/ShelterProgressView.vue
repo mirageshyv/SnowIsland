@@ -5,14 +5,21 @@ import {
   SHELTER_DAILY_LOGS,
   resolveShelterInventoryRows,
   shelterTotalBuildValue,
+  buildShelterFoodSupplyLocal,
+  buildShelterEnergyReserveLocal,
 } from '../data/gameData.js'
 import { shelterAPI } from '../utils/api.js'
+import ShelterSupplyCards from './ShelterSupplyCards.vue'
 
 const loading = ref(true)
 const loadError = ref(null)
 
 /** 来自数据库的当前建造值 */
 const currentBuildValue = ref(0)
+
+/** 避难所公共食物 / 能量（shelter_*_stock；非玩家个人库存） */
+const foodSupply = ref(buildShelterFoodSupplyLocal())
+const energyReserve = ref(buildShelterEnergyReserveLocal())
 
 /** 避难所库存（接口返回 { id, quantity }[]，id 与图鉴 item_key 一致） */
 const shelterInventory = ref([])
@@ -43,6 +50,16 @@ async function loadShelterFromApi() {
       shelterInventory.value = inv
         .filter((row) => row && row.id != null)
         .map((row) => ({ id: String(row.id), quantity: Number(row.quantity) || 0 }))
+      if (Array.isArray(data.foodSupply?.items)) {
+        foodSupply.value = data.foodSupply
+      } else {
+        foodSupply.value = buildShelterFoodSupplyLocal()
+      }
+      if (Array.isArray(data.energyReserve?.items)) {
+        energyReserve.value = data.energyReserve
+      } else {
+        energyReserve.value = buildShelterEnergyReserveLocal()
+      }
       if (shelterInventory.value.length === 0) {
         shelterInventory.value = DEFAULT_SHELTER_INVENTORY.map((row) => ({ ...row }))
         loadError.value = '数据库库存为空，已显示本地默认数据'
@@ -51,11 +68,15 @@ async function loadShelterFromApi() {
       loadError.value = (data && data.message) || '加载避难所数据失败'
       shelterInventory.value = DEFAULT_SHELTER_INVENTORY.map((row) => ({ ...row }))
       currentBuildValue.value = shelterLogsTotal.value
+      foodSupply.value = buildShelterFoodSupplyLocal()
+      energyReserve.value = buildShelterEnergyReserveLocal()
     }
   } catch {
     loadError.value = '网络错误，已使用本地默认数据'
     shelterInventory.value = DEFAULT_SHELTER_INVENTORY.map((row) => ({ ...row }))
     currentBuildValue.value = shelterLogsTotal.value
+    foodSupply.value = buildShelterFoodSupplyLocal()
+    energyReserve.value = buildShelterEnergyReserveLocal()
   } finally {
     loading.value = false
   }
@@ -90,11 +111,14 @@ onMounted(() => {
     </div>
 
     <template v-else>
-      <div class="relative bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-8 mb-10 text-center">
-        <p class="text-gray-400 text-lg mb-2">当前建造值</p>
-        <p class="text-5xl md:text-6xl text-cyan-400 font-bold tabular-nums tracking-tight">
-          {{ currentBuildValue }}
-        </p>
+      <div class="relative bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-8 mb-10">
+        <div class="text-center mb-2">
+          <p class="text-gray-400 text-lg mb-2">当前建造值</p>
+          <p class="text-5xl md:text-6xl text-cyan-400 font-bold tabular-nums tracking-tight">
+            {{ currentBuildValue }}
+          </p>
+        </div>
+        <ShelterSupplyCards :food="foodSupply" :energy="energyReserve" />
       </div>
 
       <div class="mb-10">

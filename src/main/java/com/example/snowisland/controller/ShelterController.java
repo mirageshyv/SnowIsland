@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 /**
- * 统治者避难所：建造值与库存。
+ * 统治者避难所：建造值、避难所物资库存、避难所公共食物/能量（非玩家个人库存）。
  */
 @RestController
 @RequestMapping("/api/shelter")

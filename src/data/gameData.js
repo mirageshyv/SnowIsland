@@ -3,7 +3,7 @@
  *
  * 包含：
  * - 物资管理页：后端 item / weapon / ammo / material 的 id 与本地素材对应关系
- * - 统治者避难所：图鉴、默认库存、建造日志、工具函数
+ * - 统治者避难所：图鉴、shelter 建材库存、建造日志；食物/能量：避难所公共库存与玩家个人库存分开展示（本地回退数据见 DEFAULT_SHELTER_*）
  *
  * 说明：
  * - 如果某个 id 暂时没有对应 PNG，会返回 null，界面应回退为 emoji/占位。
@@ -29,6 +29,7 @@ import imgAlcohol from '@/assets/医用酒精.png?url'
 import imgMatches from '@/assets/火柴.png?url'
 import imgPencil from '@/assets/铅笔.png?url'
 import imgSeaChart from '@/assets/破损海图.png?url'
+import imgBento from '@/assets/便当.png?url'
 import imgServicePistol from '@/assets/制式手枪.png?url'
 import imgHuntingShotgun from '@/assets/猎枪.png?url'
 import imgBaton from '@/assets/警棍.png?url'
@@ -64,6 +65,7 @@ const ITEM_IMAGES = {
   15: imgMatches,
   16: imgPencil,
   17: imgSeaChart,
+  18: imgBento,
 }
 
 const WEAPON_IMAGES = {
@@ -191,6 +193,172 @@ export const DEFAULT_SHELTER_INVENTORY = [
   { id: 'plank', quantity: 24 },
   { id: 'rope', quantity: 35 },
 ]
+
+/** 食物种类与每单位大卡（与 food_catalog 一致；API 不可用时本地合计用） */
+export const FOOD_DEFINITIONS = [
+  { id: 'salty_pork', name: '咸肉', unit: 'kg', kcalPerUnit: 3000 },
+  { id: 'dried_fish', name: '鱼干', unit: 'kg', kcalPerUnit: 2000 },
+  { id: 'flour', name: '面粉', unit: 'kg', kcalPerUnit: 3000 },
+  { id: 'jam', name: '果酱', unit: 'kg', kcalPerUnit: 3000 },
+  { id: 'bread', name: '面包', unit: 'kg', kcalPerUnit: 2500 },
+  { id: 'potato', name: '土豆', unit: 'kg', kcalPerUnit: 1000 },
+  { id: 'hard_biscuit', name: '硬饼干', unit: 'kg', kcalPerUnit: 5000 },
+  { id: 'sauerkraut', name: '酸菜', unit: 'kg', kcalPerUnit: 1000 },
+  { id: 'dried_onion', name: '干洋葱', unit: 'kg', kcalPerUnit: 1500 },
+  { id: 'dried_apple', name: '苹果干', unit: 'kg', kcalPerUnit: 4000 },
+  { id: 'oatmeal', name: '燕麦片', unit: 'kg', kcalPerUnit: 4000 },
+  { id: 'fish_meat', name: '鱼肉', unit: 'kg', kcalPerUnit: 2000 },
+  { id: 'goat_milk', name: '羊奶', unit: 'kg', kcalPerUnit: 3000 },
+  { id: 'jerky', name: '肉干', unit: 'kg', kcalPerUnit: 3000 },
+  { id: 'smoked_meat', name: '熏肉', unit: 'kg', kcalPerUnit: 35000 },
+  { id: 'canned_food', name: '罐头', unit: 'portion', kcalPerUnit: 8000 },
+  { id: 'candy', name: '糖果', unit: 'kg', kcalPerUnit: 5000 },
+  { id: 'cereal', name: '麦片', unit: 'kg', kcalPerUnit: 4000 },
+  { id: 'military_ration', name: '军用压缩干粮', unit: 'portion', kcalPerUnit: 2500 },
+  { id: 'shellfish', name: '贝类', unit: 'kg', kcalPerUnit: 2000 },
+  { id: 'mushroom', name: '食用菌菇', unit: 'kg', kcalPerUnit: 1000 },
+  { id: 'insect_cocoon', name: '虫茧', unit: 'portion', kcalPerUnit: 1000 },
+  { id: 'wild_blueberry', name: '野生蓝莓', unit: 'kg', kcalPerUnit: 1200 },
+  { id: 'raspberry', name: '树莓', unit: 'kg', kcalPerUnit: 1500 },
+]
+
+/** 统治者避难所公共食物库存（本地回退；与 shelter_food_stock 种子一致） */
+export const DEFAULT_SHELTER_FOOD_STOCK = [
+  { id: 'salty_pork', quantity: 4 }, { id: 'dried_fish', quantity: 3 }, { id: 'flour', quantity: 8 }, { id: 'jam', quantity: 2 },
+  { id: 'bread', quantity: 20 }, { id: 'potato', quantity: 15 }, { id: 'hard_biscuit', quantity: 2 },
+  { id: 'sauerkraut', quantity: 5 }, { id: 'dried_onion', quantity: 3 }, { id: 'dried_apple', quantity: 2 },
+  { id: 'oatmeal', quantity: 2 }, { id: 'fish_meat', quantity: 6 }, { id: 'goat_milk', quantity: 5 },
+  { id: 'jerky', quantity: 12 }, { id: 'smoked_meat', quantity: 1 }, { id: 'canned_food', quantity: 8 },
+  { id: 'candy', quantity: 1 }, { id: 'cereal', quantity: 2 }, { id: 'military_ration', quantity: 10 },
+  { id: 'shellfish', quantity: 4 }, { id: 'mushroom', quantity: 5 }, { id: 'insect_cocoon', quantity: 2 },
+  { id: 'wild_blueberry', quantity: 3 }, { id: 'raspberry', quantity: 2 },
+]
+
+/** 玩家个人食物演示（player_food_stock；与避难所仓库分离） */
+export const DEFAULT_PLAYER_FOOD_STOCK = [
+  { id: 'bread', quantity: 5 }, { id: 'jerky', quantity: 2 }, { id: 'candy', quantity: 3 }, { id: 'military_ration', quantity: 2 },
+]
+
+export const ENERGY_DEFINITIONS = [
+  { id: 'firewood', name: '木柴', unit: 'kg', kcalPerUnit: 4500 },
+  { id: 'coal', name: '煤炭', unit: 'kg', kcalPerUnit: 7000 },
+  { id: 'fuel_oil', name: '油料', unit: 'L', kcalPerUnit: 9000 },
+]
+
+export const DEFAULT_PLAYER_ENERGY_STOCK = [
+  { id: 'firewood', quantity: 3 }, { id: 'coal', quantity: 1 },
+]
+
+/** 避难所公共能量库存（本地回退） */
+export const DEFAULT_SHELTER_ENERGY_STOCK = [
+  { id: 'firewood', quantity: 25 }, { id: 'coal', quantity: 10 }, { id: 'fuel_oil', quantity: 5 },
+]
+
+export const FOOD_DAY_KCAL = 2500
+export const ENERGY_DAY_KCAL = 800
+
+/** 避难所建造进度页：食物供应（shelter_food_stock） */
+export function buildShelterFoodSupplyLocal() {
+  const qty = Object.fromEntries(DEFAULT_SHELTER_FOOD_STOCK.map((r) => [r.id, r.quantity]))
+  let totalKcal = 0
+  const items = FOOD_DEFINITIONS.map((def) => {
+    const q = qty[def.id] ?? 0
+    const lineKcal = q * def.kcalPerUnit
+    totalKcal += lineKcal
+    return {
+      id: def.id,
+      name: def.name,
+      unit: def.unit,
+      quantity: q,
+      kcalPerUnit: def.kcalPerUnit,
+      lineKcal,
+    }
+  })
+  return {
+    totalKcal,
+    personDayDivisor: FOOD_DAY_KCAL,
+    personDays: Math.round((totalKcal / FOOD_DAY_KCAL) * 10) / 10,
+    items,
+    source: 'shelter',
+  }
+}
+
+/** 避难所建造进度页：能量储备（shelter_energy_stock） */
+export function buildShelterEnergyReserveLocal() {
+  const qty = Object.fromEntries(DEFAULT_SHELTER_ENERGY_STOCK.map((r) => [r.id, r.quantity]))
+  let totalKcal = 0
+  const items = ENERGY_DEFINITIONS.map((def) => {
+    const q = qty[def.id] ?? 0
+    const lineKcal = q * def.kcalPerUnit
+    totalKcal += lineKcal
+    return {
+      id: def.id,
+      name: def.name,
+      unit: def.unit,
+      quantity: q,
+      kcalPerUnit: def.kcalPerUnit,
+      lineKcal,
+    }
+  })
+  return {
+    totalKcal,
+    personDayDivisor: ENERGY_DAY_KCAL,
+    personDays: Math.round((totalKcal / ENERGY_DAY_KCAL) * 10) / 10,
+    items,
+    source: 'shelter',
+  }
+}
+
+/** 玩家个人食物（player_food_stock）演示合计，供日后个人物资页等使用 */
+export function buildPlayerFoodSupplyLocal() {
+  const qty = Object.fromEntries(DEFAULT_PLAYER_FOOD_STOCK.map((r) => [r.id, r.quantity]))
+  let totalKcal = 0
+  const items = FOOD_DEFINITIONS.map((def) => {
+    const q = qty[def.id] ?? 0
+    const lineKcal = q * def.kcalPerUnit
+    totalKcal += lineKcal
+    return {
+      id: def.id,
+      name: def.name,
+      unit: def.unit,
+      quantity: q,
+      kcalPerUnit: def.kcalPerUnit,
+      lineKcal,
+    }
+  })
+  return {
+    totalKcal,
+    personDayDivisor: FOOD_DAY_KCAL,
+    personDays: Math.round((totalKcal / FOOD_DAY_KCAL) * 10) / 10,
+    items,
+    source: 'player',
+  }
+}
+
+export function buildPlayerEnergyReserveLocal() {
+  const qty = Object.fromEntries(DEFAULT_PLAYER_ENERGY_STOCK.map((r) => [r.id, r.quantity]))
+  let totalKcal = 0
+  const items = ENERGY_DEFINITIONS.map((def) => {
+    const q = qty[def.id] ?? 0
+    const lineKcal = q * def.kcalPerUnit
+    totalKcal += lineKcal
+    return {
+      id: def.id,
+      name: def.name,
+      unit: def.unit,
+      quantity: q,
+      kcalPerUnit: def.kcalPerUnit,
+      lineKcal,
+    }
+  })
+  return {
+    totalKcal,
+    personDayDivisor: ENERGY_DAY_KCAL,
+    personDays: Math.round((totalKcal / ENERGY_DAY_KCAL) * 10) / 10,
+    items,
+    source: 'player',
+  }
+}
 
 export const SHELTER_DAILY_LOGS = [
   { day: 1, workers: [

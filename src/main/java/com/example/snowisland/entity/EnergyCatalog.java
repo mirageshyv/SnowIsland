@@ -1,0 +1,86 @@
+package com.example.snowisland.entity;
+
+import javax.persistence.*;
+import java.time.LocalDateTime;
+
+/**
+ * 全局能量（燃料）种类定义，库存见 {@link PlayerEnergyStock}。
+ */
+@Entity
+@Table(name = "energy_catalog")
+public class EnergyCatalog {
+
+    @Id
+    @Column(name = "item_key", nullable = false, length = 64)
+    private String itemKey;
+
+    @Column(nullable = false, length = 64)
+    private String name;
+
+    @Column(nullable = false, length = 16)
+    private String unit;
+
+    @Column(name = "kcal_per_unit", nullable = false)
+    private Integer kcalPerUnit;
+
+    @Column(name = "sort_order", nullable = false)
+    private Integer sortOrder = 0;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    public String getItemKey() {
+        return itemKey;
+    }
+
+    public void setItemKey(String itemKey) {
+        this.itemKey = itemKey;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getUnit() {
+        return unit;
+    }
+
+    public void setUnit(String unit) {
+        this.unit = unit;
+    }
+
+    public Integer getKcalPerUnit() {
+        return kcalPerUnit;
+    }
+
+    public void setKcalPerUnit(Integer kcalPerUnit) {
+        this.kcalPerUnit = kcalPerUnit;
+    }
+
+    public Integer getSortOrder() {
+        return sortOrder;
+    }
+
+    public void setSortOrder(Integer sortOrder) {
+        this.sortOrder = sortOrder;
+    }
+}

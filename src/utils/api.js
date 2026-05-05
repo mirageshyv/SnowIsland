@@ -76,7 +76,7 @@ export const playerAPI = {
   })
 }
 
-/** 统治者避难所：当前建造值 + 库存 */
+/** 统治者避难所页：建造值、shelter 建材库存、避难所公共食物/能量（非玩家个人库存） */
 export const shelterAPI = {
   getSummary: () => request(`${API_BASE}/shelter`),
 }

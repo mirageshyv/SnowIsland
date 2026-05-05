@@ -11,7 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 /**
- * 统治者避难所：当前建造值 + 库存。
+ * 统治者避难所：建造值、避难所物资库存、避难所公共食物与能量（{@link ShelterSupplyService}）。
+ * 玩家个人食物/能量见 {@link PlayerSupplyService}，不通过本接口展示。
  */
 @Service
 public class ShelterService {
@@ -35,9 +36,12 @@ public class ShelterService {
     @Autowired
     private ShelterStockRepository shelterStockRepository;
 
+    @Autowired
+    private ShelterSupplyService shelterSupplyService;
+
     @Transactional
     public Map<String, Object> getSummary() {
-        Map<String, Object> out = new HashMap<>();
+        Map<String, Object> out = new LinkedHashMap<>();
         ShelterProgress progress = shelterProgressRepository.findById(ShelterProgress.SINGLETON_ID)
                 .orElseGet(() -> {
                     ShelterProgress p = new ShelterProgress();
@@ -53,15 +57,19 @@ public class ShelterService {
 
         List<Map<String, Object>> inventory = new ArrayList<>();
         for (ShelterStock row : rows) {
-            Map<String, Object> item = new HashMap<>();
+            Map<String, Object> item = new LinkedHashMap<>();
             item.put("id", row.getItemKey());
             item.put("quantity", row.getQuantity());
             inventory.add(item);
         }
 
+        shelterSupplyService.ensureDefaultShelterStocks();
+
         out.put("success", true);
         out.put("currentBuildValue", progress.getCurrentBuildValue());
         out.put("inventory", inventory);
+        out.put("foodSupply", shelterSupplyService.buildShelterFoodSupply());
+        out.put("energyReserve", shelterSupplyService.buildShelterEnergyReserve());
         return out;
     }
 
