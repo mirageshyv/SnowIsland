@@ -27,6 +27,12 @@ const router = createRouter({
       meta: { requiresAuth: true, role: 'dm' }
     },
     {
+      path: '/action-submit',
+      name: 'ActionSubmit',
+      component: () => import('../views/ActionSubmitView.vue'),
+      meta: { requiresAuth: true, role: 'player' }
+    },
+    {
       path: '/player/materials',
       name: 'PlayerMaterials',
       component: () => import('../views/PlayerMaterials.vue'),
