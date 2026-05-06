@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { playerAPI } from '../utils/api.js'
-import { getMaterialImageUrl, getTypeTabImage } from '../data/gameData.js'
+import { getMaterialImageUrlOrDefault, getTypeTabImage } from '../data/gameData.js'
 
 const playerId = localStorage.getItem('playerId') || '1'
 const loading = ref(true)
@@ -38,7 +38,11 @@ const itemNamesMap = {
     15: '点火工具',
     16: '书写工具',
     17: '导航工具',
-    18: '食物补给'
+    18: '食物补给',
+    19: '仓库钥匙',
+    20: '燃料仓库钥匙',
+    21: '镇武库钥匙',
+    22: '码头集购站钥匙'
   },
   weapon: {
     1: '制式手枪',
@@ -50,7 +54,9 @@ const itemNamesMap = {
     7: '猎弓',
     8: '十字镐',
     9: '斧头',
-    10: '电锯'
+    10: '电锯',
+    11: '手术刀',
+    12: '炸药'
   },
   ammo: {
     1: '手枪弹',
@@ -94,7 +100,11 @@ const itemUnitsMap = {
     15: '个',
     16: '套',
     17: '个',
-    18: '份'
+    18: '份',
+    19: '把',
+    20: '把',
+    21: '把',
+    22: '把'
   },
   weapon: {
     1: '把',
@@ -106,7 +116,9 @@ const itemUnitsMap = {
     7: '张',
     8: '把',
     9: '把',
-    10: '把'
+    10: '把',
+    11: '把',
+    12: 'kg'
   },
   ammo: {
     1: '枚',
@@ -150,7 +162,11 @@ const itemRemarksMap = {
     15: '点火工具',
     16: '书写工具',
     17: '导航工具',
-    18: '食物补给'
+    18: '食物补给',
+    19: '仓库通行',
+    20: '燃料仓库通行',
+    21: '镇武库通行',
+    22: '码头集购站通行'
   },
   weapon: {
     1: '标准配备',
@@ -162,7 +178,9 @@ const itemRemarksMap = {
     7: '远程武器',
     8: '挖掘工具',
     9: '砍伐工具',
-    10: '切割工具'
+    10: '切割工具',
+    11: '医疗工具',
+    12: '爆炸物'
   },
   ammo: {
     1: '制式手枪子弹',
@@ -197,7 +215,9 @@ const weaponThreatMap = {
   7: 5,
   8: 4,
   9: 6,
-  10: 7
+  10: 7,
+  11: 2,
+  12: 10
 }
 
 // 弹药适用武器映射
@@ -228,7 +248,11 @@ const itemIconMap = {
     15: '🔥',
     16: '✏️',
     17: '🧭',
-    18: '🍞'
+    18: '🍞',
+    19: '🔑',
+    20: '🔑',
+    21: '🔑',
+    22: '🔑'
   },
   weapon: {
     1: '🔫',
@@ -240,7 +264,9 @@ const itemIconMap = {
     7: '🏹',
     8: '⛏️',
     9: '🪓',
-    10: '⚙️'
+    10: '⚙️',
+    11: '🔪',
+    12: '💣'
   },
   ammo: {
     1: '🎯',
@@ -295,7 +321,7 @@ const transformItem = (type, item) => {
     quantity: item.quantity,
     remark: itemRemarksMap[type]?.[itemId] || '',
     icon: itemIconMap[type]?.[itemId] || '📦',
-    imageUrl: getMaterialImageUrl(type, itemId),
+    imageUrl: getMaterialImageUrlOrDefault(type, itemId),
     threat_level: type === 'weapon' ? weaponThreatMap[itemId] : undefined,
     weapon_name: type === 'ammo' ? ammoWeaponMap[itemId] : undefined
   }
@@ -510,12 +536,10 @@ onUnmounted(() => {
                 class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-400/20 to-blue-500/20 flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden p-1"
               >
                 <img
-                  v-if="item.imageUrl"
                   :src="item.imageUrl"
                   :alt="item.name"
                   class="w-full h-full object-contain"
                 />
-                <span v-else>{{ item.icon }}</span>
               </div>
               
               <div class="flex-1 min-w-0">
@@ -564,12 +588,10 @@ onUnmounted(() => {
                 class="w-14 h-14 rounded-xl bg-gradient-to-br from-red-400/20 to-red-500/20 flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden p-1"
               >
                 <img
-                  v-if="weapon.imageUrl"
                   :src="weapon.imageUrl"
                   :alt="weapon.name"
                   class="w-full h-full object-contain"
                 />
-                <span v-else>{{ weapon.icon }}</span>
               </div>
               
               <div class="flex-1 min-w-0">
@@ -623,12 +645,10 @@ onUnmounted(() => {
                 class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-500/20 flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden p-1"
               >
                 <img
-                  v-if="ammo.imageUrl"
                   :src="ammo.imageUrl"
                   :alt="ammo.name"
                   class="w-full h-full object-contain"
                 />
-                <span v-else>{{ ammo.icon }}</span>
               </div>
               
               <div class="flex-1 min-w-0">
@@ -682,12 +702,10 @@ onUnmounted(() => {
                 class="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400/20 to-emerald-500/20 flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden p-1"
               >
                 <img
-                  v-if="material.imageUrl"
                   :src="material.imageUrl"
                   :alt="material.name"
                   class="w-full h-full object-contain"
                 />
-                <span v-else>{{ material.icon }}</span>
               </div>
               
               <div class="flex-1 min-w-0">

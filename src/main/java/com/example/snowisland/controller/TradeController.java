@@ -20,6 +20,11 @@ public class TradeController {
         return tradeService.getTradesByPlayerId(playerId);
     }
 
+    @GetMapping("/incoming/{playerId}/pending-count")
+    public Map<String, Long> getIncomingPendingCount(@PathVariable Integer playerId) {
+        return Map.of("count", tradeService.countIncomingPendingTrades(playerId));
+    }
+
     @GetMapping("/incoming/{playerId}")
     public List<Trade> getIncomingTrades(@PathVariable Integer playerId) {
         return tradeService.getIncomingTrades(playerId);

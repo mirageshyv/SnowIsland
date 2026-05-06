@@ -35,6 +35,10 @@ public class TradeService {
         itemNames.get("item").put(2, "手电筒");
         itemNames.get("item").put(4, "哨子");
         itemNames.get("item").put(8, "维修工具包");
+        itemNames.get("item").put(19, "仓库钥匙");
+        itemNames.get("item").put(20, "燃料仓库钥匙");
+        itemNames.get("item").put(21, "镇武库钥匙");
+        itemNames.get("item").put(22, "码头集购站钥匙");
 
         itemNames.put("weapon", new HashMap<>());
         itemNames.get("weapon").put(1, "制式手枪");
@@ -42,6 +46,8 @@ public class TradeService {
         itemNames.get("weapon").put(3, "警棍");
         itemNames.get("weapon").put(4, "刺刀");
         itemNames.get("weapon").put(9, "斧头");
+        itemNames.get("weapon").put(11, "手术刀");
+        itemNames.get("weapon").put(12, "炸药");
 
         itemNames.put("ammo", new HashMap<>());
         itemNames.get("ammo").put(1, "手枪弹");
@@ -58,6 +64,10 @@ public class TradeService {
         itemUnits.get("item").put(2, "个");
         itemUnits.get("item").put(4, "个");
         itemUnits.get("item").put(8, "个");
+        itemUnits.get("item").put(19, "把");
+        itemUnits.get("item").put(20, "把");
+        itemUnits.get("item").put(21, "把");
+        itemUnits.get("item").put(22, "把");
 
         itemUnits.put("weapon", new HashMap<>());
         itemUnits.get("weapon").put(1, "把");
@@ -65,6 +75,8 @@ public class TradeService {
         itemUnits.get("weapon").put(3, "把");
         itemUnits.get("weapon").put(4, "把");
         itemUnits.get("weapon").put(9, "把");
+        itemUnits.get("weapon").put(11, "把");
+        itemUnits.get("weapon").put(12, "kg");
 
         itemUnits.put("ammo", new HashMap<>());
         itemUnits.get("ammo").put(1, "枚");
@@ -95,6 +107,11 @@ public class TradeService {
         List<Trade> trades = tradeRepository.findByToPlayerId(playerId);
         populateItemInfo(trades);
         return trades;
+    }
+
+    /** 侧栏徽章轮询：单条 COUNT，避免每几秒拉全量 incoming + trade_items */
+    public long countIncomingPendingTrades(Integer playerId) {
+        return tradeRepository.countByToPlayerIdAndStatus(playerId, Trade.TradeStatus.pending);
     }
 
     private void populateItemInfo(List<Trade> trades) {

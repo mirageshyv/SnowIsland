@@ -54,7 +54,7 @@ CREATE TABLE `item` (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4;
 
 -- ----------------------------
 -- Records of item
@@ -77,6 +77,10 @@ INSERT INTO `item` VALUES ('15', '火柴', '盒', '点火工具', '2026-04-27 11
 INSERT INTO `item` VALUES ('16', '铅笔', '盒', '书写工具', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `item` VALUES ('17', '破损海图', '张', '导航参考', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `item` VALUES ('18', '便当', '份', '恢复饥饿', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `item` VALUES ('19', '仓库钥匙', '把', '仓库通行', '2026-05-05 00:00:00', '2026-05-05 00:00:00');
+INSERT INTO `item` VALUES ('20', '燃料仓库钥匙', '把', '燃料仓库通行', '2026-05-05 00:00:00', '2026-05-05 00:00:00');
+INSERT INTO `item` VALUES ('21', '镇武库钥匙', '把', '镇武库通行', '2026-05-05 00:00:00', '2026-05-05 00:00:00');
+INSERT INTO `item` VALUES ('22', '码头集购站钥匙', '把', '码头集购站通行', '2026-05-05 00:00:00', '2026-05-05 00:00:00');
 
 -- ----------------------------
 -- Table structure for job
@@ -180,7 +184,7 @@ CREATE TABLE `player_items` (
   KEY `idx_player_type_item` (`player_id`,`item_type`,`item_id`),
   KEY `idx_player_type` (`player_id`,`item_type`),
   CONSTRAINT `player_items_ibfk_1` FOREIGN KEY (`player_id`) REFERENCES `player` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=39 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=utf8mb4;
 
 -- ----------------------------
 -- Records of player_items
@@ -223,6 +227,7 @@ INSERT INTO `player_items` VALUES ('35', '5', 'material', '10', '1', '2026-04-27
 INSERT INTO `player_items` VALUES ('36', '5', 'material', '11', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('37', '5', 'material', '12', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('38', '1', 'material', '5', '1', '2026-05-01 10:54:53', '2026-05-01 10:54:53');
+INSERT INTO `player_items` VALUES ('39', '1', 'weapon', '11', '1', '2026-05-05 00:00:00', '2026-05-05 00:00:00');
 
 -- ----------------------------
 -- Table structure for shelter_progress（统治者避难所：当前建造值）

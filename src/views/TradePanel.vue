@@ -1,6 +1,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { playerAPI, tradeAPI } from '../utils/api.js'
+import { getMaterialImageUrlOrDefault } from '../data/gameData.js'
+
+const tradeTypeLabel = (t) =>
+  ({ item: '道具', weapon: '武器', ammo: '弹药', material: '物资' }[String(t || '').toLowerCase()] || String(t || ''))
 
 const playerId = parseInt(localStorage.getItem('playerId') || '1')
 const currentPlayerName = ref('')
@@ -15,6 +19,7 @@ const playerItemsMap = {
     { id: 5, type: 'item', name: '防弹衣', unit: '件', quantity: 1, icon: '🛡️' },
     { id: 1, type: 'weapon', name: '制式手枪', unit: '把', quantity: 1, icon: '🔫' },
     { id: 3, type: 'weapon', name: '警棍', unit: '把', quantity: 1, icon: '⚔️' },
+    { id: 11, type: 'weapon', name: '手术刀', unit: '把', quantity: 1, icon: '🔪' },
     { id: 1, type: 'ammo', name: '手枪弹', unit: '枚', quantity: 30, icon: '🎯' },
     { id: 1, type: 'material', name: '金属制品', unit: 'kg', quantity: 5, icon: '🔩' },
     { id: 2, type: 'material', name: '木材', unit: 'kg', quantity: 10, icon: '🌲' }
@@ -77,7 +82,11 @@ const allMaterialsMap = {
     { id: 15, name: '火柴', unit: '盒', icon: '🔥' },
     { id: 16, name: '铅笔', unit: '盒', icon: '✏️' },
     { id: 17, name: '破损海图', unit: '张', icon: '🗺️' },
-    { id: 18, name: '便当', unit: '份', icon: '🍱' }
+    { id: 18, name: '便当', unit: '份', icon: '🍱' },
+    { id: 19, name: '仓库钥匙', unit: '把', icon: '🔑' },
+    { id: 20, name: '燃料仓库钥匙', unit: '把', icon: '🔑' },
+    { id: 21, name: '镇武库钥匙', unit: '把', icon: '🔑' },
+    { id: 22, name: '码头集购站钥匙', unit: '把', icon: '🔑' }
   ],
   weapon: [
     { id: 1, name: '制式手枪', unit: '把', icon: '🔫' },
@@ -115,25 +124,48 @@ const allMaterialsMap = {
   ]
 }
 
+const takePaletteTab = ref('item')
+const takePaletteTabs = [
+  { key: 'item', label: '道具' },
+  { key: 'weapon', label: '武器' },
+  { key: 'ammo', label: '弹药' },
+  { key: 'material', label: '基础物资' }
+]
+
+const takePaletteRows = (() => {
+  const keys = ['item', 'weapon', 'ammo', 'material']
+  const o = {}
+  for (const type of keys) {
+    o[type] = allMaterialsMap[type].map((item) => ({
+      ...item,
+      itemType: type,
+      imageUrl: getMaterialImageUrlOrDefault(type, item.id)
+    }))
+  }
+  return o
+})()
+
+const visibleTakePalette = computed(() => takePaletteRows[takePaletteTab.value] || [])
+
 const currentPlayerItems = ref([])
+
+const giveInventoryRows = computed(() =>
+  currentPlayerItems.value.map((item) => ({
+    ...item,
+    imageUrl: getMaterialImageUrlOrDefault(item.type, item.id)
+  }))
+)
 
 const loadCurrentPlayerItems = async () => {
   try {
     const items = await playerAPI.getItems(playerId)
     if (Array.isArray(items) && items.length > 0) {
-      const iconMap = {
-        item: '📦',
-        weapon: '⚔️',
-        ammo: '🎯',
-        material: '🔧'
-      }
       currentPlayerItems.value = items.map(item => ({
         id: item.id,
         type: item.type,
         name: item.name,
         unit: item.unit,
-        quantity: item.quantity,
-        icon: iconMap[item.type] || '📦'
+        quantity: item.quantity
       }))
       console.log('Loaded player items from API:', currentPlayerItems.value)
     } else {
@@ -213,6 +245,23 @@ const receivedItems = computed(() => {
   return result
 })
 
+function tradeRowWithThumb(item) {
+  return {
+    ...item,
+    imageUrl: getMaterialImageUrlOrDefault(item.itemType, item.itemId)
+  }
+}
+
+const detailTradeItems = computed(() => {
+  const items = selectedTrade.value?.items
+  if (!Array.isArray(items)) return []
+  return items.map(tradeRowWithThumb)
+})
+
+const providedItemsDisplay = computed(() => providedItems.value.map(tradeRowWithThumb))
+
+const receivedItemsDisplay = computed(() => receivedItems.value.map(tradeRowWithThumb))
+
 const addGiveItem = (item) => {
   const existItem = giveItems.value.find(i => i.itemId === item.id && i.itemType === item.type)
   if (existItem) {
@@ -225,7 +274,7 @@ const addGiveItem = (item) => {
       itemType: item.type,
       name: item.name,
       unit: item.unit,
-      icon: item.icon,
+      imageUrl: item.imageUrl ?? getMaterialImageUrlOrDefault(item.type, item.id),
       quantity: 1,
       maxQuantity: item.quantity
     })
@@ -236,15 +285,15 @@ const removeGiveItem = (index) => {
   giveItems.value.splice(index, 1)
 }
 
-const addTakeItem = (item) => {
-  const existItem = takeItems.value.find(i => i.itemId === item.id && i.itemType === item.type)
+const addTakeItem = (row) => {
+  const existItem = takeItems.value.find(i => i.itemId === row.id && i.itemType === row.itemType)
   if (!existItem) {
     takeItems.value.push({
-      itemId: item.id,
-      itemType: item.type,
-      name: item.name,
-      unit: item.unit,
-      icon: item.icon,
+      itemId: row.id,
+      itemType: row.itemType,
+      name: row.name,
+      unit: row.unit,
+      imageUrl: row.imageUrl ?? getMaterialImageUrlOrDefault(row.itemType, row.id),
       quantity: 1,
       maxQuantity: 99
     })
@@ -478,20 +527,6 @@ const getStatusBadge = (status) => {
   return badges[status] || badges.pending
 }
 
-const getItemIcon = (itemType) => {
-  const icons = {
-    item: '📦',
-    weapon: '⚔️',
-    ammo: '🎯',
-    material: '🔧',
-    ITEM: '📦',
-    WEAPON: '⚔️',
-    AMMO: '🎯',
-    MATERIAL: '🔧'
-  }
-  return icons[itemType] || '📦'
-}
-
 onMounted(async () => {
   await loadPlayers()
   await loadTrades()
@@ -636,7 +671,7 @@ defineExpose({
     <Teleport to="body">
       <div
         v-if="showTradeModal"
-        class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
+        class="fixed inset-0 bg-black/65 flex items-center justify-center z-50"
         @click.self="showTradeModal = false"
       >
         <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-6 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -673,29 +708,59 @@ defineExpose({
                   <label class="text-gray-300 text-sm">你提供的物品</label>
                   <span class="text-xs text-gray-500">点击添加</span>
                 </div>
-                <div class="bg-white/5 border border-white/10 rounded-xl p-3 min-h-[200px]">
-                  <div class="mb-3 flex flex-wrap gap-1">
+                <div class="bg-white/5 border border-white/10 rounded-xl p-3 min-h-[200px] flex flex-col">
+                  <div class="text-xs text-gray-500 mb-1">背包（点击一行加入）</div>
+                  <div class="max-h-44 overflow-y-auto space-y-0.5 mb-3 rounded-lg border border-white/5 p-1 shrink-0">
                     <button
-                      v-for="item in currentPlayerItems"
+                      v-for="item in giveInventoryRows"
                       :key="`give-${item.id}-${item.type}`"
                       type="button"
-                      class="text-lg bg-white/5 hover:bg-white/10 rounded px-1 py-1 transition-all"
-                      :title="`${item.name} (拥有${item.quantity})`"
+                      class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-gray-200 hover:bg-white/10 transition-colors text-left"
                       @click="addGiveItem(item)"
                     >
-                      {{ item.icon }}
+                      <div class="w-8 h-8 shrink-0 rounded-md bg-white/10 overflow-hidden flex items-center justify-center p-0.5">
+                        <img
+                          :src="item.imageUrl"
+                          :alt="item.name"
+                          class="w-full h-full object-contain"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <span class="text-gray-500">[{{ tradeTypeLabel(item.type) }}]</span>
+                        {{ item.name }}
+                        <span class="text-gray-500"> · {{ item.quantity }}{{ item.unit }}</span>
+                      </div>
                     </button>
+                    <div
+                      v-if="giveInventoryRows.length === 0"
+                      class="text-gray-500 text-xs text-center py-4"
+                    >
+                      暂无背包数据
+                    </div>
                   </div>
-                  
-                  <div class="space-y-2">
+
+                  <div class="text-xs text-gray-500 mb-1">已选（提供给对方）</div>
+                  <div class="space-y-2 flex-1 min-h-0">
                     <div
                       v-for="(item, index) in giveItems"
                       :key="`selected-${item.itemId}-${item.itemType}`"
-                      class="bg-white/5 rounded-lg p-2 flex items-center justify-between"
+                      class="bg-white/5 rounded-lg px-2 py-2 flex items-center justify-between gap-2"
                     >
-                      <div class="flex items-center gap-2">
-                        <span class="text-lg">{{ item.icon }}</span>
-                        <span class="text-gray-200 text-sm">{{ item.name }}</span>
+                      <div class="flex items-center gap-2 min-w-0 flex-1">
+                        <div class="w-8 h-8 shrink-0 rounded-md bg-white/10 overflow-hidden flex items-center justify-center p-0.5">
+                          <img
+                            :src="item.imageUrl"
+                            :alt="item.name"
+                            class="w-full h-full object-contain"
+                            decoding="async"
+                          />
+                        </div>
+                        <div class="min-w-0">
+                          <span class="text-gray-500 text-xs">[{{ tradeTypeLabel(item.itemType) }}]</span>
+                          <span class="text-gray-200 text-sm">{{ item.name }}</span>
+                        </div>
                       </div>
                       <div class="flex items-center gap-2">
                         <input
@@ -727,31 +792,68 @@ defineExpose({
                   <label class="text-gray-300 text-sm">你需要的物品</label>
                   <span class="text-xs text-gray-500">点击添加</span>
                 </div>
-                <div class="bg-white/5 border border-white/10 rounded-xl p-3 min-h-[200px]">
-                  <div class="mb-3 flex flex-wrap gap-1">
-                    <template v-for="(list, type) in allMaterialsMap" :key="type">
-                      <button
-                        v-for="item in list"
-                        :key="`take-${item.id}-${type}`"
-                        type="button"
-                        class="text-lg bg-white/5 hover:bg-white/10 rounded px-1 py-1 transition-all"
-                        :title="item.name"
-                        @click="addTakeItem({ ...item, type })"
-                      >
-                        {{ item.icon }}
-                      </button>
-                    </template>
+                <div class="bg-white/5 border border-white/10 rounded-xl p-3 min-h-[200px] flex flex-col">
+                  <div class="flex flex-wrap gap-1.5 mb-2 shrink-0">
+                    <button
+                      v-for="tab in takePaletteTabs"
+                      :key="tab.key"
+                      type="button"
+                      class="px-2.5 py-1 rounded-lg text-xs transition-all border"
+                      :class="
+                        takePaletteTab === tab.key
+                          ? 'bg-blue-500/25 text-blue-300 border-blue-500/40'
+                          : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10'
+                      "
+                      @click="takePaletteTab = tab.key"
+                    >
+                      {{ tab.label }}
+                    </button>
                   </div>
-                  
-                  <div class="space-y-2">
+                  <div class="text-xs text-gray-500 mb-1">图鉴（点击一行加入索取）</div>
+                  <div class="max-h-44 overflow-y-auto space-y-0.5 mb-3 rounded-lg border border-white/5 p-1 shrink-0">
+                    <button
+                      v-for="row in visibleTakePalette"
+                      :key="`take-${row.id}-${row.itemType}`"
+                      type="button"
+                      class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-gray-200 hover:bg-white/10 transition-colors text-left"
+                      @click="addTakeItem(row)"
+                    >
+                      <div class="w-8 h-8 shrink-0 rounded-md bg-white/10 overflow-hidden flex items-center justify-center p-0.5">
+                        <img
+                          :src="row.imageUrl"
+                          :alt="row.name"
+                          class="w-full h-full object-contain"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        {{ row.name }}
+                        <span class="text-gray-500"> · {{ row.unit }}</span>
+                      </div>
+                    </button>
+                  </div>
+
+                  <div class="text-xs text-gray-500 mb-1">已选（向对方索取）</div>
+                  <div class="space-y-2 flex-1 min-h-0">
                     <div
                       v-for="(item, index) in takeItems"
                       :key="`selected-take-${item.itemId}-${item.itemType}`"
-                      class="bg-white/5 rounded-lg p-2 flex items-center justify-between"
+                      class="bg-white/5 rounded-lg px-2 py-2 flex items-center justify-between gap-2"
                     >
-                      <div class="flex items-center gap-2">
-                        <span class="text-lg">{{ item.icon }}</span>
-                        <span class="text-gray-200 text-sm">{{ item.name }}</span>
+                      <div class="flex items-center gap-2 min-w-0 flex-1">
+                        <div class="w-8 h-8 shrink-0 rounded-md bg-white/10 overflow-hidden flex items-center justify-center p-0.5">
+                          <img
+                            :src="item.imageUrl"
+                            :alt="item.name"
+                            class="w-full h-full object-contain"
+                            decoding="async"
+                          />
+                        </div>
+                        <div class="min-w-0">
+                          <span class="text-gray-500 text-xs">[{{ tradeTypeLabel(item.itemType) }}]</span>
+                          <span class="text-gray-200 text-sm">{{ item.name }}</span>
+                        </div>
                       </div>
                       <div class="flex items-center gap-2">
                         <input
@@ -813,7 +915,7 @@ defineExpose({
     <Teleport to="body">
       <div
         v-if="showDetailModal && selectedTrade"
-        class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
+        class="fixed inset-0 bg-black/65 flex items-center justify-center z-50"
         @click.self="closeDetailModal"
       >
         <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-6 max-w-lg w-full mx-4 shadow-2xl">
@@ -859,54 +961,87 @@ defineExpose({
             </div>
 
             <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4 mb-4">
-              <div class="text-red-400 text-xs">物品列表: {{ selectedTrade.items.length }} 件</div>
-              <div v-for="(item, index) in selectedTrade.items" :key="index" class="text-green-400 text-xs">
-                {{ index }}: {{ item.name }} - {{ item.quantity }} {{ item.unit }} ({{ item.direction }})
+              <div class="text-gray-400 text-xs mb-2">物品明细 · 共 {{ selectedTrade.items.length }} 件</div>
+              <div class="max-h-40 overflow-y-auto space-y-1">
+                <div
+                  v-for="(item, index) in detailTradeItems"
+                  :key="index"
+                  class="flex items-center justify-between gap-2 bg-white/5 rounded-lg px-3 py-2 text-sm"
+                >
+                  <span class="flex items-center gap-2 text-gray-200 truncate min-w-0">
+                    <span class="w-7 h-7 shrink-0 rounded bg-white/10 overflow-hidden flex items-center justify-center p-0.5">
+                      <img
+                        :src="item.imageUrl"
+                        :alt="item.name"
+                        class="w-full h-full object-contain"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </span>
+                    <span class="truncate">
+                      <span class="text-gray-500 text-xs">[{{ tradeTypeLabel(item.itemType) }}]</span>
+                      {{ item.name }}
+                    </span>
+                  </span>
+                  <span class="text-gray-400 shrink-0 whitespace-nowrap">{{ item.quantity }} {{ item.unit }}</span>
+                </div>
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4">
-                <h3 class="text-gray-400 text-xs mb-3 flex items-center gap-2">
-                  <span>📤</span>
+                <h3 class="text-gray-400 text-xs mb-3">
                   你提供
                 </h3>
-                <div class="space-y-2">
+                <div class="space-y-1 max-h-48 overflow-y-auto">
                   <div
-                    v-for="(item, index) in providedItems"
+                    v-for="(item, index) in providedItemsDisplay"
                     :key="index"
-                    class="flex items-center justify-between bg-white/5 rounded-lg p-2"
+                    class="flex items-center justify-between gap-2 bg-white/5 rounded-lg px-3 py-2 text-sm"
                   >
-                    <div class="flex items-center gap-2">
-                      <span class="text-lg">{{ getItemIcon(item.itemType) }}</span>
-                      <span class="text-gray-200 text-sm">{{ item.name }}</span>
-                    </div>
-                    <span class="text-gray-400 text-sm">{{ item.quantity }} {{ item.unit }}</span>
+                    <span class="flex items-center gap-2 text-gray-200 truncate min-w-0">
+                      <span class="w-7 h-7 shrink-0 rounded bg-white/10 overflow-hidden flex items-center justify-center p-0.5">
+                        <img
+                          :src="item.imageUrl"
+                          :alt="item.name"
+                          class="w-full h-full object-contain"
+                          decoding="async"
+                        />
+                      </span>
+                      <span class="truncate">{{ item.name }}</span>
+                    </span>
+                    <span class="text-gray-400 shrink-0 whitespace-nowrap">{{ item.quantity }} {{ item.unit }}</span>
                   </div>
-                  <div v-if="providedItems.length === 0" class="text-gray-500 text-sm text-center py-4">
+                  <div v-if="providedItemsDisplay.length === 0" class="text-gray-500 text-sm text-center py-4">
                     无
                   </div>
                 </div>
               </div>
 
               <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4">
-                <h3 class="text-gray-400 text-xs mb-3 flex items-center gap-2">
-                  <span>📥</span>
+                <h3 class="text-gray-400 text-xs mb-3">
                   你获得
                 </h3>
-                <div class="space-y-2">
+                <div class="space-y-1 max-h-48 overflow-y-auto">
                   <div
-                    v-for="(item, index) in receivedItems"
+                    v-for="(item, index) in receivedItemsDisplay"
                     :key="index"
-                    class="flex items-center justify-between bg-white/5 rounded-lg p-2"
+                    class="flex items-center justify-between gap-2 bg-white/5 rounded-lg px-3 py-2 text-sm"
                   >
-                    <div class="flex items-center gap-2">
-                      <span class="text-lg">{{ getItemIcon(item.itemType) }}</span>
-                      <span class="text-gray-200 text-sm">{{ item.name }}</span>
-                    </div>
-                    <span class="text-gray-400 text-sm">{{ item.quantity }} {{ item.unit }}</span>
+                    <span class="flex items-center gap-2 text-gray-200 truncate min-w-0">
+                      <span class="w-7 h-7 shrink-0 rounded bg-white/10 overflow-hidden flex items-center justify-center p-0.5">
+                        <img
+                          :src="item.imageUrl"
+                          :alt="item.name"
+                          class="w-full h-full object-contain"
+                          decoding="async"
+                        />
+                      </span>
+                      <span class="truncate">{{ item.name }}</span>
+                    </span>
+                    <span class="text-gray-400 shrink-0 whitespace-nowrap">{{ item.quantity }} {{ item.unit }}</span>
                   </div>
-                  <div v-if="receivedItems.length === 0" class="text-gray-500 text-sm text-center py-4">
+                  <div v-if="receivedItemsDisplay.length === 0" class="text-gray-500 text-sm text-center py-4">
                     无
                   </div>
                 </div>

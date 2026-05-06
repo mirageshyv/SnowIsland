@@ -6,7 +6,8 @@
  * - 统治者避难所：图鉴、shelter 建材库存、建造日志；食物/能量：避难所公共库存与玩家个人库存分开展示（本地回退数据见 DEFAULT_SHELTER_*）
  *
  * 说明：
- * - 如果某个 id 暂时没有对应 PNG，会返回 null，界面应回退为 emoji/占位。
+ * - 有对应 PNG 的 id 会映射到素材；无映射时 `getMaterialImageUrl` 返回 null。
+ * - `getMaterialImageUrlOrDefault` 在无映射时返回统一占位图（医疗包），供界面始终可显示图片。
  */
 
 // -----------------------------
@@ -43,6 +44,19 @@ import imgWood from '@/assets/木材.png?url'
 import imgStone from '@/assets/石料.png?url'
 import imgPlank from '@/assets/木板.png?url'
 import imgRope from '@/assets/绳索.png?url'
+import imgWarehouseKey from '@/assets/仓库钥匙.png?url'
+import imgFuelDepotKey from '@/assets/燃料仓库钥匙.png?url'
+import imgArmoryKey from '@/assets/镇武库钥匙.png?url'
+import imgDockMarketKey from '@/assets/码头集购站钥匙.png?url'
+import imgMetalProducts from '@/assets/金属制品.png?url'
+import imgAsphalt from '@/assets/沥青.png?url'
+import imgCanvas from '@/assets/帆布.png?url'
+import imgEngine from '@/assets/发动机.png?url'
+import imgPropeller from '@/assets/螺旋桨.png?url'
+import imgGenerator from '@/assets/发电机.png?url'
+import imgChainsaw from '@/assets/电锯.png?url'
+import imgScalpel from '@/assets/手术刀.png?url'
+import imgExplosives from '@/assets/炸药.png?url'
 
 // -----------------------------
 // 物资管理页：图片映射
@@ -66,6 +80,10 @@ const ITEM_IMAGES = {
   16: imgPencil,
   17: imgSeaChart,
   18: imgBento,
+  19: imgWarehouseKey,
+  20: imgFuelDepotKey,
+  21: imgArmoryKey,
+  22: imgDockMarketKey,
 }
 
 const WEAPON_IMAGES = {
@@ -73,14 +91,15 @@ const WEAPON_IMAGES = {
   2: imgHuntingShotgun,
   3: imgBaton,
   4: imgBayonet,
-  // 5 水手刀暂无素材，先用刺刀占位
+  // 5 水手刀暂无独立素材，用刺刀占位
   5: imgBayonet,
   6: imgHarpoon,
   7: imgHuntingBow,
   8: imgPickaxe,
   9: imgAxe,
-  // 10 电锯暂无素材，先用斧头占位
-  10: imgAxe,
+  10: imgChainsaw,
+  11: imgScalpel,
+  12: imgExplosives,
 }
 
 const AMMO_IMAGES = {
@@ -92,11 +111,18 @@ const AMMO_IMAGES = {
 }
 
 const MATERIAL_IMAGES = {
-  // material 表当前只准备了部分素材
+  1: imgMetalProducts,
   2: imgWood,
   3: imgRope,
   4: imgPlank,
+  5: imgBento,
+  6: imgAsphalt,
   7: imgStone,
+  8: imgCandle,
+  9: imgCanvas,
+  10: imgEngine,
+  11: imgPropeller,
+  12: imgGenerator,
 }
 
 const MATERIAL_MAPS = {
@@ -109,14 +135,59 @@ const MATERIAL_MAPS = {
 /**
  * 获取物资图片 url；若没有对应素材返回 null。
  * @param {'item'|'weapon'|'ammo'|'material'} type
- * @param {number} id
+ * @param {number|string} id
  * @returns {string | null}
  */
 export function getMaterialImageUrl(type, id) {
-  const table = MATERIAL_MAPS[type]
+  if (type == null || id === '' || id === undefined) return null
+  const t = String(type).toLowerCase()
+  const table = MATERIAL_MAPS[t]
   if (!table) return null
-  const url = table[id]
-  return url ?? null
+  const numId = typeof id === 'number' && Number.isFinite(id) ? id : parseInt(String(id), 10)
+  if (Number.isNaN(numId)) return null
+  return table[numId] ?? null
+}
+
+/** 无对应素材时返回统一占位图（与 {@link imgMedicalKit} 相同资源） */
+export const DEFAULT_MATERIAL_IMAGE_URL = imgMedicalKit
+
+/** 解析结果缓存，避免大量组件重复拼接字符串与查表 */
+const materialUrlOrDefaultCache = new Map()
+
+export function getMaterialImageUrlOrDefault(type, id) {
+  if (type == null || id === '' || id === undefined) return DEFAULT_MATERIAL_IMAGE_URL
+  const t = String(type).toLowerCase()
+  const numId = typeof id === 'number' && Number.isFinite(id) ? id : parseInt(String(id), 10)
+  if (Number.isNaN(numId)) return DEFAULT_MATERIAL_IMAGE_URL
+  const key = `${t}:${numId}`
+  let cached = materialUrlOrDefaultCache.get(key)
+  if (cached !== undefined) return cached
+  cached = getMaterialImageUrl(t, numId) ?? DEFAULT_MATERIAL_IMAGE_URL
+  materialUrlOrDefaultCache.set(key, cached)
+  return cached
+}
+
+/**
+ * 空闲时预加载所有物资图 URL（浏览器 HTTP 缓存 + 解码后可更快展示）。
+ * 在交易页等入口 mounted 时调用一次即可。
+ */
+export function preloadMaterialImages() {
+  if (typeof Image === 'undefined') return
+  const seen = new Set()
+  /** @param {string} src */
+  const queue = (src) => {
+    if (!src || seen.has(src)) return
+    seen.add(src)
+    const img = new Image()
+    img.decoding = 'async'
+    img.src = src
+  }
+  for (const table of Object.values(MATERIAL_MAPS)) {
+    for (const url of Object.values(table)) {
+      if (typeof url === 'string') queue(url)
+    }
+  }
+  queue(DEFAULT_MATERIAL_IMAGE_URL)
 }
 
 /** 筛选标签 / 标题旁的小图（可选） */

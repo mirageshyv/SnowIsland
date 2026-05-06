@@ -38,11 +38,10 @@ let pollTimer = null
 
 const fetchPendingTradesCount = async () => {
   try {
-    const result = await tradeAPI.getIncoming(playerId)
-    if (Array.isArray(result)) {
-      const pendingCount = result.filter(t => t.status === 'pending').length
+    const result = await tradeAPI.getIncomingPendingCount(playerId)
+    if (result != null && typeof result.count === 'number') {
+      const pendingCount = result.count
       if (pendingCount !== pendingTradesCount.value) {
-        console.log('Pending trades count updated:', pendingCount)
         pendingTradesCount.value = pendingCount
       }
     }
