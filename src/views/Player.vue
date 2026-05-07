@@ -23,6 +23,7 @@ const isEditing = ref(false)
 const editForm = ref(null)
 const saving = ref(false)
 const saveMessage = ref(null)
+const showStatusPopover = ref(false)
 
 /** 仅冒险者可见「方舟建造进度」 */
 const showArkTab = computed(() => playerInfo.value?.faction === '冒险者')
@@ -96,6 +97,80 @@ const getStatusColor = () => {
   }
   return colors[faction] || colors['平民']
 }
+
+const negativeStatuses = computed(() => {
+  const p = playerInfo.value
+  if (!p) return []
+
+  /** severity: 1-3（UI 用） */
+  const list = []
+  if (p.isWeak) {
+    list.push({
+      name: '虚弱',
+      severity: 2,
+      description: '体力大幅下降，所有体力相关活动效率降低。需要充足休息和营养补充才能恢复。（占位文案，可由后端返回替换）'
+    })
+  }
+  if (p.isOverworked) {
+    list.push({
+      name: '过劳',
+      severity: 1,
+      description: '长时间高强度工作导致精神疲惫，注意力不集中，工作效率下降。（占位文案，可由后端返回替换）'
+    })
+  }
+  if (p.isInjured) {
+    list.push({
+      name: '受伤',
+      severity: 3,
+      description: '行动受限，部分高强度行动可能失败或效率下降。需要治疗或休养恢复。（占位文案，可由后端返回替换）'
+    })
+  }
+  return list
+})
+
+const dashboardProfile = computed(() => {
+  const p = playerInfo.value
+  if (!p) return null
+
+  const formatMultiSkillParagraphs = (text) => {
+    if (!text || typeof text !== 'string') return text
+    // Insert newline after a full stop when the next part looks like "技能名："
+    // e.g. "格斗：...。急救：..." -> "格斗：...。\n急救：..."
+    return text.replace(/。(?=[^。\n]{1,6}：)/g, '。\n')
+  }
+
+  // 后端暂未提供：currentDay / calories / 描述文本，先用 dummy（稳定、可替换）
+  const dummy = {
+    currentDay: 7,
+    foodCalories: 2850,
+    energyCalories: 1620,
+    professionalSkillDescription:
+      formatMultiSkillParagraphs(p.jobDescription) ||
+      p.jobSkills ||
+      '拥有深厚的专业知识与实践经验，能够在关键时刻提供高质量的解决方案。（占位文案，可由后端返回替换）',
+    traitDescription:
+      p.personalSkillFunction ||
+      '经历过艰难困苦磨练出的意志与韧性，在逆境下仍能保持行动能力。（占位文案，可由后端返回替换）'
+  }
+
+  return {
+    name: p.name,
+    faction: p.faction || '未设定阵营',
+    profession: p.job || '未设定职业',
+    negativeStatus: negativeStatuses.value,
+    currentDay: dummy.currentDay,
+    foodCalories: dummy.foodCalories,
+    energyCalories: dummy.energyCalories,
+    professionalSkill: {
+      name: p.jobSkills ? `${p.professionSkill || '职业技能'}` : (p.job ? '职业技能' : '职业技能'),
+      description: dummy.professionalSkillDescription
+    },
+    trait: {
+      name: p.personalSkill || '特性',
+      description: dummy.traitDescription
+    }
+  }
+})
 
 const startEdit = () => {
   editForm.value = {
@@ -260,35 +335,10 @@ onUnmounted(() => {
     </aside>
 
     <main class="min-h-0 min-w-0 flex-1 overflow-y-auto p-8">
-      <div v-if="activeTab === 'info'" class="max-w-4xl">
-        <div class="mb-6 flex items-center justify-between">
-          <div>
-            <h1 class="text-white mb-1 tracking-tight text-2xl">个人信息</h1>
-            <p class="text-gray-500 text-sm">Player Information</p>
-          </div>
-          <div class="flex items-center gap-3">
-            <button
-              v-if="!loading && playerInfo && !isEditing"
-              @click="fetchPlayerInfo"
-              class="px-4 py-2 text-sm text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors flex items-center gap-2"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              刷新
-            </button>
-            <button
-              v-if="!loading && playerInfo && !isEditing"
-              @click="startEdit"
-              class="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-              编辑
-            </button>
-          </div>
-        </div>
+      <div
+        v-if="activeTab === 'info'"
+        class="-m-8 min-h-full bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8"
+      >
 
         <div v-if="loading" class="flex items-center justify-center py-20">
           <div class="text-center">
@@ -297,7 +347,7 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div v-else-if="error" class="bg-red-500/10 border border-red-500/30 rounded-xl p-6">
+        <div v-else-if="error" class="bg-red-500/10 border border-red-500/30 rounded-xl p-6 max-w-3xl">
           <div class="flex items-center gap-3 mb-4">
             <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -312,10 +362,8 @@ onUnmounted(() => {
           </button>
         </div>
 
-        <div v-else-if="playerInfo" class="relative bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-6 overflow-hidden">
-          <div class="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
-
-          <div v-if="saveMessage" class="relative z-10 mb-4">
+        <div v-else-if="playerInfo">
+          <div v-if="saveMessage" class="mb-4 max-w-4xl">
             <div :class="['px-4 py-3 rounded-lg flex items-center gap-3', saveMessage.type === 'success' ? 'bg-green-500/20 border border-green-500/30' : 'bg-red-500/20 border border-red-500/30']">
               <svg v-if="saveMessage.type === 'success'" class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -327,9 +375,25 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <div class="relative z-10">
+          <div>
             <template v-if="isEditing">
-              <div class="space-y-6">
+              <div class="max-w-4xl bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6 md:p-8">
+                <div class="flex items-center justify-between gap-4 mb-6">
+                  <div>
+                    <h2 class="text-white text-xl font-semibold tracking-tight">编辑资料</h2>
+                    <p class="text-slate-500 text-sm mt-1">修改姓名与状态后保存</p>
+                  </div>
+                  <button
+                    type="button"
+                    class="px-4 py-2 text-sm text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                    @click="cancelEdit"
+                    :disabled="saving"
+                  >
+                    关闭
+                  </button>
+                </div>
+
+                <div class="space-y-6">
                 <div>
                   <label class="block text-gray-400 text-sm mb-2">姓名</label>
                   <input
@@ -388,58 +452,186 @@ onUnmounted(() => {
                   </button>
                 </div>
               </div>
+              </div>
             </template>
 
             <template v-else>
-              <div class="flex items-start justify-between mb-6">
-                <div class="flex items-center gap-5">
-                  <div class="relative">
-                    <div class="absolute inset-0 bg-blue-500/20 rounded-2xl blur-xl"></div>
-                    <div class="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 flex items-center justify-center shadow-2xl text-4xl">
-                      {{ playerInfo.avatar || '🧑' }}
+              <div v-if="dashboardProfile" class="min-h-full">
+                <!-- Header -->
+                <div class="mb-10 relative" style="z-index: 10;">
+                  <div class="flex items-end justify-between mb-6 gap-6">
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-3">
+                        <div class="w-full">
+                          <div class="text-slate-500 text-xs md:text-sm mb-1 tracking-wider">
+                            玩家档案
+                          </div>
+                        </div>
+                        <h2 class="text-4xl md:text-5xl text-white font-bold tracking-tight truncate">
+                          {{ dashboardProfile.name }}
+                        </h2>
+
+                        <div v-if="dashboardProfile.negativeStatus.length > 0" class="relative inline-block">
+                          <button
+                            type="button"
+                            class="px-3 py-1.5 bg-red-900/40 border border-red-700/50 rounded-lg cursor-pointer transition-all duration-200 hover:bg-red-900/60"
+                            @mouseenter="showStatusPopover = true"
+                            @mouseleave="showStatusPopover = false"
+                            @focus="showStatusPopover = true"
+                            @blur="showStatusPopover = false"
+                          >
+                            <span class="text-red-300 text-xs md:text-sm">
+                              负面状态：{{ dashboardProfile.negativeStatus.map(s => s.name).join('、') }}
+                            </span>
+                          </button>
+
+                          <Transition name="fade-pop">
+                            <div
+                              v-show="showStatusPopover"
+                              class="absolute top-full left-0 mt-2 w-[22rem] md:w-96 bg-slate-900/95 border border-red-700/50 rounded-xl p-4 shadow-2xl will-change-transform transform-gpu"
+                              style="z-index: 9999;"
+                              @mouseenter="showStatusPopover = true"
+                              @mouseleave="showStatusPopover = false"
+                            >
+                              <h3 class="text-white font-semibold mb-3">负面状态详情</h3>
+                              <div class="space-y-3">
+                                <div
+                                  v-for="(status, idx) in dashboardProfile.negativeStatus"
+                                  :key="`${status.name}-${idx}`"
+                                  class="bg-slate-800/60 rounded-lg p-3 border border-red-900/30"
+                                >
+                                  <div class="flex items-center justify-between mb-2">
+                                    <span class="text-red-300 font-medium">{{ status.name }}</span>
+                                    <div class="flex gap-1">
+                                      <span
+                                        v-for="i in 3"
+                                        :key="i"
+                                        :class="['w-2 h-4 rounded-full', i <= status.severity ? 'bg-red-500' : 'bg-slate-600']"
+                                      />
+                                    </div>
+                                  </div>
+                                  <p class="text-slate-300 text-sm leading-relaxed">{{ status.description }}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </Transition>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="text-right shrink-0">
+                      <div class="flex items-center justify-end gap-2 mb-2">
+                        <button
+                          type="button"
+                          class="px-3 py-1.5 text-xs md:text-sm text-gray-200 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors flex items-center gap-2 will-change-transform transform-gpu"
+                          @click="fetchPlayerInfo"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          刷新
+                        </button>
+                        <button
+                          type="button"
+                          class="px-3 py-1.5 text-xs md:text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2 will-change-transform transform-gpu"
+                          @click="startEdit"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          编辑
+                        </button>
+                      </div>
+
+                      <div class="text-slate-500 text-xs md:text-sm mb-1">游戏进度</div>
+                      <div class="text-2xl md:text-3xl text-cyan-300 font-bold">第 {{ dashboardProfile.currentDay }} 天</div>
                     </div>
                   </div>
-                  <div>
-                    <h2 class="text-white mb-1 tracking-tight text-xl">{{ playerInfo.name }}</h2>
-                    <p class="text-gray-400 text-sm mb-3">{{ playerInfo.job || '未设定职业' }}</p>
-                    <div class="flex items-center gap-2">
-                      <span class="text-xs text-gray-300 bg-white/10 px-3 py-1 rounded-full backdrop-blur">
-                        {{ playerInfo.personalSkill || '未设定技能' }}
-                      </span>
-                      <span :class="['text-xs px-3 py-1 rounded-full flex items-center gap-1.5 backdrop-blur', getStatusColor()]">
-                        <span class="w-1.5 h-1.5 rounded-full bg-current shadow-lg"></span>
-                        {{ playerInfo.faction || '未设定阵营' }}
-                      </span>
+                  <div class="h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-transparent"></div>
+                </div>
+
+                <!-- Main Grid -->
+                <div class="grid grid-cols-12 gap-6 md:gap-8">
+                  <!-- Left Column -->
+                  <div class="col-span-12 lg:col-span-5 space-y-6 md:space-y-8">
+                    <!-- Resources -->
+                    <div class="relative group">
+                      <div class="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-yellow-500/10 rounded-2xl blur-xl transition-all duration-300 ease-out group-hover:blur-2xl"></div>
+                      <div class="relative bg-slate-900/80 border border-slate-700/50 rounded-2xl p-6 transition-all duration-200 ease-out hover:border-amber-500/50 will-change-transform transform-gpu">
+                        <div class="text-slate-400 text-xs md:text-sm mb-4 tracking-wider">个人资源</div>
+                        <div class="grid grid-cols-2 gap-4">
+                          <div class="text-center transition-transform duration-200 ease-out hover:scale-[1.02] will-change-transform transform-gpu">
+                            <div class="w-12 h-12 bg-amber-500/20 rounded-lg flex items-center justify-center mx-auto mb-3">
+                              <span class="text-2xl">🍞</span>
+                            </div>
+                            <div class="text-slate-400 text-xs mb-1">食物</div>
+                            <div class="text-amber-300 text-2xl font-bold">{{ dashboardProfile.foodCalories.toLocaleString() }}</div>
+                            <div class="text-slate-500 text-xs mt-1">大卡</div>
+                          </div>
+                          <div class="text-center transition-transform duration-200 ease-out hover:scale-[1.02] will-change-transform transform-gpu">
+                            <div class="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center mx-auto mb-3">
+                              <span class="text-2xl">⚡</span>
+                            </div>
+                            <div class="text-slate-400 text-xs mb-1">能量</div>
+                            <div class="text-yellow-300 text-2xl font-bold">{{ dashboardProfile.energyCalories.toLocaleString() }}</div>
+                            <div class="text-slate-500 text-xs mt-1">热量</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Profession -->
+                    <div class="relative group">
+                      <div class="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-2xl blur-xl transition-all duration-300 ease-out group-hover:blur-2xl"></div>
+                      <div class="relative bg-slate-900/80 border border-slate-700/50 rounded-2xl p-8 md:p-10 transition-all duration-200 ease-out hover:border-amber-500/50 will-change-transform transform-gpu">
+                        <div class="text-slate-400 text-xs md:text-sm mb-3 tracking-wider">职业</div>
+                        <div class="text-3xl md:text-4xl text-white font-bold">{{ dashboardProfile.profession }}</div>
+                      </div>
+                    </div>
+
+                    <!-- Faction -->
+                    <div class="relative group">
+                      <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-2xl blur-xl transition-all duration-300 ease-out group-hover:blur-2xl"></div>
+                      <div class="relative bg-slate-900/80 border border-slate-700/50 rounded-2xl p-8 md:p-10 transition-all duration-200 ease-out hover:border-blue-500/50 will-change-transform transform-gpu">
+                        <div class="text-slate-400 text-xs md:text-sm mb-3 tracking-wider">所属阵营</div>
+                        <div class="text-3xl md:text-4xl text-white font-bold">{{ dashboardProfile.faction }}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Right Column -->
+                  <div class="col-span-12 lg:col-span-7 space-y-6 md:space-y-8">
+                    <!-- Professional Skill -->
+                    <div class="relative group">
+                      <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-blue-500/5 rounded-2xl transition-all duration-300 ease-out group-hover:from-cyan-500/10 group-hover:to-blue-500/10"></div>
+                      <div class="relative bg-slate-900/60 border-l-4 border-cyan-500 rounded-2xl p-8 md:p-10 transition-all duration-200 ease-out hover:border-cyan-400 will-change-transform transform-gpu">
+                        <div class="text-slate-400 text-xs uppercase tracking-wider mb-3">职业技能</div>
+                        <h3 class="text-3xl md:text-4xl text-cyan-300 font-bold mb-4">{{ playerInfo.jobSkills || '职业技能' }}</h3>
+                        <p class="text-slate-300 text-sm md:text-base leading-relaxed whitespace-pre-line">
+                          {{ dashboardProfile.professionalSkill.description }}
+                        </p>
+                      </div>
+                    </div>
+
+                    <!-- Trait -->
+                    <div class="relative group">
+                      <div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-2xl transition-all duration-300 ease-out group-hover:from-purple-500/10 group-hover:to-pink-500/10"></div>
+                      <div class="relative bg-slate-900/60 border-l-4 border-purple-500 rounded-2xl p-8 md:p-10 transition-all duration-200 ease-out hover:border-purple-400 will-change-transform transform-gpu">
+                        <div class="text-slate-400 text-xs uppercase tracking-wider mb-3">特性</div>
+                        <h3 class="text-3xl md:text-4xl text-purple-300 font-bold mb-4">{{ dashboardProfile.trait.name }}</h3>
+                        <p class="text-slate-300 text-sm md:text-base leading-relaxed whitespace-pre-line">
+                          {{ dashboardProfile.trait.description }}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="pt-2">
+                      <p class="text-slate-500 text-xs">
+                        最后更新: {{ playerInfo.updatedAt ? new Date(playerInfo.updatedAt).toLocaleString('zh-CN') : '未知' }}
+                      </p>
                     </div>
                   </div>
                 </div>
-
-                <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl px-4 py-3">
-                  <p class="text-gray-400 text-xs mb-1">状态</p>
-                  <div class="flex gap-2">
-                    <span v-if="playerInfo.isWeak" class="text-xs text-amber-400 bg-amber-500/20 px-2 py-1 rounded">虚弱</span>
-                    <span v-if="playerInfo.isOverworked" class="text-xs text-blue-400 bg-blue-500/20 px-2 py-1 rounded">过劳</span>
-                    <span v-if="playerInfo.isInjured" class="text-xs text-red-400 bg-red-500/20 px-2 py-1 rounded">受伤</span>
-                    <span v-if="!playerInfo.isWeak && !playerInfo.isOverworked && !playerInfo.isInjured" class="text-xs text-emerald-400 bg-emerald-500/20 px-2 py-1 rounded">健康</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-2 gap-4">
-                <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4">
-                  <p class="text-gray-400 text-xs mb-2">职业技能</p>
-                  <p class="text-gray-200 text-sm">{{ playerInfo.jobSkills || '暂无' }}</p>
-                </div>
-                <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4">
-                  <p class="text-gray-400 text-xs mb-2">个人技能</p>
-                  <p class="text-gray-200 text-sm">{{ playerInfo.personalSkill || '暂无' }}</p>
-                </div>
-              </div>
-
-              <div class="mt-6 pt-6 border-t border-white/10">
-                <p class="text-gray-500 text-xs">
-                  最后更新: {{ playerInfo.updatedAt ? new Date(playerInfo.updatedAt).toLocaleString('zh-CN') : '未知' }}
-                </p>
               </div>
             </template>
           </div>
@@ -482,3 +674,15 @@ onUnmounted(() => {
     </main>
   </div>
 </template>
+
+<style scoped>
+.fade-pop-enter-active,
+.fade-pop-leave-active {
+  transition: opacity 140ms ease-out, transform 140ms ease-out;
+}
+.fade-pop-enter-from,
+.fade-pop-leave-to {
+  opacity: 0;
+  transform: translateY(6px) scale(0.99);
+}
+</style>

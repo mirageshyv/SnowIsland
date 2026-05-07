@@ -16,6 +16,9 @@ public class Job {
     @Column(name = "skills", columnDefinition = "TEXT")
     private String skills;
 
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -55,6 +58,14 @@ public class Job {
 
     public void setSkills(String skills) {
         this.skills = skills;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public LocalDateTime getCreatedAt() {
