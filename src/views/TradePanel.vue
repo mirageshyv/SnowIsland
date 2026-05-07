@@ -727,11 +727,11 @@ const formatTime = (dateStr) => {
 
 const getStatusBadge = (status) => {
   const badges = {
-    pending: { text: '交易中', color: 'bg-blue-500/20 text-blue-400 border-blue-500/50' },
+    pending: { text: '交易中', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' },
     accepted: { text: '已接受', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' },
     rejected: { text: '已拒绝', color: 'bg-red-500/20 text-red-400 border-red-500/50' },
-    cancelled: { text: '交易中止', color: 'bg-amber-500/20 text-amber-400 border-amber-500/50' },
-    completed: { text: '交易成功', color: 'bg-purple-500/20 text-purple-400 border-purple-500/50' }
+    cancelled: { text: '交易中止', color: 'bg-red-500/20 text-red-400 border-red-500/50' },
+    completed: { text: '已接受', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' }
   }
   return badges[status] || badges.pending
 }
@@ -1250,7 +1250,7 @@ defineExpose({
         class="fixed inset-0 bg-black/65 flex items-center justify-center z-50"
         @click.self="closeDetailModal"
       >
-        <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-6 max-w-lg w-full mx-4 shadow-2xl">
+        <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-6 max-w-4xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-white text-xl tracking-tight">交易详情</h2>
             <button
@@ -1269,10 +1269,6 @@ defineExpose({
               <h3 class="text-gray-400 text-xs mb-3">基本信息</h3>
               <div class="space-y-3">
                 <div class="flex items-center justify-between">
-                  <span class="text-gray-500 text-sm">交易编号</span>
-                  <span class="text-gray-200 text-sm font-mono">#{{ selectedTrade.id }}</span>
-                </div>
-                <div class="flex items-center justify-between">
                   <span class="text-gray-500 text-sm">交易对象</span>
                   <span class="text-gray-200 text-sm">
                     {{ selectedTrade.fromPlayerId === playerId ? '向 ' : '来自 ' }}
@@ -1289,59 +1285,6 @@ defineExpose({
                   <span class="text-gray-500 text-sm">创建时间</span>
                   <span class="text-gray-200 text-sm">{{ formatTime(selectedTrade.createdAt) }}</span>
                 </div>
-              </div>
-            </div>
-
-            <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4 mb-4">
-              <div class="text-gray-400 text-xs mb-2">物品明细 · 共 {{ detailTradeItemRows.length }} 件</div>
-              <div class="max-h-40 overflow-y-auto space-y-1">
-                <div
-                  v-for="(item, index) in detailTradeItemRows"
-                  :key="index"
-                  class="flex items-center justify-between gap-2 bg-white/5 rounded-lg px-3 py-2 text-sm"
-                >
-                  <span class="flex items-center gap-2 text-gray-200 truncate min-w-0">
-                    <span class="w-7 h-7 shrink-0 rounded bg-white/10 overflow-hidden flex items-center justify-center p-0.5">
-                      <img
-                        :src="item.imageUrl"
-                        :alt="item.name"
-                        class="w-full h-full object-contain"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    </span>
-                    <span class="truncate">
-                      <span class="text-gray-500 text-xs">[{{ tradeTypeLabel(item.itemType) }}]</span>
-                      {{ item.name }}
-                    </span>
-                  </span>
-                  <span class="text-gray-400 shrink-0 whitespace-nowrap text-right">
-                    {{ item.quantity }} {{ formatChineseUnit(item.unit) }}
-                    <span v-if="Number(item.kcalPerUnit) > 0" class="block text-[11px] text-gray-500">{{ item.kcalPerUnit }} 大卡/单位</span>
-                  </span>
-                </div>
-                <div v-if="detailTradeItemRows.length === 0" class="text-gray-500 text-sm text-center py-3">无</div>
-              </div>
-            </div>
-
-            <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4 mb-4">
-              <div class="text-gray-400 text-xs mb-2">食物与燃料明细 · 共 {{ detailTradeSupplyRows.length }} 条</div>
-              <div class="max-h-40 overflow-y-auto space-y-1">
-                <div
-                  v-for="(item, index) in detailTradeSupplyRows"
-                  :key="`supply-${index}`"
-                  class="flex items-center justify-between gap-2 bg-white/5 rounded-lg px-3 py-2 text-sm"
-                >
-                  <span class="text-gray-200 truncate min-w-0">
-                    <span class="text-gray-500 text-xs">[{{ tradeTypeLabel(item.itemType) }}]</span>
-                    {{ item.name }}
-                  </span>
-                  <span class="text-gray-400 shrink-0 whitespace-nowrap text-right">
-                    {{ item.quantity }} {{ formatChineseUnit(item.unit) }}
-                    <span class="block text-[11px] text-gray-500">{{ item.kcalPerUnit }} 大卡/单位</span>
-                  </span>
-                </div>
-                <div v-if="detailTradeSupplyRows.length === 0" class="text-gray-500 text-sm text-center py-3">无</div>
               </div>
             </div>
 
