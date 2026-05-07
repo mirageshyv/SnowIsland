@@ -17,14 +17,23 @@ public class TradeItem {
     @Column(name = "item_type")
     private ItemType itemType;
 
-    @Column(name = "item_id", nullable = false)
+    @Column(name = "item_id")
     private Integer itemId;
+
+    @Column(name = "item_key")
+    private String itemKey;
 
     private Integer quantity = 1;
 
     private String name;
 
     private String unit;
+
+    @Transient
+    private Integer kcalPerUnit;
+
+    @Transient
+    private Long lineKcal;
 
     @Enumerated(EnumType.STRING)
     private Direction direction;
@@ -33,7 +42,7 @@ public class TradeItem {
     private LocalDateTime createdAt;
 
     public enum ItemType {
-        item, weapon, ammo, material
+        item, weapon, ammo, material, food, energy
     }
 
     public enum Direction {
@@ -58,6 +67,9 @@ public class TradeItem {
     public Integer getItemId() { return itemId; }
     public void setItemId(Integer itemId) { this.itemId = itemId; }
 
+    public String getItemKey() { return itemKey; }
+    public void setItemKey(String itemKey) { this.itemKey = itemKey; }
+
     public Integer getQuantity() { return quantity; }
     public void setQuantity(Integer quantity) { this.quantity = quantity; }
 
@@ -66,6 +78,12 @@ public class TradeItem {
 
     public String getUnit() { return unit; }
     public void setUnit(String unit) { this.unit = unit; }
+
+    public Integer getKcalPerUnit() { return kcalPerUnit; }
+    public void setKcalPerUnit(Integer kcalPerUnit) { this.kcalPerUnit = kcalPerUnit; }
+
+    public Long getLineKcal() { return lineKcal; }
+    public void setLineKcal(Long lineKcal) { this.lineKcal = lineKcal; }
 
     public Direction getDirection() { return direction; }
     public void setDirection(Direction direction) { this.direction = direction; }
