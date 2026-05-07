@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -17,6 +18,9 @@ public interface TradeRepository extends JpaRepository<Trade, Integer> {
 
     @Query("SELECT DISTINCT t FROM Trade t LEFT JOIN FETCH t.items WHERE t.toPlayerId = :playerId")
     List<Trade> findByToPlayerId(@Param("playerId") Integer toPlayerId);
+
+    @Query("SELECT DISTINCT t FROM Trade t LEFT JOIN FETCH t.items WHERE t.status IN (:statuses) ORDER BY t.createdAt DESC")
+    List<Trade> findByStatusesWithItemsOrderByCreatedAtDesc(@Param("statuses") Collection<TradeStatus> statuses);
 
     long countByToPlayerIdAndStatus(Integer toPlayerId, TradeStatus status);
 

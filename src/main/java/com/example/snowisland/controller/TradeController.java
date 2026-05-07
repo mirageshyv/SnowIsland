@@ -30,6 +30,11 @@ public class TradeController {
         return tradeService.getIncomingTrades(playerId);
     }
 
+    @GetMapping("/dm/overview")
+    public Map<String, Object> getDmTradesOverview() {
+        return tradeService.getDmPendingAndCompletedTrades();
+    }
+
     @GetMapping("/{id}")
     public Map<String, Object> getTradeDetail(@PathVariable Integer id) {
         return tradeService.getTradeDetail(id);

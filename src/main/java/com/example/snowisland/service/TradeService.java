@@ -1,6 +1,7 @@
 package com.example.snowisland.service;
 
 import com.example.snowisland.entity.TradeItem.ItemType;
+import com.example.snowisland.entity.Player;
 import com.example.snowisland.entity.PlayerItem;
 import com.example.snowisland.entity.PlayerFoodStock;
 import com.example.snowisland.entity.PlayerFoodStockId;
@@ -14,6 +15,7 @@ import com.example.snowisland.repository.FoodCatalogRepository;
 import com.example.snowisland.repository.EnergyCatalogRepository;
 import com.example.snowisland.repository.PlayerFoodStockRepository;
 import com.example.snowisland.repository.PlayerEnergyStockRepository;
+import com.example.snowisland.repository.PlayerRepository;
 import com.example.snowisland.repository.PlayerItemRepository;
 import com.example.snowisland.repository.TradeItemRepository;
 import com.example.snowisland.repository.TradeRepository;
@@ -35,6 +37,9 @@ public class TradeService {
 
     @Autowired
     private PlayerItemRepository playerItemRepository;
+
+    @Autowired
+    private PlayerRepository playerRepository;
 
     @Autowired
     private FoodCatalogRepository foodCatalogRepository;
@@ -135,6 +140,62 @@ public class TradeService {
     /** 侧栏徽章轮询：单条 COUNT，避免每几秒拉全量 incoming + trade_items */
     public long countIncomingPendingTrades(Integer playerId) {
         return tradeRepository.countByToPlayerIdAndStatus(playerId, Trade.TradeStatus.pending);
+    }
+
+    /**
+     * DM 工作台：列出所有待处理与已完成的交易，含条目详情与玩家名。
+     */
+    public Map<String, Object> getDmPendingAndCompletedTrades() {
+        Map<String, Object> out = new LinkedHashMap<>();
+        try {
+            List<Trade> trades = tradeRepository.findByStatusesWithItemsOrderByCreatedAtDesc(
+                    Arrays.asList(Trade.TradeStatus.pending, Trade.TradeStatus.completed));
+            populateItemInfo(trades);
+            List<Map<String, Object>> list = new ArrayList<>();
+            for (Trade t : trades) {
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("id", t.getId());
+                row.put("fromPlayerId", t.getFromPlayerId());
+                row.put("toPlayerId", t.getToPlayerId());
+                row.put("fromPlayerName", resolvePlayerNameForDm(t.getFromPlayerId()));
+                row.put("toPlayerName", resolvePlayerNameForDm(t.getToPlayerId()));
+                row.put("status", t.getStatus().name());
+                row.put("remark", t.getRemark());
+                row.put("createdAt", t.getCreatedAt());
+                row.put("updatedAt", t.getUpdatedAt());
+                List<Map<String, Object>> itemRows = new ArrayList<>();
+                if (t.getItems() != null) {
+                    for (TradeItem it : t.getItems()) {
+                        Map<String, Object> im = new LinkedHashMap<>();
+                        im.put("name", it.getName());
+                        im.put("unit", it.getUnit());
+                        im.put("quantity", it.getQuantity());
+                        im.put("direction", it.getDirection() != null ? it.getDirection().name() : null);
+                        im.put("itemType", it.getItemType() != null ? it.getItemType().name() : null);
+                        im.put("itemId", it.getItemId());
+                        im.put("itemKey", it.getItemKey());
+                        im.put("kcalPerUnit", it.getKcalPerUnit());
+                        im.put("lineKcal", it.getLineKcal());
+                        itemRows.add(im);
+                    }
+                }
+                row.put("items", itemRows);
+                list.add(row);
+            }
+            out.put("success", true);
+            out.put("trades", list);
+        } catch (Exception e) {
+            out.put("success", false);
+            out.put("message", "加载交易列表失败: " + e.getMessage());
+        }
+        return out;
+    }
+
+    private String resolvePlayerNameForDm(Integer playerId) {
+        if (playerId == null) {
+            return "?";
+        }
+        return playerRepository.findById(playerId).map(Player::getName).orElse("玩家" + playerId);
     }
 
     private void populateItemInfo(List<Trade> trades) {

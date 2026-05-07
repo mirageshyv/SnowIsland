@@ -83,6 +83,8 @@ export const shelterAPI = {
 }
 
 export const tradeAPI = {
+  /** DM：待处理 + 已完成交易全表 */
+  getDmOverview: () => request(`${API_BASE}/trades/dm/overview`),
   getByPlayer: (playerId) => request(`${API_BASE}/trades/player/${playerId}`),
   /** 轻量：仅待处理 incoming 数量（轮询用，避免反复拉全量交易+明细） */
   getIncomingPendingCount: (playerId) =>

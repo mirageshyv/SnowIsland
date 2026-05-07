@@ -3,6 +3,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import ArkProgressView from './ArkProgressView.vue'
 import ShelterProgressView from './ShelterProgressView.vue'
+import DmTradesOverview from './DmTradesOverview.vue'
 
 const router = useRouter()
 const username = localStorage.getItem('username') || ''
@@ -109,6 +110,14 @@ onMounted(() => {
           @click="activeTab = 'settings'"
         >
           游戏设置
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'trades' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'trades'"
+        >
+          交易一览
         </button>
         <button
           type="button"
@@ -283,6 +292,10 @@ onMounted(() => {
 
       <div v-else-if="activeTab === 'shelter'">
         <ShelterProgressView />
+      </div>
+
+      <div v-else-if="activeTab === 'trades'">
+        <DmTradesOverview />
       </div>
 
       <!-- Other Tabs -->
