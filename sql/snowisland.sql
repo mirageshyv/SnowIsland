@@ -621,7 +621,7 @@ CREATE TABLE `trade` (
 -- Records of trade
 -- ----------------------------
 INSERT INTO `trade` VALUES ('1', '1', '2', 'cancelled', '需要一些食物', '2026-04-30 14:06:06', '2026-05-01 09:34:00');
-INSERT INTO `trade` VALUES ('2', '3', '1', 'accepted', '换一些工具', '2026-04-30 14:06:06', '2026-04-30 14:06:06');
+INSERT INTO `trade` VALUES ('2', '3', '1', 'completed', '换一些工具', '2026-04-30 14:06:06', '2026-04-30 14:06:06');
 INSERT INTO `trade` VALUES ('3', '4', '5', 'rejected', '想要发电机', '2026-04-30 14:06:06', '2026-04-30 14:06:06');
 INSERT INTO `trade` VALUES ('4', '2', '3', 'cancelled', '物资不匹配', '2026-04-30 14:06:06', '2026-04-30 14:06:06');
 INSERT INTO `trade` VALUES ('5', '5', '1', 'completed', '完成了交易', '2026-04-30 14:06:06', '2026-04-30 14:06:06');
