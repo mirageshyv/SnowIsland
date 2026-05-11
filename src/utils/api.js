@@ -62,6 +62,7 @@ export const playerAPI = {
   get: (id) => request(`${API_BASE}/players/${id}`),
   getDetails: (id) => request(`${API_BASE}/players/${id}/details`),
   getItems: (id) => request(`${API_BASE}/players/${id}/items`),
+  getSupplies: (id) => request(`${API_BASE}/players/${id}/supplies`),
   create: (player, loginUsername) =>
     request(`${API_BASE}/players?loginUsername=${encodeURIComponent(loginUsername)}`, {
       method: 'POST',
@@ -76,8 +77,18 @@ export const playerAPI = {
   })
 }
 
+/** 统治者避难所页：建造值、shelter 建材库存、避难所公共食物/能量（非玩家个人库存） */
+export const shelterAPI = {
+  getSummary: () => request(`${API_BASE}/shelter`),
+}
+
 export const tradeAPI = {
+  /** DM：待处理 + 已完成交易全表 */
+  getDmOverview: () => request(`${API_BASE}/trades/dm/overview`),
   getByPlayer: (playerId) => request(`${API_BASE}/trades/player/${playerId}`),
+  /** 轻量：仅待处理 incoming 数量（轮询用，避免反复拉全量交易+明细） */
+  getIncomingPendingCount: (playerId) =>
+    request(`${API_BASE}/trades/incoming/${playerId}/pending-count`),
   getIncoming: (playerId) => request(`${API_BASE}/trades/incoming/${playerId}`),
   getDetail: (id) => request(`${API_BASE}/trades/${id}`),
   create: (tradeData) => request(`${API_BASE}/trades`, {

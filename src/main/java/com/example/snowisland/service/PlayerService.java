@@ -231,6 +231,7 @@ public class PlayerService {
                 if (job != null) {
                     result.put("job", job.getName());
                     result.put("jobSkills", job.getSkills());
+                    result.put("jobDescription", job.getDescription());
                 }
             }
 
@@ -238,6 +239,7 @@ public class PlayerService {
                 Skill skill = skillRepository.findById(player.getSkillId()).orElse(null);
                 if (skill != null) {
                     result.put("personalSkill", skill.getName());
+                    result.put("personalSkillFunction", skill.getFunction());
                 }
             }
 

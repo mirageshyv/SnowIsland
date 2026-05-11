@@ -77,7 +77,11 @@ INSERT INTO item (name, unit, remark) VALUES
 ('火柴', '盒', '点火工具'),
 ('铅笔', '盒', '书写工具'),
 ('破损海图', '张', '导航参考'),
-('便当', '份', '恢复饥饿');
+('便当', '份', '恢复饥饿'),
+('仓库钥匙', '把', '仓库通行'),
+('燃料仓库钥匙', '把', '燃料仓库通行'),
+('镇武库钥匙', '把', '镇武库通行'),
+('码头集购站钥匙', '把', '码头集购站通行');
 
 -- 插入武器数据
 INSERT INTO weapon (name, unit, remark, threat_level) VALUES
@@ -123,6 +127,7 @@ INSERT INTO player_items (player_id, item_type, item_id, quantity) VALUES
 (1, 'item', 5, 1),  -- 防弹衣 x1
 (1, 'weapon', 1, 1),  -- 制式手枪 x1
 (1, 'weapon', 3, 1),  -- 警棍 x1
+(1, 'weapon', 11, 1),  -- 手术刀 x1（测试）
 (1, 'ammo', 1, 30),  -- 手枪弹 x30
 (1, 'material', 1, 5),  -- 金属制品 x5
 (1, 'material', 2, 10);  -- 木材 x10

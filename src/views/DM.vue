@@ -1,6 +1,9 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import ArkProgressView from './ArkProgressView.vue'
+import ShelterProgressView from './ShelterProgressView.vue'
+import DmTradesOverview from './DmTradesOverview.vue'
 
 const router = useRouter()
 const username = localStorage.getItem('username') || ''
@@ -67,14 +70,15 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#0a0e1a] flex">
+  <!-- h-screen + overflow-hidden：侧栏固定；仅右侧 main 纵向滚动 -->
+  <div class="flex h-screen max-h-[100dvh] overflow-hidden bg-[#0a0e1a]">
     <!-- Sidebar -->
-    <aside class="w-64 bg-[#0f1419] border-r border-[#1f2937] flex flex-col">
-      <div class="p-6 border-b border-[#1f2937]">
+    <aside class="flex h-full w-64 shrink-0 flex-col border-r border-[#1f2937] bg-[#0f1419]">
+      <div class="shrink-0 border-b border-[#1f2937] p-6">
         <h2 class="text-white tracking-tight text-lg">DM管理中心</h2>
       </div>
 
-      <nav class="flex-1 p-4">
+      <nav class="min-h-0 flex-1 overflow-y-auto p-4">
         <button
           type="button"
           class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
@@ -86,10 +90,34 @@ onMounted(() => {
         <button
           type="button"
           class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'ark' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'ark'"
+        >
+          方舟建造进度
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'shelter' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'shelter'"
+        >
+          统治者避难所
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
           :class="activeTab === 'settings' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
           @click="activeTab = 'settings'"
         >
           游戏设置
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'trades' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'trades'"
+        >
+          交易一览
         </button>
         <button
           type="button"
@@ -109,7 +137,7 @@ onMounted(() => {
         </button>
       </nav>
 
-      <div class="p-4 border-t border-[#1f2937]">
+      <div class="shrink-0 border-t border-[#1f2937] p-4">
         <div class="flex items-center justify-between">
           <span class="text-gray-400 text-sm">{{ username }}</span>
           <button
@@ -124,7 +152,7 @@ onMounted(() => {
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 p-8 overflow-auto">
+    <main class="min-h-0 min-w-0 flex-1 overflow-y-auto p-8">
       <!-- Players Tab -->
       <div v-if="activeTab === 'players'" class="max-w-7xl">
         <div class="mb-6 flex items-center justify-between">
@@ -256,6 +284,18 @@ onMounted(() => {
             </table>
           </div>
         </div>
+      </div>
+
+      <div v-else-if="activeTab === 'ark'">
+        <ArkProgressView />
+      </div>
+
+      <div v-else-if="activeTab === 'shelter'">
+        <ShelterProgressView />
+      </div>
+
+      <div v-else-if="activeTab === 'trades'">
+        <DmTradesOverview />
       </div>
 
       <!-- Other Tabs -->

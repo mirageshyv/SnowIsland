@@ -46,6 +46,10 @@ public class JobService {
         itemNames.put(16, "铅笔");
         itemNames.put(17, "破损海图");
         itemNames.put(18, "便当");
+        itemNames.put(19, "仓库钥匙");
+        itemNames.put(20, "燃料仓库钥匙");
+        itemNames.put(21, "镇武库钥匙");
+        itemNames.put(22, "码头集购站钥匙");
         ITEM_NAMES.put("item", itemNames);
 
         Map<Integer, String> weaponNames = new HashMap<>();

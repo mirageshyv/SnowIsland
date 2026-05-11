@@ -1,15 +1,28 @@
 package com.example.snowisland.service;
 
 import com.example.snowisland.entity.TradeItem.ItemType;
+import com.example.snowisland.entity.Player;
 import com.example.snowisland.entity.PlayerItem;
+import com.example.snowisland.entity.PlayerFoodStock;
+import com.example.snowisland.entity.PlayerFoodStockId;
+import com.example.snowisland.entity.PlayerEnergyStock;
+import com.example.snowisland.entity.PlayerEnergyStockId;
+import com.example.snowisland.entity.FoodCatalog;
+import com.example.snowisland.entity.EnergyCatalog;
 import com.example.snowisland.entity.Trade;
 import com.example.snowisland.entity.TradeItem;
+import com.example.snowisland.repository.FoodCatalogRepository;
+import com.example.snowisland.repository.EnergyCatalogRepository;
+import com.example.snowisland.repository.PlayerFoodStockRepository;
+import com.example.snowisland.repository.PlayerEnergyStockRepository;
+import com.example.snowisland.repository.PlayerRepository;
 import com.example.snowisland.repository.PlayerItemRepository;
 import com.example.snowisland.repository.TradeItemRepository;
 import com.example.snowisland.repository.TradeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
@@ -25,6 +38,21 @@ public class TradeService {
     @Autowired
     private PlayerItemRepository playerItemRepository;
 
+    @Autowired
+    private PlayerRepository playerRepository;
+
+    @Autowired
+    private FoodCatalogRepository foodCatalogRepository;
+
+    @Autowired
+    private EnergyCatalogRepository energyCatalogRepository;
+
+    @Autowired
+    private PlayerFoodStockRepository playerFoodStockRepository;
+
+    @Autowired
+    private PlayerEnergyStockRepository playerEnergyStockRepository;
+
     private Map<String, Map<Integer, String>> itemNames = new HashMap<>();
     private Map<String, Map<Integer, String>> itemUnits = new HashMap<>();
 
@@ -35,6 +63,10 @@ public class TradeService {
         itemNames.get("item").put(2, "手电筒");
         itemNames.get("item").put(4, "哨子");
         itemNames.get("item").put(8, "维修工具包");
+        itemNames.get("item").put(19, "仓库钥匙");
+        itemNames.get("item").put(20, "燃料仓库钥匙");
+        itemNames.get("item").put(21, "镇武库钥匙");
+        itemNames.get("item").put(22, "码头集购站钥匙");
 
         itemNames.put("weapon", new HashMap<>());
         itemNames.get("weapon").put(1, "制式手枪");
@@ -42,6 +74,8 @@ public class TradeService {
         itemNames.get("weapon").put(3, "警棍");
         itemNames.get("weapon").put(4, "刺刀");
         itemNames.get("weapon").put(9, "斧头");
+        itemNames.get("weapon").put(11, "手术刀");
+        itemNames.get("weapon").put(12, "炸药");
 
         itemNames.put("ammo", new HashMap<>());
         itemNames.get("ammo").put(1, "手枪弹");
@@ -58,6 +92,10 @@ public class TradeService {
         itemUnits.get("item").put(2, "个");
         itemUnits.get("item").put(4, "个");
         itemUnits.get("item").put(8, "个");
+        itemUnits.get("item").put(19, "把");
+        itemUnits.get("item").put(20, "把");
+        itemUnits.get("item").put(21, "把");
+        itemUnits.get("item").put(22, "把");
 
         itemUnits.put("weapon", new HashMap<>());
         itemUnits.get("weapon").put(1, "把");
@@ -65,6 +103,8 @@ public class TradeService {
         itemUnits.get("weapon").put(3, "把");
         itemUnits.get("weapon").put(4, "把");
         itemUnits.get("weapon").put(9, "把");
+        itemUnits.get("weapon").put(11, "把");
+        itemUnits.get("weapon").put(12, "kg");
 
         itemUnits.put("ammo", new HashMap<>());
         itemUnits.get("ammo").put(1, "枚");
@@ -97,16 +137,130 @@ public class TradeService {
         return trades;
     }
 
+    /** 侧栏徽章轮询：单条 COUNT，避免每几秒拉全量 incoming + trade_items */
+    public long countIncomingPendingTrades(Integer playerId) {
+        return tradeRepository.countByToPlayerIdAndStatus(playerId, Trade.TradeStatus.pending);
+    }
+
+    /**
+     * DM 工作台：列出所有待处理与已完成的交易，含条目详情与玩家名。
+     */
+    public Map<String, Object> getDmPendingAndCompletedTrades() {
+        Map<String, Object> out = new LinkedHashMap<>();
+        try {
+            List<Trade> trades = tradeRepository.findByStatusesWithItemsOrderByCreatedAtDesc(
+                    Arrays.asList(Trade.TradeStatus.pending, Trade.TradeStatus.completed));
+            populateItemInfo(trades);
+            List<Map<String, Object>> list = new ArrayList<>();
+            for (Trade t : trades) {
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("id", t.getId());
+                row.put("fromPlayerId", t.getFromPlayerId());
+                row.put("toPlayerId", t.getToPlayerId());
+                row.put("fromPlayerName", resolvePlayerNameForDm(t.getFromPlayerId()));
+                row.put("toPlayerName", resolvePlayerNameForDm(t.getToPlayerId()));
+                row.put("status", t.getStatus().name());
+                row.put("remark", t.getRemark());
+                row.put("createdAt", t.getCreatedAt());
+                row.put("updatedAt", t.getUpdatedAt());
+                List<Map<String, Object>> itemRows = new ArrayList<>();
+                if (t.getItems() != null) {
+                    for (TradeItem it : t.getItems()) {
+                        Map<String, Object> im = new LinkedHashMap<>();
+                        im.put("name", it.getName());
+                        im.put("unit", it.getUnit());
+                        im.put("quantity", it.getQuantity());
+                        im.put("direction", it.getDirection() != null ? it.getDirection().name() : null);
+                        im.put("itemType", it.getItemType() != null ? it.getItemType().name() : null);
+                        im.put("itemId", it.getItemId());
+                        im.put("itemKey", it.getItemKey());
+                        im.put("kcalPerUnit", it.getKcalPerUnit());
+                        im.put("lineKcal", it.getLineKcal());
+                        itemRows.add(im);
+                    }
+                }
+                row.put("items", itemRows);
+                list.add(row);
+            }
+            out.put("success", true);
+            out.put("trades", list);
+        } catch (Exception e) {
+            out.put("success", false);
+            out.put("message", "加载交易列表失败: " + e.getMessage());
+        }
+        return out;
+    }
+
+    private String resolvePlayerNameForDm(Integer playerId) {
+        if (playerId == null) {
+            return "?";
+        }
+        return playerRepository.findById(playerId).map(Player::getName).orElse("玩家" + playerId);
+    }
+
     private void populateItemInfo(List<Trade> trades) {
         for (Trade trade : trades) {
             List<TradeItem> items = trade.getItems();
             if (items != null) {
                 for (TradeItem item : items) {
-                    item.setName(getItemName(item.getItemType().name(), item.getItemId()));
-                    item.setUnit(getItemUnit(item.getItemType().name(), item.getItemId()));
+                    fillTradeItemDisplay(item);
                 }
             }
         }
+    }
+
+    private void fillTradeItemDisplay(TradeItem item) {
+        String specialSupplyType = parseSpecialSupplyType(item.getItemKey());
+        if ("food".equals(specialSupplyType)) {
+            String itemKey = stripSpecialSupplyKey(item.getItemKey());
+            if (itemKey == null) return;
+            foodCatalogRepository.findById(itemKey).ifPresent(def -> {
+                item.setItemType(ItemType.food);
+                item.setName(def.getName());
+                item.setUnit(def.getUnit());
+                item.setKcalPerUnit(def.getKcalPerUnit());
+                item.setLineKcal((long) item.getQuantity() * def.getKcalPerUnit());
+            });
+            return;
+        }
+        if ("energy".equals(specialSupplyType)) {
+            String itemKey = stripSpecialSupplyKey(item.getItemKey());
+            if (itemKey == null) return;
+            energyCatalogRepository.findById(itemKey).ifPresent(def -> {
+                item.setItemType(ItemType.energy);
+                item.setName(def.getName());
+                item.setUnit(def.getUnit());
+                item.setKcalPerUnit(def.getKcalPerUnit());
+                item.setLineKcal((long) item.getQuantity() * def.getKcalPerUnit());
+            });
+            return;
+        }
+
+        String type = item.getItemType().name();
+        if (item.getItemType() == ItemType.food) {
+            String itemKey = item.getItemKey();
+            if (itemKey == null) return;
+            foodCatalogRepository.findById(itemKey).ifPresent(def -> {
+                item.setName(def.getName());
+                item.setUnit(def.getUnit());
+                item.setKcalPerUnit(def.getKcalPerUnit());
+                item.setLineKcal((long) item.getQuantity() * def.getKcalPerUnit());
+            });
+            return;
+        }
+        if (item.getItemType() == ItemType.energy) {
+            String itemKey = item.getItemKey();
+            if (itemKey == null) return;
+            energyCatalogRepository.findById(itemKey).ifPresent(def -> {
+                item.setName(def.getName());
+                item.setUnit(def.getUnit());
+                item.setKcalPerUnit(def.getKcalPerUnit());
+                item.setLineKcal((long) item.getQuantity() * def.getKcalPerUnit());
+            });
+            return;
+        }
+        item.setName(getItemName(type, item.getItemId()));
+        item.setUnit(getItemUnit(type, item.getItemId()));
     }
 
     public Map<String, Object> getTradeDetail(Integer id) {
@@ -140,15 +294,42 @@ public class TradeService {
         Map<String, Object> result = new HashMap<>();
         
         try {
+            // 发送交易即暂扣发起方“提供”物品；若后续失败由事务回滚
+            Map<String, Object> reserveResult = reserveOfferedItems(trade.getFromPlayerId(), items);
+            if (!(Boolean) reserveResult.getOrDefault("success", false)) {
+                result.put("success", false);
+                result.put("message", reserveResult.getOrDefault("message", "库存不足，无法发起交易"));
+                return result;
+            }
+
             trade.setStatus(Trade.TradeStatus.pending);
             Trade savedTrade = tradeRepository.save(trade);
             
             for (Map<String, Object> item : items) {
                 TradeItem tradeItem = new TradeItem();
                 tradeItem.setTradeId(savedTrade.getId());
-                tradeItem.setItemType(TradeItem.ItemType.valueOf((String) item.get("itemType")));
-                tradeItem.setItemId((Integer) item.get("itemId"));
-                tradeItem.setQuantity((Integer) item.get("quantity"));
+                String requestType = (String) item.get("itemType");
+                if ("food".equals(requestType) || "energy".equals(requestType)) {
+                    // 兼容旧库 ENUM(item_type)：food/energy 落库为 material，真实类型编码到 item_key
+                    tradeItem.setItemType(TradeItem.ItemType.material);
+                } else {
+                    tradeItem.setItemType(TradeItem.ItemType.valueOf(requestType));
+                }
+                Object itemIdObj = item.get("itemId");
+                if (itemIdObj instanceof Number) {
+                    tradeItem.setItemId(((Number) itemIdObj).intValue());
+                } else {
+                    // 兼容旧表结构 item_id NOT NULL：food/energy 使用 item_key，item_id 置 0 占位
+                    tradeItem.setItemId(0);
+                }
+                String itemKey = (String) item.get("itemKey");
+                if ("food".equals(requestType) || "energy".equals(requestType)) {
+                    tradeItem.setItemKey(requestType + ":" + itemKey);
+                } else {
+                    tradeItem.setItemKey(itemKey);
+                }
+                Object qtyObj = item.get("quantity");
+                tradeItem.setQuantity(qtyObj instanceof Number ? ((Number) qtyObj).intValue() : 1);
                 tradeItem.setDirection(TradeItem.Direction.valueOf((String) item.get("direction")));
                 tradeItemRepository.save(tradeItem);
             }
@@ -157,6 +338,7 @@ public class TradeService {
             result.put("trade", savedTrade);
             
         } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             result.put("success", false);
             result.put("message", "创建交易失败: " + e.getMessage());
             e.printStackTrace();
@@ -218,13 +400,14 @@ public class TradeService {
             Integer toPlayerId = trade.getToPlayerId();
 
             if (item.getDirection() == TradeItem.Direction.give) {
-                int toAdded = addPlayerItem(toPlayerId, item.getItemType(), item.getItemId(), item.getQuantity());
-                if (toAdded > 0) {
+                // give 已在创建交易时暂扣，这里仅发放给接收方
+                int affected = addStockByType(toPlayerId, item);
+                if (affected > 0) {
                     successCount++;
                 }
             } else if (item.getDirection() == TradeItem.Direction.take) {
-                int toAdded = addPlayerItem(fromPlayerId, item.getItemType(), item.getItemId(), item.getQuantity());
-                if (toAdded > 0) {
+                int affected = transferStock(toPlayerId, fromPlayerId, item);
+                if (affected > 0) {
                     successCount++;
                 }
             }
@@ -232,6 +415,228 @@ public class TradeService {
 
         sb.append("成功添加 ").append(successCount).append(" 项物资到玩家背包。");
         return sb.toString();
+    }
+
+    private int transferStock(Integer fromPlayerId, Integer toPlayerId, TradeItem item) {
+        String specialSupplyType = parseSpecialSupplyType(item.getItemKey());
+        if ("food".equals(specialSupplyType)) {
+            return transferFoodStock(fromPlayerId, toPlayerId, stripSpecialSupplyKey(item.getItemKey()), item.getQuantity());
+        }
+        if ("energy".equals(specialSupplyType)) {
+            return transferEnergyStock(fromPlayerId, toPlayerId, stripSpecialSupplyKey(item.getItemKey()), item.getQuantity());
+        }
+        if (item.getItemType() == ItemType.food) {
+            return transferFoodStock(fromPlayerId, toPlayerId, item.getItemKey(), item.getQuantity());
+        }
+        if (item.getItemType() == ItemType.energy) {
+            return transferEnergyStock(fromPlayerId, toPlayerId, item.getItemKey(), item.getQuantity());
+        }
+        int reduced = reducePlayerItem(fromPlayerId, item.getItemType(), item.getItemId(), item.getQuantity());
+        if (reduced <= 0) return 0;
+        return addStockByType(toPlayerId, item);
+    }
+
+    private int addStockByType(Integer playerId, TradeItem item) {
+        String specialSupplyType = parseSpecialSupplyType(item.getItemKey());
+        if ("food".equals(specialSupplyType)) {
+            return addFoodStock(playerId, stripSpecialSupplyKey(item.getItemKey()), item.getQuantity());
+        }
+        if ("energy".equals(specialSupplyType)) {
+            return addEnergyStock(playerId, stripSpecialSupplyKey(item.getItemKey()), item.getQuantity());
+        }
+        if (item.getItemType() == ItemType.food) {
+            return addFoodStock(playerId, item.getItemKey(), item.getQuantity());
+        }
+        if (item.getItemType() == ItemType.energy) {
+            return addEnergyStock(playerId, item.getItemKey(), item.getQuantity());
+        }
+        return addPlayerItem(playerId, item.getItemType(), item.getItemId(), item.getQuantity());
+    }
+
+    private int transferFoodStock(Integer fromPlayerId, Integer toPlayerId, String itemKey, Integer quantity) {
+        if (itemKey == null || quantity == null || quantity <= 0) return 0;
+        PlayerFoodStockId fromId = new PlayerFoodStockId();
+        fromId.setPlayerId(fromPlayerId);
+        fromId.setItemKey(itemKey);
+        Optional<PlayerFoodStock> fromOpt = playerFoodStockRepository.findById(fromId);
+        if (!fromOpt.isPresent()) return 0;
+        PlayerFoodStock from = fromOpt.get();
+        if (from.getQuantity() < quantity) return 0;
+        from.setQuantity(from.getQuantity() - quantity);
+        playerFoodStockRepository.save(from);
+
+        PlayerFoodStockId toId = new PlayerFoodStockId();
+        toId.setPlayerId(toPlayerId);
+        toId.setItemKey(itemKey);
+        PlayerFoodStock to = playerFoodStockRepository.findById(toId).orElseGet(() -> {
+            PlayerFoodStock created = new PlayerFoodStock();
+            created.setId(toId);
+            created.setQuantity(0);
+            return created;
+        });
+        to.setQuantity(to.getQuantity() + quantity);
+        playerFoodStockRepository.save(to);
+        return 1;
+    }
+
+    private int transferEnergyStock(Integer fromPlayerId, Integer toPlayerId, String itemKey, Integer quantity) {
+        if (itemKey == null || quantity == null || quantity <= 0) return 0;
+        PlayerEnergyStockId fromId = new PlayerEnergyStockId();
+        fromId.setPlayerId(fromPlayerId);
+        fromId.setItemKey(itemKey);
+        Optional<PlayerEnergyStock> fromOpt = playerEnergyStockRepository.findById(fromId);
+        if (!fromOpt.isPresent()) return 0;
+        PlayerEnergyStock from = fromOpt.get();
+        if (from.getQuantity() < quantity) return 0;
+        from.setQuantity(from.getQuantity() - quantity);
+        playerEnergyStockRepository.save(from);
+
+        PlayerEnergyStockId toId = new PlayerEnergyStockId();
+        toId.setPlayerId(toPlayerId);
+        toId.setItemKey(itemKey);
+        PlayerEnergyStock to = playerEnergyStockRepository.findById(toId).orElseGet(() -> {
+            PlayerEnergyStock created = new PlayerEnergyStock();
+            created.setId(toId);
+            created.setQuantity(0);
+            return created;
+        });
+        to.setQuantity(to.getQuantity() + quantity);
+        playerEnergyStockRepository.save(to);
+        return 1;
+    }
+
+    private int addFoodStock(Integer playerId, String itemKey, Integer quantity) {
+        if (itemKey == null || quantity == null || quantity <= 0) return 0;
+        PlayerFoodStockId id = new PlayerFoodStockId();
+        id.setPlayerId(playerId);
+        id.setItemKey(itemKey);
+        PlayerFoodStock row = playerFoodStockRepository.findById(id).orElseGet(() -> {
+            PlayerFoodStock created = new PlayerFoodStock();
+            created.setId(id);
+            created.setQuantity(0);
+            return created;
+        });
+        row.setQuantity(row.getQuantity() + quantity);
+        playerFoodStockRepository.save(row);
+        return 1;
+    }
+
+    private int addEnergyStock(Integer playerId, String itemKey, Integer quantity) {
+        if (itemKey == null || quantity == null || quantity <= 0) return 0;
+        PlayerEnergyStockId id = new PlayerEnergyStockId();
+        id.setPlayerId(playerId);
+        id.setItemKey(itemKey);
+        PlayerEnergyStock row = playerEnergyStockRepository.findById(id).orElseGet(() -> {
+            PlayerEnergyStock created = new PlayerEnergyStock();
+            created.setId(id);
+            created.setQuantity(0);
+            return created;
+        });
+        row.setQuantity(row.getQuantity() + quantity);
+        playerEnergyStockRepository.save(row);
+        return 1;
+    }
+
+    private Map<String, Object> reserveOfferedItems(Integer fromPlayerId, List<Map<String, Object>> items) {
+        Map<String, Object> result = new HashMap<>();
+        List<Map<String, Object>> giveItems = new ArrayList<>();
+        for (Map<String, Object> item : items) {
+            String direction = String.valueOf(item.get("direction"));
+            if ("give".equals(direction)) {
+                giveItems.add(item);
+            }
+        }
+
+        for (Map<String, Object> item : giveItems) {
+            String itemType = String.valueOf(item.get("itemType"));
+            int qty = ((Number) item.get("quantity")).intValue();
+            if (qty <= 0) {
+                result.put("success", false);
+                result.put("message", "交易数量必须大于 0");
+                return result;
+            }
+            if ("food".equals(itemType)) {
+                String itemKey = (String) item.get("itemKey");
+                PlayerFoodStockId id = new PlayerFoodStockId();
+                id.setPlayerId(fromPlayerId);
+                id.setItemKey(itemKey);
+                int stock = playerFoodStockRepository.findById(id).map(PlayerFoodStock::getQuantity).orElse(0);
+                if (stock < qty) {
+                    String name = foodCatalogRepository.findById(itemKey).map(FoodCatalog::getName).orElse("食物");
+                    result.put("success", false);
+                    result.put("message", name + " 库存不足");
+                    return result;
+                }
+            } else if ("energy".equals(itemType)) {
+                String itemKey = (String) item.get("itemKey");
+                PlayerEnergyStockId id = new PlayerEnergyStockId();
+                id.setPlayerId(fromPlayerId);
+                id.setItemKey(itemKey);
+                int stock = playerEnergyStockRepository.findById(id).map(PlayerEnergyStock::getQuantity).orElse(0);
+                if (stock < qty) {
+                    String name = energyCatalogRepository.findById(itemKey).map(EnergyCatalog::getName).orElse("燃料");
+                    result.put("success", false);
+                    result.put("message", name + " 库存不足");
+                    return result;
+                }
+            } else {
+                Integer itemId = ((Number) item.get("itemId")).intValue();
+                ItemType type = ItemType.valueOf(itemType);
+                int stock = playerItemRepository.findByPlayerIdAndItemTypeAndItemId(fromPlayerId, type, itemId)
+                        .map(PlayerItem::getQuantity)
+                        .orElse(0);
+                if (stock < qty) {
+                    result.put("success", false);
+                    result.put("message", getItemName(itemType, itemId) + " 库存不足");
+                    return result;
+                }
+            }
+        }
+
+        for (Map<String, Object> item : giveItems) {
+            String itemType = String.valueOf(item.get("itemType"));
+            int qty = ((Number) item.get("quantity")).intValue();
+            if ("food".equals(itemType)) {
+                String itemKey = (String) item.get("itemKey");
+                PlayerFoodStockId id = new PlayerFoodStockId();
+                id.setPlayerId(fromPlayerId);
+                id.setItemKey(itemKey);
+                playerFoodStockRepository.findById(id).ifPresent(row -> {
+                    row.setQuantity(row.getQuantity() - qty);
+                    playerFoodStockRepository.save(row);
+                });
+            } else if ("energy".equals(itemType)) {
+                String itemKey = (String) item.get("itemKey");
+                PlayerEnergyStockId id = new PlayerEnergyStockId();
+                id.setPlayerId(fromPlayerId);
+                id.setItemKey(itemKey);
+                playerEnergyStockRepository.findById(id).ifPresent(row -> {
+                    row.setQuantity(row.getQuantity() - qty);
+                    playerEnergyStockRepository.save(row);
+                });
+            } else {
+                Integer itemId = ((Number) item.get("itemId")).intValue();
+                ItemType type = ItemType.valueOf(itemType);
+                reducePlayerItem(fromPlayerId, type, itemId, qty);
+            }
+        }
+
+        result.put("success", true);
+        return result;
+    }
+
+    private String parseSpecialSupplyType(String itemKey) {
+        if (itemKey == null) return null;
+        if (itemKey.startsWith("food:")) return "food";
+        if (itemKey.startsWith("energy:")) return "energy";
+        return null;
+    }
+
+    private String stripSpecialSupplyKey(String itemKey) {
+        if (itemKey == null) return null;
+        if (itemKey.startsWith("food:")) return itemKey.substring("food:".length());
+        if (itemKey.startsWith("energy:")) return itemKey.substring("energy:".length());
+        return itemKey;
     }
 
     private int reducePlayerItem(Integer playerId, TradeItem.ItemType itemType, Integer itemId, Integer quantity) {
@@ -273,6 +678,20 @@ public class TradeService {
                 result.put("success", false);
                 result.put("message", "无权操作此交易");
                 return result;
+            }
+
+            if (trade.getStatus() != Trade.TradeStatus.pending) {
+                result.put("success", false);
+                result.put("message", "该交易不是待处理状态");
+                return result;
+            }
+
+            // 交易被拒绝：退回发起方在 pending 时被暂扣的 give 物资
+            List<TradeItem> tradeItems = tradeItemRepository.findByTradeId(id);
+            for (TradeItem item : tradeItems) {
+                if (item.getDirection() == TradeItem.Direction.give) {
+                    addStockByType(trade.getFromPlayerId(), item);
+                }
             }
             
             trade.setStatus(Trade.TradeStatus.rejected);

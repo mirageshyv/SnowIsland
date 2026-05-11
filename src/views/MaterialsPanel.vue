@@ -1,10 +1,12 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { playerAPI } from '../utils/api.js'
+import { getMaterialImageUrlOrDefault, getTypeTabImage } from '../data/gameData.js'
 
 const playerId = localStorage.getItem('playerId') || '1'
 const loading = ref(true)
 const rawMaterials = ref([])
+const playerSupplies = ref(null)
 
 // 筛选状态
 const selectedTypes = ref(['item', 'weapon', 'ammo', 'material'])
@@ -14,7 +16,7 @@ const typeConfig = {
   item: { label: '道具', color: 'blue', icon: '📦' },
   weapon: { label: '武器', color: 'red', icon: '⚔️' },
   ammo: { label: '子弹', color: 'amber', icon: '🎯' },
-  material: { label: '基础物资', color: 'emerald', icon: '🔧' }
+  material: { label: '其他物资', color: 'emerald', icon: '🔧' }
 }
 
 // 物品名称映射
@@ -37,7 +39,11 @@ const itemNamesMap = {
     15: '点火工具',
     16: '书写工具',
     17: '导航工具',
-    18: '食物补给'
+    18: '食物补给',
+    19: '仓库钥匙',
+    20: '燃料仓库钥匙',
+    21: '镇武库钥匙',
+    22: '码头集购站钥匙'
   },
   weapon: {
     1: '制式手枪',
@@ -49,7 +55,9 @@ const itemNamesMap = {
     7: '猎弓',
     8: '十字镐',
     9: '斧头',
-    10: '电锯'
+    10: '电锯',
+    11: '手术刀',
+    12: '炸药'
   },
   ammo: {
     1: '手枪弹',
@@ -93,7 +101,11 @@ const itemUnitsMap = {
     15: '个',
     16: '套',
     17: '个',
-    18: '份'
+    18: '份',
+    19: '把',
+    20: '把',
+    21: '把',
+    22: '把'
   },
   weapon: {
     1: '把',
@@ -105,7 +117,9 @@ const itemUnitsMap = {
     7: '张',
     8: '把',
     9: '把',
-    10: '把'
+    10: '把',
+    11: '把',
+    12: 'kg'
   },
   ammo: {
     1: '枚',
@@ -149,7 +163,11 @@ const itemRemarksMap = {
     15: '点火工具',
     16: '书写工具',
     17: '导航工具',
-    18: '食物补给'
+    18: '食物补给',
+    19: '仓库通行',
+    20: '燃料仓库通行',
+    21: '镇武库通行',
+    22: '码头集购站通行'
   },
   weapon: {
     1: '标准配备',
@@ -161,7 +179,9 @@ const itemRemarksMap = {
     7: '远程武器',
     8: '挖掘工具',
     9: '砍伐工具',
-    10: '切割工具'
+    10: '切割工具',
+    11: '医疗工具',
+    12: '爆炸物'
   },
   ammo: {
     1: '制式手枪子弹',
@@ -196,7 +216,9 @@ const weaponThreatMap = {
   7: 5,
   8: 4,
   9: 6,
-  10: 7
+  10: 7,
+  11: 2,
+  12: 10
 }
 
 // 弹药适用武器映射
@@ -227,7 +249,11 @@ const itemIconMap = {
     15: '🔥',
     16: '✏️',
     17: '🧭',
-    18: '🍞'
+    18: '🍞',
+    19: '🔑',
+    20: '🔑',
+    21: '🔑',
+    22: '🔑'
   },
   weapon: {
     1: '🔫',
@@ -239,7 +265,9 @@ const itemIconMap = {
     7: '🏹',
     8: '⛏️',
     9: '🪓',
-    10: '⚙️'
+    10: '⚙️',
+    11: '🔪',
+    12: '💣'
   },
   ammo: {
     1: '🎯',
@@ -284,9 +312,23 @@ const loadMaterials = async () => {
   }
 }
 
+const loadPlayerSupplies = async () => {
+  try {
+    const result = await playerAPI.getSupplies(playerId)
+    if (result && result.success) {
+      playerSupplies.value = result
+    } else {
+      playerSupplies.value = null
+    }
+  } catch (error) {
+    console.error('Failed to load player supplies:', error)
+    playerSupplies.value = null
+  }
+}
+
 // 转换物品数据
 const transformItem = (type, item) => {
-  const itemId = item.id
+  const itemId = Number(item.id)
   return {
     id: itemId,
     name: itemNamesMap[type]?.[itemId] || '未知物品',
@@ -294,6 +336,7 @@ const transformItem = (type, item) => {
     quantity: item.quantity,
     remark: itemRemarksMap[type]?.[itemId] || '',
     icon: itemIconMap[type]?.[itemId] || '📦',
+    imageUrl: getMaterialImageUrlOrDefault(type, itemId),
     threat_level: type === 'weapon' ? weaponThreatMap[itemId] : undefined,
     weapon_name: type === 'ammo' ? ammoWeaponMap[itemId] : undefined
   }
@@ -347,6 +390,23 @@ const hasFilteredMaterials = computed(() => {
   return Object.values(filteredData.value).some(arr => arr.length > 0)
 })
 
+const compactFoodRows = computed(() =>
+  (playerSupplies.value?.foodSupply?.items || [])
+    .filter(row => Number(row.quantity) > 0)
+    .sort((a, b) => b.quantity - a.quantity)
+)
+
+const compactEnergyRows = computed(() =>
+  (playerSupplies.value?.energyReserve?.items || [])
+    .filter(row => Number(row.quantity) > 0)
+    .sort((a, b) => b.quantity - a.quantity)
+)
+
+const formatChineseUnit = (unit) => {
+  const unitMap = { portion: '份', kg: '千克', L: '升' }
+  return unitMap[unit] || unit || '单位'
+}
+
 // 切换物资类型筛选
 const toggleType = (type) => {
   const index = selectedTypes.value.indexOf(type)
@@ -395,11 +455,13 @@ const handleVisibilityChange = () => {
   if (!document.hidden) {
     console.log('Page visible, refreshing materials')
     loadMaterials()
+    loadPlayerSupplies()
   }
 }
 
 onMounted(() => {
   loadMaterials()
+  loadPlayerSupplies()
   document.addEventListener('visibilitychange', handleVisibilityChange)
   console.log('Materials panel mounted', { playerId, selectedTypes: selectedTypes.value })
 })
@@ -444,7 +506,11 @@ onUnmounted(() => {
           :class="selectedTypes.includes(type) ? `bg-${config.color}-500/30 text-${config.color}-400 border border-${config.color}-500/50` : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'"
           @click="toggleType(type)"
         >
-          <span>{{ config.icon }}</span>
+          <img
+            :src="getTypeTabImage(type)"
+            alt=""
+            class="w-7 h-7 object-contain shrink-0 opacity-90"
+          />
           <span>{{ config.label }}</span>
           <span 
             v-if="type === 'item' && currentItems.length > 0"
@@ -479,8 +545,8 @@ onUnmounted(() => {
       <!-- 道具区域 -->
       <div v-if="selectedTypes.includes('item') && filteredData.item?.length > 0">
         <div class="flex items-center gap-3 mb-4">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400/20 to-blue-500/20 flex items-center justify-center text-xl">
-            📦
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400/20 to-blue-500/20 flex items-center justify-center p-1.5">
+            <img :src="getTypeTabImage('item')" alt="" class="w-7 h-7 object-contain" />
           </div>
           <div>
             <h2 class="text-white text-lg font-medium">道具</h2>
@@ -500,8 +566,14 @@ onUnmounted(() => {
             <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-all" />
             
             <div class="relative flex items-start gap-4">
-              <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-400/20 to-blue-500/20 flex items-center justify-center text-2xl flex-shrink-0">
-                {{ item.icon }}
+              <div
+                class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-400/20 to-blue-500/20 flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden p-1"
+              >
+                <img
+                  :src="item.imageUrl"
+                  :alt="item.name"
+                  class="w-full h-full object-contain"
+                />
               </div>
               
               <div class="flex-1 min-w-0">
@@ -525,8 +597,8 @@ onUnmounted(() => {
       <!-- 武器区域 -->
       <div v-if="selectedTypes.includes('weapon') && filteredData.weapon?.length > 0">
         <div class="flex items-center gap-3 mb-4">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-400/20 to-red-500/20 flex items-center justify-center text-xl">
-            ⚔️
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-400/20 to-red-500/20 flex items-center justify-center p-1.5">
+            <img :src="getTypeTabImage('weapon')" alt="" class="w-7 h-7 object-contain" />
           </div>
           <div>
             <h2 class="text-white text-lg font-medium">武器</h2>
@@ -546,8 +618,14 @@ onUnmounted(() => {
             <div class="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full blur-2xl group-hover:bg-red-500/10 transition-all" />
             
             <div class="relative flex items-start gap-4">
-              <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-red-400/20 to-red-500/20 flex items-center justify-center text-2xl flex-shrink-0">
-                {{ weapon.icon }}
+              <div
+                class="w-14 h-14 rounded-xl bg-gradient-to-br from-red-400/20 to-red-500/20 flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden p-1"
+              >
+                <img
+                  :src="weapon.imageUrl"
+                  :alt="weapon.name"
+                  class="w-full h-full object-contain"
+                />
               </div>
               
               <div class="flex-1 min-w-0">
@@ -576,8 +654,8 @@ onUnmounted(() => {
       <!-- 子弹区域 -->
       <div v-if="selectedTypes.includes('ammo') && filteredData.ammo?.length > 0">
         <div class="flex items-center gap-3 mb-4">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-500/20 flex items-center justify-center text-xl">
-            🎯
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-500/20 flex items-center justify-center p-1.5">
+            <img :src="getTypeTabImage('ammo')" alt="" class="w-7 h-7 object-contain" />
           </div>
           <div>
             <h2 class="text-white text-lg font-medium">子弹</h2>
@@ -597,8 +675,14 @@ onUnmounted(() => {
             <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl group-hover:bg-amber-500/10 transition-all" />
             
             <div class="relative flex items-start gap-4">
-              <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-500/20 flex items-center justify-center text-2xl flex-shrink-0">
-                {{ ammo.icon }}
+              <div
+                class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-500/20 flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden p-1"
+              >
+                <img
+                  :src="ammo.imageUrl"
+                  :alt="ammo.name"
+                  class="w-full h-full object-contain"
+                />
               </div>
               
               <div class="flex-1 min-w-0">
@@ -624,22 +708,22 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- 基础物资区域 -->
+      <!-- 其他物资区域 -->
       <div v-if="selectedTypes.includes('material') && filteredData.material?.length > 0">
         <div class="flex items-center gap-3 mb-4">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400/20 to-emerald-500/20 flex items-center justify-center text-xl">
-            🔧
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400/20 to-emerald-500/20 flex items-center justify-center p-1.5">
+            <img :src="getTypeTabImage('material')" alt="" class="w-7 h-7 object-contain" />
           </div>
           <div>
-            <h2 class="text-white text-lg font-medium">基础物资</h2>
-            <p class="text-gray-500 text-xs">Basic Materials</p>
+            <h2 class="text-white text-lg font-medium">其他物资</h2>
+            <p class="text-gray-500 text-xs">Other Materials</p>
           </div>
           <div class="ml-auto text-sm text-gray-400">
             共 {{ filteredData.material.length }} 种
           </div>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
           <div
             v-for="material in filteredData.material"
             :key="material.id"
@@ -648,8 +732,14 @@ onUnmounted(() => {
             <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-all" />
             
             <div class="relative flex items-start gap-4">
-              <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400/20 to-emerald-500/20 flex items-center justify-center text-2xl flex-shrink-0">
-                {{ material.icon }}
+              <div
+                class="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400/20 to-emerald-500/20 flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden p-1"
+              >
+                <img
+                  :src="material.imageUrl"
+                  :alt="material.name"
+                  class="w-full h-full object-contain"
+                />
               </div>
               
               <div class="flex-1 min-w-0">
@@ -665,6 +755,62 @@ onUnmounted(() => {
                   <span class="text-lg font-semibold text-emerald-400">{{ material.quantity }}</span>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 玩家个人食物 / 能量库存（紧凑版，无图片，嵌入基础物资下方） -->
+        <div v-if="playerSupplies" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="lg:col-span-2">
+            <p class="text-gray-500 text-xs">基础物资</p>
+          </div>
+          <div class="bg-[#0f1419] border border-[#1f2937] rounded-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-medium text-gray-200">个人食物储备</h3>
+              <span class="text-xs text-gray-400">
+                共 {{ Number(playerSupplies.foodSupply?.totalKcal || 0).toLocaleString() }} 大卡
+              </span>
+            </div>
+            <div class="space-y-1 max-h-40 overflow-y-auto text-sm">
+              <div
+                v-for="row in compactFoodRows"
+                :key="`food-${row.id}`"
+                class="flex items-center justify-between text-gray-300"
+              >
+                <span class="truncate">{{ row.name }}</span>
+                <span class="ml-3 shrink-0 text-right text-xs text-gray-400">
+                  {{ row.quantity }} {{ formatChineseUnit(row.unit) }}<br />
+                  <span class="text-[11px] text-gray-500">
+                    {{ row.kcalPerUnit }} 大卡 / 单位
+                  </span>
+                </span>
+              </div>
+              <div v-if="compactFoodRows.length === 0" class="text-xs text-gray-500 py-1">暂无食物库存</div>
+            </div>
+          </div>
+
+          <div class="bg-[#0f1419] border border-[#1f2937] rounded-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-medium text-gray-200">个人能量储备</h3>
+              <span class="text-xs text-gray-400">
+                共 {{ Number(playerSupplies.energyReserve?.totalKcal || 0).toLocaleString() }} 大卡
+              </span>
+            </div>
+            <div class="space-y-1 max-h-40 overflow-y-auto text-sm">
+              <div
+                v-for="row in compactEnergyRows"
+                :key="`energy-${row.id}`"
+                class="flex items-center justify-between text-gray-300"
+              >
+                <span class="truncate">{{ row.name }}</span>
+                <span class="ml-3 shrink-0 text-right text-xs text-gray-400">
+                  {{ row.quantity }} {{ formatChineseUnit(row.unit) }}<br />
+                  <span class="text-[11px] text-gray-500">
+                    {{ row.kcalPerUnit }} 大卡 / 单位
+                  </span>
+                </span>
+              </div>
+              <div v-if="compactEnergyRows.length === 0" class="text-xs text-gray-500 py-1">暂无能量库存</div>
             </div>
           </div>
         </div>

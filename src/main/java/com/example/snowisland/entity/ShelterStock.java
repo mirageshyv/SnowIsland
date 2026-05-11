@@ -3,21 +3,22 @@ package com.example.snowisland.entity;
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
+/**
+ * 统治者避难所物资库存一行一类物资（item_key 与前端图鉴 id 一致）。
+ */
 @Entity
-@Table(name = "job")
-public class Job {
+@Table(name = "shelter_stock")
+public class ShelterStock {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "name", nullable = false, unique = true, length = 50)
-    private String name;
+    @Column(name = "item_key", nullable = false, unique = true, length = 64)
+    private String itemKey;
 
-    @Column(name = "skills", columnDefinition = "TEXT")
-    private String skills;
-
-    @Column(name = "description", columnDefinition = "TEXT")
-    private String description;
+    @Column(nullable = false)
+    private Integer quantity = 0;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -27,8 +28,9 @@ public class Job {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
+        createdAt = now;
+        updatedAt = now;
     }
 
     @PreUpdate
@@ -44,28 +46,20 @@ public class Job {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public String getItemKey() {
+        return itemKey;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setItemKey(String itemKey) {
+        this.itemKey = itemKey;
     }
 
-    public String getSkills() {
-        return skills;
+    public Integer getQuantity() {
+        return quantity;
     }
 
-    public void setSkills(String skills) {
-        this.skills = skills;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
     }
 
     public LocalDateTime getCreatedAt() {

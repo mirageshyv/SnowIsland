@@ -3,21 +3,21 @@ package com.example.snowisland.entity;
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
+/**
+ * 统治者避难所全局建造进度（单行，主键固定为 1）。
+ */
 @Entity
-@Table(name = "job")
-public class Job {
+@Table(name = "shelter_progress")
+public class ShelterProgress {
+
+    public static final int SINGLETON_ID = 1;
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    @Column(name = "id")
+    private Integer id = SINGLETON_ID;
 
-    @Column(name = "name", nullable = false, unique = true, length = 50)
-    private String name;
-
-    @Column(name = "skills", columnDefinition = "TEXT")
-    private String skills;
-
-    @Column(name = "description", columnDefinition = "TEXT")
-    private String description;
+    @Column(name = "current_build_value", nullable = false)
+    private Integer currentBuildValue = 0;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -27,8 +27,12 @@ public class Job {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        if (id == null) {
+            id = SINGLETON_ID;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        createdAt = now;
+        updatedAt = now;
     }
 
     @PreUpdate
@@ -44,28 +48,12 @@ public class Job {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public Integer getCurrentBuildValue() {
+        return currentBuildValue;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getSkills() {
-        return skills;
-    }
-
-    public void setSkills(String skills) {
-        this.skills = skills;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
+    public void setCurrentBuildValue(Integer currentBuildValue) {
+        this.currentBuildValue = currentBuildValue;
     }
 
     public LocalDateTime getCreatedAt() {

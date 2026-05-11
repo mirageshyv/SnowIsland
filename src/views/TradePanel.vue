@@ -1,6 +1,17 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { playerAPI, tradeAPI } from '../utils/api.js'
+import { getMaterialImageUrlOrDefault } from '../data/gameData.js'
+
+const tradeTypeLabel = (t) =>
+  ({
+    item: '道具',
+    weapon: '武器',
+    ammo: '弹药',
+    material: '其他物资',
+    food: '食物',
+    energy: '燃料'
+  }[String(t || '').toLowerCase()] || String(t || ''))
 
 const playerId = parseInt(localStorage.getItem('playerId') || '1')
 const currentPlayerName = ref('')
@@ -15,6 +26,7 @@ const playerItemsMap = {
     { id: 5, type: 'item', name: '防弹衣', unit: '件', quantity: 1, icon: '🛡️' },
     { id: 1, type: 'weapon', name: '制式手枪', unit: '把', quantity: 1, icon: '🔫' },
     { id: 3, type: 'weapon', name: '警棍', unit: '把', quantity: 1, icon: '⚔️' },
+    { id: 11, type: 'weapon', name: '手术刀', unit: '把', quantity: 1, icon: '🔪' },
     { id: 1, type: 'ammo', name: '手枪弹', unit: '枚', quantity: 30, icon: '🎯' },
     { id: 1, type: 'material', name: '金属制品', unit: 'kg', quantity: 5, icon: '🔩' },
     { id: 2, type: 'material', name: '木材', unit: 'kg', quantity: 10, icon: '🌲' }
@@ -77,7 +89,11 @@ const allMaterialsMap = {
     { id: 15, name: '火柴', unit: '盒', icon: '🔥' },
     { id: 16, name: '铅笔', unit: '盒', icon: '✏️' },
     { id: 17, name: '破损海图', unit: '张', icon: '🗺️' },
-    { id: 18, name: '便当', unit: '份', icon: '🍱' }
+    { id: 18, name: '便当', unit: '份', icon: '🍱' },
+    { id: 19, name: '仓库钥匙', unit: '把', icon: '🔑' },
+    { id: 20, name: '燃料仓库钥匙', unit: '把', icon: '🔑' },
+    { id: 21, name: '镇武库钥匙', unit: '把', icon: '🔑' },
+    { id: 22, name: '码头集购站钥匙', unit: '把', icon: '🔑' }
   ],
   weapon: [
     { id: 1, name: '制式手枪', unit: '把', icon: '🔫' },
@@ -115,25 +131,104 @@ const allMaterialsMap = {
   ]
 }
 
+const takePaletteTab = ref('item')
+const takePaletteTabs = [
+  { key: 'item', label: '道具' },
+  { key: 'weapon', label: '武器' },
+  { key: 'ammo', label: '弹药' },
+  { key: 'material', label: '其他物资' },
+  { key: 'food', label: '食物' },
+  { key: 'energy', label: '燃料' }
+]
+
+const takePaletteRows = (() => {
+  const keys = ['item', 'weapon', 'ammo', 'material']
+  const o = {}
+  for (const type of keys) {
+    o[type] = allMaterialsMap[type].map((item) => ({
+      ...item,
+      itemType: type,
+      imageUrl: getMaterialImageUrlOrDefault(type, item.id)
+    }))
+  }
+  o.food = []
+  o.energy = []
+  return o
+})()
+
+const visibleTakePalette = computed(() => takePaletteRows[takePaletteTab.value] || [])
+
 const currentPlayerItems = ref([])
+const playerSupplies = ref(null)
+
+const compactSupplyRows = computed(() => {
+  const food = (playerSupplies.value?.foodSupply?.items || [])
+    .filter((row) => Number(row.quantity) > 0)
+    .map((row) => ({
+      id: row.id,
+      itemKey: row.id,
+      itemType: 'food',
+      name: row.name,
+      unit: row.unit,
+      quantity: Number(row.quantity),
+      kcalPerUnit: Number(row.kcalPerUnit || 0),
+      lineKcal: Number(row.lineKcal || 0),
+      imageUrl: getMaterialImageUrlOrDefault('material', 5)
+    }))
+  const energy = (playerSupplies.value?.energyReserve?.items || [])
+    .filter((row) => Number(row.quantity) > 0)
+    .map((row) => ({
+      id: row.id,
+      itemKey: row.id,
+      itemType: 'energy',
+      name: row.name,
+      unit: row.unit,
+      quantity: Number(row.quantity),
+      kcalPerUnit: Number(row.kcalPerUnit || 0),
+      lineKcal: Number(row.lineKcal || 0),
+      imageUrl: getMaterialImageUrlOrDefault('material', 8)
+    }))
+  return [...food, ...energy]
+})
+
+const giveInventoryItemRows = computed(() =>
+  currentPlayerItems.value.map((item) => ({
+    ...item,
+    imageUrl: getMaterialImageUrlOrDefault(item.type, item.id)
+  }))
+)
+
+const giveInventorySupplyRows = computed(() => compactSupplyRows.value)
+
+const isSupplyType = (type) => type === 'food' || type === 'energy'
+
+const formatChineseUnit = (unit) => ({ kg: '千克', portion: '份', L: '升' }[unit] || unit || '单位')
+
+const giveSelectedItemRows = computed(() => giveItems.value.filter((i) => !isSupplyType(i.itemType)))
+const giveSelectedSupplyRows = computed(() => giveItems.value.filter((i) => isSupplyType(i.itemType)))
+const takeSelectedItemRows = computed(() => takeItems.value.filter((i) => !isSupplyType(i.itemType)))
+const takeSelectedSupplyRows = computed(() => takeItems.value.filter((i) => isSupplyType(i.itemType)))
+
+const tradeKcalSummary = computed(() => {
+  const sumByType = (rows, type) =>
+    rows
+      .filter((i) => i.itemType === type)
+      .reduce((sum, i) => sum + Number(i.kcalPerUnit || 0) * Number(i.quantity || 0), 0)
+  const foodDelta = sumByType(takeItems.value, 'food') - sumByType(giveItems.value, 'food')
+  const energyDelta = sumByType(takeItems.value, 'energy') - sumByType(giveItems.value, 'energy')
+  return { foodDelta, energyDelta }
+})
 
 const loadCurrentPlayerItems = async () => {
   try {
     const items = await playerAPI.getItems(playerId)
     if (Array.isArray(items) && items.length > 0) {
-      const iconMap = {
-        item: '📦',
-        weapon: '⚔️',
-        ammo: '🎯',
-        material: '🔧'
-      }
       currentPlayerItems.value = items.map(item => ({
         id: item.id,
         type: item.type,
         name: item.name,
         unit: item.unit,
-        quantity: item.quantity,
-        icon: iconMap[item.type] || '📦'
+        quantity: item.quantity
       }))
       console.log('Loaded player items from API:', currentPlayerItems.value)
     } else {
@@ -143,6 +238,44 @@ const loadCurrentPlayerItems = async () => {
   } catch (error) {
     console.log('Failed to load player items, using fallback due to:', error.message)
     currentPlayerItems.value = playerItemsMap[playerId] || []
+  }
+}
+
+const loadPlayerSupplies = async () => {
+  try {
+    const result = await playerAPI.getSupplies(playerId)
+    if (result && result.success) {
+      playerSupplies.value = result
+      takePaletteRows.food = (result.foodSupply?.items || []).map((row) => ({
+        id: row.id,
+        itemKey: row.id,
+        itemType: 'food',
+        name: row.name,
+        unit: row.unit,
+        quantity: Number(row.quantity || 0),
+        kcalPerUnit: Number(row.kcalPerUnit || 0),
+        imageUrl: getMaterialImageUrlOrDefault('material', 5)
+      }))
+      takePaletteRows.energy = (result.energyReserve?.items || []).map((row) => ({
+        id: row.id,
+        itemKey: row.id,
+        itemType: 'energy',
+        name: row.name,
+        unit: row.unit,
+        quantity: Number(row.quantity || 0),
+        kcalPerUnit: Number(row.kcalPerUnit || 0),
+        imageUrl: getMaterialImageUrlOrDefault('material', 8)
+      }))
+    } else {
+      playerSupplies.value = null
+      takePaletteRows.food = []
+      takePaletteRows.energy = []
+    }
+  } catch (error) {
+    console.log('Failed to load player supplies:', error.message)
+    playerSupplies.value = null
+    takePaletteRows.food = []
+    takePaletteRows.energy = []
   }
 }
 
@@ -165,6 +298,7 @@ const pendingTrades = computed(() => {
 })
 
 const showTradeModal = ref(false)
+const tradeModalStep = ref(1)
 const selectedTargetPlayer = ref('')
 const giveItems = ref([])
 const takeItems = ref([])
@@ -213,19 +347,114 @@ const receivedItems = computed(() => {
   return result
 })
 
+function tradeRowWithThumb(item) {
+  const fallbackType = item.itemType === 'food' ? 'material' : item.itemType === 'energy' ? 'material' : item.itemType
+  const fallbackId = item.itemType === 'food' ? 5 : item.itemType === 'energy' ? 8 : item.itemId
+  return {
+    ...item,
+    imageUrl: item.imageUrl ?? getMaterialImageUrlOrDefault(fallbackType, fallbackId)
+  }
+}
+
+const detailTradeItems = computed(() => {
+  const items = selectedTrade.value?.items
+  if (!Array.isArray(items)) return []
+  return items.map(tradeRowWithThumb)
+})
+
+const detailTradeItemRows = computed(() => detailTradeItems.value.filter((i) => !isSupplyType(i.itemType)))
+const detailTradeSupplyRows = computed(() => detailTradeItems.value.filter((i) => isSupplyType(i.itemType)))
+
+const providedItemsDisplay = computed(() => providedItems.value.map(tradeRowWithThumb))
+
+const receivedItemsDisplay = computed(() => receivedItems.value.map(tradeRowWithThumb))
+
+const providedItemRows = computed(() => providedItemsDisplay.value.filter((i) => !isSupplyType(i.itemType)))
+const providedSupplyRows = computed(() => providedItemsDisplay.value.filter((i) => isSupplyType(i.itemType)))
+const receivedItemRows = computed(() => receivedItemsDisplay.value.filter((i) => !isSupplyType(i.itemType)))
+const receivedSupplyRows = computed(() => receivedItemsDisplay.value.filter((i) => isSupplyType(i.itemType)))
+
+const isSameTradeEntry = (a, b) => {
+  if (!a || !b) return false
+  if (a.itemType !== b.itemType) return false
+  const aKey = a.itemKey ?? null
+  const bKey = b.itemKey ?? null
+  if (aKey !== null && bKey !== null) return aKey === bKey
+  return a.itemId === b.itemId
+}
+
+const selectedCountIn = (rows, probe) =>
+  rows.reduce((sum, row) => (isSameTradeEntry(row, probe) ? sum + Number(row.quantity || 0) : sum), 0)
+
+const selectedGiveCount = (row) =>
+  selectedCountIn(giveItems.value, {
+    itemType: row.itemType || row.type,
+    itemId: typeof row.id === 'number' ? row.id : null,
+    itemKey: row.itemKey ?? (typeof row.id === 'string' ? row.id : null)
+  })
+
+const selectedTakeCount = (row) =>
+  selectedCountIn(takeItems.value, {
+    itemType: row.itemType,
+    itemId: typeof row.id === 'number' ? row.id : null,
+    itemKey: row.itemKey ?? (typeof row.id === 'string' ? row.id : null)
+  })
+
+const openTradeModal = () => {
+  tradeModalStep.value = 1
+  showTradeModal.value = true
+}
+
+const closeTradeModal = () => {
+  tradeModalStep.value = 1
+  showTradeModal.value = false
+}
+
+const goPreviewStep = () => {
+  if (!selectedTargetPlayer.value) {
+    alert('请选择交易对象')
+    return
+  }
+  if (giveItems.value.length === 0 && takeItems.value.length === 0) {
+    alert('请至少添加一件给予或索取的物品')
+    return
+  }
+  tradeModalStep.value = 2
+}
+
+const detailKcalSummary = computed(() => {
+  const sumByType = (rows, type) =>
+    rows
+      .filter((i) => i.itemType === type)
+      .reduce((sum, i) => sum + Number(i.lineKcal || (Number(i.kcalPerUnit || 0) * Number(i.quantity || 0))), 0)
+  const foodDelta = sumByType(receivedItemsDisplay.value, 'food') - sumByType(providedItemsDisplay.value, 'food')
+  const energyDelta = sumByType(receivedItemsDisplay.value, 'energy') - sumByType(providedItemsDisplay.value, 'energy')
+  return { foodDelta, energyDelta }
+})
+
 const addGiveItem = (item) => {
-  const existItem = giveItems.value.find(i => i.itemId === item.id && i.itemType === item.type)
+  const itemType = item.itemType || item.type
+  const itemId = typeof item.id === 'number' ? item.id : null
+  const itemKey = item.itemKey ?? (typeof item.id === 'string' ? item.id : null)
+  const existItem = giveItems.value.find((i) =>
+    isSameTradeEntry(
+      { itemType: i.itemType, itemId: i.itemId, itemKey: i.itemKey },
+      { itemType, itemId, itemKey }
+    )
+  )
   if (existItem) {
     if (existItem.quantity < item.quantity) {
       existItem.quantity++
     }
   } else {
     giveItems.value.push({
-      itemId: item.id,
-      itemType: item.type,
+      itemId,
+      itemKey,
+      itemType,
       name: item.name,
       unit: item.unit,
-      icon: item.icon,
+      kcalPerUnit: Number(item.kcalPerUnit || 0),
+      imageUrl: item.imageUrl ?? getMaterialImageUrlOrDefault(itemType, item.id),
       quantity: 1,
       maxQuantity: item.quantity
     })
@@ -236,23 +465,47 @@ const removeGiveItem = (index) => {
   giveItems.value.splice(index, 1)
 }
 
-const addTakeItem = (item) => {
-  const existItem = takeItems.value.find(i => i.itemId === item.id && i.itemType === item.type)
-  if (!existItem) {
+const addTakeItem = (row) => {
+  const rowItemId = typeof row.id === 'number' ? row.id : null
+  const rowItemKey = row.itemKey ?? (typeof row.id === 'string' ? row.id : null)
+  const existItem = takeItems.value.find((i) =>
+    isSameTradeEntry(
+      { itemType: i.itemType, itemId: i.itemId, itemKey: i.itemKey },
+      { itemType: row.itemType, itemId: rowItemId, itemKey: rowItemKey }
+    )
+  )
+  if (existItem) {
+    if (isSupplyType(row.itemType)) {
+      existItem.quantity += 1
+    } else {
+      existItem.quantity = Math.min(500, Number(existItem.quantity || 0) + 1)
+    }
+  } else {
     takeItems.value.push({
-      itemId: item.id,
-      itemType: item.type,
-      name: item.name,
-      unit: item.unit,
-      icon: item.icon,
+      itemId: typeof row.id === 'number' ? row.id : null,
+      itemKey: row.itemKey ?? (typeof row.id === 'string' ? row.id : null),
+      itemType: row.itemType,
+      name: row.name,
+      unit: row.unit,
+      kcalPerUnit: Number(row.kcalPerUnit || 0),
+      imageUrl: row.imageUrl ?? getMaterialImageUrlOrDefault(row.itemType, row.id),
       quantity: 1,
-      maxQuantity: 99
+      maxQuantity: isSupplyType(row.itemType) ? null : 500
     })
   }
 }
 
 const removeTakeItem = (index) => {
   takeItems.value.splice(index, 1)
+}
+
+const normalizeTakeQuantity = (item) => {
+  const val = Math.max(1, Number(item.quantity || 1))
+  if (isSupplyType(item.itemType)) {
+    item.quantity = val
+    return
+  }
+  item.quantity = Math.min(500, val)
 }
 
 const sendTrade = async () => {
@@ -272,12 +525,14 @@ const sendTrade = async () => {
       ...giveItems.value.map(i => ({
         itemType: i.itemType,
         itemId: i.itemId,
+        itemKey: i.itemKey ?? null,
         quantity: i.quantity,
         direction: 'give'
       })),
       ...takeItems.value.map(i => ({
         itemType: i.itemType,
         itemId: i.itemId,
+        itemKey: i.itemKey ?? null,
         quantity: i.quantity,
         direction: 'take'
       }))
@@ -293,11 +548,14 @@ const sendTrade = async () => {
     if (result.success) {
       alert('交易请求已发送')
       await loadTrades()
+      await loadCurrentPlayerItems()
+      await loadPlayerSupplies()
       selectedTargetPlayer.value = ''
       giveItems.value = []
       takeItems.value = []
       tradeRemark.value = ''
       showTradeModal.value = false
+      tradeModalStep.value = 1
     } else {
       alert(result.message || '发送交易失败')
     }
@@ -469,33 +727,20 @@ const formatTime = (dateStr) => {
 
 const getStatusBadge = (status) => {
   const badges = {
-    pending: { text: '交易中', color: 'bg-blue-500/20 text-blue-400 border-blue-500/50' },
+    pending: { text: '交易中', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' },
     accepted: { text: '已接受', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' },
     rejected: { text: '已拒绝', color: 'bg-red-500/20 text-red-400 border-red-500/50' },
-    cancelled: { text: '交易中止', color: 'bg-amber-500/20 text-amber-400 border-amber-500/50' },
-    completed: { text: '交易成功', color: 'bg-purple-500/20 text-purple-400 border-purple-500/50' }
+    cancelled: { text: '交易中止', color: 'bg-red-500/20 text-red-400 border-red-500/50' },
+    completed: { text: '已接受', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' }
   }
   return badges[status] || badges.pending
-}
-
-const getItemIcon = (itemType) => {
-  const icons = {
-    item: '📦',
-    weapon: '⚔️',
-    ammo: '🎯',
-    material: '🔧',
-    ITEM: '📦',
-    WEAPON: '⚔️',
-    AMMO: '🎯',
-    MATERIAL: '🔧'
-  }
-  return icons[itemType] || '📦'
 }
 
 onMounted(async () => {
   await loadPlayers()
   await loadTrades()
   await loadCurrentPlayerItems()
+  await loadPlayerSupplies()
   const currentPlayer = players.value.find(p => p.id === playerId)
   currentPlayerName.value = currentPlayer?.name || ''
 })
@@ -516,7 +761,7 @@ defineExpose({
       <button
         type="button"
         class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-5 py-2.5 rounded-xl transition-all text-sm shadow-lg shadow-blue-500/30 flex items-center gap-2"
-        @click="showTradeModal = true"
+        @click="openTradeModal"
       >
         <span>发起交易</span>
       </button>
@@ -636,8 +881,8 @@ defineExpose({
     <Teleport to="body">
       <div
         v-if="showTradeModal"
-        class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
-        @click.self="showTradeModal = false"
+        class="fixed inset-0 bg-black/65 flex items-center justify-center z-50"
+        @click.self="closeTradeModal"
       >
         <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-6 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
           <div class="flex items-center justify-between mb-6">
@@ -645,7 +890,7 @@ defineExpose({
             <button
               type="button"
               class="text-gray-400 hover:text-white transition-colors"
-              @click="showTradeModal = false"
+              @click="closeTradeModal"
             >
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -653,7 +898,7 @@ defineExpose({
             </button>
           </div>
 
-          <div class="space-y-5">
+          <div v-if="tradeModalStep === 1" class="space-y-5">
             <div>
               <label class="block text-gray-300 text-sm mb-2">选择交易对象</label>
               <select
@@ -673,29 +918,96 @@ defineExpose({
                   <label class="text-gray-300 text-sm">你提供的物品</label>
                   <span class="text-xs text-gray-500">点击添加</span>
                 </div>
-                <div class="bg-white/5 border border-white/10 rounded-xl p-3 min-h-[200px]">
-                  <div class="mb-3 flex flex-wrap gap-1">
+                <div class="bg-white/5 border border-white/10 rounded-xl p-3 min-h-[200px] flex flex-col">
+                  <div class="text-xs text-gray-500 mb-1">背包物品（点击一行加入）</div>
+                  <div class="max-h-44 overflow-y-auto space-y-0.5 mb-3 rounded-lg border border-white/5 p-1 shrink-0">
                     <button
-                      v-for="item in currentPlayerItems"
+                      v-for="item in giveInventoryItemRows"
                       :key="`give-${item.id}-${item.type}`"
                       type="button"
-                      class="text-lg bg-white/5 hover:bg-white/10 rounded px-1 py-1 transition-all"
-                      :title="`${item.name} (拥有${item.quantity})`"
+                      class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-gray-200 hover:bg-white/10 transition-colors text-left"
                       @click="addGiveItem(item)"
                     >
-                      {{ item.icon }}
+                      <div class="w-8 h-8 shrink-0 rounded-md bg-white/10 overflow-hidden flex items-center justify-center p-0.5">
+                        <img
+                          :src="item.imageUrl"
+                          :alt="item.name"
+                          class="w-full h-full object-contain"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <span class="text-gray-500">[{{ tradeTypeLabel(item.itemType || item.type) }}]</span>
+                        {{ item.name }}
+                        <span class="text-gray-500"> · {{ item.quantity }}{{ formatChineseUnit(item.unit) }}</span>
+                        <span v-if="Number(item.kcalPerUnit) > 0" class="text-gray-500"> · {{ item.kcalPerUnit }}大卡/单位</span>
+                      </div>
+                      <span v-if="selectedGiveCount(item) > 0" class="text-[11px] text-blue-300 bg-blue-500/20 px-2 py-0.5 rounded-full shrink-0">
+                        {{ selectedGiveCount(item) }}
+                      </span>
                     </button>
+                    <div
+                      v-if="giveInventoryItemRows.length === 0"
+                      class="text-gray-500 text-xs text-center py-4"
+                    >
+                      暂无背包数据
+                    </div>
                   </div>
-                  
-                  <div class="space-y-2">
+
+                  <div class="text-xs text-gray-500 mb-1">食物与燃料（点击一行加入）</div>
+                  <div class="max-h-32 overflow-y-auto space-y-0.5 mb-3 rounded-lg border border-white/5 p-1 shrink-0">
+                    <button
+                      v-for="item in giveInventorySupplyRows"
+                      :key="`give-supply-${item.itemType}-${item.itemKey}`"
+                      type="button"
+                      class="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-xs text-gray-200 hover:bg-white/10 transition-colors text-left"
+                      @click="addGiveItem(item)"
+                    >
+                      <div class="min-w-0 flex-1">
+                        <span class="text-gray-500">[{{ tradeTypeLabel(item.itemType) }}]</span>
+                        {{ item.name }}
+                        <span class="text-gray-500"> · {{ item.quantity }}{{ formatChineseUnit(item.unit) }}</span>
+                      </div>
+                      <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-[11px] text-gray-500">{{ item.kcalPerUnit }} 大卡/单位</span>
+                        <span v-if="selectedGiveCount(item) > 0" class="text-[11px] text-blue-300 bg-blue-500/20 px-2 py-0.5 rounded-full">
+                          {{ selectedGiveCount(item) }}
+                        </span>
+                      </div>
+                    </button>
+                    <div
+                      v-if="giveInventorySupplyRows.length === 0"
+                      class="text-gray-500 text-xs text-center py-4"
+                    >
+                      暂无食物或燃料库存
+                    </div>
+                  </div>
+
+                  <div class="text-xs text-gray-500 mb-1">已选物品（提供给对方）</div>
+                  <div class="space-y-2 flex-1 min-h-0">
                     <div
                       v-for="(item, index) in giveItems"
-                      :key="`selected-${item.itemId}-${item.itemType}`"
-                      class="bg-white/5 rounded-lg p-2 flex items-center justify-between"
+                      :key="`selected-item-${item.itemType}-${item.itemId}-${item.itemKey}-${index}`"
+                      class="bg-white/5 rounded-lg px-2 py-2 flex items-center justify-between gap-2"
                     >
-                      <div class="flex items-center gap-2">
-                        <span class="text-lg">{{ item.icon }}</span>
-                        <span class="text-gray-200 text-sm">{{ item.name }}</span>
+                      <div class="flex items-center gap-2 min-w-0 flex-1">
+                        <div
+                          v-if="item.itemType !== 'food' && item.itemType !== 'energy'"
+                          class="w-8 h-8 shrink-0 rounded-md bg-white/10 overflow-hidden flex items-center justify-center p-0.5"
+                        >
+                          <img
+                            :src="item.imageUrl"
+                            :alt="item.name"
+                            class="w-full h-full object-contain"
+                            decoding="async"
+                          />
+                        </div>
+                        <div class="min-w-0">
+                          <span class="text-gray-500 text-xs">[{{ tradeTypeLabel(item.itemType) }}]</span>
+                          <span class="text-gray-200 text-sm">{{ item.name }}</span>
+                          <span v-if="Number(item.kcalPerUnit) > 0" class="text-[11px] text-gray-500 block">{{ item.kcalPerUnit }} 大卡/单位</span>
+                        </div>
                       </div>
                       <div class="flex items-center gap-2">
                         <input
@@ -708,15 +1020,14 @@ defineExpose({
                         <button
                           type="button"
                           class="text-red-400 hover:text-red-300 text-xs"
-                          @click="removeGiveItem(index)"
+                          @click="removeGiveItem(giveItems.indexOf(item))"
                         >
                           移除
                         </button>
                       </div>
                     </div>
                   </div>
-                  
-                  <div v-if="giveItems.length === 0" class="text-gray-500 text-sm text-center py-8">
+                  <div v-if="giveItems.length === 0" class="text-gray-500 text-sm text-center py-2">
                     暂无选择物品
                   </div>
                 </div>
@@ -727,51 +1038,101 @@ defineExpose({
                   <label class="text-gray-300 text-sm">你需要的物品</label>
                   <span class="text-xs text-gray-500">点击添加</span>
                 </div>
-                <div class="bg-white/5 border border-white/10 rounded-xl p-3 min-h-[200px]">
-                  <div class="mb-3 flex flex-wrap gap-1">
-                    <template v-for="(list, type) in allMaterialsMap" :key="type">
-                      <button
-                        v-for="item in list"
-                        :key="`take-${item.id}-${type}`"
-                        type="button"
-                        class="text-lg bg-white/5 hover:bg-white/10 rounded px-1 py-1 transition-all"
-                        :title="item.name"
-                        @click="addTakeItem({ ...item, type })"
-                      >
-                        {{ item.icon }}
-                      </button>
-                    </template>
+                <div class="bg-white/5 border border-white/10 rounded-xl p-3 min-h-[200px] flex flex-col">
+                  <div class="flex flex-wrap gap-1.5 mb-2 shrink-0">
+                    <button
+                      v-for="tab in takePaletteTabs"
+                      :key="tab.key"
+                      type="button"
+                      class="px-2.5 py-1 rounded-lg text-xs transition-all border"
+                      :class="
+                        takePaletteTab === tab.key
+                          ? 'bg-blue-500/25 text-blue-300 border-blue-500/40'
+                          : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10'
+                      "
+                      @click="takePaletteTab = tab.key"
+                    >
+                      {{ tab.label }}
+                    </button>
                   </div>
-                  
-                  <div class="space-y-2">
+                  <div class="text-xs text-gray-500 mb-1">图鉴（点击一行加入索取）</div>
+                  <div class="max-h-44 overflow-y-auto space-y-0.5 mb-3 rounded-lg border border-white/5 p-1 shrink-0">
+                    <button
+                      v-for="row in visibleTakePalette"
+                      :key="`take-${row.id}-${row.itemType}`"
+                      type="button"
+                      class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-gray-200 hover:bg-white/10 transition-colors text-left"
+                      @click="addTakeItem(row)"
+                    >
+                      <div
+                        v-if="row.itemType !== 'food' && row.itemType !== 'energy'"
+                        class="w-8 h-8 shrink-0 rounded-md bg-white/10 overflow-hidden flex items-center justify-center p-0.5"
+                      >
+                        <img
+                          :src="row.imageUrl"
+                          :alt="row.name"
+                          class="w-full h-full object-contain"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <span class="text-gray-500">[{{ tradeTypeLabel(row.itemType) }}]</span>
+                        {{ row.name }}
+                        <span class="text-gray-500"> · {{ formatChineseUnit(row.unit) }}</span>
+                        <span v-if="Number(row.kcalPerUnit) > 0" class="text-gray-500"> · {{ row.kcalPerUnit }}大卡/单位</span>
+                      </div>
+                      <span v-if="selectedTakeCount(row) > 0" class="text-[11px] text-blue-300 bg-blue-500/20 px-2 py-0.5 rounded-full shrink-0">
+                        {{ selectedTakeCount(row) }}
+                      </span>
+                    </button>
+                  </div>
+
+                  <div class="text-xs text-gray-500 mb-1">已选物品（向对方索取）</div>
+                  <div class="space-y-2 flex-1 min-h-0">
                     <div
                       v-for="(item, index) in takeItems"
-                      :key="`selected-take-${item.itemId}-${item.itemType}`"
-                      class="bg-white/5 rounded-lg p-2 flex items-center justify-between"
+                      :key="`selected-take-item-${item.itemType}-${item.itemId}-${item.itemKey}-${index}`"
+                      class="bg-white/5 rounded-lg px-2 py-2 flex items-center justify-between gap-2"
                     >
-                      <div class="flex items-center gap-2">
-                        <span class="text-lg">{{ item.icon }}</span>
-                        <span class="text-gray-200 text-sm">{{ item.name }}</span>
+                      <div class="flex items-center gap-2 min-w-0 flex-1">
+                        <div
+                          v-if="item.itemType !== 'food' && item.itemType !== 'energy'"
+                          class="w-8 h-8 shrink-0 rounded-md bg-white/10 overflow-hidden flex items-center justify-center p-0.5"
+                        >
+                          <img
+                            :src="item.imageUrl"
+                            :alt="item.name"
+                            class="w-full h-full object-contain"
+                            decoding="async"
+                          />
+                        </div>
+                        <div class="min-w-0">
+                          <span class="text-gray-500 text-xs">[{{ tradeTypeLabel(item.itemType) }}]</span>
+                          <span class="text-gray-200 text-sm">{{ item.name }}</span>
+                          <span v-if="Number(item.kcalPerUnit) > 0" class="text-[11px] text-gray-500 block">{{ item.kcalPerUnit }} 大卡/单位</span>
+                        </div>
                       </div>
                       <div class="flex items-center gap-2">
                         <input
                           v-model.number="item.quantity"
                           type="number"
                           min="1"
+                          :max="item.itemType === 'food' || item.itemType === 'energy' ? null : 500"
                           class="w-16 bg-white/10 rounded px-2 py-1 text-gray-200 text-sm text-center"
+                          @change="normalizeTakeQuantity(item)"
                         />
                         <button
                           type="button"
                           class="text-red-400 hover:text-red-300 text-xs"
-                          @click="removeTakeItem(index)"
+                          @click="removeTakeItem(takeItems.indexOf(item))"
                         >
                           移除
                         </button>
                       </div>
                     </div>
                   </div>
-                  
-                  <div v-if="takeItems.length === 0" class="text-gray-500 text-sm text-center py-8">
+                  <div v-if="takeItems.length === 0" class="text-gray-500 text-sm text-center py-2">
                     暂无选择物品
                   </div>
                 </div>
@@ -792,9 +1153,82 @@ defineExpose({
               <button
                 type="button"
                 class="flex-1 bg-white/5 hover:bg-white/10 text-gray-300 py-3 rounded-xl transition-all"
-                @click="showTradeModal = false"
+                @click="closeTradeModal"
               >
                 取消
+              </button>
+              <button
+                type="button"
+                class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3 rounded-xl transition-all shadow-lg shadow-blue-500/30"
+                @click="goPreviewStep"
+              >
+                预览
+              </button>
+            </div>
+          </div>
+
+          <div v-else class="space-y-5">
+            <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+              <h3 class="text-gray-300 text-sm mb-2">交易预览</h3>
+              <div class="text-xs text-gray-400 mb-1">交易对象：{{ otherPlayers.find(p => p.id === Number(selectedTargetPlayer))?.name || '未选择' }}</div>
+              <div class="text-xs text-gray-400 mb-2">你提供 {{ giveItems.length }} 项，索取 {{ takeItems.length }} 项</div>
+              <div class="space-y-3 max-h-60 overflow-y-auto">
+                <div>
+                  <div class="text-[11px] text-gray-500 mb-1">提供</div>
+                  <div class="space-y-1">
+                    <div v-for="(item, index) in giveItems" :key="`pv-give-${index}`" class="text-xs text-gray-300 flex items-center justify-between">
+                      <span>[{{ tradeTypeLabel(item.itemType) }}] {{ item.name }}</span>
+                      <span class="text-gray-400 text-right">
+                        {{ item.quantity }} {{ formatChineseUnit(item.unit) }}
+                        <span v-if="Number(item.kcalPerUnit) > 0" class="block text-[11px] text-gray-500">{{ item.kcalPerUnit }} 大卡/单位</span>
+                      </span>
+                    </div>
+                    <div v-if="giveItems.length === 0" class="text-xs text-gray-500">无</div>
+                  </div>
+                </div>
+                <div>
+                  <div class="text-[11px] text-gray-500 mb-1">索取</div>
+                  <div class="space-y-1">
+                    <div v-for="(item, index) in takeItems" :key="`pv-take-${index}`" class="text-xs text-gray-300 flex items-center justify-between">
+                      <span>[{{ tradeTypeLabel(item.itemType) }}] {{ item.name }}</span>
+                      <span class="text-gray-400 text-right">
+                        {{ item.quantity }} {{ formatChineseUnit(item.unit) }}
+                        <span v-if="Number(item.kcalPerUnit) > 0" class="block text-[11px] text-gray-500">{{ item.kcalPerUnit }} 大卡/单位</span>
+                      </span>
+                    </div>
+                    <div v-if="takeItems.length === 0" class="text-xs text-gray-500">无</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-gray-300 space-y-1">
+              <div class="flex items-center justify-between">
+                <span>食物热量变化（大卡）</span>
+                <span :class="tradeKcalSummary.foodDelta >= 0 ? 'text-emerald-400' : 'text-red-400'">
+                  {{ tradeKcalSummary.foodDelta >= 0 ? '+' : '' }}{{ tradeKcalSummary.foodDelta.toLocaleString() }}
+                </span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>燃料热量变化（大卡）</span>
+                <span :class="tradeKcalSummary.energyDelta >= 0 ? 'text-emerald-400' : 'text-red-400'">
+                  {{ tradeKcalSummary.energyDelta >= 0 ? '+' : '' }}{{ tradeKcalSummary.energyDelta.toLocaleString() }}
+                </span>
+              </div>
+            </div>
+
+            <div v-if="tradeRemark" class="bg-white/5 border border-white/10 rounded-xl p-3">
+              <div class="text-xs text-gray-500 mb-1">备注信息</div>
+              <p class="text-sm text-gray-300">{{ tradeRemark }}</p>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+              <button
+                type="button"
+                class="flex-1 bg-white/5 hover:bg-white/10 text-gray-300 py-3 rounded-xl transition-all"
+                @click="tradeModalStep = 1"
+              >
+                返回
               </button>
               <button
                 type="button"
@@ -813,10 +1247,10 @@ defineExpose({
     <Teleport to="body">
       <div
         v-if="showDetailModal && selectedTrade"
-        class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
+        class="fixed inset-0 bg-black/65 flex items-center justify-center z-50"
         @click.self="closeDetailModal"
       >
-        <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-6 max-w-lg w-full mx-4 shadow-2xl">
+        <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-6 max-w-4xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-white text-xl tracking-tight">交易详情</h2>
             <button
@@ -834,10 +1268,6 @@ defineExpose({
             <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4">
               <h3 class="text-gray-400 text-xs mb-3">基本信息</h3>
               <div class="space-y-3">
-                <div class="flex items-center justify-between">
-                  <span class="text-gray-500 text-sm">交易编号</span>
-                  <span class="text-gray-200 text-sm font-mono">#{{ selectedTrade.id }}</span>
-                </div>
                 <div class="flex items-center justify-between">
                   <span class="text-gray-500 text-sm">交易对象</span>
                   <span class="text-gray-200 text-sm">
@@ -858,58 +1288,110 @@ defineExpose({
               </div>
             </div>
 
-            <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4 mb-4">
-              <div class="text-red-400 text-xs">物品列表: {{ selectedTrade.items.length }} 件</div>
-              <div v-for="(item, index) in selectedTrade.items" :key="index" class="text-green-400 text-xs">
-                {{ index }}: {{ item.name }} - {{ item.quantity }} {{ item.unit }} ({{ item.direction }})
+            <div class="grid grid-cols-2 gap-3">
+              <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-3">
+                <h3 class="text-gray-400 text-xs mb-2">你提供</h3>
+                <div class="text-[11px] text-gray-500 mb-1">物品</div>
+                <div class="space-y-1 max-h-36 overflow-y-auto">
+                  <div
+                    v-for="(item, index) in providedItemRows"
+                    :key="index"
+                    class="flex items-center justify-between gap-2 bg-white/5 rounded-lg px-3 py-2 text-sm"
+                  >
+                    <span class="flex items-center gap-2 text-gray-200 truncate min-w-0">
+                      <span class="w-7 h-7 shrink-0 rounded bg-white/10 overflow-hidden flex items-center justify-center p-0.5">
+                        <img
+                          :src="item.imageUrl"
+                          :alt="item.name"
+                          class="w-full h-full object-contain"
+                          decoding="async"
+                        />
+                      </span>
+                      <span class="truncate">{{ item.name }}</span>
+                    </span>
+                    <span class="text-gray-400 shrink-0 whitespace-nowrap text-right">
+                      {{ item.quantity }} {{ formatChineseUnit(item.unit) }}
+                      <span v-if="Number(item.kcalPerUnit) > 0" class="block text-[11px] text-gray-500">{{ item.kcalPerUnit }} 大卡/单位</span>
+                    </span>
+                  </div>
+                  <div v-if="providedItemRows.length === 0" class="text-gray-500 text-sm text-center py-4">
+                    无
+                  </div>
+                </div>
+                <div class="text-[11px] text-gray-500 mt-2 mb-1">食物与燃料</div>
+                <div class="space-y-1 max-h-28 overflow-y-auto">
+                  <div v-for="(item, index) in providedSupplyRows" :key="`provided-supply-${index}`" class="flex items-center justify-between gap-2 bg-white/5 rounded-lg px-3 py-2 text-sm">
+                    <span class="text-gray-200 truncate min-w-0">
+                      <span class="text-gray-500 text-xs">[{{ tradeTypeLabel(item.itemType) }}]</span>
+                      {{ item.name }}
+                    </span>
+                    <span class="text-gray-400 shrink-0 whitespace-nowrap text-right">
+                      {{ item.quantity }} {{ formatChineseUnit(item.unit) }}
+                      <span class="block text-[11px] text-gray-500">{{ item.kcalPerUnit }} 大卡/单位</span>
+                    </span>
+                  </div>
+                  <div v-if="providedSupplyRows.length === 0" class="text-gray-500 text-sm text-center py-2">无</div>
+                </div>
+              </div>
+
+              <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-3">
+                <h3 class="text-gray-400 text-xs mb-2">你获得</h3>
+                <div class="text-[11px] text-gray-500 mb-1">物品</div>
+                <div class="space-y-1 max-h-36 overflow-y-auto">
+                  <div
+                    v-for="(item, index) in receivedItemRows"
+                    :key="index"
+                    class="flex items-center justify-between gap-2 bg-white/5 rounded-lg px-3 py-2 text-sm"
+                  >
+                    <span class="flex items-center gap-2 text-gray-200 truncate min-w-0">
+                      <span class="w-7 h-7 shrink-0 rounded bg-white/10 overflow-hidden flex items-center justify-center p-0.5">
+                        <img
+                          :src="item.imageUrl"
+                          :alt="item.name"
+                          class="w-full h-full object-contain"
+                          decoding="async"
+                        />
+                      </span>
+                      <span class="truncate">{{ item.name }}</span>
+                    </span>
+                    <span class="text-gray-400 shrink-0 whitespace-nowrap text-right">
+                      {{ item.quantity }} {{ formatChineseUnit(item.unit) }}
+                      <span v-if="Number(item.kcalPerUnit) > 0" class="block text-[11px] text-gray-500">{{ item.kcalPerUnit }} 大卡/单位</span>
+                    </span>
+                  </div>
+                  <div v-if="receivedItemRows.length === 0" class="text-gray-500 text-sm text-center py-4">
+                    无
+                  </div>
+                </div>
+                <div class="text-[11px] text-gray-500 mt-2 mb-1">食物与燃料</div>
+                <div class="space-y-1 max-h-28 overflow-y-auto">
+                  <div v-for="(item, index) in receivedSupplyRows" :key="`received-supply-${index}`" class="flex items-center justify-between gap-2 bg-white/5 rounded-lg px-3 py-2 text-sm">
+                    <span class="text-gray-200 truncate min-w-0">
+                      <span class="text-gray-500 text-xs">[{{ tradeTypeLabel(item.itemType) }}]</span>
+                      {{ item.name }}
+                    </span>
+                    <span class="text-gray-400 shrink-0 whitespace-nowrap text-right">
+                      {{ item.quantity }} {{ formatChineseUnit(item.unit) }}
+                      <span class="block text-[11px] text-gray-500">{{ item.kcalPerUnit }} 大卡/单位</span>
+                    </span>
+                  </div>
+                  <div v-if="receivedSupplyRows.length === 0" class="text-gray-500 text-sm text-center py-2">无</div>
+                </div>
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-              <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4">
-                <h3 class="text-gray-400 text-xs mb-3 flex items-center gap-2">
-                  <span>📤</span>
-                  你提供
-                </h3>
-                <div class="space-y-2">
-                  <div
-                    v-for="(item, index) in providedItems"
-                    :key="index"
-                    class="flex items-center justify-between bg-white/5 rounded-lg p-2"
-                  >
-                    <div class="flex items-center gap-2">
-                      <span class="text-lg">{{ getItemIcon(item.itemType) }}</span>
-                      <span class="text-gray-200 text-sm">{{ item.name }}</span>
-                    </div>
-                    <span class="text-gray-400 text-sm">{{ item.quantity }} {{ item.unit }}</span>
-                  </div>
-                  <div v-if="providedItems.length === 0" class="text-gray-500 text-sm text-center py-4">
-                    无
-                  </div>
-                </div>
+            <div class="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-gray-300 space-y-1">
+              <div class="flex items-center justify-between">
+                <span>食物热量变化（大卡）</span>
+                <span :class="detailKcalSummary.foodDelta >= 0 ? 'text-emerald-400' : 'text-red-400'">
+                  {{ detailKcalSummary.foodDelta >= 0 ? '+' : '' }}{{ detailKcalSummary.foodDelta.toLocaleString() }}
+                </span>
               </div>
-
-              <div class="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4">
-                <h3 class="text-gray-400 text-xs mb-3 flex items-center gap-2">
-                  <span>📥</span>
-                  你获得
-                </h3>
-                <div class="space-y-2">
-                  <div
-                    v-for="(item, index) in receivedItems"
-                    :key="index"
-                    class="flex items-center justify-between bg-white/5 rounded-lg p-2"
-                  >
-                    <div class="flex items-center gap-2">
-                      <span class="text-lg">{{ getItemIcon(item.itemType) }}</span>
-                      <span class="text-gray-200 text-sm">{{ item.name }}</span>
-                    </div>
-                    <span class="text-gray-400 text-sm">{{ item.quantity }} {{ item.unit }}</span>
-                  </div>
-                  <div v-if="receivedItems.length === 0" class="text-gray-500 text-sm text-center py-4">
-                    无
-                  </div>
-                </div>
+              <div class="flex items-center justify-between">
+                <span>燃料热量变化（大卡）</span>
+                <span :class="detailKcalSummary.energyDelta >= 0 ? 'text-emerald-400' : 'text-red-400'">
+                  {{ detailKcalSummary.energyDelta >= 0 ? '+' : '' }}{{ detailKcalSummary.energyDelta.toLocaleString() }}
+                </span>
               </div>
             </div>
 
