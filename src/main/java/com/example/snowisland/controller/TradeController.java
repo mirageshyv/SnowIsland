@@ -5,6 +5,7 @@ import com.example.snowisland.service.TradeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +23,9 @@ public class TradeController {
 
     @GetMapping("/incoming/{playerId}/pending-count")
     public Map<String, Long> getIncomingPendingCount(@PathVariable Integer playerId) {
-        return Map.of("count", tradeService.countIncomingPendingTrades(playerId));
+        Map<String, Long> result = new HashMap<>();
+        result.put("count", tradeService.countIncomingPendingTrades(playerId));
+        return result;
     }
 
     @GetMapping("/incoming/{playerId}")

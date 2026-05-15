@@ -35,7 +35,7 @@ import imgServicePistol from '@/assets/制式手枪.png?url'
 import imgHuntingShotgun from '@/assets/猎枪.png?url'
 import imgBaton from '@/assets/警棍.png?url'
 import imgBayonet from '@/assets/刺刀.png?url'
-import imgHarpoon from '@/assets/鱼叉:矛.png?url'
+import imgHarpoon from '@/assets/鱼叉_矛.png?url'
 import imgHuntingBow from '@/assets/猎弓.png?url'
 import imgPickaxe from '@/assets/十字镐.png?url'
 import imgAxe from '@/assets/斧头.png?url'
@@ -233,6 +233,38 @@ export const SHELTER_ITEM_CATALOG = {
   rope: { id: 'rope', name: '绳索', category: 'material', description: '常用固定与捆绑耗材。', imageUrl: imgRope },
 }
 
+export const SHELTER_ITEM_CATALOG_BY_TYPE = {
+  'item_1': SHELTER_ITEM_CATALOG.medical_kit,
+  'item_2': SHELTER_ITEM_CATALOG.flashlight,
+  'item_3': SHELTER_ITEM_CATALOG.handcuffs,
+  'item_4': SHELTER_ITEM_CATALOG.whistle,
+  'item_5': SHELTER_ITEM_CATALOG.body_armor,
+  'item_6': SHELTER_ITEM_CATALOG.composite_shield,
+  'item_7': SHELTER_ITEM_CATALOG.flare_gun,
+  'item_8': SHELTER_ITEM_CATALOG.repair_kit,
+  'item_9': SHELTER_ITEM_CATALOG.contract,
+  'item_10': SHELTER_ITEM_CATALOG.rum,
+  'item_11': SHELTER_ITEM_CATALOG.herbs,
+  'item_12': SHELTER_ITEM_CATALOG.fishing_net,
+  'item_13': SHELTER_ITEM_CATALOG.candle,
+  'item_14': SHELTER_ITEM_CATALOG.rubbing_alcohol,
+  'item_15': SHELTER_ITEM_CATALOG.matches,
+  'item_16': SHELTER_ITEM_CATALOG.pencil,
+  'item_17': SHELTER_ITEM_CATALOG.tattered_chart,
+  'weapon_1': SHELTER_ITEM_CATALOG.service_pistol,
+  'weapon_2': SHELTER_ITEM_CATALOG.hunting_shotgun,
+  'weapon_3': SHELTER_ITEM_CATALOG.baton,
+  'weapon_4': SHELTER_ITEM_CATALOG.bayonet,
+  'weapon_6': SHELTER_ITEM_CATALOG.harpoon_spear,
+  'weapon_7': SHELTER_ITEM_CATALOG.hunting_bow,
+  'weapon_8': SHELTER_ITEM_CATALOG.pickaxe,
+  'weapon_9': SHELTER_ITEM_CATALOG.axe,
+  'material_2': SHELTER_ITEM_CATALOG.wood,
+  'material_3': SHELTER_ITEM_CATALOG.rope,
+  'material_4': SHELTER_ITEM_CATALOG.plank,
+  'material_7': SHELTER_ITEM_CATALOG.stone,
+}
+
 export const DEFAULT_SHELTER_INVENTORY = [
   { id: 'wood', quantity: 45 },
   { id: 'stone', quantity: 32 },
@@ -265,172 +297,6 @@ export const DEFAULT_SHELTER_INVENTORY = [
   { id: 'rope', quantity: 35 },
 ]
 
-/** 食物种类与每单位大卡（与 food_catalog 一致；API 不可用时本地合计用） */
-export const FOOD_DEFINITIONS = [
-  { id: 'salty_pork', name: '咸肉', unit: 'kg', kcalPerUnit: 3000 },
-  { id: 'dried_fish', name: '鱼干', unit: 'kg', kcalPerUnit: 2000 },
-  { id: 'flour', name: '面粉', unit: 'kg', kcalPerUnit: 3000 },
-  { id: 'jam', name: '果酱', unit: 'kg', kcalPerUnit: 3000 },
-  { id: 'bread', name: '面包', unit: 'kg', kcalPerUnit: 2500 },
-  { id: 'potato', name: '土豆', unit: 'kg', kcalPerUnit: 1000 },
-  { id: 'hard_biscuit', name: '硬饼干', unit: 'kg', kcalPerUnit: 5000 },
-  { id: 'sauerkraut', name: '酸菜', unit: 'kg', kcalPerUnit: 1000 },
-  { id: 'dried_onion', name: '干洋葱', unit: 'kg', kcalPerUnit: 1500 },
-  { id: 'dried_apple', name: '苹果干', unit: 'kg', kcalPerUnit: 4000 },
-  { id: 'oatmeal', name: '燕麦片', unit: 'kg', kcalPerUnit: 4000 },
-  { id: 'fish_meat', name: '鱼肉', unit: 'kg', kcalPerUnit: 2000 },
-  { id: 'goat_milk', name: '羊奶', unit: 'kg', kcalPerUnit: 3000 },
-  { id: 'jerky', name: '肉干', unit: 'kg', kcalPerUnit: 3000 },
-  { id: 'smoked_meat', name: '熏肉', unit: 'kg', kcalPerUnit: 35000 },
-  { id: 'canned_food', name: '罐头', unit: 'portion', kcalPerUnit: 8000 },
-  { id: 'candy', name: '糖果', unit: 'kg', kcalPerUnit: 5000 },
-  { id: 'cereal', name: '麦片', unit: 'kg', kcalPerUnit: 4000 },
-  { id: 'military_ration', name: '军用压缩干粮', unit: 'portion', kcalPerUnit: 2500 },
-  { id: 'shellfish', name: '贝类', unit: 'kg', kcalPerUnit: 2000 },
-  { id: 'mushroom', name: '食用菌菇', unit: 'kg', kcalPerUnit: 1000 },
-  { id: 'insect_cocoon', name: '虫茧', unit: 'portion', kcalPerUnit: 1000 },
-  { id: 'wild_blueberry', name: '野生蓝莓', unit: 'kg', kcalPerUnit: 1200 },
-  { id: 'raspberry', name: '树莓', unit: 'kg', kcalPerUnit: 1500 },
-]
-
-/** 统治者避难所公共食物库存（本地回退；与 shelter_food_stock 种子一致） */
-export const DEFAULT_SHELTER_FOOD_STOCK = [
-  { id: 'salty_pork', quantity: 4 }, { id: 'dried_fish', quantity: 3 }, { id: 'flour', quantity: 8 }, { id: 'jam', quantity: 2 },
-  { id: 'bread', quantity: 20 }, { id: 'potato', quantity: 15 }, { id: 'hard_biscuit', quantity: 2 },
-  { id: 'sauerkraut', quantity: 5 }, { id: 'dried_onion', quantity: 3 }, { id: 'dried_apple', quantity: 2 },
-  { id: 'oatmeal', quantity: 2 }, { id: 'fish_meat', quantity: 6 }, { id: 'goat_milk', quantity: 5 },
-  { id: 'jerky', quantity: 12 }, { id: 'smoked_meat', quantity: 1 }, { id: 'canned_food', quantity: 8 },
-  { id: 'candy', quantity: 1 }, { id: 'cereal', quantity: 2 }, { id: 'military_ration', quantity: 10 },
-  { id: 'shellfish', quantity: 4 }, { id: 'mushroom', quantity: 5 }, { id: 'insect_cocoon', quantity: 2 },
-  { id: 'wild_blueberry', quantity: 3 }, { id: 'raspberry', quantity: 2 },
-]
-
-/** 玩家个人食物演示（player_food_stock；与避难所仓库分离） */
-export const DEFAULT_PLAYER_FOOD_STOCK = [
-  { id: 'bread', quantity: 5 }, { id: 'jerky', quantity: 2 }, { id: 'candy', quantity: 3 }, { id: 'military_ration', quantity: 2 },
-]
-
-export const ENERGY_DEFINITIONS = [
-  { id: 'firewood', name: '木柴', unit: 'kg', kcalPerUnit: 4500 },
-  { id: 'coal', name: '煤炭', unit: 'kg', kcalPerUnit: 7000 },
-  { id: 'fuel_oil', name: '油料', unit: 'L', kcalPerUnit: 9000 },
-]
-
-export const DEFAULT_PLAYER_ENERGY_STOCK = [
-  { id: 'firewood', quantity: 3 }, { id: 'coal', quantity: 1 },
-]
-
-/** 避难所公共能量库存（本地回退） */
-export const DEFAULT_SHELTER_ENERGY_STOCK = [
-  { id: 'firewood', quantity: 25 }, { id: 'coal', quantity: 10 }, { id: 'fuel_oil', quantity: 5 },
-]
-
-export const FOOD_DAY_KCAL = 2500
-export const ENERGY_DAY_KCAL = 800
-
-/** 避难所建造进度页：食物供应（shelter_food_stock） */
-export function buildShelterFoodSupplyLocal() {
-  const qty = Object.fromEntries(DEFAULT_SHELTER_FOOD_STOCK.map((r) => [r.id, r.quantity]))
-  let totalKcal = 0
-  const items = FOOD_DEFINITIONS.map((def) => {
-    const q = qty[def.id] ?? 0
-    const lineKcal = q * def.kcalPerUnit
-    totalKcal += lineKcal
-    return {
-      id: def.id,
-      name: def.name,
-      unit: def.unit,
-      quantity: q,
-      kcalPerUnit: def.kcalPerUnit,
-      lineKcal,
-    }
-  })
-  return {
-    totalKcal,
-    personDayDivisor: FOOD_DAY_KCAL,
-    personDays: Math.round((totalKcal / FOOD_DAY_KCAL) * 10) / 10,
-    items,
-    source: 'shelter',
-  }
-}
-
-/** 避难所建造进度页：能量储备（shelter_energy_stock） */
-export function buildShelterEnergyReserveLocal() {
-  const qty = Object.fromEntries(DEFAULT_SHELTER_ENERGY_STOCK.map((r) => [r.id, r.quantity]))
-  let totalKcal = 0
-  const items = ENERGY_DEFINITIONS.map((def) => {
-    const q = qty[def.id] ?? 0
-    const lineKcal = q * def.kcalPerUnit
-    totalKcal += lineKcal
-    return {
-      id: def.id,
-      name: def.name,
-      unit: def.unit,
-      quantity: q,
-      kcalPerUnit: def.kcalPerUnit,
-      lineKcal,
-    }
-  })
-  return {
-    totalKcal,
-    personDayDivisor: ENERGY_DAY_KCAL,
-    personDays: Math.round((totalKcal / ENERGY_DAY_KCAL) * 10) / 10,
-    items,
-    source: 'shelter',
-  }
-}
-
-/** 玩家个人食物（player_food_stock）演示合计，供日后个人物资页等使用 */
-export function buildPlayerFoodSupplyLocal() {
-  const qty = Object.fromEntries(DEFAULT_PLAYER_FOOD_STOCK.map((r) => [r.id, r.quantity]))
-  let totalKcal = 0
-  const items = FOOD_DEFINITIONS.map((def) => {
-    const q = qty[def.id] ?? 0
-    const lineKcal = q * def.kcalPerUnit
-    totalKcal += lineKcal
-    return {
-      id: def.id,
-      name: def.name,
-      unit: def.unit,
-      quantity: q,
-      kcalPerUnit: def.kcalPerUnit,
-      lineKcal,
-    }
-  })
-  return {
-    totalKcal,
-    personDayDivisor: FOOD_DAY_KCAL,
-    personDays: Math.round((totalKcal / FOOD_DAY_KCAL) * 10) / 10,
-    items,
-    source: 'player',
-  }
-}
-
-export function buildPlayerEnergyReserveLocal() {
-  const qty = Object.fromEntries(DEFAULT_PLAYER_ENERGY_STOCK.map((r) => [r.id, r.quantity]))
-  let totalKcal = 0
-  const items = ENERGY_DEFINITIONS.map((def) => {
-    const q = qty[def.id] ?? 0
-    const lineKcal = q * def.kcalPerUnit
-    totalKcal += lineKcal
-    return {
-      id: def.id,
-      name: def.name,
-      unit: def.unit,
-      quantity: q,
-      kcalPerUnit: def.kcalPerUnit,
-      lineKcal,
-    }
-  })
-  return {
-    totalKcal,
-    personDayDivisor: ENERGY_DAY_KCAL,
-    personDays: Math.round((totalKcal / ENERGY_DAY_KCAL) * 10) / 10,
-    items,
-    source: 'player',
-  }
-}
-
 export const SHELTER_DAILY_LOGS = [
   { day: 1, workers: [
     { name: '张三', isProfessional: true, isOppressed: false, value: 5 },
@@ -454,11 +320,51 @@ export const SHELTER_DAILY_LOGS = [
 ]
 
 // 将后端库存与图鉴映射成可展示的数据
+// 支持两种数据格式：
+// 旧格式: { id: 'wood', quantity: 45 }
+// 新格式: { itemType: 'material', itemId: 2, quantity: 45 }
 export function resolveShelterInventoryRows(items) {
   return items
     .map((row) => {
-      const def = SHELTER_ITEM_CATALOG[row.id]
-      if (!def) return null
+      if (row.name) {
+        const key = row.itemType != null && row.itemId != null
+          ? `${row.itemType}_${row.itemId}`
+          : String(row.id ?? '')
+        const category = { item: 'prop', weapon: 'weapon', ammo: 'ammo', material: 'material' }[row.itemType] || 'prop'
+        return {
+          id: key,
+          name: row.name,
+          category,
+          description: row.description || '',
+          imageUrl: getMaterialImageUrlOrDefault(row.itemType, row.itemId),
+          unit: row.unit || '',
+          quantity: row.quantity,
+        }
+      }
+
+      let def = null
+      if (row.id != null) {
+        def = SHELTER_ITEM_CATALOG[row.id]
+      } else if (row.itemType != null && row.itemId != null) {
+        const key = `${row.itemType}_${row.itemId}`
+        def = SHELTER_ITEM_CATALOG_BY_TYPE[key]
+      }
+      if (!def) {
+        const key = row.itemType != null && row.itemId != null
+          ? `${row.itemType}_${row.itemId}`
+          : String(row.id ?? '')
+        if (!key) return null
+        const category = { item: 'prop', weapon: 'weapon', ammo: 'ammo', material: 'material' }[row.itemType] || 'prop'
+        return {
+          id: key,
+          name: row.itemType + '-' + row.itemId,
+          category,
+          description: '',
+          imageUrl: getMaterialImageUrlOrDefault(row.itemType, row.itemId),
+          unit: '',
+          quantity: row.quantity,
+        }
+      }
       return { ...def, quantity: row.quantity }
     })
     .filter(Boolean)

@@ -105,7 +105,6 @@ onMounted(load)
                 <span>[{{ typeLabel(it.itemType) }}]</span>
                 <span>{{ it.name }}</span>
                 <span class="text-gray-500">{{ it.quantity }}{{ formatUnit(it.unit) }}</span>
-                <span v-if="Number(it.kcalPerUnit) > 0" class="text-gray-500">{{ it.kcalPerUnit }}大卡/单位</span>
               </li>
               <li v-if="!trade.items || trade.items.length === 0" class="text-gray-500">—</li>
             </ul>

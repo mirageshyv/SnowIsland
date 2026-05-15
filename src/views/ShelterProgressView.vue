@@ -5,8 +5,6 @@ import {
   SHELTER_DAILY_LOGS,
   resolveShelterInventoryRows,
   shelterTotalBuildValue,
-  buildShelterFoodSupplyLocal,
-  buildShelterEnergyReserveLocal,
 } from '../data/gameData.js'
 import { shelterAPI } from '../utils/api.js'
 import ShelterSupplyCards from './ShelterSupplyCards.vue'
@@ -17,9 +15,9 @@ const loadError = ref(null)
 /** 来自数据库的当前建造值 */
 const currentBuildValue = ref(0)
 
-/** 避难所公共食物 / 能量（shelter_*_stock；非玩家个人库存） */
-const foodSupply = ref(buildShelterFoodSupplyLocal())
-const energyReserve = ref(buildShelterEnergyReserveLocal())
+/** 避难所公共食物 / 能量（从 shelter_stock 表查询） */
+const foodSupply = ref({ name: '食物', quantity: 0, unit: 'kg' })
+const energyReserve = ref({ items: [] })
 
 /** 避难所库存（接口返回 { id, quantity }[]，id 与图鉴 item_key 一致） */
 const shelterInventory = ref([])
@@ -48,17 +46,18 @@ async function loadShelterFromApi() {
       currentBuildValue.value = Number(data.currentBuildValue) || 0
       const inv = Array.isArray(data.inventory) ? data.inventory : []
       shelterInventory.value = inv
-        .filter((row) => row && row.id != null)
-        .map((row) => ({ id: String(row.id), quantity: Number(row.quantity) || 0 }))
-      if (Array.isArray(data.foodSupply?.items)) {
+        .filter((row) => row && (row.id != null || (row.itemType != null && row.itemId != null)))
+        .map((row) => {
+          if (row.itemType != null && row.itemId != null) {
+            return { itemType: row.itemType, itemId: row.itemId, quantity: Number(row.quantity) || 0 }
+          }
+          return { id: String(row.id), quantity: Number(row.quantity) || 0 }
+        })
+      if (data.foodSupply) {
         foodSupply.value = data.foodSupply
-      } else {
-        foodSupply.value = buildShelterFoodSupplyLocal()
       }
-      if (Array.isArray(data.energyReserve?.items)) {
+      if (data.energyReserve) {
         energyReserve.value = data.energyReserve
-      } else {
-        energyReserve.value = buildShelterEnergyReserveLocal()
       }
       if (shelterInventory.value.length === 0) {
         shelterInventory.value = DEFAULT_SHELTER_INVENTORY.map((row) => ({ ...row }))
@@ -68,15 +67,12 @@ async function loadShelterFromApi() {
       loadError.value = (data && data.message) || '加载避难所数据失败'
       shelterInventory.value = DEFAULT_SHELTER_INVENTORY.map((row) => ({ ...row }))
       currentBuildValue.value = shelterLogsTotal.value
-      foodSupply.value = buildShelterFoodSupplyLocal()
-      energyReserve.value = buildShelterEnergyReserveLocal()
     }
-  } catch {
+  } catch (err) {
+    console.error('加载避难所数据失败:', err)
     loadError.value = '网络错误，已使用本地默认数据'
     shelterInventory.value = DEFAULT_SHELTER_INVENTORY.map((row) => ({ ...row }))
     currentBuildValue.value = shelterLogsTotal.value
-    foodSupply.value = buildShelterFoodSupplyLocal()
-    energyReserve.value = buildShelterEnergyReserveLocal()
   } finally {
     loading.value = false
   }

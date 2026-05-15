@@ -8,26 +8,45 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import java.util.*;
 
-/**
- * 统治者避难所：建造值、避难所物资库存、避难所公共食物与能量（{@link ShelterSupplyService}）。
- * 玩家个人食物/能量见 {@link PlayerSupplyService}，不通过本接口展示。
- */
 @Service
 public class ShelterService {
 
     private static final int DEFAULT_BUILD_VALUE = 76;
 
-    /** 与前端 gameData 默认库存一致，供空库时初始化 */
-    private static final String[][] DEFAULT_STOCK = {
-            {"wood", "45"}, {"stone", "32"}, {"medical_kit", "8"}, {"flashlight", "4"},
-            {"handcuffs", "2"}, {"whistle", "3"}, {"body_armor", "1"}, {"composite_shield", "1"},
-            {"flare_gun", "1"}, {"repair_kit", "5"}, {"contract", "2"}, {"rum", "10"},
-            {"herbs", "12"}, {"fishing_net", "2"}, {"candle", "18"}, {"rubbing_alcohol", "3"},
-            {"matches", "6"}, {"pencil", "4"}, {"tattered_chart", "1"}, {"service_pistol", "1"},
-            {"hunting_shotgun", "1"}, {"baton", "2"}, {"bayonet", "1"}, {"harpoon_spear", "1"},
-            {"hunting_bow", "1"}, {"pickaxe", "2"}, {"axe", "1"}, {"plank", "24"}, {"rope", "35"},
+    private static final Object[][] DEFAULT_STOCK = {
+            {ShelterStock.ItemType.material, 2, 45},
+            {ShelterStock.ItemType.material, 7, 32},
+            {ShelterStock.ItemType.item, 1, 8},
+            {ShelterStock.ItemType.item, 2, 4},
+            {ShelterStock.ItemType.item, 3, 2},
+            {ShelterStock.ItemType.item, 4, 3},
+            {ShelterStock.ItemType.item, 5, 1},
+            {ShelterStock.ItemType.item, 6, 1},
+            {ShelterStock.ItemType.item, 7, 1},
+            {ShelterStock.ItemType.item, 8, 5},
+            {ShelterStock.ItemType.item, 9, 2},
+            {ShelterStock.ItemType.item, 10, 10},
+            {ShelterStock.ItemType.item, 11, 12},
+            {ShelterStock.ItemType.item, 12, 2},
+            {ShelterStock.ItemType.item, 13, 18},
+            {ShelterStock.ItemType.item, 14, 3},
+            {ShelterStock.ItemType.item, 15, 6},
+            {ShelterStock.ItemType.item, 16, 4},
+            {ShelterStock.ItemType.item, 17, 1},
+            {ShelterStock.ItemType.weapon, 1, 1},
+            {ShelterStock.ItemType.weapon, 2, 1},
+            {ShelterStock.ItemType.weapon, 3, 2},
+            {ShelterStock.ItemType.weapon, 4, 1},
+            {ShelterStock.ItemType.weapon, 6, 1},
+            {ShelterStock.ItemType.weapon, 7, 1},
+            {ShelterStock.ItemType.weapon, 8, 2},
+            {ShelterStock.ItemType.weapon, 9, 1},
+            {ShelterStock.ItemType.material, 4, 24},
+            {ShelterStock.ItemType.material, 3, 35},
     };
 
     @Autowired
@@ -37,7 +56,7 @@ public class ShelterService {
     private ShelterStockRepository shelterStockRepository;
 
     @Autowired
-    private ShelterSupplyService shelterSupplyService;
+    private EntityManager entityManager;
 
     @Transactional
     public Map<String, Object> getSummary() {
@@ -49,35 +68,114 @@ public class ShelterService {
                     p.setCurrentBuildValue(DEFAULT_BUILD_VALUE);
                     return shelterProgressRepository.save(p);
                 });
-        List<ShelterStock> rows = shelterStockRepository.findAllByOrderByItemKeyAsc();
+        List<ShelterStock> rows = shelterStockRepository.findAllByOrderByItemTypeAscItemIdAsc();
         if (rows.isEmpty()) {
             seedDefaultStock();
-            rows = shelterStockRepository.findAllByOrderByItemKeyAsc();
+            rows = shelterStockRepository.findAllByOrderByItemTypeAscItemIdAsc();
         }
 
         List<Map<String, Object>> inventory = new ArrayList<>();
         for (ShelterStock row : rows) {
             Map<String, Object> item = new LinkedHashMap<>();
-            item.put("id", row.getItemKey());
+            item.put("itemType", row.getItemType().name());
+            item.put("itemId", row.getItemId());
             item.put("quantity", row.getQuantity());
+            enrichItemInfo(item);
             inventory.add(item);
         }
-
-        shelterSupplyService.ensureDefaultShelterStocks();
 
         out.put("success", true);
         out.put("currentBuildValue", progress.getCurrentBuildValue());
         out.put("inventory", inventory);
-        out.put("foodSupply", shelterSupplyService.buildShelterFoodSupply());
-        out.put("energyReserve", shelterSupplyService.buildShelterEnergyReserve());
+        out.put("foodSupply", buildFoodSupply(rows));
+        out.put("energyReserve", buildEnergyReserve(rows));
         return out;
     }
 
+    private Map<String, Object> buildFoodSupply(List<ShelterStock> rows) {
+        int foodQuantity = 0;
+        for (ShelterStock row : rows) {
+            if (row.getItemType() == ShelterStock.ItemType.material && row.getItemId() == 5) {
+                foodQuantity = row.getQuantity();
+                break;
+            }
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("name", "食物");
+        result.put("itemType", "material");
+        result.put("itemId", 5);
+        result.put("quantity", foodQuantity);
+        result.put("unit", "kg");
+        return result;
+    }
+
+    private Map<String, Object> buildEnergyReserve(List<ShelterStock> rows) {
+        int woodQuantity = 0;
+        int fuelQuantity = 0;
+        for (ShelterStock row : rows) {
+            if (row.getItemType() == ShelterStock.ItemType.material && row.getItemId() == 2) {
+                woodQuantity = row.getQuantity();
+            }
+            if (row.getItemType() == ShelterStock.ItemType.material && row.getItemId() == 8) {
+                fuelQuantity = row.getQuantity();
+            }
+        }
+        Map<String, Object> wood = new LinkedHashMap<>();
+        wood.put("name", "木材");
+        wood.put("itemType", "material");
+        wood.put("itemId", 2);
+        wood.put("quantity", woodQuantity);
+        wood.put("unit", "kg");
+
+        Map<String, Object> fuel = new LinkedHashMap<>();
+        fuel.put("name", "燃油");
+        fuel.put("itemType", "material");
+        fuel.put("itemId", 8);
+        fuel.put("quantity", fuelQuantity);
+        fuel.put("unit", "kg");
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("items", Arrays.asList(wood, fuel));
+        return result;
+    }
+
+    private void enrichItemInfo(Map<String, Object> item) {
+        String itemType = (String) item.get("itemType");
+        Integer itemId = (Integer) item.get("itemId");
+        String tableName;
+        switch (itemType) {
+            case "weapon": tableName = "weapon"; break;
+            case "ammo": tableName = "ammo"; break;
+            case "material": tableName = "material"; break;
+            default: tableName = "item"; break;
+        }
+        try {
+            Query query = entityManager.createNativeQuery(
+                    "SELECT name, unit, remark FROM " + tableName + " WHERE id = ?1");
+            query.setParameter(1, itemId);
+            List<Object[]> results = query.getResultList();
+            if (!results.isEmpty()) {
+                item.put("name", results.get(0)[0]);
+                item.put("unit", results.get(0)[1]);
+                item.put("description", results.get(0)[2]);
+            } else {
+                item.put("name", "未知物品");
+                item.put("unit", "");
+                item.put("description", "");
+            }
+        } catch (Exception e) {
+            item.put("name", "未知物品");
+            item.put("unit", "");
+            item.put("description", "");
+        }
+    }
+
     protected void seedDefaultStock() {
-        for (String[] pair : DEFAULT_STOCK) {
+        for (Object[] row : DEFAULT_STOCK) {
             ShelterStock s = new ShelterStock();
-            s.setItemKey(pair[0]);
-            s.setQuantity(Integer.parseInt(pair[1]));
+            s.setItemType((ShelterStock.ItemType) row[0]);
+            s.setItemId((Integer) row[1]);
+            s.setQuantity((Integer) row[2]);
             shelterStockRepository.save(s);
         }
     }

@@ -29,12 +29,6 @@ public class TradeItem {
 
     private String unit;
 
-    @Transient
-    private Integer kcalPerUnit;
-
-    @Transient
-    private Long lineKcal;
-
     @Enumerated(EnumType.STRING)
     private Direction direction;
 
@@ -78,12 +72,6 @@ public class TradeItem {
 
     public String getUnit() { return unit; }
     public void setUnit(String unit) { this.unit = unit; }
-
-    public Integer getKcalPerUnit() { return kcalPerUnit; }
-    public void setKcalPerUnit(Integer kcalPerUnit) { this.kcalPerUnit = kcalPerUnit; }
-
-    public Long getLineKcal() { return lineKcal; }
-    public void setLineKcal(Long lineKcal) { this.lineKcal = lineKcal; }
 
     public Direction getDirection() { return direction; }
     public void setDirection(Direction direction) { this.direction = direction; }

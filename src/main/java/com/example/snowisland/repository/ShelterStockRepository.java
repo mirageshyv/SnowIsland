@@ -5,9 +5,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ShelterStockRepository extends JpaRepository<ShelterStock, Integer> {
 
-    List<ShelterStock> findAllByOrderByItemKeyAsc();
+    List<ShelterStock> findAllByOrderByItemTypeAscItemIdAsc();
+
+    Optional<ShelterStock> findByItemTypeAndItemId(ShelterStock.ItemType itemType, Integer itemId);
 }

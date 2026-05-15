@@ -21,4 +21,7 @@ public interface PlayerItemRepository extends JpaRepository<PlayerItem, Integer>
     @Modifying
     @Query("UPDATE PlayerItem p SET p.quantity = p.quantity + :delta WHERE p.playerId = :playerId AND p.itemType = :itemType AND p.itemId = :itemId")
     int updateQuantity(@Param("playerId") Integer playerId, @Param("itemType") ItemType itemType, @Param("itemId") Integer itemId, @Param("delta") Integer delta);
+
+    @Query(value = "SELECT * FROM player_items WHERE player_id = :playerId", nativeQuery = true)
+    List<PlayerItem> findByPlayerIdNative(@Param("playerId") Integer playerId);
 }

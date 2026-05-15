@@ -4,6 +4,10 @@ import { useRouter } from 'vue-router'
 import ArkProgressView from './ArkProgressView.vue'
 import ShelterProgressView from './ShelterProgressView.vue'
 import DmTradesOverview from './DmTradesOverview.vue'
+import RebelMilestoneView from './RebelMilestoneView.vue'
+import CatastrophePanel from '../components/CatastrophePanel.vue'
+import WarehouseView from './WarehouseView.vue'
+import ActionFeedbackView from './ActionFeedbackView.vue'
 
 const router = useRouter()
 const username = localStorage.getItem('username') || ''
@@ -13,7 +17,7 @@ const playerList = ref([
   { id: 1, name: '阿尔伯特', job: '战士', faction: '统治者', isWeak: false, isOverworked: false, isInjured: false },
   { id: 2, name: '莉莉丝', job: '法师', faction: '反叛者', isWeak: false, isOverworked: true, isInjured: false },
   { id: 3, name: '罗宾', job: '盗贼', faction: '冒险者', isWeak: true, isOverworked: false, isInjured: false },
-  { id: 4, name: '亚瑟', job: '牧师', faction: '杀戮者', isWeak: false, isOverworked: false, isInjured: true },
+  { id: 4, name: '亚瑟', job: '牧师', faction: '天灾使者', isWeak: false, isOverworked: false, isInjured: true },
   { id: 5, name: '艾米丽', job: '猎人', faction: '平民', isWeak: false, isOverworked: false, isInjured: false }
 ])
 
@@ -28,7 +32,7 @@ const getFactionColor = (faction) => {
     '统治者': 'text-amber-400 bg-amber-500/20',
     '反叛者': 'text-red-400 bg-red-500/20',
     '冒险者': 'text-emerald-400 bg-emerald-500/20',
-    '杀戮者': 'text-purple-400 bg-purple-500/20',
+    '天灾使者': 'text-purple-400 bg-purple-500/20',
     '平民': 'text-gray-400 bg-gray-500/20'
   }
   return colors[faction] || colors['平民']
@@ -129,11 +133,43 @@ onMounted(() => {
         </button>
         <button
           type="button"
-          class="w-full text-left px-4 py-3 rounded-xl transition-colors font-medium"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
           :class="activeTab === 'logs' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
           @click="activeTab = 'logs'"
         >
           系统日志
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'milestones' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'milestones'"
+        >
+          里程碑管理
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'catastrophe' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'catastrophe'"
+        >
+          天灾降临
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'warehouse' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'warehouse'"
+        >
+          📦 仓库管理
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'actionFeedback' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'actionFeedback'"
+        >
+          📋 行动反馈
         </button>
       </nav>
 
@@ -204,7 +240,7 @@ onMounted(() => {
                 <option value="统治者">统治者</option>
                 <option value="反叛者">反叛者</option>
                 <option value="冒险者">冒险者</option>
-                <option value="杀戮者">杀戮者</option>
+                <option value="天灾使者">天灾使者</option>
                 <option value="平民">平民</option>
               </select>
             </div>
@@ -296,6 +332,40 @@ onMounted(() => {
 
       <div v-else-if="activeTab === 'trades'">
         <DmTradesOverview />
+      </div>
+
+      <div v-else-if="activeTab === 'milestones'">
+        <div class="max-w-4xl">
+          <div class="mb-6">
+            <h1 class="text-white mb-1 tracking-tight text-2xl">里程碑管理</h1>
+            <p class="text-gray-500 text-sm">管理反抗者阵营的里程碑进度</p>
+          </div>
+          <RebelMilestoneView />
+        </div>
+      </div>
+
+      <div v-else-if="activeTab === 'catastrophe'">
+        <div class="mb-6">
+          <h1 class="text-white mb-1 tracking-tight text-2xl">天灾降临</h1>
+          <p class="text-gray-500 text-sm">管理天灾进度和天灾牌系统</p>
+        </div>
+        <CatastrophePanel :is-dm="true" />
+      </div>
+
+      <div v-else-if="activeTab === 'warehouse'">
+        <div class="mb-6">
+          <h1 class="text-white mb-1 tracking-tight text-2xl">仓库管理</h1>
+          <p class="text-gray-500 text-sm">管理所有仓库的物资库存</p>
+        </div>
+        <WarehouseView />
+      </div>
+
+      <div v-else-if="activeTab === 'actionFeedback'">
+        <div class="mb-6">
+          <h1 class="text-white mb-1 tracking-tight text-2xl">行动反馈</h1>
+          <p class="text-gray-500 text-sm">查看玩家提交的行动并给予反馈</p>
+        </div>
+        <ActionFeedbackView />
       </div>
 
       <!-- Other Tabs -->

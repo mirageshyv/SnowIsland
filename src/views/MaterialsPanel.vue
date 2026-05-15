@@ -6,7 +6,6 @@ import { getMaterialImageUrlOrDefault, getTypeTabImage } from '../data/gameData.
 const playerId = localStorage.getItem('playerId') || '1'
 const loading = ref(true)
 const rawMaterials = ref([])
-const playerSupplies = ref(null)
 
 // 筛选状态
 const selectedTypes = ref(['item', 'weapon', 'ammo', 'material'])
@@ -295,34 +294,14 @@ const itemIconMap = {
 const loadMaterials = async () => {
   loading.value = true
   try {
-    console.log('Loading materials for player', playerId)
     const result = await playerAPI.getItems(playerId)
-    console.log('API result:', result)
-    
     if (Array.isArray(result)) {
       rawMaterials.value = result
-      console.log('Loaded materials:', rawMaterials.value.length, 'items')
-    } else {
-      console.log('Result is not an array:', result)
     }
   } catch (error) {
     console.error('Failed to load materials:', error)
   } finally {
     loading.value = false
-  }
-}
-
-const loadPlayerSupplies = async () => {
-  try {
-    const result = await playerAPI.getSupplies(playerId)
-    if (result && result.success) {
-      playerSupplies.value = result
-    } else {
-      playerSupplies.value = null
-    }
-  } catch (error) {
-    console.error('Failed to load player supplies:', error)
-    playerSupplies.value = null
   }
 }
 
@@ -390,24 +369,6 @@ const hasFilteredMaterials = computed(() => {
   return Object.values(filteredData.value).some(arr => arr.length > 0)
 })
 
-const compactFoodRows = computed(() =>
-  (playerSupplies.value?.foodSupply?.items || [])
-    .filter(row => Number(row.quantity) > 0)
-    .sort((a, b) => b.quantity - a.quantity)
-)
-
-const compactEnergyRows = computed(() =>
-  (playerSupplies.value?.energyReserve?.items || [])
-    .filter(row => Number(row.quantity) > 0)
-    .sort((a, b) => b.quantity - a.quantity)
-)
-
-const formatChineseUnit = (unit) => {
-  const unitMap = { portion: '份', kg: '千克', L: '升' }
-  return unitMap[unit] || unit || '单位'
-}
-
-// 切换物资类型筛选
 const toggleType = (type) => {
   const index = selectedTypes.value.indexOf(type)
   if (index > -1) {
@@ -453,17 +414,13 @@ const getItemBgColor = (type) => {
 // 页面可见性改变时刷新
 const handleVisibilityChange = () => {
   if (!document.hidden) {
-    console.log('Page visible, refreshing materials')
     loadMaterials()
-    loadPlayerSupplies()
   }
 }
 
 onMounted(() => {
   loadMaterials()
-  loadPlayerSupplies()
   document.addEventListener('visibilitychange', handleVisibilityChange)
-  console.log('Materials panel mounted', { playerId, selectedTypes: selectedTypes.value })
 })
 
 onUnmounted(() => {
@@ -755,62 +712,6 @@ onUnmounted(() => {
                   <span class="text-lg font-semibold text-emerald-400">{{ material.quantity }}</span>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 玩家个人食物 / 能量库存（紧凑版，无图片，嵌入基础物资下方） -->
-        <div v-if="playerSupplies" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div class="lg:col-span-2">
-            <p class="text-gray-500 text-xs">基础物资</p>
-          </div>
-          <div class="bg-[#0f1419] border border-[#1f2937] rounded-xl p-4">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-gray-200">个人食物储备</h3>
-              <span class="text-xs text-gray-400">
-                共 {{ Number(playerSupplies.foodSupply?.totalKcal || 0).toLocaleString() }} 大卡
-              </span>
-            </div>
-            <div class="space-y-1 max-h-40 overflow-y-auto text-sm">
-              <div
-                v-for="row in compactFoodRows"
-                :key="`food-${row.id}`"
-                class="flex items-center justify-between text-gray-300"
-              >
-                <span class="truncate">{{ row.name }}</span>
-                <span class="ml-3 shrink-0 text-right text-xs text-gray-400">
-                  {{ row.quantity }} {{ formatChineseUnit(row.unit) }}<br />
-                  <span class="text-[11px] text-gray-500">
-                    {{ row.kcalPerUnit }} 大卡 / 单位
-                  </span>
-                </span>
-              </div>
-              <div v-if="compactFoodRows.length === 0" class="text-xs text-gray-500 py-1">暂无食物库存</div>
-            </div>
-          </div>
-
-          <div class="bg-[#0f1419] border border-[#1f2937] rounded-xl p-4">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-gray-200">个人能量储备</h3>
-              <span class="text-xs text-gray-400">
-                共 {{ Number(playerSupplies.energyReserve?.totalKcal || 0).toLocaleString() }} 大卡
-              </span>
-            </div>
-            <div class="space-y-1 max-h-40 overflow-y-auto text-sm">
-              <div
-                v-for="row in compactEnergyRows"
-                :key="`energy-${row.id}`"
-                class="flex items-center justify-between text-gray-300"
-              >
-                <span class="truncate">{{ row.name }}</span>
-                <span class="ml-3 shrink-0 text-right text-xs text-gray-400">
-                  {{ row.quantity }} {{ formatChineseUnit(row.unit) }}<br />
-                  <span class="text-[11px] text-gray-500">
-                    {{ row.kcalPerUnit }} 大卡 / 单位
-                  </span>
-                </span>
-              </div>
-              <div v-if="compactEnergyRows.length === 0" class="text-xs text-gray-500 py-1">暂无能量库存</div>
             </div>
           </div>
         </div>

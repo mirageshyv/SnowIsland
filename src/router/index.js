@@ -27,10 +27,40 @@ const router = createRouter({
       meta: { requiresAuth: true, role: 'dm' }
     },
     {
+      path: '/ark',
+      name: 'Ark',
+      component: () => import('../views/ArkProgressView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/action-submit',
       name: 'ActionSubmit',
       component: () => import('../views/ActionSubmitView.vue'),
       meta: { requiresAuth: true, role: 'player' }
+    },
+    {
+      path: '/rebel-milestones',
+      name: 'RebelMilestones',
+      component: () => import('../views/RebelMilestoneView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/catastrophe',
+      name: 'Catastrophe',
+      component: () => import('../views/CatastropheView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/warehouse',
+      name: 'Warehouse',
+      component: () => import('../views/WarehouseView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/action-feedback',
+      name: 'ActionFeedback',
+      component: () => import('../views/ActionFeedbackView.vue'),
+      meta: { requiresAuth: true, role: 'dm' }
     },
     {
       path: '/player/materials',
@@ -58,24 +88,38 @@ const router = createRouter({
   ]
 })
 
-// 路由守卫
 router.beforeEach((to, from, next) => {
   const requiresAuth = to.meta.requiresAuth
-  const userRole = localStorage.getItem('userRole')
+  const userRole = (localStorage.getItem('userRole') || '').toLowerCase()
   const username = localStorage.getItem('username')
+  const requiredRole = to.meta.role
   
   if (requiresAuth) {
     if (!userRole || !username) {
       next('/')
-    } else if (to.params.username) {
+      return
+    }
+    
+    if (to.params.username) {
       if (to.params.username !== username) {
         next('/')
-      } else {
-        next()
+        return
       }
-    } else {
-      next()
     }
+    
+    if (requiredRole) {
+      if (userRole === 'dm') {
+        next()
+        return
+      }
+      
+      if (userRole !== requiredRole) {
+        next('/')
+        return
+      }
+    }
+    
+    next()
   } else {
     next()
   }

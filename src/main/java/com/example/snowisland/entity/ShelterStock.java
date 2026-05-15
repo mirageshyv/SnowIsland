@@ -3,9 +3,6 @@ package com.example.snowisland.entity;
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
-/**
- * 统治者避难所物资库存一行一类物资（item_key 与前端图鉴 id 一致）。
- */
 @Entity
 @Table(name = "shelter_stock")
 public class ShelterStock {
@@ -14,8 +11,12 @@ public class ShelterStock {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "item_key", nullable = false, unique = true, length = 64)
-    private String itemKey;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "item_type", nullable = false, length = 20)
+    private ItemType itemType;
+
+    @Column(name = "item_id", nullable = false)
+    private Integer itemId;
 
     @Column(nullable = false)
     private Integer quantity = 0;
@@ -38,6 +39,10 @@ public class ShelterStock {
         updatedAt = LocalDateTime.now();
     }
 
+    public enum ItemType {
+        item, weapon, ammo, material
+    }
+
     public Integer getId() {
         return id;
     }
@@ -46,12 +51,20 @@ public class ShelterStock {
         this.id = id;
     }
 
-    public String getItemKey() {
-        return itemKey;
+    public ItemType getItemType() {
+        return itemType;
     }
 
-    public void setItemKey(String itemKey) {
-        this.itemKey = itemKey;
+    public void setItemType(ItemType itemType) {
+        this.itemType = itemType;
+    }
+
+    public Integer getItemId() {
+        return itemId;
+    }
+
+    public void setItemId(Integer itemId) {
+        this.itemId = itemId;
     }
 
     public Integer getQuantity() {

@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS player (
     is_injured TINYINT(1) NOT NULL DEFAULT 0,
     job_id INT(11) NOT NULL,
     skill_id INT(11) NULL,
-    faction ENUM('统治者', '反叛者', '冒险者', '杀戮者', '平民') NOT NULL,
+    faction ENUM('统治者', '反叛者', '冒险者', '天灾使者', '平民') NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (job_id) REFERENCES job(id),
@@ -76,7 +76,7 @@ INSERT INTO player (name, is_weak, is_overworked, is_injured, job_id, skill_id, 
 ('阿尔伯特', 0, 0, 0, 1, 1, '统治者'),
 ('莉莉丝', 0, 1, 0, 2, 2, '反叛者'),
 ('罗宾', 1, 0, 0, 3, 3, '冒险者'),
-('亚瑟', 0, 0, 1, 4, 4, '杀戮者'),
+('亚瑟', 0, 0, 1, 4, 4, '天灾使者'),
 ('艾米丽', 0, 0, 0, 5, 5, '平民');
 
 -- 插入用户数据 (DM账号)

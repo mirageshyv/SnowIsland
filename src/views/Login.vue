@@ -7,6 +7,8 @@ import { authAPI } from '../utils/api.js'
 const router = useRouter()
 const loading = ref(false)
 const errorMessage = ref('')
+const usernameInput = ref(null)
+const passwordInput = ref(null)
 
 const loginForm = reactive({
   username: '',
@@ -33,7 +35,13 @@ const handleLogin = async (e) => {
   try {
     const result = await authAPI.login(loginForm.username, loginForm.password)
     loading.value = false
-    
+
+    if (!result) {
+      errorMessage.value = '无法连接到服务器，请检查后端服务'
+      ElMessage.error('无法连接到服务器，请检查后端服务是否启动')
+      return
+    }
+
     if (result.success) {
       localStorage.setItem('userRole', result.role)
       localStorage.setItem('username', result.username)
@@ -41,7 +49,7 @@ const handleLogin = async (e) => {
       if (result.playerId) {
         localStorage.setItem('playerId', result.playerId)
       }
-      
+
       router.push(`/${result.username}`).then(() => {
         ElMessage.success('登录成功')
       }).catch((err) => {
@@ -55,6 +63,7 @@ const handleLogin = async (e) => {
   } catch (error) {
     loading.value = false
     console.error('登录请求失败:', error)
+    errorMessage.value = '登录请求失败，请检查后端服务'
     ElMessage.error('登录请求失败: ' + error.message)
   }
 }
@@ -98,9 +107,11 @@ const handleLogin = async (e) => {
           <div>
             <label class="block text-gray-300 text-sm mb-2.5 font-medium">账号</label>
             <input
+              ref="usernameInput"
               v-model="loginForm.username"
               type="text"
               placeholder="请输入登录账号"
+              @keyup.enter="passwordInput.focus()"
               class="w-full bg-black/30 backdrop-blur border border-white/10 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all"
             />
           </div>
@@ -108,6 +119,7 @@ const handleLogin = async (e) => {
           <div>
             <label class="block text-gray-300 text-sm mb-2.5 font-medium">密码</label>
             <input
+              ref="passwordInput"
               v-model="loginForm.password"
               type="password"
               placeholder="请输入密码"

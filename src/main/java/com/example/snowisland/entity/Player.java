@@ -38,7 +38,7 @@ public class Player {
     private LocalDateTime updatedAt;
 
     public enum Faction {
-        统治者, 反叛者, 冒险者, 杀戮者, 平民
+        统治者, 反叛者, 冒险者, 天灾使者, 平民
     }
 
     @PrePersist

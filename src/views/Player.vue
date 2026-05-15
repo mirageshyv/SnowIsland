@@ -6,7 +6,10 @@ import TradePanel from './TradePanel.vue'
 import ArkProgressView from './ArkProgressView.vue'
 import ShelterProgressView from './ShelterProgressView.vue'
 import ActionSubmitView from './ActionSubmitView.vue'
-import { tradeAPI, playerAPI } from '../utils/api.js'
+import RebelMilestoneView from './RebelMilestoneView.vue'
+import CatastrophePanel from '../components/CatastrophePanel.vue'
+import WarehouseView from './WarehouseView.vue'
+import { tradeAPI, playerAPI, milestoneAPI } from '../utils/api.js'
 
 const router = useRouter()
 const username = localStorage.getItem('username') || ''
@@ -19,6 +22,7 @@ const pendingTradesCount = ref(0)
 const loading = ref(false)
 const error = ref(null)
 const playerInfo = ref(null)
+const playerItems = ref(null)
 const isEditing = ref(false)
 const editForm = ref(null)
 const saving = ref(false)
@@ -29,10 +33,16 @@ const showStatusPopover = ref(false)
 const showArkTab = computed(() => playerInfo.value?.faction === '冒险者')
 /** 仅统治者可见「统治者避难所」 */
 const showShelterTab = computed(() => playerInfo.value?.faction === '统治者')
+/** 仅反叛者可见「反叛者里程碑」 */
+const showMilestoneTab = computed(() => playerInfo.value?.faction === '反叛者')
+/** 仅天灾使者可见「天灾降临」 */
+const showCatastropheTab = computed(() => playerInfo.value?.faction === '天灾使者')
 
-watch([showArkTab, showShelterTab, activeTab], () => {
+watch([showArkTab, showShelterTab, showMilestoneTab, showCatastropheTab, activeTab], () => {
   if (activeTab.value === 'ark' && !showArkTab.value) activeTab.value = 'info'
   if (activeTab.value === 'shelter' && !showShelterTab.value) activeTab.value = 'info'
+  if (activeTab.value === 'milestone' && !showMilestoneTab.value) activeTab.value = 'info'
+  if (activeTab.value === 'catastrophe' && !showCatastropheTab.value) activeTab.value = 'info'
 })
 
 let pollTimer = null
@@ -55,11 +65,22 @@ const fetchPlayerInfo = async () => {
   loading.value = true
   error.value = null
   try {
-    const result = await playerAPI.getDetails(playerId)
-    if (result && result.success) {
-      playerInfo.value = result
+    const [infoResult, itemsResult] = await Promise.all([
+      playerAPI.getDetails(playerId),
+      playerAPI.getItems(playerId)
+    ])
+    
+    if (infoResult && infoResult.success) {
+      playerInfo.value = infoResult
     } else {
-      error.value = result?.message || '获取玩家信息失败'
+      error.value = infoResult?.message || '获取玩家信息失败'
+    }
+    
+    if (itemsResult && Array.isArray(itemsResult)) {
+      playerItems.value = itemsResult
+    } else {
+      console.log('获取玩家物品失败:', itemsResult?.message)
+      playerItems.value = null
     }
   } catch (err) {
     error.value = '网络请求失败，请稍后重试'
@@ -92,7 +113,7 @@ const getStatusColor = () => {
     '统治者': 'text-amber-400 bg-amber-500/20',
     '反叛者': 'text-red-400 bg-red-500/20',
     '冒险者': 'text-emerald-400 bg-emerald-500/20',
-    '杀戮者': 'text-purple-400 bg-purple-500/20',
+    '天灾使者': 'text-purple-400 bg-purple-500/20',
     '平民': 'text-gray-400 bg-gray-500/20'
   }
   return colors[faction] || colors['平民']
@@ -128,6 +149,43 @@ const negativeStatuses = computed(() => {
   return list
 })
 
+const playerResources = computed(() => {
+  if (!playerItems.value) {
+    return { food: 0, energy: 0 }
+  }
+  
+  const items = Array.isArray(playerItems.value) ? playerItems.value : (playerItems.value.value || [])
+  
+  let foodTotal = 0
+  let energyTotal = 0
+  
+  items.forEach(item => {
+    if (item.type === 'material') {
+      const itemId = item.id
+      const quantity = item.quantity || 0
+      const unit = item.unit || ''
+      
+      let kgQuantity = quantity
+      if (unit === 'kg') {
+        kgQuantity = quantity
+      } else if (unit === 'g') {
+        kgQuantity = quantity / 1000
+      }
+      
+      if (itemId === 5) {
+        foodTotal += kgQuantity
+      } else if (itemId === 8) {
+        energyTotal += kgQuantity
+      }
+    }
+  })
+  
+  return {
+    food: Math.round(foodTotal),
+    energy: Math.round(energyTotal)
+  }
+})
+
 const dashboardProfile = computed(() => {
   const p = playerInfo.value
   if (!p) return null
@@ -139,11 +197,10 @@ const dashboardProfile = computed(() => {
     return text.replace(/。(?=[^。\n]{1,6}：)/g, '。\n')
   }
 
-  // 后端暂未提供：currentDay / calories / 描述文本，先用 dummy（稳定、可替换）
+  const resources = playerResources.value
+
   const dummy = {
     currentDay: 7,
-    foodCalories: 2850,
-    energyCalories: 1620,
     professionalSkillDescription:
       formatMultiSkillParagraphs(p.jobDescription) ||
       p.jobSkills ||
@@ -159,8 +216,8 @@ const dashboardProfile = computed(() => {
     profession: p.job || '未设定职业',
     negativeStatus: negativeStatuses.value,
     currentDay: dummy.currentDay,
-    foodCalories: dummy.foodCalories,
-    energyCalories: dummy.energyCalories,
+    foodQuantity: resources.food,
+    energyQuantity: resources.energy,
     professionalSkill: {
       name: p.jobSkills ? `${p.professionSkill || '职业技能'}` : (p.job ? '职业技能' : '职业技能'),
       description: dummy.professionalSkillDescription
@@ -296,6 +353,32 @@ onUnmounted(() => {
           @click="activeTab = 'shelter'"
         >
           统治者避难所
+        </button>
+        <button
+          v-if="showMilestoneTab"
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'milestone' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'milestone'"
+        >
+          反叛者里程碑
+        </button>
+        <button
+          v-if="showCatastropheTab"
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'catastrophe' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'catastrophe'"
+        >
+          天灾降临
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'warehouse' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'warehouse'"
+        >
+          📦 仓库管理
         </button>
         <button
           type="button"
@@ -565,16 +648,16 @@ onUnmounted(() => {
                               <span class="text-2xl">🍞</span>
                             </div>
                             <div class="text-slate-400 text-xs mb-1">食物</div>
-                            <div class="text-amber-300 text-2xl font-bold">{{ dashboardProfile.foodCalories.toLocaleString() }}</div>
-                            <div class="text-slate-500 text-xs mt-1">大卡</div>
+                            <div class="text-amber-300 text-2xl font-bold">{{ dashboardProfile.foodQuantity }}</div>
+                            <div class="text-slate-500 text-xs mt-1">千克</div>
                           </div>
                           <div class="text-center transition-transform duration-200 ease-out hover:scale-[1.02] will-change-transform transform-gpu">
                             <div class="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center mx-auto mb-3">
                               <span class="text-2xl">⚡</span>
                             </div>
                             <div class="text-slate-400 text-xs mb-1">能量</div>
-                            <div class="text-yellow-300 text-2xl font-bold">{{ dashboardProfile.energyCalories.toLocaleString() }}</div>
-                            <div class="text-slate-500 text-xs mt-1">热量</div>
+                            <div class="text-yellow-300 text-2xl font-bold">{{ dashboardProfile.energyQuantity }}</div>
+                            <div class="text-slate-500 text-xs mt-1">千克</div>
                           </div>
                         </div>
                       </div>
@@ -666,6 +749,32 @@ onUnmounted(() => {
 
       <div v-else-if="activeTab === 'shelter' && showShelterTab">
         <ShelterProgressView />
+      </div>
+
+      <div v-else-if="activeTab === 'milestone' && showMilestoneTab">
+        <div class="max-w-4xl">
+          <div class="mb-6">
+            <h1 class="text-white mb-1 tracking-tight text-2xl">反叛者里程碑</h1>
+            <p class="text-gray-500 text-sm">追踪反抗者阵营的革命进展</p>
+          </div>
+          <RebelMilestoneView />
+        </div>
+      </div>
+
+      <div v-else-if="activeTab === 'catastrophe' && showCatastropheTab">
+        <div class="mb-6">
+          <h1 class="text-white mb-1 tracking-tight text-2xl">天灾降临</h1>
+          <p class="text-gray-500 text-sm">掌控天灾的力量，决定岛屿的命运</p>
+        </div>
+        <CatastrophePanel :is-dm="false" />
+      </div>
+
+      <div v-else-if="activeTab === 'warehouse'">
+        <div class="mb-6">
+          <h1 class="text-white mb-1 tracking-tight text-2xl">仓库管理</h1>
+          <p class="text-gray-500 text-sm">查看和管理您有权限访问的仓库</p>
+        </div>
+        <WarehouseView />
       </div>
 
       <div v-else-if="activeTab === 'trade'">

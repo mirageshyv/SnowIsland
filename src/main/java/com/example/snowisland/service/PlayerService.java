@@ -80,8 +80,12 @@ public class PlayerService {
         loadItemNames();
         System.out.println("=== itemNames loaded, material size: " + itemNames.get("material").size());
         
+        // Try native query first for debugging
+        List<PlayerItem> playerItemsNative = playerItemRepository.findByPlayerIdNative(playerId);
+        System.out.println("=== [NATIVE] Found " + playerItemsNative.size() + " player items for player " + playerId);
+        
         List<PlayerItem> playerItems = playerItemRepository.findByPlayerId(playerId);
-        System.out.println("=== Found " + playerItems.size() + " player items for player " + playerId);
+        System.out.println("=== [JPA] Found " + playerItems.size() + " player items for player " + playerId);
         
         List<Map<String, Object>> result = new ArrayList<>();
 
@@ -203,6 +207,34 @@ public class PlayerService {
         return result;
     }
 
+    @Transactional
+    public Map<String, Object> migrateFaction() {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            List<Player> players = playerRepository.findAll();
+            int updatedCount = 0;
+            
+            for (Player player : players) {
+                if (player.getFaction() != null && player.getFaction().name().equals("杀戮者")) {
+                    player.setFaction(Player.Faction.天灾使者);
+                    playerRepository.save(player);
+                    updatedCount++;
+                }
+            }
+            
+            result.put("success", true);
+            result.put("message", "阵营迁移完成");
+            result.put("updatedCount", updatedCount);
+            
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "迁移失败: " + e.getMessage());
+        }
+        
+        return result;
+    }
+
     public Map<String, Object> getPlayerDetails(Integer id) {
         Map<String, Object> result = new HashMap<>();
         
@@ -249,7 +281,7 @@ public class PlayerService {
                     case 统治者: avatar = "⚔️"; break;
                     case 反叛者: avatar = "🔮"; break;
                     case 冒险者: avatar = "🗡️"; break;
-                    case 杀戮者: avatar = "✨"; break;
+                    case 天灾使者: avatar = "✨"; break;
                     case 平民: avatar = "🏹"; break;
                 }
             }
