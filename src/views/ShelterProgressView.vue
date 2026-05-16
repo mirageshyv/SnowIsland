@@ -1,10 +1,8 @@
 <script setup>
 import { computed, ref, watch, onMounted } from 'vue'
 import {
-  DEFAULT_SHELTER_INVENTORY,
   SHELTER_DAILY_LOGS,
   resolveShelterInventoryRows,
-  shelterTotalBuildValue,
 } from '../data/gameData.js'
 import { shelterAPI } from '../utils/api.js'
 import ShelterSupplyCards from './ShelterSupplyCards.vue'
@@ -12,20 +10,12 @@ import ShelterSupplyCards from './ShelterSupplyCards.vue'
 const loading = ref(true)
 const loadError = ref(null)
 
-/** 来自数据库的当前建造值 */
 const currentBuildValue = ref(0)
-
-/** 避难所公共食物 / 能量（从 shelter_stock 表查询） */
-const foodSupply = ref({ name: '食物', quantity: 0, unit: 'kg' })
+const foodSupply = ref({ totalKg: 0, items: [] })
 const energyReserve = ref({ items: [] })
-
-/** 避难所库存（接口返回 { id, quantity }[]，id 与图鉴 item_key 一致） */
 const shelterInventory = ref([])
 
 const shelterDisplayRows = computed(() => resolveShelterInventoryRows(shelterInventory.value))
-
-/** 建造日志仍为演示数据；若日后有表可再对接 */
-const shelterLogsTotal = computed(() => shelterTotalBuildValue(SHELTER_DAILY_LOGS))
 
 const selectedShelterItemId = ref(null)
 const selectedShelterRow = computed(() => {
@@ -37,49 +27,58 @@ function shelterCategoryLabel(c) {
   return { prop: '道具', weapon: '武器', material: '建材' }[c] || '未知'
 }
 
+function fail(message) {
+  loadError.value = message
+  currentBuildValue.value = 0
+  shelterInventory.value = []
+  foodSupply.value = { totalKg: 0, items: [] }
+  energyReserve.value = { items: [] }
+  selectedShelterItemId.value = null
+}
+
 async function loadShelterFromApi() {
   loading.value = true
   loadError.value = null
   try {
     const data = await shelterAPI.getSummary()
-    if (data && data.success) {
-      currentBuildValue.value = Number(data.currentBuildValue) || 0
-      const inv = Array.isArray(data.inventory) ? data.inventory : []
-      shelterInventory.value = inv
-        .filter((row) => row && (row.id != null || (row.itemType != null && row.itemId != null)))
-        .map((row) => {
-          if (row.itemType != null && row.itemId != null) {
-            return { itemType: row.itemType, itemId: row.itemId, quantity: Number(row.quantity) || 0 }
-          }
-          return { id: String(row.id), quantity: Number(row.quantity) || 0 }
-        })
-      if (data.foodSupply) {
-        foodSupply.value = data.foodSupply
-      }
-      if (data.energyReserve) {
-        energyReserve.value = data.energyReserve
-      }
-      if (shelterInventory.value.length === 0) {
-        shelterInventory.value = DEFAULT_SHELTER_INVENTORY.map((row) => ({ ...row }))
-        loadError.value = '数据库库存为空，已显示本地默认数据'
-      }
-    } else {
-      loadError.value = (data && data.message) || '加载避难所数据失败'
-      shelterInventory.value = DEFAULT_SHELTER_INVENTORY.map((row) => ({ ...row }))
-      currentBuildValue.value = shelterLogsTotal.value
+    if (!data?.success) {
+      fail(data?.message || '加载避难所数据失败')
+      return
     }
+    if (!data.foodSupply || !Array.isArray(data.foodSupply.items)) {
+      fail('食物供应数据无效')
+      return
+    }
+    if (!data.energyReserve || !Array.isArray(data.energyReserve.items)) {
+      fail('能量储备数据无效')
+      return
+    }
+    if (!Array.isArray(data.inventory)) {
+      fail('物资库存数据无效')
+      return
+    }
+
+    currentBuildValue.value = Number(data.currentBuildValue) || 0
+    shelterInventory.value = data.inventory
+      .filter((row) => row && (row.id != null || (row.itemType != null && row.itemId != null)))
+      .map((row) => {
+        if (row.itemType != null && row.itemId != null) {
+          return { itemType: row.itemType, itemId: row.itemId, quantity: Number(row.quantity) || 0 }
+        }
+        return { id: String(row.id), quantity: Number(row.quantity) || 0 }
+      })
+    foodSupply.value = data.foodSupply
+    energyReserve.value = data.energyReserve
   } catch (err) {
     console.error('加载避难所数据失败:', err)
-    loadError.value = '网络错误，已使用本地默认数据'
-    shelterInventory.value = DEFAULT_SHELTER_INVENTORY.map((row) => ({ ...row }))
-    currentBuildValue.value = shelterLogsTotal.value
+    fail('网络错误，无法加载避难所数据')
   } finally {
     loading.value = false
   }
 }
 
 watch(shelterDisplayRows, (rows) => {
-  if (!rows.length || selectedShelterItemId.value) return
+  if (loadError.value || !rows.length || selectedShelterItemId.value) return
   selectedShelterItemId.value = rows[0].id
 }, { immediate: true })
 
@@ -95,19 +94,26 @@ onMounted(() => {
       <p class="text-gray-500 text-base md:text-lg">追踪避难所建造进展与库存物资</p>
     </div>
 
-    <div
-      v-if="loadError"
-      class="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
-    >
-      {{ loadError }}
-    </div>
-
     <div v-if="loading" class="flex justify-center py-16">
       <div class="text-center text-gray-400 text-sm">加载避难所数据中…</div>
     </div>
 
+    <div
+      v-else-if="loadError"
+      class="rounded-xl border border-red-500/40 bg-red-500/10 px-6 py-10 text-center"
+    >
+      <p class="text-red-200 text-base mb-4">{{ loadError }}</p>
+      <button
+        type="button"
+        class="px-4 py-2 rounded-lg bg-red-500/20 text-red-200 text-sm border border-red-500/30 hover:bg-red-500/30 transition-colors"
+        @click="loadShelterFromApi"
+      >
+        重试
+      </button>
+    </div>
+
     <template v-else>
-      <div class="relative bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-8 mb-10">
+      <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-8 mb-10 overflow-visible">
         <div class="text-center mb-2">
           <p class="text-gray-400 text-lg mb-2">当前建造值</p>
           <p class="text-5xl md:text-6xl text-cyan-400 font-bold tabular-nums tracking-tight">
@@ -120,7 +126,10 @@ onMounted(() => {
       <div class="mb-10">
         <h2 class="text-2xl text-white mb-4 tracking-tight">物资库存</h2>
         <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-5 md:p-6">
-          <div class="flex flex-col lg:flex-row gap-6 lg:gap-8">
+          <div v-if="!shelterDisplayRows.length" class="text-center text-gray-500 text-sm py-12">
+            暂无物资库存
+          </div>
+          <div v-else class="flex flex-col lg:flex-row gap-6 lg:gap-8">
             <div class="flex-1 min-w-0">
               <div class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 max-h-[min(420px,50vh)] overflow-y-auto pr-1">
                 <button

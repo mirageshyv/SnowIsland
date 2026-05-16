@@ -3,7 +3,7 @@
  *
  * 包含：
  * - 物资管理页：后端 item / weapon / ammo / material 的 id 与本地素材对应关系
- * - 统治者避难所：图鉴、shelter 建材库存、建造日志；食物/能量：避难所公共库存与玩家个人库存分开展示（本地回退数据见 DEFAULT_SHELTER_*）
+ * - 统治者避难所：图鉴、物资展示映射、建造日志（演示数据）
  *
  * 说明：
  * - 有对应 PNG 的 id 会映射到素材；无映射时 `getMaterialImageUrl` 返回 null。
@@ -358,38 +358,6 @@ export const SHELTER_ITEM_CATALOG_BY_TYPE = {
   'material_4': SHELTER_ITEM_CATALOG.plank,
   'material_7': SHELTER_ITEM_CATALOG.stone,
 }
-
-export const DEFAULT_SHELTER_INVENTORY = [
-  { id: 'wood', quantity: 45 },
-  { id: 'stone', quantity: 32 },
-  { id: 'medical_kit', quantity: 8 },
-  { id: 'flashlight', quantity: 4 },
-  { id: 'handcuffs', quantity: 2 },
-  { id: 'whistle', quantity: 3 },
-  { id: 'body_armor', quantity: 1 },
-  { id: 'composite_shield', quantity: 1 },
-  { id: 'flare_gun', quantity: 1 },
-  { id: 'repair_kit', quantity: 5 },
-  { id: 'contract', quantity: 2 },
-  { id: 'rum', quantity: 10 },
-  { id: 'herbs', quantity: 12 },
-  { id: 'fishing_net', quantity: 2 },
-  { id: 'candle', quantity: 18 },
-  { id: 'rubbing_alcohol', quantity: 3 },
-  { id: 'matches', quantity: 6 },
-  { id: 'pencil', quantity: 4 },
-  { id: 'tattered_chart', quantity: 1 },
-  { id: 'service_pistol', quantity: 1 },
-  { id: 'hunting_shotgun', quantity: 1 },
-  { id: 'baton', quantity: 2 },
-  { id: 'bayonet', quantity: 1 },
-  { id: 'harpoon_spear', quantity: 1 },
-  { id: 'hunting_bow', quantity: 1 },
-  { id: 'pickaxe', quantity: 2 },
-  { id: 'axe', quantity: 1 },
-  { id: 'plank', quantity: 24 },
-  { id: 'rope', quantity: 35 },
-]
 
 export const SHELTER_DAILY_LOGS = [
   { day: 1, workers: [
