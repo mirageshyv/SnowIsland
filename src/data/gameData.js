@@ -48,6 +48,9 @@ import imgWarehouseKey from '@/assets/仓库钥匙.png?url'
 import imgFuelDepotKey from '@/assets/燃料仓库钥匙.png?url'
 import imgArmoryKey from '@/assets/镇武库钥匙.png?url'
 import imgDockMarketKey from '@/assets/码头集购站钥匙.png?url'
+import imgRebelBaseKey from '@/assets/反叛者基地钥匙.png?url'
+import imgArkKey from '@/assets/方舟钥匙.png?url'
+import imgSailorKnife from '@/assets/水手刀.png?url'
 import imgMetalProducts from '@/assets/金属制品.png?url'
 import imgAsphalt from '@/assets/沥青.png?url'
 import imgCanvas from '@/assets/帆布.png?url'
@@ -84,6 +87,8 @@ const ITEM_IMAGES = {
   20: imgFuelDepotKey,
   21: imgArmoryKey,
   22: imgDockMarketKey,
+  23: imgRebelBaseKey,
+  24: imgArkKey,
 }
 
 const WEAPON_IMAGES = {
@@ -91,8 +96,7 @@ const WEAPON_IMAGES = {
   2: imgHuntingShotgun,
   3: imgBaton,
   4: imgBayonet,
-  // 5 水手刀暂无独立素材，用刺刀占位
-  5: imgBayonet,
+  5: imgSailorKnife,
   6: imgHarpoon,
   7: imgHuntingBow,
   8: imgPickaxe,
@@ -130,6 +134,96 @@ const MATERIAL_MAPS = {
   weapon: WEAPON_IMAGES,
   ammo: AMMO_IMAGES,
   material: MATERIAL_IMAGES,
+}
+
+// 与数据库 item / weapon / ammo / material 表同步（snowisland_5_15.sql）
+export const GAME_ITEM_NAMES = {
+  item: {
+    1: '医疗包',
+    2: '手电筒',
+    3: '手铐',
+    4: '哨子',
+    5: '防弹衣',
+    6: '复合盾',
+    7: '信号枪',
+    8: '维修工具包',
+    9: '协议书',
+    10: '朗姆酒',
+    11: '草药',
+    12: '渔网',
+    13: '蜡烛',
+    14: '医用酒精',
+    15: '火柴',
+    16: '铅笔',
+    17: '破损海图',
+    18: '便当',
+    19: '仓库钥匙',
+    20: '燃料仓库钥匙',
+    21: '镇武库钥匙',
+    22: '码头集换站钥匙',
+    23: '反叛者基地钥匙',
+    24: '方舟钥匙',
+  },
+  weapon: {
+    1: '制式手枪',
+    2: '猎枪',
+    3: '警棍',
+    4: '刺刀',
+    5: '水手刀',
+    6: '鱼叉/矛',
+    7: '猎弓',
+    8: '十字镐',
+    9: '斧头',
+    10: '电锯',
+    11: '手术刀',
+    12: '炸药',
+  },
+  ammo: {
+    1: '手枪弹',
+    2: '猎枪弹',
+    3: '信号弹',
+    4: '箭矢',
+  },
+  material: {
+    1: '金属制品',
+    2: '木材',
+    3: '绳索',
+    4: '木板',
+    5: '食物',
+    6: '沥青',
+    7: '石料',
+    8: '燃料/煤油',
+    9: '帆布',
+    10: '发动机',
+    11: '螺旋桨',
+    12: '发电机',
+  },
+}
+
+/**
+ * @param {'item'|'weapon'|'ammo'|'material'|string} itemType
+ * @param {number|string} itemId
+ */
+export function getItemDisplayName(itemType, itemId) {
+  if (itemType == null || itemId === '' || itemId === undefined) return '未知物品'
+  const t = String(itemType).toLowerCase()
+  const numId = typeof itemId === 'number' && Number.isFinite(itemId) ? itemId : parseInt(String(itemId), 10)
+  if (Number.isNaN(numId)) return '未知物品'
+  return GAME_ITEM_NAMES[t]?.[numId] ?? '未知物品'
+}
+
+export function formatTransportItemLine(item) {
+  const name = getItemDisplayName(item.itemType, item.itemId)
+  return `${name} × ${item.quantity}（${item.weight}千克/单位）`
+}
+
+/** 将行动结果中的 material-3 等形式替换为中文名称 */
+export function formatActionResultText(text) {
+  if (!text) return text
+  return String(text).replace(
+    /\b(item|weapon|ammo|material)-(\d+)\b/g,
+    (_, type, id) => getItemDisplayName(type, id),
+  )
 }
 
 /**
@@ -357,7 +451,7 @@ export function resolveShelterInventoryRows(items) {
         const category = { item: 'prop', weapon: 'weapon', ammo: 'ammo', material: 'material' }[row.itemType] || 'prop'
         return {
           id: key,
-          name: row.itemType + '-' + row.itemId,
+          name: getItemDisplayName(row.itemType, row.itemId),
           category,
           description: '',
           imageUrl: getMaterialImageUrlOrDefault(row.itemType, row.itemId),

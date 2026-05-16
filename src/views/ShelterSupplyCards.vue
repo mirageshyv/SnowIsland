@@ -22,7 +22,7 @@ const props = defineProps({
         <span class="text-amber-400 text-3xl font-bold tabular-nums">{{ food.quantity || 0 }}</span>
         <span class="text-gray-500 text-sm">{{ food.unit || 'kg' }}</span>
       </div>
-      <p class="text-gray-500 text-xs mt-1">物资表 · material-5</p>
+      <p class="text-gray-500 text-xs mt-1">物资表 · 食物</p>
     </div>
 
     <div class="rounded-xl border border-white/10 bg-black/25 p-4">

@@ -412,9 +412,9 @@ public class ActionService {
                     updateWarehouseStock(sourceTable, itemType, itemId, -actualQty);
                     updateWarehouseStock(destTable, itemType, itemId, actualQty);
                     totalMoved += (int)(actualQty * weightPerUnit);
-                    resultLog.append(itemType).append("-").append(itemId)
-                            .append(": 搬运").append(actualQty).append("单位 (")
-                            .append((int)(actualQty * weightPerUnit)).append("kg)\n");
+                    resultLog.append(resolveItemName(itemType, itemId))
+                            .append(": 搬运").append(actualQty).append("单位（")
+                            .append((int)(actualQty * weightPerUnit)).append("千克）\n");
                 }
             } else if ("warehouse_to_player".equals(mode)) {
                 Integer playerId = action.getPlayerId();
@@ -432,13 +432,13 @@ public class ActionService {
                     updateWarehouseStock(sourceTable, itemType, itemId, -actualQty);
                     addItemToPlayer(playerId, itemType, itemId, actualQty);
                     totalMoved += (int)(actualQty * weightPerUnit);
-                    resultLog.append(itemType).append("-").append(itemId)
-                            .append(": 搬运").append(actualQty).append("单位到个人背包 (")
-                            .append((int)(actualQty * weightPerUnit)).append("kg)\n");
+                    resultLog.append(resolveItemName(itemType, itemId))
+                            .append(": 搬运").append(actualQty).append("单位到个人背包（")
+                            .append((int)(actualQty * weightPerUnit)).append("千克）\n");
                 }
             }
 
-            resultLog.append("总计搬运: ").append(totalMoved).append("kg");
+            resultLog.append("总计搬运: ").append(totalMoved).append("千克");
             String existingResult = action.getResult() != null ? action.getResult() : "";
             action.setResult(existingResult + "\n\n" + resultLog.toString());
             action.setStatus(PlayerAction.ActionStatus.feedbacked);
@@ -452,6 +452,27 @@ public class ActionService {
             result.put("message", "搬运结算失败: " + e.getMessage());
         }
         return result;
+    }
+
+    private String resolveItemName(String itemType, int itemId) {
+        String tableName;
+        switch (itemType) {
+            case "weapon": tableName = "weapon"; break;
+            case "ammo": tableName = "ammo"; break;
+            case "material": tableName = "material"; break;
+            default: tableName = "item"; break;
+        }
+        try {
+            Query query = entityManager.createNativeQuery("SELECT name FROM " + tableName + " WHERE id = ?1");
+            query.setParameter(1, itemId);
+            List<?> results = query.getResultList();
+            if (!results.isEmpty() && results.get(0) != null) {
+                return results.get(0).toString();
+            }
+        } catch (Exception e) {
+            // fall through
+        }
+        return "未知物品";
     }
 
     private int getWarehouseStock(String tableName, String itemType, int itemId) {

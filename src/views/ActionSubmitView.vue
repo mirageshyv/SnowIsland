@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch, reactive } from 'vue'
 import { actionAPI, playerAPI, locationAPI, warehouseAPI } from '@/utils/api.js'
+import { formatActionResultText } from '@/data/gameData.js'
 
 const playerId = localStorage.getItem('playerId') || ''
 const gameDay = ref(1)
@@ -449,7 +450,7 @@ onMounted(async () => {
                 {{ action.status === 'pending' ? '待反馈' : '已反馈' }}
               </span>
             </div>
-            <div v-if="action.result" class="text-gray-400 text-xs whitespace-pre-wrap bg-black/20 rounded-lg p-3 mt-2">{{ action.result }}</div>
+            <div v-if="action.result" class="text-gray-400 text-xs whitespace-pre-wrap bg-black/20 rounded-lg p-3 mt-2">{{ formatActionResultText(action.result) }}</div>
           </div>
         </div>
       </div>
