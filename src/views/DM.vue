@@ -335,13 +335,11 @@ onMounted(() => {
       </div>
 
       <div v-else-if="activeTab === 'milestones'">
-        <div class="max-w-4xl">
-          <div class="mb-6">
-            <h1 class="text-white mb-1 tracking-tight text-2xl">里程碑管理</h1>
-            <p class="text-gray-500 text-sm">管理反抗者阵营的里程碑进度</p>
-          </div>
-          <RebelMilestoneView />
+        <div class="mb-6">
+          <h1 class="text-white mb-1 tracking-tight text-2xl">里程碑管理</h1>
+          <p class="text-gray-500 text-sm">管理反抗者阵营的里程碑进度</p>
         </div>
+        <RebelMilestoneView embedded :show-header="false" />
       </div>
 
       <div v-else-if="activeTab === 'catastrophe'">

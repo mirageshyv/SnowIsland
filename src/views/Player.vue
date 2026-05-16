@@ -752,13 +752,7 @@ onUnmounted(() => {
       </div>
 
       <div v-else-if="activeTab === 'milestone' && showMilestoneTab">
-        <div class="max-w-4xl">
-          <div class="mb-6">
-            <h1 class="text-white mb-1 tracking-tight text-2xl">反叛者里程碑</h1>
-            <p class="text-gray-500 text-sm">追踪反抗者阵营的革命进展</p>
-          </div>
-          <RebelMilestoneView />
-        </div>
+        <RebelMilestoneView embedded />
       </div>
 
       <div v-else-if="activeTab === 'catastrophe' && showCatastropheTab">

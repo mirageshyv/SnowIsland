@@ -1,5 +1,8 @@
 <script setup>
 import { computed, ref } from 'vue'
+import { getMaterialImageUrlOrDefault } from '../data/gameData.js'
+
+const foodIconUrl = getMaterialImageUrlOrDefault('material', 5)
 
 const props = defineProps({
   food: {
@@ -38,7 +41,7 @@ function toggleFood() {
       >
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-2">
-            <span class="text-2xl leading-none" aria-hidden="true">🍞</span>
+            <img :src="foodIconUrl" alt="" class="w-7 h-7 object-contain shrink-0" aria-hidden="true" />
             <span class="text-gray-400 text-sm">食物供应</span>
           </div>
           <svg

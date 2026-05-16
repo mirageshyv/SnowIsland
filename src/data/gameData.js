@@ -31,6 +31,7 @@ import imgMatches from '@/assets/火柴.png?url'
 import imgPencil from '@/assets/铅笔.png?url'
 import imgSeaChart from '@/assets/破损海图.png?url'
 import imgBento from '@/assets/便当.png?url'
+import imgFood from '@/assets/Food.png?url'
 import imgServicePistol from '@/assets/制式手枪.png?url'
 import imgHuntingShotgun from '@/assets/猎枪.png?url'
 import imgBaton from '@/assets/警棍.png?url'
@@ -50,7 +51,9 @@ import imgArmoryKey from '@/assets/镇武库钥匙.png?url'
 import imgDockMarketKey from '@/assets/码头集购站钥匙.png?url'
 import imgRebelBaseKey from '@/assets/反叛者基地钥匙.png?url'
 import imgArkKey from '@/assets/方舟钥匙.png?url'
+import imgPrisonKey from '@/assets/监狱钥匙.png?url'
 import imgSailorKnife from '@/assets/水手刀.png?url'
+import imgElectricDrill from '@/assets/电钻.png?url'
 import imgMetalProducts from '@/assets/金属制品.png?url'
 import imgAsphalt from '@/assets/沥青.png?url'
 import imgCanvas from '@/assets/帆布.png?url'
@@ -89,6 +92,7 @@ const ITEM_IMAGES = {
   22: imgDockMarketKey,
   23: imgRebelBaseKey,
   24: imgArkKey,
+  25: imgPrisonKey,
 }
 
 const WEAPON_IMAGES = {
@@ -104,6 +108,7 @@ const WEAPON_IMAGES = {
   10: imgChainsaw,
   11: imgScalpel,
   12: imgExplosives,
+  13: imgElectricDrill,
 }
 
 const AMMO_IMAGES = {
@@ -119,7 +124,7 @@ const MATERIAL_IMAGES = {
   2: imgWood,
   3: imgRope,
   4: imgPlank,
-  5: imgBento,
+  5: imgFood,
   6: imgAsphalt,
   7: imgStone,
   8: imgCandle,
@@ -163,6 +168,7 @@ export const GAME_ITEM_NAMES = {
     22: '码头集换站钥匙',
     23: '反叛者基地钥匙',
     24: '方舟钥匙',
+    25: '监狱钥匙',
   },
   weapon: {
     1: '制式手枪',
@@ -177,6 +183,7 @@ export const GAME_ITEM_NAMES = {
     10: '电锯',
     11: '手术刀',
     12: '炸药',
+    13: '电钻',
   },
   ammo: {
     1: '手枪弹',
