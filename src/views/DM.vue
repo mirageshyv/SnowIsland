@@ -323,7 +323,7 @@ onMounted(() => {
       </div>
 
       <div v-else-if="activeTab === 'ark'">
-        <ArkProgressView />
+        <ArkProgressView embedded />
       </div>
 
       <div v-else-if="activeTab === 'shelter'">

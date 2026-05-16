@@ -744,7 +744,7 @@ onUnmounted(() => {
       </div>
 
       <div v-else-if="activeTab === 'ark' && showArkTab">
-        <ArkProgressView />
+        <ArkProgressView embedded />
       </div>
 
       <div v-else-if="activeTab === 'shelter' && showShelterTab">
