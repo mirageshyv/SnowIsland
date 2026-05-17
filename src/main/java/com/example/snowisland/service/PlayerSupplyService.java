@@ -1,12 +1,14 @@
 package com.example.snowisland.service;
 
-import com.example.snowisland.entity.PlayerEnergyStock;
-import com.example.snowisland.entity.PlayerFoodStock;
+import com.example.snowisland.entity.*;
+import com.example.snowisland.repository.EnergyRepository;
+import com.example.snowisland.repository.FoodRepository;
 import com.example.snowisland.repository.PlayerEnergyStockRepository;
 import com.example.snowisland.repository.PlayerFoodStockRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -16,29 +18,19 @@ import java.util.*;
 @Service
 public class PlayerSupplyService {
 
-    private static final String FUEL_OIL_KEY = "fuel_oil";
-
-    /** item_key, display name, unit (kg or portion) */
-    private static final String[][] FOOD_ITEMS = {
-            {"salty_pork", "咸肉", "kg"}, {"dried_fish", "鱼干", "kg"}, {"flour", "面粉", "kg"}, {"jam", "果酱", "kg"},
-            {"bread", "面包", "kg"}, {"potato", "土豆", "kg"}, {"hard_biscuit", "硬饼干", "kg"}, {"sauerkraut", "酸菜", "kg"},
-            {"dried_onion", "干洋葱", "kg"}, {"dried_apple", "苹果干", "kg"}, {"oatmeal", "燕麦片", "kg"}, {"fish_meat", "鱼肉", "kg"},
-            {"goat_milk", "羊奶", "kg"}, {"jerky", "肉干", "kg"}, {"smoked_meat", "熏肉", "kg"}, {"canned_food", "罐头", "portion"},
-            {"candy", "糖果", "kg"}, {"cereal", "麦片", "kg"}, {"military_ration", "军用压缩干粮", "portion"}, {"shellfish", "贝类", "kg"},
-            {"mushroom", "食用菌菇", "kg"}, {"insect_cocoon", "虫茧", "portion"}, {"wild_blueberry", "野生蓝莓", "kg"}, {"raspberry", "树莓", "kg"},
-    };
-
-    private static final String[][] ENERGY_ITEMS = {
-            {"firewood", "木柴", "kg"},
-            {"coal", "煤炭", "kg"},
-            {"fuel_oil", "燃油", "L"},
-    };
+    private static final int FUEL_OIL_ENERGY_ID = 3;
 
     @Autowired
     private PlayerFoodStockRepository playerFoodStockRepository;
 
     @Autowired
     private PlayerEnergyStockRepository playerEnergyStockRepository;
+
+    @Autowired
+    private FoodRepository foodRepository;
+
+    @Autowired
+    private EnergyRepository energyRepository;
 
     public Map<String, Object> getPersonalResourceTotals(int playerId) {
         Map<String, Object> out = new LinkedHashMap<>();
@@ -66,9 +58,9 @@ public class PlayerSupplyService {
             int fuelKg = 0;
             int fuelLiters = 0;
             for (PlayerEnergyStock row : energyRows) {
-                String key = row.getId() != null ? row.getId().getItemKey() : "";
+                int itemId = row.getId() != null ? row.getId().getItemId() : 0;
                 int q = positiveQty(row.getQuantity());
-                if (FUEL_OIL_KEY.equals(key)) {
+                if (itemId == FUEL_OIL_ENERGY_ID) {
                     fuelLiters += q;
                 } else {
                     fuelKg += q;
@@ -84,25 +76,24 @@ public class PlayerSupplyService {
     }
 
     public Map<String, Object> buildPlayerFoodSupply(int playerId) {
-        Map<String, Integer> qty = loadFoodQuantities(playerId);
+        Map<Integer, Integer> qty = loadFoodQuantitiesById(playerId);
+        Map<Integer, Food> catalog = loadFoodCatalog();
         int totalKg = 0;
         List<Map<String, Object>> items = new ArrayList<>();
-        Set<String> known = new HashSet<>();
 
-        for (String[] def : FOOD_ITEMS) {
-            known.add(def[0]);
-            int q = qty.getOrDefault(def[0], 0);
+        for (Food food : catalog.values()) {
+            int q = qty.getOrDefault(food.getId(), 0);
             totalKg += q;
-            items.add(foodRow(def[0], def[1], def[2], q));
+            items.add(foodRow(food.getId(), food.getName(), food.getUnit(), q));
         }
 
-        for (Map.Entry<String, Integer> e : qty.entrySet()) {
-            if (known.contains(e.getKey())) {
+        for (Map.Entry<Integer, Integer> e : qty.entrySet()) {
+            if (catalog.containsKey(e.getKey())) {
                 continue;
             }
             int q = positiveQty(e.getValue());
             totalKg += q;
-            items.add(foodRow(e.getKey(), e.getKey(), "kg", q));
+            items.add(foodRow(e.getKey(), "食物#" + e.getKey(), "kg", q));
         }
 
         Map<String, Object> block = new LinkedHashMap<>();
@@ -112,27 +103,26 @@ public class PlayerSupplyService {
     }
 
     public Map<String, Object> buildPlayerEnergyReserve(int playerId) {
-        Map<String, Integer> qty = loadEnergyQuantities(playerId);
+        Map<Integer, Integer> qty = loadEnergyQuantitiesById(playerId);
+        Map<Integer, Energy> catalog = loadEnergyCatalog();
         List<Map<String, Object>> items = new ArrayList<>();
-        Set<String> known = new HashSet<>();
 
-        for (String[] def : ENERGY_ITEMS) {
-            known.add(def[0]);
+        for (Energy energy : catalog.values()) {
             Map<String, Object> row = new LinkedHashMap<>();
-            row.put("id", def[0]);
-            row.put("name", def[1]);
-            row.put("unit", def[2]);
-            row.put("quantity", qty.getOrDefault(def[0], 0));
+            row.put("id", energy.getId());
+            row.put("name", energy.getName());
+            row.put("unit", energy.getUnit());
+            row.put("quantity", qty.getOrDefault(energy.getId(), 0));
             items.add(row);
         }
 
-        for (Map.Entry<String, Integer> e : qty.entrySet()) {
-            if (known.contains(e.getKey())) {
+        for (Map.Entry<Integer, Integer> e : qty.entrySet()) {
+            if (catalog.containsKey(e.getKey())) {
                 continue;
             }
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("id", e.getKey());
-            row.put("name", e.getKey());
+            row.put("name", "燃料#" + e.getKey());
             row.put("unit", "kg");
             row.put("quantity", positiveQty(e.getValue()));
             items.add(row);
@@ -143,12 +133,166 @@ public class PlayerSupplyService {
         return block;
     }
 
-    private Map<String, Integer> loadFoodQuantities(int playerId) {
-        Map<String, Integer> qty = new HashMap<>();
+    public List<Map<String, Object>> buildPlayerFoodItemsForTrade(int playerId) {
+        Map<Integer, Integer> qty = loadFoodQuantitiesById(playerId);
+        Map<Integer, Food> catalog = loadFoodCatalog();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map.Entry<Integer, Integer> e : qty.entrySet()) {
+            int q = positiveQty(e.getValue());
+            if (q <= 0) {
+                continue;
+            }
+            Food food = catalog.get(e.getKey());
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("id", e.getKey());
+            row.put("type", "food");
+            row.put("quantity", q);
+            if (food != null) {
+                row.put("name", food.getName());
+                row.put("unit", food.getUnit());
+            } else {
+                row.put("name", "食物#" + e.getKey());
+                row.put("unit", "kg");
+            }
+            result.add(row);
+        }
+        return result;
+    }
+
+    public List<Map<String, Object>> buildPlayerEnergyItemsForTrade(int playerId) {
+        Map<Integer, Integer> qty = loadEnergyQuantitiesById(playerId);
+        Map<Integer, Energy> catalog = loadEnergyCatalog();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map.Entry<Integer, Integer> e : qty.entrySet()) {
+            int q = positiveQty(e.getValue());
+            if (q <= 0) {
+                continue;
+            }
+            Energy energy = catalog.get(e.getKey());
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("id", e.getKey());
+            row.put("type", "energy");
+            row.put("quantity", q);
+            if (energy != null) {
+                row.put("name", energy.getName());
+                row.put("unit", energy.getUnit());
+            } else {
+                row.put("name", "燃料#" + e.getKey());
+                row.put("unit", "kg");
+            }
+            result.add(row);
+        }
+        return result;
+    }
+
+    public int getFoodQuantity(int playerId, int foodId) {
+        PlayerFoodStockId id = stockFoodId(playerId, foodId);
+        return playerFoodStockRepository.findById(id)
+                .map(PlayerFoodStock::getQuantity)
+                .map(this::positiveQty)
+                .orElse(0);
+    }
+
+    public int getEnergyQuantity(int playerId, int energyId) {
+        PlayerEnergyStockId id = stockEnergyId(playerId, energyId);
+        return playerEnergyStockRepository.findById(id)
+                .map(PlayerEnergyStock::getQuantity)
+                .map(this::positiveQty)
+                .orElse(0);
+    }
+
+    @Transactional
+    public boolean adjustFoodStock(int playerId, int foodId, int delta) {
+        PlayerFoodStockId id = stockFoodId(playerId, foodId);
+        Optional<PlayerFoodStock> opt = playerFoodStockRepository.findById(id);
+        int current = opt.map(PlayerFoodStock::getQuantity).map(this::positiveQty).orElse(0);
+        int newQty = current + delta;
+        if (newQty < 0) {
+            return false;
+        }
+        if (newQty == 0) {
+            opt.ifPresent(playerFoodStockRepository::delete);
+            return true;
+        }
+        PlayerFoodStock row = opt.orElseGet(() -> {
+            PlayerFoodStock s = new PlayerFoodStock();
+            s.setId(id);
+            return s;
+        });
+        row.setQuantity(newQty);
+        playerFoodStockRepository.save(row);
+        return true;
+    }
+
+    @Transactional
+    public boolean adjustEnergyStock(int playerId, int energyId, int delta) {
+        PlayerEnergyStockId id = stockEnergyId(playerId, energyId);
+        Optional<PlayerEnergyStock> opt = playerEnergyStockRepository.findById(id);
+        int current = opt.map(PlayerEnergyStock::getQuantity).map(this::positiveQty).orElse(0);
+        int newQty = current + delta;
+        if (newQty < 0) {
+            return false;
+        }
+        if (newQty == 0) {
+            opt.ifPresent(playerEnergyStockRepository::delete);
+            return true;
+        }
+        PlayerEnergyStock row = opt.orElseGet(() -> {
+            PlayerEnergyStock s = new PlayerEnergyStock();
+            s.setId(id);
+            return s;
+        });
+        row.setQuantity(newQty);
+        playerEnergyStockRepository.save(row);
+        return true;
+    }
+
+    public String getFoodName(int foodId) {
+        return foodRepository.findById(foodId).map(Food::getName).orElse("未知食物");
+    }
+
+    public String getFoodUnit(int foodId) {
+        return foodRepository.findById(foodId).map(Food::getUnit).orElse("kg");
+    }
+
+    public String getEnergyName(int energyId) {
+        return energyRepository.findById(energyId).map(Energy::getName).orElse("未知燃料");
+    }
+
+    public String getEnergyUnit(int energyId) {
+        return energyRepository.findById(energyId).map(Energy::getUnit).orElse("kg");
+    }
+
+    private Map<Integer, Food> loadFoodCatalog() {
+        Map<Integer, Food> map = new LinkedHashMap<>();
+        try {
+            for (Food food : foodRepository.findAllByOrderByIdAsc()) {
+                map.put(food.getId(), food);
+            }
+        } catch (DataAccessException ignored) {
+            // empty
+        }
+        return map;
+    }
+
+    private Map<Integer, Energy> loadEnergyCatalog() {
+        Map<Integer, Energy> map = new LinkedHashMap<>();
+        try {
+            for (Energy energy : energyRepository.findAllByOrderByIdAsc()) {
+                map.put(energy.getId(), energy);
+            }
+        } catch (DataAccessException ignored) {
+            // empty
+        }
+        return map;
+    }
+
+    private Map<Integer, Integer> loadFoodQuantitiesById(int playerId) {
+        Map<Integer, Integer> qty = new HashMap<>();
         try {
             for (PlayerFoodStock s : playerFoodStockRepository.findById_PlayerId(playerId)) {
                 if (s.getId() != null) {
-                    qty.put(s.getId().getItemKey(), positiveQty(s.getQuantity()));
+                    qty.put(s.getId().getItemId(), positiveQty(s.getQuantity()));
                 }
             }
         } catch (DataAccessException ignored) {
@@ -157,12 +301,12 @@ public class PlayerSupplyService {
         return qty;
     }
 
-    private Map<String, Integer> loadEnergyQuantities(int playerId) {
-        Map<String, Integer> qty = new HashMap<>();
+    private Map<Integer, Integer> loadEnergyQuantitiesById(int playerId) {
+        Map<Integer, Integer> qty = new HashMap<>();
         try {
             for (PlayerEnergyStock s : playerEnergyStockRepository.findById_PlayerId(playerId)) {
                 if (s.getId() != null) {
-                    qty.put(s.getId().getItemKey(), positiveQty(s.getQuantity()));
+                    qty.put(s.getId().getItemId(), positiveQty(s.getQuantity()));
                 }
             }
         } catch (DataAccessException ignored) {
@@ -171,7 +315,21 @@ public class PlayerSupplyService {
         return qty;
     }
 
-    private static Map<String, Object> foodRow(String id, String name, String unit, int quantity) {
+    private static PlayerFoodStockId stockFoodId(int playerId, int foodId) {
+        PlayerFoodStockId id = new PlayerFoodStockId();
+        id.setPlayerId(playerId);
+        id.setItemId(foodId);
+        return id;
+    }
+
+    private static PlayerEnergyStockId stockEnergyId(int playerId, int energyId) {
+        PlayerEnergyStockId id = new PlayerEnergyStockId();
+        id.setPlayerId(playerId);
+        id.setItemId(energyId);
+        return id;
+    }
+
+    private static Map<String, Object> foodRow(int id, String name, String unit, int quantity) {
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("id", id);
         row.put("name", name);
@@ -180,7 +338,7 @@ public class PlayerSupplyService {
         return row;
     }
 
-    private static int positiveQty(Integer quantity) {
+    private int positiveQty(Integer quantity) {
         if (quantity == null || quantity <= 0) {
             return 0;
         }

@@ -41,9 +41,6 @@ public class PlayerService {
     @PersistenceContext
     private EntityManager entityManager;
 
-    private static final int MATERIAL_FOOD_ID = 5;
-    private static final int MATERIAL_FUEL_ID = 8;
-
     private Map<String, Map<Integer, String>> itemNames = new HashMap<>();
     private Map<String, Map<Integer, String>> itemUnits = new HashMap<>();
 
@@ -56,11 +53,15 @@ public class PlayerService {
         itemNames.put("weapon", new HashMap<>());
         itemNames.put("ammo", new HashMap<>());
         itemNames.put("material", new HashMap<>());
+        itemNames.put("food", new HashMap<>());
+        itemNames.put("energy", new HashMap<>());
 
         itemUnits.put("item", new HashMap<>());
         itemUnits.put("weapon", new HashMap<>());
         itemUnits.put("ammo", new HashMap<>());
         itemUnits.put("material", new HashMap<>());
+        itemUnits.put("food", new HashMap<>());
+        itemUnits.put("energy", new HashMap<>());
     }
 
     public void loadItemNames() {
@@ -68,7 +69,9 @@ public class PlayerService {
             "SELECT 'item' as type, id, name, unit FROM item " +
             "UNION ALL SELECT 'weapon', id, name, unit FROM weapon " +
             "UNION ALL SELECT 'ammo', id, name, unit FROM ammo " +
-            "UNION ALL SELECT 'material', id, name, unit FROM material"
+            "UNION ALL SELECT 'material', id, name, unit FROM material " +
+            "UNION ALL SELECT 'food', id, name, unit FROM food " +
+            "UNION ALL SELECT 'energy', id, name, unit FROM energy"
         ).getResultList();
 
         for (Object[] row : items) {
@@ -96,20 +99,26 @@ public class PlayerService {
         List<Map<String, Object>> result = new ArrayList<>();
 
         for (PlayerItem pi : playerItems) {
+            String type = pi.getItemType().name().toLowerCase();
+            if ("food".equals(type) || "energy".equals(type)) {
+                continue;
+            }
+            if ("material".equals(type) && (pi.getItemId() == 5 || pi.getItemId() == 8)) {
+                continue;
+            }
             Map<String, Object> item = new HashMap<>();
             item.put("id", pi.getItemId());
-            item.put("type", pi.getItemType().name().toLowerCase());
+            item.put("type", type);
             item.put("quantity", pi.getQuantity());
-            String type = pi.getItemType().name().toLowerCase();
             String name = itemNames.get(type).getOrDefault(pi.getItemId(), "未知物品");
             item.put("name", name);
             item.put("unit", itemUnits.get(type).getOrDefault(pi.getItemId(), "个"));
             result.add(item);
-            
-            System.out.println("=== Added item: itemId=" + pi.getItemId() + ", type=" + type + ", quantity=" + pi.getQuantity() + ", name=" + name);
         }
 
-        System.out.println("=== Returning " + result.size() + " items");
+        result.addAll(playerSupplyService.buildPlayerFoodItemsForTrade(playerId));
+        result.addAll(playerSupplyService.buildPlayerEnergyItemsForTrade(playerId));
+
         return result;
     }
 
@@ -301,62 +310,19 @@ public class PlayerService {
         return result;
     }
 
-    /**
-     * Dashboard food (kg) and fuel (kg) from player_food_stock / player_energy_stock,
-     * with fallback to legacy material rows in player_items when stock tables are empty.
-     */
+    /** Dashboard food (kg) and fuel from player_food_stock / player_energy_stock. */
     public Map<String, Object> getPersonalResources(Integer playerId) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", true);
         result.put("playerId", playerId);
 
         Map<String, Object> stock = playerSupplyService.getPersonalResourceTotals(playerId);
-        boolean hasFoodStock = Boolean.TRUE.equals(stock.get("hasFoodStockTable"));
-        boolean hasEnergyStock = Boolean.TRUE.equals(stock.get("hasEnergyStockTable"));
-
-        int foodKg = ((Number) stock.getOrDefault("foodKg", 0)).intValue();
-        int fuelKg = ((Number) stock.getOrDefault("fuelKg", 0)).intValue();
-        int fuelLiters = ((Number) stock.getOrDefault("fuelLiters", 0)).intValue();
-
-        if (!hasFoodStock) {
-            foodKg += sumMaterialQuantity(playerId, MATERIAL_FOOD_ID);
-        }
-        if (!hasEnergyStock) {
-            fuelKg += sumMaterialQuantity(playerId, MATERIAL_FUEL_ID);
-        }
-
-        result.put("foodKg", foodKg);
-        result.put("fuelKg", fuelKg);
-        result.put("fuelLiters", fuelLiters);
-
-        if (hasFoodStock) {
-            result.put("foodSupply", playerSupplyService.buildPlayerFoodSupply(playerId));
-        }
-        if (hasEnergyStock) {
-            result.put("energyReserve", playerSupplyService.buildPlayerEnergyReserve(playerId));
-        }
+        result.put("foodKg", stock.getOrDefault("foodKg", 0));
+        result.put("fuelKg", stock.getOrDefault("fuelKg", 0));
+        result.put("fuelLiters", stock.getOrDefault("fuelLiters", 0));
+        result.put("foodSupply", playerSupplyService.buildPlayerFoodSupply(playerId));
+        result.put("energyReserve", playerSupplyService.buildPlayerEnergyReserve(playerId));
 
         return result;
-    }
-
-    private int sumMaterialQuantity(Integer playerId, int materialId) {
-        loadItemNames();
-        int total = 0;
-        for (PlayerItem pi : playerItemRepository.findByPlayerId(playerId)) {
-            if (pi.getItemType() != com.example.snowisland.entity.TradeItem.ItemType.material) {
-                continue;
-            }
-            if (pi.getItemId() == null || pi.getItemId() != materialId) {
-                continue;
-            }
-            String unit = itemUnits.get("material").getOrDefault(pi.getItemId(), "kg");
-            int q = pi.getQuantity() != null ? pi.getQuantity() : 0;
-            if ("g".equalsIgnoreCase(unit)) {
-                total += q / 1000;
-            } else {
-                total += q;
-            }
-        }
-        return total;
     }
 }

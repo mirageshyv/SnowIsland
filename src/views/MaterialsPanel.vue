@@ -9,7 +9,7 @@ const loading = ref(true)
 const rawMaterials = ref([])
 const foodSupply = ref({ totalKg: 0, items: [] })
 const energyReserve = ref({ items: [] })
-const hasPersonalSupply = ref(false)
+const resourcesLoaded = ref(false)
 
 /** Generic material rows replaced by player_food_stock / player_energy_stock */
 const EXCLUDED_MATERIAL_IDS = new Set([5, 8])
@@ -321,22 +321,14 @@ const loadMaterials = async () => {
     if (Array.isArray(itemsResult)) {
       rawMaterials.value = itemsResult
     }
+    resourcesLoaded.value = Boolean(resourcesResult?.success)
     if (resourcesResult?.success) {
-      hasPersonalSupply.value = Boolean(
-        resourcesResult.foodSupply || resourcesResult.energyReserve
-      )
-      if (resourcesResult.foodSupply) {
-        foodSupply.value = resourcesResult.foodSupply
-      } else {
-        foodSupply.value = { totalKg: resourcesResult.foodKg ?? 0, items: [] }
+      foodSupply.value = resourcesResult.foodSupply ?? {
+        totalKg: resourcesResult.foodKg ?? 0,
+        items: []
       }
-      if (resourcesResult.energyReserve) {
-        energyReserve.value = resourcesResult.energyReserve
-      } else {
-        energyReserve.value = { items: [] }
-      }
+      energyReserve.value = resourcesResult.energyReserve ?? { items: [] }
     } else {
-      hasPersonalSupply.value = false
       foodSupply.value = { totalKg: 0, items: [] }
       energyReserve.value = { items: [] }
     }
@@ -402,7 +394,7 @@ const filteredData = computed(() => {
 
 // 计算属性：是否有任何物资
 const hasAnyMaterials = computed(() => {
-  return hasPersonalSupply.value ||
+  return resourcesLoaded.value ||
          currentItems.value.length > 0 ||
          currentWeapons.value.length > 0 ||
          currentAmmo.value.length > 0 ||
@@ -551,7 +543,6 @@ onUnmounted(() => {
 
     <!-- 食物 / 燃料明细 -->
     <div
-      v-if="hasPersonalSupply || hasFoodOrEnergyStock"
       class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-2xl p-5 mb-6"
     >
       <div class="flex items-center gap-3 mb-2">
@@ -563,7 +554,11 @@ onUnmounted(() => {
           <p class="text-gray-500 text-xs">Food & Fuel (by type)</p>
         </div>
       </div>
+      <p v-if="!loading && !resourcesLoaded" class="text-amber-500/90 text-sm mb-3">
+        无法加载食物与燃料数据。请确认 Spring Boot 后端已启动，且数据库已包含 player_food_stock / player_energy_stock 表。
+      </p>
       <ShelterSupplyCards
+        v-else
         embedded
         food-title="个人食物"
         energy-title="个人燃料"

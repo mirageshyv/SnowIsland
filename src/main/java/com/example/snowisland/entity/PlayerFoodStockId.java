@@ -11,8 +11,8 @@ public class PlayerFoodStockId implements Serializable {
     @Column(name = "player_id", nullable = false)
     private Integer playerId;
 
-    @Column(name = "item_key", nullable = false, length = 64)
-    private String itemKey;
+    @Column(name = "item_id", nullable = false)
+    private Integer itemId;
 
     public Integer getPlayerId() {
         return playerId;
@@ -22,12 +22,12 @@ public class PlayerFoodStockId implements Serializable {
         this.playerId = playerId;
     }
 
-    public String getItemKey() {
-        return itemKey;
+    public Integer getItemId() {
+        return itemId;
     }
 
-    public void setItemKey(String itemKey) {
-        this.itemKey = itemKey;
+    public void setItemId(Integer itemId) {
+        this.itemId = itemId;
     }
 
     @Override
@@ -35,11 +35,11 @@ public class PlayerFoodStockId implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PlayerFoodStockId that = (PlayerFoodStockId) o;
-        return Objects.equals(playerId, that.playerId) && Objects.equals(itemKey, that.itemKey);
+        return Objects.equals(playerId, that.playerId) && Objects.equals(itemId, that.itemId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(playerId, itemKey);
+        return Objects.hash(playerId, itemId);
     }
 }

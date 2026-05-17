@@ -12,6 +12,10 @@ import CatastrophePanel from '../components/CatastrophePanel.vue'
 import WarehouseView from './WarehouseView.vue'
 import { tradeAPI, playerAPI, milestoneAPI } from '../utils/api.js'
 import { sumPersonalFoodAndFuel, formatKgForDisplay } from '../utils/playerResources.js'
+import { getMaterialImageUrlOrDefault } from '../data/gameData.js'
+
+const foodIconUrl = getMaterialImageUrlOrDefault('food', 5)
+const fuelIconUrl = getMaterialImageUrlOrDefault('energy', 1)
 
 const router = useRouter()
 const username = localStorage.getItem('username') || ''
@@ -643,16 +647,16 @@ onUnmounted(() => {
                         <div class="text-slate-400 text-xs md:text-sm mb-4 tracking-wider">个人资源</div>
                         <div class="grid grid-cols-2 gap-4">
                           <div class="text-center transition-transform duration-200 ease-out hover:scale-[1.02] will-change-transform transform-gpu">
-                            <div class="w-12 h-12 bg-amber-500/20 rounded-lg flex items-center justify-center mx-auto mb-3">
-                              <span class="text-2xl">🍞</span>
+                            <div class="w-14 h-14 bg-amber-500/20 rounded-lg flex items-center justify-center mx-auto mb-3">
+                              <img :src="foodIconUrl" alt="" class="w-10 h-10 object-contain" aria-hidden="true" />
                             </div>
                             <div class="text-slate-400 text-xs mb-1">食物</div>
                             <div class="text-amber-300 text-2xl font-bold">{{ dashboardProfile.foodQuantity }}</div>
                             <div class="text-slate-500 text-xs mt-1">千克</div>
                           </div>
                           <div class="text-center transition-transform duration-200 ease-out hover:scale-[1.02] will-change-transform transform-gpu">
-                            <div class="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center mx-auto mb-3">
-                              <span class="text-2xl">⚡</span>
+                            <div class="w-14 h-14 bg-yellow-500/20 rounded-lg flex items-center justify-center mx-auto mb-3">
+                              <img :src="fuelIconUrl" alt="" class="w-10 h-10 object-contain" aria-hidden="true" />
                             </div>
                             <div class="text-slate-400 text-xs mb-1">燃料</div>
                             <div class="text-yellow-300 text-2xl font-bold">{{ dashboardProfile.fuelQuantity }}</div>

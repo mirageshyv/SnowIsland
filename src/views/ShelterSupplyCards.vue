@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { getMaterialImageUrlOrDefault } from '../data/gameData.js'
 
-const foodIconUrl = getMaterialImageUrlOrDefault('material', 5)
+const foodIconUrl = getMaterialImageUrlOrDefault('food', 5)
 
 const props = defineProps({
   food: {

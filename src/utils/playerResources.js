@@ -1,10 +1,5 @@
-/** material.id in DB — 食物 */
-export const PERSONAL_FOOD_MATERIAL_ID = 5
-/** material.id in DB — 燃料/煤油 */
-export const PERSONAL_FUEL_MATERIAL_ID = 8
-
 /**
- * Convert a material quantity to kilograms (food & fuel are stored as kg in `material` table).
+ * Convert a material quantity to kilograms (food & fuel rows use kg/L/份 units).
  * @param {number|string} quantity
  * @param {string} [unit]
  */
@@ -35,14 +30,20 @@ export function sumPlayerMaterialsKg(items, materialIds) {
 }
 
 /**
+ * Fallback when `/resources` is unavailable — sums `food` / `energy` stock rows from getItems.
  * @param {Array} items — from `playerAPI.getItems`
  * @returns {{ food: number, fuel: number }}
  */
 export function sumPersonalFoodAndFuel(items) {
-  return {
-    food: sumPlayerMaterialsKg(items, [PERSONAL_FOOD_MATERIAL_ID]),
-    fuel: sumPlayerMaterialsKg(items, [PERSONAL_FUEL_MATERIAL_ID])
+  if (!Array.isArray(items)) return { food: 0, fuel: 0 }
+  let food = 0
+  let fuel = 0
+  for (const item of items) {
+    const q = quantityToKg(item.quantity, item.unit)
+    if (item.type === 'food') food += q
+    if (item.type === 'energy' && String(item.unit || '').toUpperCase() !== 'L') fuel += q
   }
+  return { food, fuel }
 }
 
 /**

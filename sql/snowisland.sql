@@ -501,7 +501,7 @@ DROP TABLE IF EXISTS `job_initial_items`;
 CREATE TABLE `job_initial_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `job_id` int(11) NOT NULL COMMENT '职业ID',
-  `item_type` enum('item','weapon','ammo','material') NOT NULL COMMENT '物品类型',
+  `item_type` enum('item','weapon','ammo','material','food','energy') NOT NULL COMMENT '物品类型',
   `item_id` int(11) NOT NULL COMMENT '物品ID',
   `quantity` int(11) NOT NULL DEFAULT '1' COMMENT '初始数量',
   `unit` varchar(20) DEFAULT NULL COMMENT '单位',
@@ -535,8 +535,8 @@ INSERT INTO `job_initial_items` VALUES ('16', '5', 'item', '3', '1', '个', '202
 INSERT INTO `job_initial_items` VALUES ('17', '5', 'weapon', '3', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('18', '5', 'item', '5', '1', '件', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('19', '5', 'item', '2', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('20', '5', 'material', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('21', '5', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('20', '5', 'food', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('21', '5', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('22', '5', 'material', '2', '45', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('23', '5', 'weapon', '1', '1', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('24', '5', 'ammo', '1', '2', '枚', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
@@ -545,8 +545,8 @@ INSERT INTO `job_initial_items` VALUES ('26', '5', 'material', '3', '10', '米',
 INSERT INTO `job_initial_items` VALUES ('27', '5', 'item', '10', '5', '瓶', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('28', '6', 'item', '6', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('29', '6', 'weapon', '3', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('30', '6', 'material', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('31', '6', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('30', '6', 'food', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('31', '6', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('32', '6', 'material', '2', '45', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('33', '6', 'weapon', '1', '1', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('34', '6', 'ammo', '1', '2', '枚', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
@@ -557,188 +557,188 @@ INSERT INTO `job_initial_items` VALUES ('38', '7', 'item', '4', '1', '个', '202
 INSERT INTO `job_initial_items` VALUES ('39', '7', 'item', '2', '2', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('40', '7', 'item', '6', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('41', '7', 'item', '13', '10', '根', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('42', '7', 'material', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('43', '7', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('42', '7', 'food', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('43', '7', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('44', '7', 'material', '2', '45', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('45', '7', 'weapon', '1', '1', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('46', '7', 'ammo', '1', '2', '枚', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('47', '7', 'item', '1', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('48', '7', 'material', '3', '10', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('49', '7', 'item', '10', '5', '瓶', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('50', '8', 'material', '5', '13', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('50', '8', 'food', '5', '13', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('51', '8', 'material', '3', '10', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('52', '8', 'weapon', '9', '1', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('53', '8', 'item', '15', '1', '盒', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('54', '8', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('54', '8', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('55', '8', 'material', '2', '150', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('56', '9', 'weapon', '9', '1', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('57', '9', 'weapon', '10', '1', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('58', '9', 'material', '3', '10', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('59', '9', 'item', '2', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('60', '9', 'item', '15', '1', '盒', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('61', '9', 'material', '5', '8', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('62', '9', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('61', '9', 'food', '5', '8', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('62', '9', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('63', '9', 'material', '2', '150', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('64', '10', 'weapon', '8', '3', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('65', '10', 'item', '2', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('66', '10', 'item', '15', '1', '盒', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('67', '10', 'material', '5', '8', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('68', '10', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('67', '10', 'food', '5', '8', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('68', '10', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('69', '10', 'material', '2', '150', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('70', '11', 'weapon', '4', '1', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('71', '11', 'material', '3', '10', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('72', '11', 'item', '15', '1', '盒', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('73', '11', 'material', '5', '8', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('74', '11', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('73', '11', 'food', '5', '8', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('74', '11', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('75', '11', 'material', '2', '150', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('76', '12', 'material', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('77', '12', 'material', '3', '20', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('78', '12', 'material', '9', '10', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('79', '12', 'item', '2', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('80', '12', 'item', '15', '1', '盒', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('81', '12', 'material', '5', '8', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('82', '12', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('81', '12', 'food', '5', '8', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('82', '12', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('83', '12', 'material', '2', '150', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('84', '13', 'material', '5', '8', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('85', '13', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('84', '13', 'food', '5', '8', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('85', '13', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('86', '13', 'material', '2', '150', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('87', '14', 'weapon', '6', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('88', '14', 'item', '12', '1', '张', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('89', '14', 'weapon', '4', '1', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('90', '14', 'material', '3', '20', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('91', '14', 'material', '5', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('91', '14', 'food', '5', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('92', '14', 'material', '2', '80', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('93', '14', 'material', '8', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('93', '14', 'energy', '1', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('94', '15', 'weapon', '4', '1', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('95', '15', 'material', '3', '30', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('96', '15', 'item', '2', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('97', '15', 'item', '12', '1', '张', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('98', '15', 'material', '5', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('98', '15', 'food', '5', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('99', '15', 'material', '2', '80', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('100', '15', 'material', '8', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('100', '15', 'energy', '1', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('101', '16', 'weapon', '4', '1', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('102', '16', 'item', '7', '1', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('103', '16', 'ammo', '3', '1', '枚', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('104', '16', 'item', '17', '1', '张', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('105', '16', 'material', '5', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('105', '16', 'food', '5', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('106', '16', 'material', '2', '80', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('107', '16', 'material', '8', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('107', '16', 'energy', '1', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('108', '16', 'material', '3', '10', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('109', '17', 'material', '3', '30', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('110', '17', 'item', '2', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('111', '17', 'weapon', '4', '1', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('112', '17', 'material', '5', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('112', '17', 'food', '5', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('113', '17', 'material', '2', '80', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('114', '17', 'material', '8', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('114', '17', 'energy', '1', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('115', '18', 'weapon', '4', '1', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('116', '18', 'item', '12', '1', '张', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('117', '18', 'material', '3', '20', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('118', '18', 'material', '5', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('118', '18', 'food', '5', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('119', '18', 'material', '2', '80', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('120', '18', 'material', '8', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('120', '18', 'energy', '1', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('121', '19', 'item', '13', '50', '支', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('122', '19', 'item', '15', '5', '盒', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('123', '19', 'material', '3', '10', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('124', '19', 'material', '5', '3', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('125', '19', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('124', '19', 'food', '5', '3', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('125', '19', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('126', '19', 'material', '2', '50', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('127', '19', 'material', '1', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('128', '20', 'item', '1', '2', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('129', '20', 'weapon', '11', '1', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('130', '20', 'material', '3', '10', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('131', '20', 'material', '5', '3', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('132', '20', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('131', '20', 'food', '5', '3', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('132', '20', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('133', '20', 'material', '2', '50', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('134', '20', 'material', '1', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('135', '21', 'material', '5', '23', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('135', '21', 'food', '5', '23', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('136', '21', 'item', '10', '10', '瓶', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('137', '21', 'material', '3', '100', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('138', '21', 'weapon', '8', '2', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('139', '21', 'weapon', '9', '2', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('140', '21', 'weapon', '2', '2', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('141', '21', 'ammo', '2', '4', '枚', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('142', '21', 'material', '8', '35', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('142', '21', 'energy', '1', '35', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('143', '21', 'material', '2', '350', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('144', '21', 'material', '1', '40', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('145', '21', 'material', '6', '30', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('146', '21', 'material', '9', '30', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('147', '21', 'item', '16', '5', '支', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('148', '22', 'material', '5', '18', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('148', '22', 'food', '5', '18', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('149', '22', 'material', '2', '550', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('150', '22', 'material', '8', '105', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('150', '22', 'energy', '1', '105', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('151', '23', 'item', '15', '1', '盒', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('152', '23', 'item', '14', '10', '升', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('153', '23', 'material', '5', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('154', '23', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('153', '23', 'food', '5', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('154', '23', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('155', '23', 'material', '2', '50', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('156', '23', 'material', '1', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('157', '24', 'item', '7', '1', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('158', '24', 'ammo', '3', '2', '枚', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('159', '24', 'item', '2', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('160', '24', 'material', '8', '15', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('160', '24', 'energy', '1', '15', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('161', '24', 'item', '17', '1', '张', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('162', '24', 'material', '5', '3', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('162', '24', 'food', '5', '3', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('163', '24', 'material', '2', '50', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('164', '24', 'material', '1', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('165', '25', 'material', '5', '8', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('166', '25', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('165', '25', 'food', '5', '8', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('166', '25', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('167', '25', 'material', '2', '50', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('168', '25', 'material', '1', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('169', '26', 'weapon', '4', '1', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('170', '26', 'material', '3', '20', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('171', '26', 'item', '2', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('172', '26', 'material', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('173', '26', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('172', '26', 'food', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('173', '26', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('174', '26', 'material', '2', '50', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('175', '26', 'material', '1', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('176', '27', 'weapon', '2', '1', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('177', '27', 'ammo', '2', '4', '枚', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('178', '27', 'weapon', '4', '1', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('179', '27', 'material', '3', '10', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('180', '27', 'material', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('181', '27', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('180', '27', 'food', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('181', '27', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('182', '27', 'material', '2', '50', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('183', '27', 'material', '1', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('184', '28', 'material', '3', '20', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('185', '28', 'item', '2', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('186', '28', 'item', '4', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('187', '28', 'material', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('188', '28', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('187', '28', 'food', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('188', '28', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('189', '28', 'material', '2', '50', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('190', '28', 'material', '1', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('191', '29', 'weapon', '8', '1', '把', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('192', '29', 'item', '2', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('193', '29', 'material', '3', '10', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('194', '29', 'item', '13', '10', '支', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('195', '29', 'material', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('196', '29', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('195', '29', 'food', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('196', '29', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('197', '29', 'material', '2', '50', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('198', '29', 'material', '1', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('199', '30', 'item', '16', '5', '支', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('200', '30', 'material', '8', '20', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('200', '30', 'energy', '1', '20', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('201', '30', 'material', '9', '20', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('202', '30', 'material', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('202', '30', 'food', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('203', '30', 'material', '2', '50', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('204', '30', 'material', '1', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('205', '31', 'item', '13', '10', '支', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('206', '31', 'item', '15', '1', '盒', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('207', '31', 'material', '3', '10', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('208', '31', 'item', '2', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('209', '31', 'material', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('210', '31', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('209', '31', 'food', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('210', '31', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('211', '31', 'material', '2', '50', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('212', '31', 'material', '1', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('213', '32', 'item', '8', '2', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('214', '32', 'item', '2', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('215', '32', 'material', '3', '10', '米', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('216', '32', 'material', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('217', '32', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('216', '32', 'food', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('217', '32', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('218', '32', 'material', '2', '50', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('219', '32', 'material', '1', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('220', '33', 'item', '16', '5', '支', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('221', '33', 'item', '2', '1', '个', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('222', '33', 'material', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
-INSERT INTO `job_initial_items` VALUES ('223', '33', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('222', '33', 'food', '5', '2', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('223', '33', 'energy', '1', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('224', '33', 'material', '2', '50', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('225', '33', 'material', '1', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 
@@ -883,10 +883,10 @@ INSERT INTO `material` VALUES ('1', '金属制品', 'kg', '可用于制作工具
 INSERT INTO `material` VALUES ('2', '木材', 'kg', '可用于建造', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `material` VALUES ('3', '绳索', '米', '多种用途', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `material` VALUES ('4', '木板', 'kg', '建筑材料', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
-INSERT INTO `material` VALUES ('5', '食物', 'kg', '填饱肚子', '2026-04-27 11:36:23', '2026-05-02 19:19:33');
+INSERT INTO `material` VALUES ('5', '食物（不用这个）', 'kg', '已改用 food 表与 player_food_stock', '2026-04-27 11:36:23', '2026-05-02 19:19:33');
 INSERT INTO `material` VALUES ('6', '沥青', 'kg', '建筑材料', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `material` VALUES ('7', '石料', 'kg', '建筑材料', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
-INSERT INTO `material` VALUES ('8', '燃料/煤油', 'kg', '提供能源', '2026-04-27 11:36:23', '2026-05-02 22:20:31');
+INSERT INTO `material` VALUES ('8', '燃料/煤油（不用这个）', 'kg', '已改用 energy 表与 player_energy_stock', '2026-04-27 11:36:23', '2026-05-02 22:20:31');
 INSERT INTO `material` VALUES ('9', '帆布', '米', '制作帐篷', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `material` VALUES ('10', '发动机', '个', '机械动力', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `material` VALUES ('11', '螺旋桨', '个', '船只推进', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
@@ -1028,7 +1028,7 @@ DROP TABLE IF EXISTS `player_items`;
 CREATE TABLE `player_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `player_id` int(11) NOT NULL,
-  `item_type` enum('item','weapon','ammo','material') NOT NULL,
+  `item_type` enum('item','weapon','ammo','material','food','energy') NOT NULL,
   `item_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL DEFAULT '0',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1057,7 +1057,6 @@ INSERT INTO `player_items` VALUES ('12', '2', 'weapon', '6', '1', '2026-04-27 11
 INSERT INTO `player_items` VALUES ('13', '2', 'ammo', '2', '10', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('14', '2', 'ammo', '3', '5', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('15', '2', 'material', '3', '20', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
-INSERT INTO `player_items` VALUES ('16', '2', 'material', '5', '9', '2026-04-27 11:36:23', '2026-05-05 21:17:54');
 INSERT INTO `player_items` VALUES ('17', '3', 'item', '8', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('18', '3', 'item', '10', '2', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('19', '3', 'weapon', '4', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
@@ -1071,7 +1070,6 @@ INSERT INTO `player_items` VALUES ('26', '4', 'weapon', '5', '1', '2026-04-27 11
 INSERT INTO `player_items` VALUES ('27', '4', 'weapon', '7', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('28', '4', 'ammo', '4', '20', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('29', '4', 'material', '7', '20', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
-INSERT INTO `player_items` VALUES ('30', '4', 'material', '8', '10', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('31', '5', 'item', '6', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('32', '5', 'item', '14', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('33', '5', 'weapon', '9', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
@@ -1079,10 +1077,8 @@ INSERT INTO `player_items` VALUES ('34', '5', 'weapon', '10', '1', '2026-04-27 1
 INSERT INTO `player_items` VALUES ('35', '5', 'material', '10', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('36', '5', 'material', '11', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('37', '5', 'material', '12', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
-INSERT INTO `player_items` VALUES ('38', '1', 'material', '5', '7', '2026-05-01 10:54:53', '2026-05-05 21:17:17');
 INSERT INTO `player_items` VALUES ('39', '4', 'item', '24', '1', '2026-05-14 21:53:29', '2026-05-14 21:53:29');
 INSERT INTO `player_items` VALUES ('40', '4', 'item', '23', '1', '2026-05-14 21:54:25', '2026-05-14 21:54:25');
-INSERT INTO `player_items` VALUES ('41', '1', 'material', '8', '10', '2026-05-15 11:03:26', '2026-05-15 11:03:26');
 INSERT INTO `player_items` VALUES ('42', '4', 'material', '2', '5', '2026-05-15 12:33:01', '2026-05-15 12:33:01');
 
 -- ----------------------------
@@ -1205,7 +1201,7 @@ INSERT INTO `shelter_progress` VALUES ('1', '2026-05-12 09:58:06.701000', '50', 
 DROP TABLE IF EXISTS `shelter_stock`;
 CREATE TABLE `shelter_stock` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `item_type` enum('item','weapon','ammo','material') COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '物品类型：item道具/weapon武器/ammo弹药/material材料',
+  `item_type` enum('item','weapon','ammo','material','food','energy') COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '物品类型：item道具/weapon武器/ammo弹药/material材料',
   `item_id` int(11) NOT NULL COMMENT '物品ID，关联对应类型表的主键',
   `quantity` int(11) NOT NULL DEFAULT '0' COMMENT '物品数量',
   `created_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间',
@@ -1248,8 +1244,121 @@ INSERT INTO `shelter_stock` VALUES ('55', 'weapon', '6', '1', '2026-05-13 18:52:
 INSERT INTO `shelter_stock` VALUES ('56', 'weapon', '7', '1', '2026-05-13 18:52:32.227988', '2026-05-13 18:52:32.227988');
 INSERT INTO `shelter_stock` VALUES ('57', 'weapon', '8', '2', '2026-05-13 18:52:32.227988', '2026-05-13 18:52:32.227988');
 INSERT INTO `shelter_stock` VALUES ('58', 'weapon', '9', '1', '2026-05-13 18:52:32.227988', '2026-05-13 18:52:32.227988');
-INSERT INTO `shelter_stock` VALUES ('59', 'material', '5', '10', '2026-05-15 11:06:39.934001', '2026-05-15 11:06:39.934001');
-INSERT INTO `shelter_stock` VALUES ('60', 'material', '8', '10', '2026-05-15 11:06:50.313606', '2026-05-15 11:06:50.313606');
+-- ----------------------------
+-- Table structure for food
+-- ----------------------------
+DROP TABLE IF EXISTS `player_energy_stock`;
+DROP TABLE IF EXISTS `player_food_stock`;
+DROP TABLE IF EXISTS `energy`;
+DROP TABLE IF EXISTS `food`;
+CREATE TABLE `food` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  `unit` varchar(20) NOT NULL,
+  `remark` text,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COMMENT='食物种类';
+
+-- ----------------------------
+-- Records of food
+-- ----------------------------
+INSERT INTO `food` VALUES ('1', '咸肉', 'kg', '腌制肉类', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('2', '鱼干', 'kg', '干货', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('3', '面粉', 'kg', '主食原料', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('4', '果酱', 'kg', '保存食品', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('5', '面包', 'kg', '主食', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('6', '土豆', 'kg', '块茎', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('7', '硬饼干', 'kg', '干粮', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('8', '酸菜', 'kg', '发酵蔬菜', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('9', '干洋葱', 'kg', '干货', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('10', '苹果干', 'kg', '果干', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('11', '燕麦片', 'kg', '谷物', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('12', '鱼肉', 'kg', '鲜货', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('13', '羊奶', 'kg', '乳品', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('14', '肉干', 'kg', '干货', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('15', '熏肉', 'kg', '熏制肉类', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('16', '罐头', '份', '罐头食品', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('17', '糖果', 'kg', '甜食', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('18', '麦片', 'kg', '谷物', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('19', '军用压缩干粮', '份', '压缩口粮', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('20', '贝类', 'kg', '海鲜', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('21', '食用菌菇', 'kg', '菌类', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('22', '虫茧', '份', '蛋白质来源', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('23', '野生蓝莓', 'kg', '浆果', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `food` VALUES ('24', '树莓', 'kg', '浆果', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+
+-- ----------------------------
+-- Table structure for player_food_stock
+-- ----------------------------
+CREATE TABLE `player_food_stock` (
+  `player_id` int(11) NOT NULL,
+  `item_id` int(11) NOT NULL,
+  `quantity` int(11) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`player_id`,`item_id`),
+  KEY `idx_player_food_item` (`item_id`),
+  CONSTRAINT `fk_pfs_player` FOREIGN KEY (`player_id`) REFERENCES `player` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_pfs_food` FOREIGN KEY (`item_id`) REFERENCES `food` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='玩家食物库存';
+
+-- ----------------------------
+-- Records of player_food_stock
+-- ----------------------------
+INSERT INTO `player_food_stock` (`player_id`, `item_id`, `quantity`) VALUES
+(1, 5, 2), (1, 17, 1), (1, 14, 0), (1, 19, 2),
+(2, 5, 5), (2, 17, 3), (2, 14, 2), (2, 19, 2),
+(3, 5, 5), (3, 17, 3), (3, 14, 2), (3, 19, 2),
+(5, 5, 5), (5, 17, 3), (5, 14, 2), (5, 19, 2);
+
+-- ----------------------------
+-- Table structure for energy
+-- ----------------------------
+CREATE TABLE `energy` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  `unit` varchar(20) NOT NULL,
+  `remark` text,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COMMENT='能量（燃料）种类';
+
+-- ----------------------------
+-- Records of energy
+-- ----------------------------
+INSERT INTO `energy` VALUES ('1', '木柴', 'kg', '取暖与烹饪', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `energy` VALUES ('2', '煤炭', 'kg', '高热值燃料', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `energy` VALUES ('3', '油料', 'L', '液体燃料', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+
+-- ----------------------------
+-- Table structure for player_energy_stock
+-- ----------------------------
+CREATE TABLE `player_energy_stock` (
+  `player_id` int(11) NOT NULL,
+  `item_id` int(11) NOT NULL,
+  `quantity` int(11) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`player_id`,`item_id`),
+  KEY `idx_player_energy_item` (`item_id`),
+  CONSTRAINT `fk_pes_player` FOREIGN KEY (`player_id`) REFERENCES `player` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_pes_energy` FOREIGN KEY (`item_id`) REFERENCES `energy` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='玩家能量（燃料）库存';
+
+-- ----------------------------
+-- Records of player_energy_stock
+-- ----------------------------
+INSERT INTO `player_energy_stock` (`player_id`, `item_id`, `quantity`) VALUES
+(1, 1, 3), (1, 2, 1),
+(2, 1, 3), (2, 2, 1),
+(3, 1, 3), (3, 2, 1),
+(4, 1, 10),
+(5, 1, 3), (5, 2, 1);
 
 -- ----------------------------
 -- Table structure for skill
@@ -1373,7 +1482,7 @@ DROP TABLE IF EXISTS `trade_items`;
 CREATE TABLE `trade_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `trade_id` int(11) NOT NULL COMMENT '关联的交易ID',
-  `item_type` enum('item','weapon','ammo','material') NOT NULL COMMENT '物品类型',
+  `item_type` enum('item','weapon','ammo','material','food','energy') NOT NULL COMMENT '物品类型',
   `item_id` int(11) NOT NULL COMMENT '物品ID',
   `quantity` int(11) NOT NULL DEFAULT '1' COMMENT '物品数量',
   `direction` enum('give','take') NOT NULL COMMENT '物品方向：give-给予, take-索取',
@@ -1392,7 +1501,7 @@ CREATE TABLE `trade_items` (
 -- ----------------------------
 INSERT INTO `trade_items` VALUES ('1', '1', 'item', '1', '1', 'give', '2026-04-30 14:06:06', null, null, null);
 INSERT INTO `trade_items` VALUES ('2', '1', 'weapon', '1', '1', 'give', '2026-04-30 14:06:06', null, null, null);
-INSERT INTO `trade_items` VALUES ('3', '1', 'material', '5', '5', 'take', '2026-04-30 14:06:06', null, null, null);
+INSERT INTO `trade_items` VALUES ('3', '1', 'food', '5', '5', 'take', '2026-04-30 14:06:06', null, null, null);
 INSERT INTO `trade_items` VALUES ('4', '2', 'weapon', '4', '1', 'give', '2026-04-30 14:06:06', null, null, null);
 INSERT INTO `trade_items` VALUES ('5', '2', 'item', '8', '1', 'take', '2026-04-30 14:06:06', null, null, null);
 INSERT INTO `trade_items` VALUES ('6', '3', 'material', '7', '10', 'give', '2026-04-30 14:06:06', null, null, null);
@@ -1401,13 +1510,13 @@ INSERT INTO `trade_items` VALUES ('8', '4', 'item', '4', '2', 'give', '2026-04-3
 INSERT INTO `trade_items` VALUES ('9', '4', 'ammo', '2', '5', 'take', '2026-04-30 14:06:06', null, null, null);
 INSERT INTO `trade_items` VALUES ('10', '5', 'weapon', '9', '1', 'give', '2026-04-30 14:06:06', null, null, null);
 INSERT INTO `trade_items` VALUES ('11', '5', 'weapon', '3', '1', 'take', '2026-04-30 14:06:06', null, null, null);
-INSERT INTO `trade_items` VALUES ('12', '6', 'material', '5', '1', 'take', '2026-05-01 09:36:56', null, null, null);
-INSERT INTO `trade_items` VALUES ('13', '7', 'material', '5', '1', 'take', '2026-05-01 10:29:46', null, null, null);
-INSERT INTO `trade_items` VALUES ('14', '8', 'material', '5', '1', 'take', '2026-05-01 10:54:31', null, null, null);
-INSERT INTO `trade_items` VALUES ('15', '9', 'material', '5', '3', 'give', '2026-05-02 17:41:28', null, null, null);
-INSERT INTO `trade_items` VALUES ('16', '10', 'material', '5', '3', 'give', '2026-05-02 17:46:24', null, null, null);
-INSERT INTO `trade_items` VALUES ('17', '11', 'material', '5', '1', 'give', '2026-05-05 21:16:29', null, null, null);
-INSERT INTO `trade_items` VALUES ('18', '12', 'material', '5', '1', 'give', '2026-05-05 21:17:33', null, null, null);
+INSERT INTO `trade_items` VALUES ('12', '6', 'food', '5', '1', 'take', '2026-05-01 09:36:56', null, null, null);
+INSERT INTO `trade_items` VALUES ('13', '7', 'food', '5', '1', 'take', '2026-05-01 10:29:46', null, null, null);
+INSERT INTO `trade_items` VALUES ('14', '8', 'food', '5', '1', 'take', '2026-05-01 10:54:31', null, null, null);
+INSERT INTO `trade_items` VALUES ('15', '9', 'food', '5', '3', 'give', '2026-05-02 17:41:28', null, null, null);
+INSERT INTO `trade_items` VALUES ('16', '10', 'food', '5', '3', 'give', '2026-05-02 17:46:24', null, null, null);
+INSERT INTO `trade_items` VALUES ('17', '11', 'food', '5', '1', 'give', '2026-05-05 21:16:29', null, null, null);
+INSERT INTO `trade_items` VALUES ('18', '12', 'food', '5', '1', 'give', '2026-05-05 21:17:33', null, null, null);
 
 -- ----------------------------
 -- Table structure for user
@@ -1446,7 +1555,7 @@ INSERT INTO `user` VALUES ('8', 'player6', 'test123', 'player', '6', '2026-04-29
 DROP TABLE IF EXISTS `warehouse_ark`;
 CREATE TABLE `warehouse_ark` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `item_type` enum('item','weapon','ammo','material') NOT NULL,
+  `item_type` enum('item','weapon','ammo','material','food','energy') NOT NULL,
   `item_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL DEFAULT '0',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -1462,7 +1571,7 @@ CREATE TABLE `warehouse_ark` (
 -- ----------------------------
 INSERT INTO `warehouse_ark` VALUES ('2', 'material', '11', '1', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
 INSERT INTO `warehouse_ark` VALUES ('4', 'material', '3', '15', '2026-05-14 21:50:25', '2026-05-15 13:58:56');
-INSERT INTO `warehouse_ark` VALUES ('5', 'material', '5', '10', '2026-05-15 13:58:56', '2026-05-15 13:58:56');
+INSERT INTO `warehouse_ark` VALUES ('5', 'food', '5', '10', '2026-05-15 13:58:56', '2026-05-15 13:58:56');
 INSERT INTO `warehouse_ark` VALUES ('6', 'material', '10', '2', '2026-05-15 13:58:56', '2026-05-15 13:58:56');
 
 -- ----------------------------
@@ -1471,7 +1580,7 @@ INSERT INTO `warehouse_ark` VALUES ('6', 'material', '10', '2', '2026-05-15 13:5
 DROP TABLE IF EXISTS `warehouse_armory`;
 CREATE TABLE `warehouse_armory` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `item_type` enum('item','weapon','ammo','material') NOT NULL,
+  `item_type` enum('item','weapon','ammo','material','food','energy') NOT NULL,
   `item_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL DEFAULT '0',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -1525,7 +1634,7 @@ INSERT INTO `warehouse_config` VALUES ('6', 'ark', '方舟仓库', 'warehouse_ar
 DROP TABLE IF EXISTS `warehouse_dock`;
 CREATE TABLE `warehouse_dock` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `item_type` enum('item','weapon','ammo','material') NOT NULL,
+  `item_type` enum('item','weapon','ammo','material','food','energy') NOT NULL,
   `item_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL DEFAULT '0',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -1539,7 +1648,7 @@ CREATE TABLE `warehouse_dock` (
 -- ----------------------------
 -- Records of warehouse_dock
 -- ----------------------------
-INSERT INTO `warehouse_dock` VALUES ('1', 'material', '5', '15', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
+INSERT INTO `warehouse_dock` VALUES ('1', 'food', '5', '15', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
 INSERT INTO `warehouse_dock` VALUES ('2', 'material', '10', '5', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
 INSERT INTO `warehouse_dock` VALUES ('3', 'material', '11', '3', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
 INSERT INTO `warehouse_dock` VALUES ('4', 'item', '12', '8', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
@@ -1550,7 +1659,7 @@ INSERT INTO `warehouse_dock` VALUES ('4', 'item', '12', '8', '2026-05-14 21:50:2
 DROP TABLE IF EXISTS `warehouse_fuel`;
 CREATE TABLE `warehouse_fuel` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `item_type` enum('item','weapon','ammo','material') NOT NULL,
+  `item_type` enum('item','weapon','ammo','material','food','energy') NOT NULL,
   `item_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL DEFAULT '0',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -1573,7 +1682,7 @@ INSERT INTO `warehouse_fuel` VALUES ('2', 'material', '4', '40', '2026-05-14 21:
 DROP TABLE IF EXISTS `warehouse_general`;
 CREATE TABLE `warehouse_general` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `item_type` enum('item','weapon','ammo','material') NOT NULL,
+  `item_type` enum('item','weapon','ammo','material','food','energy') NOT NULL,
   `item_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL DEFAULT '0',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -1599,7 +1708,7 @@ INSERT INTO `warehouse_general` VALUES ('5', 'item', '13', '15', '2026-05-14 21:
 DROP TABLE IF EXISTS `warehouse_rebel`;
 CREATE TABLE `warehouse_rebel` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `item_type` enum('item','weapon','ammo','material') NOT NULL,
+  `item_type` enum('item','weapon','ammo','material','food','energy') NOT NULL,
   `item_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL DEFAULT '0',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,

@@ -32,6 +32,7 @@ import imgPencil from '@/assets/铅笔.png?url'
 import imgSeaChart from '@/assets/破损海图.png?url'
 import imgBento from '@/assets/便当.png?url'
 import imgFood from '@/assets/Food.png?url'
+import imgFuel from '@/assets/Fuel.png?url'
 import imgServicePistol from '@/assets/制式手枪.png?url'
 import imgHuntingShotgun from '@/assets/猎枪.png?url'
 import imgBaton from '@/assets/警棍.png?url'
@@ -124,21 +125,31 @@ const MATERIAL_IMAGES = {
   2: imgWood,
   3: imgRope,
   4: imgPlank,
-  5: imgFood,
   6: imgAsphalt,
   7: imgStone,
-  8: imgCandle,
   9: imgCanvas,
   10: imgEngine,
   11: imgPropeller,
   12: imgGenerator,
 }
 
+/** All food catalog ids use Food.png */
+const FOOD_IMAGES = Object.fromEntries(
+  Array.from({ length: 24 }, (_, i) => [i + 1, imgFood]),
+)
+
+/** All energy (fuel) catalog ids use Fuel.png */
+const ENERGY_IMAGES = Object.fromEntries(
+  Array.from({ length: 3 }, (_, i) => [i + 1, imgFuel]),
+)
+
 const MATERIAL_MAPS = {
   item: ITEM_IMAGES,
   weapon: WEAPON_IMAGES,
   ammo: AMMO_IMAGES,
   material: MATERIAL_IMAGES,
+  food: FOOD_IMAGES,
+  energy: ENERGY_IMAGES,
 }
 
 // 与数据库 item / weapon / ammo / material 表同步（snowisland_5_15.sql）
@@ -258,6 +269,8 @@ const materialUrlOrDefaultCache = new Map()
 export function getMaterialImageUrlOrDefault(type, id) {
   if (type == null || id === '' || id === undefined) return DEFAULT_MATERIAL_IMAGE_URL
   const t = String(type).toLowerCase()
+  if (t === 'food') return imgFood
+  if (t === 'energy') return imgFuel
   const numId = typeof id === 'number' && Number.isFinite(id) ? id : parseInt(String(id), 10)
   if (Number.isNaN(numId)) return DEFAULT_MATERIAL_IMAGE_URL
   const key = `${t}:${numId}`
@@ -296,6 +309,8 @@ export function getTypeTabImage(type) {
   if (type === 'weapon') return imgRifle
   if (type === 'ammo') return imgServicePistol
   if (type === 'material') return imgWood
+  if (type === 'food') return imgFood
+  if (type === 'energy') return imgFuel
   return imgMedicalKit
 }
 

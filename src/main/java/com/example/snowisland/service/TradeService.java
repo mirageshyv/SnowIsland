@@ -31,6 +31,9 @@ public class TradeService {
     @Autowired
     private PlayerRepository playerRepository;
 
+    @Autowired
+    private PlayerSupplyService playerSupplyService;
+
     private Map<String, Map<Integer, String>> itemNames = new HashMap<>();
     private Map<String, Map<Integer, String>> itemUnits = new HashMap<>();
 
@@ -62,48 +65,36 @@ public class TradeService {
         itemNames.put("material", new HashMap<>());
         itemNames.get("material").put(1, "金属制品");
         itemNames.get("material").put(2, "木材");
-        itemNames.get("material").put(5, "食物");
         itemNames.get("material").put(7, "石料");
-        itemNames.get("material").put(8, "燃料");
         itemNames.get("material").put(12, "发电机");
 
+        itemNames.put("food", new HashMap<>());
+        itemNames.put("energy", new HashMap<>());
         itemUnits.put("item", new HashMap<>());
-        itemUnits.get("item").put(1, "个");
-        itemUnits.get("item").put(2, "个");
-        itemUnits.get("item").put(4, "个");
-        itemUnits.get("item").put(8, "个");
-        itemUnits.get("item").put(19, "把");
-        itemUnits.get("item").put(20, "把");
-        itemUnits.get("item").put(21, "把");
-        itemUnits.get("item").put(22, "把");
-
         itemUnits.put("weapon", new HashMap<>());
-        itemUnits.get("weapon").put(1, "把");
-        itemUnits.get("weapon").put(2, "把");
-        itemUnits.get("weapon").put(3, "把");
-        itemUnits.get("weapon").put(4, "把");
-        itemUnits.get("weapon").put(9, "把");
-        itemUnits.get("weapon").put(11, "把");
-        itemUnits.get("weapon").put(12, "kg");
-
         itemUnits.put("ammo", new HashMap<>());
-        itemUnits.get("ammo").put(1, "枚");
-        itemUnits.get("ammo").put(2, "枚");
-
         itemUnits.put("material", new HashMap<>());
-        itemUnits.get("material").put(1, "kg");
-        itemUnits.get("material").put(2, "kg");
-        itemUnits.get("material").put(5, "kg");
-        itemUnits.get("material").put(7, "kg");
-        itemUnits.get("material").put(8, "kg");
-        itemUnits.get("material").put(12, "个");
+        itemUnits.put("food", new HashMap<>());
+        itemUnits.put("energy", new HashMap<>());
     }
 
     private String getItemName(String itemType, Integer itemId) {
+        if ("food".equals(itemType)) {
+            return playerSupplyService.getFoodName(itemId);
+        }
+        if ("energy".equals(itemType)) {
+            return playerSupplyService.getEnergyName(itemId);
+        }
         return itemNames.getOrDefault(itemType, Collections.emptyMap()).getOrDefault(itemId, "未知物品");
     }
 
     private String getItemUnit(String itemType, Integer itemId) {
+        if ("food".equals(itemType)) {
+            return playerSupplyService.getFoodUnit(itemId);
+        }
+        if ("energy".equals(itemType)) {
+            return playerSupplyService.getEnergyUnit(itemId);
+        }
         return itemUnits.getOrDefault(itemType, Collections.emptyMap()).getOrDefault(itemId, "个");
     }
 
@@ -151,7 +142,6 @@ public class TradeService {
                         im.put("direction", it.getDirection() != null ? it.getDirection().name() : null);
                         im.put("itemType", it.getItemType() != null ? it.getItemType().name() : null);
                         im.put("itemId", it.getItemId());
-                        im.put("itemKey", it.getItemKey());
                         itemRows.add(im);
                     }
                 }
@@ -186,22 +176,45 @@ public class TradeService {
     }
 
     private void fillTradeItemDisplay(TradeItem item) {
-        String specialSupplyType = parseSpecialSupplyType(item.getItemKey());
-        if ("food".equals(specialSupplyType)) {
-            item.setItemType(ItemType.material);
-            item.setName("食物");
-            item.setUnit("kg");
-            return;
+        ItemType resolved = resolveStoredItemType(item);
+        String type = resolved.name();
+        item.setItemType(resolved);
+        int effectiveId = effectiveItemId(item, resolved);
+        item.setName(getItemName(type, effectiveId));
+        item.setUnit(getItemUnit(type, effectiveId));
+    }
+
+    /** Map deprecated material ids 5/8 to food/energy catalog ids. */
+    private int effectiveItemId(TradeItem item, ItemType resolved) {
+        int id = item.getItemId() != null ? item.getItemId() : 0;
+        if (resolved == ItemType.energy && item.getItemType() == ItemType.material && id == 8) {
+            return 1;
         }
-        if ("energy".equals(specialSupplyType)) {
-            item.setItemType(ItemType.material);
-            item.setName("燃料");
-            item.setUnit("kg");
-            return;
+        return id;
+    }
+
+    /** Legacy trades stored food/energy as material 5/8 or food:key in item_key. */
+    private ItemType resolveStoredItemType(TradeItem item) {
+        if (item.getItemKey() != null) {
+            if (item.getItemKey().startsWith("food:")) {
+                return ItemType.food;
+            }
+            if (item.getItemKey().startsWith("energy:")) {
+                return ItemType.energy;
+            }
         }
-        String type = item.getItemType().name();
-        item.setName(getItemName(type, item.getItemId()));
-        item.setUnit(getItemUnit(type, item.getItemId()));
+        if (item.getItemType() == ItemType.material) {
+            if (item.getItemId() != null && item.getItemId() == 5) {
+                return ItemType.food;
+            }
+            if (item.getItemId() != null && item.getItemId() == 8) {
+                return ItemType.energy;
+            }
+        }
+        if (item.getItemType() == ItemType.food || item.getItemType() == ItemType.energy) {
+            return item.getItemType();
+        }
+        return item.getItemType() != null ? item.getItemType() : ItemType.item;
     }
 
     public Map<String, Object> getTradeDetail(Integer id) {
@@ -215,6 +228,9 @@ public class TradeService {
             }
             Trade trade = tradeOpt.get();
             List<TradeItem> items = tradeItemRepository.findByTradeId(id);
+            for (TradeItem item : items) {
+                fillTradeItemDisplay(item);
+            }
             result.put("success", true);
             result.put("trade", trade);
             result.put("items", items);
@@ -240,23 +256,13 @@ public class TradeService {
             for (Map<String, Object> item : items) {
                 TradeItem tradeItem = new TradeItem();
                 tradeItem.setTradeId(savedTrade.getId());
-                String requestType = (String) item.get("itemType");
-                if ("food".equals(requestType) || "energy".equals(requestType)) {
-                    tradeItem.setItemType(TradeItem.ItemType.material);
-                } else {
-                    tradeItem.setItemType(TradeItem.ItemType.valueOf(requestType));
-                }
+                String requestType = String.valueOf(item.get("itemType"));
+                tradeItem.setItemType(ItemType.valueOf(requestType));
                 Object itemIdObj = item.get("itemId");
                 if (itemIdObj instanceof Number) {
                     tradeItem.setItemId(((Number) itemIdObj).intValue());
                 } else {
                     tradeItem.setItemId(0);
-                }
-                String itemKey = (String) item.get("itemKey");
-                if ("food".equals(requestType) || "energy".equals(requestType)) {
-                    tradeItem.setItemKey(requestType + ":" + itemKey);
-                } else {
-                    tradeItem.setItemKey(itemKey);
                 }
                 Object qtyObj = item.get("quantity");
                 tradeItem.setQuantity(qtyObj instanceof Number ? ((Number) qtyObj).intValue() : 1);
@@ -314,6 +320,7 @@ public class TradeService {
         StringBuilder sb = new StringBuilder();
         int successCount = 0;
         for (TradeItem item : tradeItems) {
+            fillTradeItemDisplay(item);
             Integer fromPlayerId = trade.getFromPlayerId();
             Integer toPlayerId = trade.getToPlayerId();
             if (item.getDirection() == TradeItem.Direction.give) {
@@ -329,13 +336,41 @@ public class TradeService {
     }
 
     private int transferStock(Integer fromPlayerId, Integer toPlayerId, TradeItem item) {
-        int reduced = reducePlayerItem(fromPlayerId, item.getItemType(), item.getItemId(), item.getQuantity());
+        int reduced = reduceStock(fromPlayerId, item);
         if (reduced <= 0) return 0;
         return addStockByType(toPlayerId, item);
     }
 
     private int addStockByType(Integer playerId, TradeItem item) {
-        return addPlayerItem(playerId, item.getItemType(), item.getItemId(), item.getQuantity());
+        ItemType type = resolveStoredItemType(item);
+        int itemId = effectiveItemId(item, type);
+        int qty = item.getQuantity() != null ? item.getQuantity() : 0;
+        if (qty <= 0) {
+            return 0;
+        }
+        if (type == ItemType.food) {
+            return playerSupplyService.adjustFoodStock(playerId, itemId, qty) ? 1 : 0;
+        }
+        if (type == ItemType.energy) {
+            return playerSupplyService.adjustEnergyStock(playerId, itemId, qty) ? 1 : 0;
+        }
+        return addPlayerItem(playerId, type, itemId, qty);
+    }
+
+    private int reduceStock(Integer playerId, TradeItem item) {
+        ItemType type = resolveStoredItemType(item);
+        int itemId = effectiveItemId(item, type);
+        int qty = item.getQuantity() != null ? item.getQuantity() : 0;
+        if (qty <= 0) {
+            return 0;
+        }
+        if (type == ItemType.food) {
+            return playerSupplyService.adjustFoodStock(playerId, itemId, -qty) ? qty : 0;
+        }
+        if (type == ItemType.energy) {
+            return playerSupplyService.adjustEnergyStock(playerId, itemId, -qty) ? qty : 0;
+        }
+        return reducePlayerItem(playerId, type, itemId, qty);
     }
 
     private Map<String, Object> reserveOfferedItems(Integer fromPlayerId, List<Map<String, Object>> items) {
@@ -355,18 +390,8 @@ public class TradeService {
                 result.put("message", "交易数量必须大于 0");
                 return result;
             }
-            ItemType type;
-            Integer itemId;
-            if ("food".equals(itemType) || "energy".equals(itemType)) {
-                type = ItemType.material;
-                itemId = item.get("itemId") != null ? ((Number) item.get("itemId")).intValue() : 0;
-            } else {
-                type = ItemType.valueOf(itemType);
-                itemId = ((Number) item.get("itemId")).intValue();
-            }
-            int stock = playerItemRepository.findByPlayerIdAndItemTypeAndItemId(fromPlayerId, type, itemId)
-                    .map(PlayerItem::getQuantity)
-                    .orElse(0);
+            int itemId = item.get("itemId") != null ? ((Number) item.get("itemId")).intValue() : 0;
+            int stock = getStockQuantity(fromPlayerId, itemType, itemId);
             if (stock < qty) {
                 result.put("success", false);
                 result.put("message", getItemName(itemType, itemId) + " 库存不足");
@@ -376,11 +401,12 @@ public class TradeService {
         for (Map<String, Object> item : giveItems) {
             String itemType = String.valueOf(item.get("itemType"));
             int qty = ((Number) item.get("quantity")).intValue();
-            if ("food".equals(itemType) || "energy".equals(itemType)) {
-                Integer itemId = item.get("itemId") != null ? ((Number) item.get("itemId")).intValue() : 0;
-                reducePlayerItem(fromPlayerId, ItemType.material, itemId, qty);
+            int itemId = item.get("itemId") != null ? ((Number) item.get("itemId")).intValue() : 0;
+            if ("food".equals(itemType)) {
+                playerSupplyService.adjustFoodStock(fromPlayerId, itemId, -qty);
+            } else if ("energy".equals(itemType)) {
+                playerSupplyService.adjustEnergyStock(fromPlayerId, itemId, -qty);
             } else {
-                Integer itemId = ((Number) item.get("itemId")).intValue();
                 ItemType type = ItemType.valueOf(itemType);
                 reducePlayerItem(fromPlayerId, type, itemId, qty);
             }
@@ -389,18 +415,24 @@ public class TradeService {
         return result;
     }
 
-    private String parseSpecialSupplyType(String itemKey) {
-        if (itemKey == null) return null;
-        if (itemKey.startsWith("food:")) return "food";
-        if (itemKey.startsWith("energy:")) return "energy";
-        return null;
+    private int getStockQuantity(Integer playerId, String itemType, int itemId) {
+        if ("food".equals(itemType)) {
+            return playerSupplyService.getFoodQuantity(playerId, itemId);
+        }
+        if ("energy".equals(itemType)) {
+            return playerSupplyService.getEnergyQuantity(playerId, itemId);
+        }
+        return playerItemRepository.findByPlayerIdAndItemTypeAndItemId(
+                        playerId, ItemType.valueOf(itemType), itemId)
+                .map(PlayerItem::getQuantity)
+                .orElse(0);
     }
 
-    private int reducePlayerItem(Integer playerId, TradeItem.ItemType itemType, Integer itemId, Integer quantity) {
+    private int reducePlayerItem(Integer playerId, ItemType itemType, Integer itemId, Integer quantity) {
         return playerItemRepository.updateQuantity(playerId, itemType, itemId, -quantity);
     }
 
-    private int addPlayerItem(Integer playerId, TradeItem.ItemType itemType, Integer itemId, Integer quantity) {
+    private int addPlayerItem(Integer playerId, ItemType itemType, Integer itemId, Integer quantity) {
         Optional<PlayerItem> existingOpt = playerItemRepository.findByPlayerIdAndItemTypeAndItemId(
             playerId, itemType, itemId);
         if (existingOpt.isPresent()) {
@@ -440,6 +472,7 @@ public class TradeService {
             List<TradeItem> tradeItems = tradeItemRepository.findByTradeId(id);
             for (TradeItem item : tradeItems) {
                 if (item.getDirection() == TradeItem.Direction.give) {
+                    fillTradeItemDisplay(item);
                     addStockByType(trade.getFromPlayerId(), item);
                 }
             }
