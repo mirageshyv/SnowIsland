@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { warehouseAPI } from '@/utils/api.js';
+import { warehouseAPI, dmPlayerAPI } from '@/utils/api.js';
 import { getMaterialImageUrlOrDefault, getTypeTabImage, preloadMaterialImages } from '@/data/gameData.js';
 
 const userRole = (localStorage.getItem('userRole') || '').toLowerCase();
@@ -18,8 +18,22 @@ const filterType = ref('all');
 const selectedItem = ref(null);
 const editingItem = ref(null);
 const editQuantity = ref(0);
+const saving = ref(false);
+const catalogItems = ref([]);
+const showAddModal = ref(false);
+const addSearch = ref('');
+const addFilterType = ref('all');
+const addSelected = ref(null);
+const addQuantity = ref(1);
 
-const typeLabels = { item: '道具', weapon: '武器', ammo: '弹药', material: '材料' };
+const typeLabels = {
+  item: '道具',
+  weapon: '武器',
+  ammo: '弹药',
+  material: '材料',
+  food: '食物',
+  energy: '燃料'
+};
 
 const accessibleWarehouses = computed(() => {
   if (isDm) return warehouses.value;
@@ -45,7 +59,7 @@ const displayRows = computed(() => {
 
 const groupedRows = computed(() => {
   const groups = {};
-  const order = ['material', 'weapon', 'ammo', 'item'];
+  const order = ['food', 'energy', 'material', 'weapon', 'ammo', 'item'];
   for (const item of displayRows.value) {
     const type = item.itemType;
     if (!groups[type]) groups[type] = [];
@@ -114,25 +128,83 @@ function cancelEdit() {
   editQuantity.value = 0;
 }
 
-async function saveEdit() {
-  if (!editingItem.value || !isDm) return;
+const catalogForAdd = computed(() => {
+  let items = catalogItems.value;
+  if (addFilterType.value !== 'all') {
+    items = items.filter((i) => i.itemType === addFilterType.value);
+  }
+  if (addSearch.value.trim()) {
+    const q = addSearch.value.trim().toLowerCase();
+    items = items.filter((i) => (i.name || '').toLowerCase().includes(q));
+  }
+  return items.map((item) => ({
+    ...item,
+    imageUrl: getMaterialImageUrlOrDefault(item.itemType, item.itemId)
+  }));
+});
+
+async function loadCatalog() {
+  const result = await dmPlayerAPI.getCatalog();
+  if (result?.success) {
+    catalogItems.value = result.items || [];
+  }
+}
+
+async function persistQuantity(itemType, itemId, quantity) {
+  saving.value = true;
   try {
     const result = await warehouseAPI.updateWarehouseStock(
       currentWarehouse.value,
-      editingItem.value.itemType,
-      editingItem.value.itemId,
-      editQuantity.value,
+      itemType,
+      itemId,
+      quantity,
       userRole
     );
+    if (!result) {
+      alert('更新失败：无法连接服务器');
+      return;
+    }
     if (result.success) {
       await selectWarehouse(currentWarehouse.value);
       editingItem.value = null;
+      showAddModal.value = false;
+      addSelected.value = null;
     } else {
-      alert(result.message);
+      alert(result.message || '更新失败');
     }
   } catch (e) {
     console.error('更新库存失败:', e);
+    alert('更新库存失败: ' + (e.message || '未知错误'));
+  } finally {
+    saving.value = false;
   }
+}
+
+async function saveEdit() {
+  if (!editingItem.value || !isDm) return;
+  const q = Math.max(0, Math.floor(Number(editQuantity.value) || 0));
+  await persistQuantity(editingItem.value.itemType, editingItem.value.itemId, q);
+}
+
+function openAddModal() {
+  addSelected.value = null;
+  addQuantity.value = 1;
+  addSearch.value = '';
+  addFilterType.value = 'all';
+  showAddModal.value = true;
+}
+
+async function confirmAdd() {
+  if (!addSelected.value) {
+    alert('请选择要添加的物品');
+    return;
+  }
+  const q = Math.max(1, Math.floor(Number(addQuantity.value) || 1));
+  const existing = stockItems.value.find(
+    (i) => i.itemType === addSelected.value.itemType && i.itemId === addSelected.value.itemId
+  );
+  const total = (existing?.quantity || 0) + q;
+  await persistQuantity(addSelected.value.itemType, addSelected.value.itemId, total);
 }
 
 const warehouseIcons = {
@@ -142,6 +214,7 @@ const warehouseIcons = {
 onMounted(() => {
   preloadMaterialImages();
   fetchWarehouses();
+  if (isDm) loadCatalog();
 });
 </script>
 
@@ -185,7 +258,7 @@ onMounted(() => {
             <h2 class="text-2xl text-white font-medium tracking-tight">{{ currentWarehouseName }}</h2>
             <span class="text-gray-500 text-sm">({{ stockItems.length }} 种物品)</span>
           </div>
-          <div class="flex gap-2 w-full sm:w-auto">
+          <div class="flex flex-wrap gap-2 w-full sm:w-auto items-center">
             <input
               v-model="searchQuery"
               type="text"
@@ -197,11 +270,22 @@ onMounted(() => {
               class="bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50"
             >
               <option value="all">全部</option>
+              <option value="food">食物</option>
+              <option value="energy">燃料</option>
               <option value="item">道具</option>
               <option value="weapon">武器</option>
               <option value="ammo">弹药</option>
               <option value="material">材料</option>
             </select>
+            <button
+              v-if="isDm"
+              type="button"
+              class="bg-cyan-600/30 hover:bg-cyan-600/40 text-cyan-300 px-4 py-1.5 rounded-lg text-sm transition-colors disabled:opacity-50"
+              :disabled="saving"
+              @click="openAddModal"
+            >
+              添加物品
+            </button>
           </div>
         </div>
 
@@ -213,7 +297,9 @@ onMounted(() => {
           <svg class="w-12 h-12 text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
           </svg>
-          <p class="text-gray-500">{{ searchQuery || filterType !== 'all' ? '没有匹配的物品' : '仓库为空' }}</p>
+          <p class="text-gray-500">
+            {{ searchQuery || filterType !== 'all' ? '没有匹配的物品' : (isDm ? '仓库为空，可点击「添加物品」' : '仓库为空') }}
+          </p>
         </div>
 
         <div v-else class="flex flex-col lg:flex-row gap-6 lg:gap-8">
@@ -270,8 +356,21 @@ onMounted(() => {
                   <span class="text-gray-500 text-sm">{{ selectedRow.unit }}</span>
                 </div>
                 <div class="flex justify-center gap-3 mt-2">
-                  <button @click="saveEdit" class="px-4 py-1.5 bg-cyan-600/30 text-cyan-300 rounded-lg text-sm hover:bg-cyan-600/40 transition-colors">保存</button>
-                  <button @click="cancelEdit" class="px-4 py-1.5 bg-white/5 text-gray-400 rounded-lg text-sm hover:bg-white/10 transition-colors">取消</button>
+                  <button
+                    type="button"
+                    :disabled="saving"
+                    class="px-4 py-1.5 bg-cyan-600/30 text-cyan-300 rounded-lg text-sm hover:bg-cyan-600/40 transition-colors disabled:opacity-50"
+                    @click="saveEdit"
+                  >
+                    保存
+                  </button>
+                  <button
+                    type="button"
+                    class="px-4 py-1.5 bg-white/5 text-gray-400 rounded-lg text-sm hover:bg-white/10 transition-colors"
+                    @click="cancelEdit"
+                  >
+                    取消
+                  </button>
                 </div>
               </template>
               <template v-else>
@@ -296,6 +395,89 @@ onMounted(() => {
             <div v-else class="flex items-center justify-center flex-1 text-gray-600 text-sm text-center">
               点击左侧物品查看详情
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="showAddModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
+      @click.self="showAddModal = false"
+    >
+      <div
+        class="bg-[#1a2332] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-xl"
+      >
+        <div class="p-5 border-b border-white/10 flex justify-between items-center">
+          <h3 class="text-white text-lg font-medium">添加物品到 {{ currentWarehouseName }}</h3>
+          <button type="button" class="text-gray-500 hover:text-white" @click="showAddModal = false">✕</button>
+        </div>
+        <div class="p-4 flex gap-2 border-b border-white/5">
+          <input
+            v-model="addSearch"
+            type="text"
+            placeholder="搜索..."
+            class="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200"
+          />
+          <select
+            v-model="addFilterType"
+            class="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200"
+          >
+            <option value="all">全部</option>
+            <option value="food">食物</option>
+            <option value="energy">燃料</option>
+            <option value="item">道具</option>
+            <option value="weapon">武器</option>
+            <option value="ammo">弹药</option>
+            <option value="material">材料</option>
+          </select>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 grid grid-cols-4 sm:grid-cols-5 gap-2 min-h-[200px]">
+          <button
+            v-for="item in catalogForAdd"
+            :key="`${item.itemType}-${item.itemId}`"
+            type="button"
+            class="aspect-square rounded-xl border-2 p-1 flex flex-col items-center justify-center transition-all"
+            :class="
+              addSelected &&
+              addSelected.itemType === item.itemType &&
+              addSelected.itemId === item.itemId
+                ? 'border-cyan-500 bg-cyan-500/10'
+                : 'border-white/10 bg-black/20 hover:border-white/20'
+            "
+            @click="addSelected = item"
+          >
+            <img :src="item.imageUrl" :alt="item.name" class="w-[70%] h-[70%] object-contain" />
+            <span class="text-[9px] text-gray-400 mt-1 truncate w-full text-center px-0.5">{{ item.name }}</span>
+          </button>
+        </div>
+        <div class="p-4 border-t border-white/10 flex items-center justify-between gap-4">
+          <div class="flex items-center gap-2 text-sm text-gray-400">
+            <span>数量</span>
+            <input
+              v-model.number="addQuantity"
+              type="number"
+              min="1"
+              class="w-20 bg-black/30 border border-white/10 rounded px-2 py-1 text-white text-center"
+            />
+            <span v-if="addSelected">{{ addSelected.unit }}</span>
+          </div>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="px-4 py-2 text-gray-400 rounded-lg hover:bg-white/5"
+              @click="showAddModal = false"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              class="px-4 py-2 bg-cyan-600 text-white rounded-lg disabled:opacity-50"
+              :disabled="!addSelected || saving"
+              @click="confirmAdd"
+            >
+              添加
+            </button>
           </div>
         </div>
       </div>

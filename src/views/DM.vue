@@ -9,10 +9,13 @@ import CatastrophePanel from '../components/CatastrophePanel.vue'
 import WarehouseView from './WarehouseView.vue'
 import ActionFeedbackView from './ActionFeedbackView.vue'
 import FactionActionFeedbackView from './FactionActionFeedbackView.vue'
+import DmPlayerInventoryView from './DmPlayerInventoryView.vue'
 
 const router = useRouter()
 const username = localStorage.getItem('username') || ''
 const activeTab = ref('players')
+const inventoryViewRef = ref(null)
+const inventoryInitialPlayerId = ref(null)
 
 const playerList = ref([
   { id: 1, name: '阿尔伯特', job: '战士', faction: '统治者', isWeak: false, isOverworked: false, isInjured: false },
@@ -59,6 +62,11 @@ const handleDelete = (id) => {
   playerList.value = playerList.value.filter(item => item.id !== id)
 }
 
+const openPlayerInventory = (playerId) => {
+  inventoryInitialPlayerId.value = playerId
+  activeTab.value = 'inventories'
+}
+
 const handleFilter = () => {
   console.log('Filter applied', filterForm)
 }
@@ -91,6 +99,14 @@ onMounted(() => {
           @click="activeTab = 'players'"
         >
           玩家管理
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'inventories' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'inventories'"
+        >
+          玩家背包
         </button>
         <button
           type="button"
@@ -303,6 +319,13 @@ onMounted(() => {
                     <div class="flex gap-2">
                       <button
                         type="button"
+                        class="text-cyan-400 hover:text-cyan-300 text-sm transition-colors"
+                        @click="openPlayerInventory(player.id)"
+                      >
+                        背包
+                      </button>
+                      <button
+                        type="button"
                         class="text-blue-400 hover:text-blue-300 text-sm transition-colors"
                       >
                         编辑
@@ -321,6 +344,13 @@ onMounted(() => {
             </table>
           </div>
         </div>
+      </div>
+
+      <div v-else-if="activeTab === 'inventories'">
+        <DmPlayerInventoryView
+          ref="inventoryViewRef"
+          :initial-player-id="inventoryInitialPlayerId"
+        />
       </div>
 
       <div v-else-if="activeTab === 'ark'">

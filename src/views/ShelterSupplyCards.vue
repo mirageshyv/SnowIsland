@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { getMaterialImageUrlOrDefault } from '../data/gameData.js'
 
 const foodIconUrl = getMaterialImageUrlOrDefault('food', 5)
+const fuelIconUrl = getMaterialImageUrlOrDefault('energy', 1)
 
 const props = defineProps({
   food: {
@@ -104,7 +105,7 @@ function toggleFood() {
 
     <div class="rounded-xl border border-white/10 bg-black/25 p-4">
       <div class="flex items-center gap-2 mb-3">
-        <span class="text-2xl leading-none" aria-hidden="true">⚡</span>
+        <img :src="fuelIconUrl" alt="" class="w-7 h-7 object-contain shrink-0" aria-hidden="true" />
         <span class="text-gray-400 text-sm">{{ energyTitle }}</span>
       </div>
       <div class="space-y-2">

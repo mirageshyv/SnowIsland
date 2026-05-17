@@ -202,6 +202,48 @@ public class PlayerSupplyService {
     }
 
     @Transactional
+    public boolean setFoodStock(int playerId, int foodId, int quantity) {
+        if (quantity < 0) {
+            return false;
+        }
+        PlayerFoodStockId id = stockFoodId(playerId, foodId);
+        Optional<PlayerFoodStock> opt = playerFoodStockRepository.findById(id);
+        if (quantity == 0) {
+            opt.ifPresent(playerFoodStockRepository::delete);
+            return true;
+        }
+        PlayerFoodStock row = opt.orElseGet(() -> {
+            PlayerFoodStock s = new PlayerFoodStock();
+            s.setId(id);
+            return s;
+        });
+        row.setQuantity(quantity);
+        playerFoodStockRepository.save(row);
+        return true;
+    }
+
+    @Transactional
+    public boolean setEnergyStock(int playerId, int energyId, int quantity) {
+        if (quantity < 0) {
+            return false;
+        }
+        PlayerEnergyStockId id = stockEnergyId(playerId, energyId);
+        Optional<PlayerEnergyStock> opt = playerEnergyStockRepository.findById(id);
+        if (quantity == 0) {
+            opt.ifPresent(playerEnergyStockRepository::delete);
+            return true;
+        }
+        PlayerEnergyStock row = opt.orElseGet(() -> {
+            PlayerEnergyStock s = new PlayerEnergyStock();
+            s.setId(id);
+            return s;
+        });
+        row.setQuantity(quantity);
+        playerEnergyStockRepository.save(row);
+        return true;
+    }
+
+    @Transactional
     public boolean adjustFoodStock(int playerId, int foodId, int delta) {
         PlayerFoodStockId id = stockFoodId(playerId, foodId);
         Optional<PlayerFoodStock> opt = playerFoodStockRepository.findById(id);

@@ -190,6 +190,17 @@ export const catastropheAPI = {
     })
 }
 
+export const dmPlayerAPI = {
+  getCatalog: () => request(`${API_BASE}/dm/item-catalog?userRole=dm`),
+  getInventory: (playerId) =>
+    request(`${API_BASE}/dm/players/${playerId}/inventory?userRole=dm`),
+  setItemQuantity: (playerId, itemType, itemId, quantity) =>
+    request(`${API_BASE}/dm/players/${playerId}/inventory?userRole=dm`, {
+      method: 'PUT',
+      body: JSON.stringify({ itemType, itemId, quantity })
+    })
+}
+
 export const warehouseAPI = {
   getAccessibleWarehouses: (playerId, userRole) =>
     request(`${API_BASE}/warehouses?playerId=${playerId || ''}&userRole=${encodeURIComponent(userRole || '')}`),

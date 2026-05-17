@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
@@ -22,7 +23,7 @@ public class WarehouseService {
     ));
 
     private static final Set<String> VALID_ITEM_TYPES = new HashSet<>(Arrays.asList(
-            "item", "weapon", "ammo", "material"
+            "item", "weapon", "ammo", "material", "food", "energy"
     ));
 
     @Autowired
@@ -107,6 +108,7 @@ public class WarehouseService {
         return result;
     }
 
+    @Transactional
     public Map<String, Object> updateWarehouseStock(String warehouseKey, String itemType, Integer itemId, Integer quantity, String userRole) {
         Map<String, Object> result = new HashMap<>();
 
@@ -116,9 +118,17 @@ public class WarehouseService {
             return result;
         }
 
+        if (itemType != null) {
+            itemType = itemType.toLowerCase(Locale.ROOT);
+        }
         if (!VALID_ITEM_TYPES.contains(itemType)) {
             result.put("success", false);
             result.put("message", "无效的物品类型");
+            return result;
+        }
+        if ("material".equals(itemType) && (itemId == 5 || itemId == 8)) {
+            result.put("success", false);
+            result.put("message", "请使用 food / energy 类型管理食物与燃料");
             return result;
         }
 
@@ -202,6 +212,8 @@ public class WarehouseService {
             case "weapon": tableName = "weapon"; break;
             case "ammo": tableName = "ammo"; break;
             case "material": tableName = "material"; break;
+            case "food": tableName = "food"; break;
+            case "energy": tableName = "energy"; break;
             default: tableName = "item"; break;
         }
         try {
