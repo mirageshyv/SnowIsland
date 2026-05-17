@@ -250,7 +250,7 @@ async function submitActions() {
       }
     }
     if (anySuccess) {
-      submitMessage.value = { type: 'success', text: '行动提交成功' }
+      submitMessage.value = { type: 'success', text: '个人行动提交成功' }
     }
     await loadSubmittedActions()
   } catch (e) {
@@ -274,8 +274,8 @@ onMounted(async () => {
   <div class="min-h-screen bg-[#0a0e1a] py-8 px-4 md:px-8">
     <div class="max-w-6xl mx-auto">
       <div class="text-center mb-10">
-        <h1 class="text-white text-2xl md:text-3xl font-semibold tracking-tight mb-2">角色行动</h1>
-        <p class="text-gray-500 text-sm">选择你的两个行动并提交</p>
+        <h1 class="text-white text-2xl md:text-3xl font-semibold tracking-tight mb-2">个人行动提交</h1>
+        <p class="text-gray-500 text-sm">选择你的两个个人行动并提交</p>
         <div class="mt-3 flex items-center justify-center gap-2">
           <label class="text-gray-400 text-sm">当前天数：</label>
           <select v-model="gameDay" @change="loadSubmittedActions" class="bg-black/30 border border-white/10 rounded-lg px-3 py-1 text-sm text-gray-200 focus:outline-none">

@@ -127,14 +127,6 @@ onMounted(() => {
         <button
           type="button"
           class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'tasks' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'tasks'"
-        >
-          任务管理
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
           :class="activeTab === 'logs' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
           @click="activeTab = 'logs'"
         >
@@ -352,11 +344,7 @@ onMounted(() => {
       </div>
 
       <div v-else-if="activeTab === 'catastrophe'">
-        <div class="mb-6">
-          <h1 class="text-white mb-1 tracking-tight text-2xl">天灾降临</h1>
-          <p class="text-gray-500 text-sm">管理天灾进度和天灾牌系统</p>
-        </div>
-        <CatastrophePanel :is-dm="true" />
+        <CatastrophePanel :is-dm="true" embedded />
       </div>
 
       <div v-else-if="activeTab === 'warehouse'">
@@ -382,7 +370,7 @@ onMounted(() => {
       <!-- Other Tabs -->
       <div v-else>
         <h1 class="text-white mb-6 tracking-tight text-2xl">
-          {{ activeTab === 'settings' ? '游戏设置' : activeTab === 'tasks' ? '任务管理' : '系统日志' }}
+          {{ activeTab === 'settings' ? '游戏设置' : '系统日志' }}
         </h1>
         <div class="bg-[#0f1419] border border-[#1f2937] rounded-xl p-6">
           <p class="text-gray-500 font-normal">功能开发中...</p>

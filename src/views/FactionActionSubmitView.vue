@@ -724,7 +724,7 @@ onMounted(async () => {
               <!-- 额外调查 -->
               <template v-else-if="selectedType === 'extra_investigate'">
                 <p class="text-amber-300/90 text-xs mb-3">
-                  与「行动提交」调查相同：选择类型与目标。结算后该次调查数量翻倍。
+                  与「个人行动提交」调查相同：选择类型与目标。结算后该次调查数量翻倍。
                 </p>
                 <div class="space-y-4">
                   <div>

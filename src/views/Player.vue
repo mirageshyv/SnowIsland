@@ -314,26 +314,10 @@ onUnmounted(() => {
         <button
           type="button"
           class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'status' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'status'"
-        >
-          游戏状态
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'tasks' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'tasks'"
-        >
-          任务列表
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
           :class="activeTab === 'actions' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
           @click="activeTab = 'actions'"
         >
-          行动提交
+          个人行动提交
         </button>
         <button
           v-if="showFactionActionsTab"
@@ -737,20 +721,6 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div v-else-if="activeTab === 'status'">
-        <h1 class="text-white mb-6 tracking-tight text-2xl">游戏状态</h1>
-        <div class="bg-[#0f1419] border border-[#1f2937] rounded-xl p-6">
-          <p class="text-gray-500 font-normal">游戏状态功能开发中...</p>
-        </div>
-      </div>
-
-      <div v-else-if="activeTab === 'tasks'">
-        <h1 class="text-white mb-6 tracking-tight text-2xl">任务列表</h1>
-        <div class="bg-[#0f1419] border border-[#1f2937] rounded-xl p-6">
-          <p class="text-gray-500 font-normal">任务列表功能开发中...</p>
-        </div>
-      </div>
-
       <div v-else-if="activeTab === 'materials'">
         <MaterialsPanel />
       </div>
@@ -776,11 +746,7 @@ onUnmounted(() => {
       </div>
 
       <div v-else-if="activeTab === 'catastrophe' && showCatastropheTab">
-        <div class="mb-6">
-          <h1 class="text-white mb-1 tracking-tight text-2xl">天灾降临</h1>
-          <p class="text-gray-500 text-sm">掌控天灾的力量，决定岛屿的命运</p>
-        </div>
-        <CatastrophePanel :is-dm="false" />
+        <CatastrophePanel :is-dm="false" embedded />
       </div>
 
       <div v-else-if="activeTab === 'warehouse'">

@@ -126,7 +126,7 @@ public class ActionService {
         actionRepository.save(action);
 
         result.put("success", true);
-        result.put("message", "行动提交成功");
+        result.put("message", "个人行动提交成功");
         result.put("data", toMap(action));
         return result;
     }

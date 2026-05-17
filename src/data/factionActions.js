@@ -107,7 +107,7 @@ export const FACTION_ACTION_DEFS = {
       type: 'extra_investigate',
       title: '额外调查',
       description: '提交一次阵营调查，结算时该次调查数量翻倍。',
-      tooltip: '选择调查类型与目标（仅一项），与行动提交调查相同。',
+      tooltip: '选择调查类型与目标（仅一项），与个人行动提交调查相同。',
     },
     {
       type: 'extra_labor',
@@ -139,7 +139,7 @@ export const FACTION_ACTION_DEFS = {
       type: 'extra_investigate',
       title: '额外调查',
       description: '提交一次阵营调查，结算时该次调查数量翻倍。',
-      tooltip: '选择调查类型与目标（仅一项），与行动提交调查相同。',
+      tooltip: '选择调查类型与目标（仅一项），与个人行动提交调查相同。',
     },
     {
       type: 'curse',
