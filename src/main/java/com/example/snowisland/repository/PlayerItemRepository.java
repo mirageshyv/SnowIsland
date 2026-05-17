@@ -24,4 +24,8 @@ public interface PlayerItemRepository extends JpaRepository<PlayerItem, Integer>
 
     @Query(value = "SELECT * FROM player_items WHERE player_id = :playerId", nativeQuery = true)
     List<PlayerItem> findByPlayerIdNative(@Param("playerId") Integer playerId);
+
+    @Modifying
+    @Query("DELETE FROM PlayerItem p WHERE p.playerId = :playerId")
+    void deleteByPlayerId(@Param("playerId") Integer playerId);
 }

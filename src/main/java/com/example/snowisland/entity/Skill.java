@@ -16,6 +16,9 @@ public class Skill {
     @Column(name = "function", columnDefinition = "TEXT", nullable = false)
     private String function;
 
+    @Column(name = "faction", length = 20)
+    private String faction;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -55,6 +58,14 @@ public class Skill {
 
     public void setFunction(String function) {
         this.function = function;
+    }
+
+    public String getFaction() {
+        return faction;
+    }
+
+    public void setFaction(String faction) {
+        this.faction = faction;
     }
 
     public LocalDateTime getCreatedAt() {

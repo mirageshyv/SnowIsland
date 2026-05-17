@@ -78,6 +78,15 @@ export const playerAPI = {
 }
 
 /** 统治者避难所页：建造值、shelter 建材库存、避难所公共食物/能量（非玩家个人库存） */
+export const jobAPI = {
+  getAll: () => request(`${API_BASE}/jobs`),
+  getWithInitialItems: (id) => request(`${API_BASE}/jobs/${id}/items`)
+}
+
+export const skillAPI = {
+  getAll: () => request(`${API_BASE}/skills`)
+}
+
 export const shelterAPI = {
   getSummary: () => request(`${API_BASE}/shelter`),
 }
@@ -191,6 +200,31 @@ export const catastropheAPI = {
 }
 
 export const dmPlayerAPI = {
+  list: () => request(`${API_BASE}/dm/players?userRole=dm`),
+  create: (body) =>
+    request(`${API_BASE}/dm/players?userRole=dm`, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    }),
+  update: (playerId, body) =>
+    request(`${API_BASE}/dm/players/${playerId}?userRole=dm`, {
+      method: 'PUT',
+      body: JSON.stringify(body)
+    }),
+  delete: (playerId) =>
+    request(`${API_BASE}/dm/players/${playerId}?userRole=dm`, { method: 'DELETE' }),
+  previewStartingInventory: (jobId) =>
+    request(`${API_BASE}/dm/jobs/${jobId}/starting-inventory-preview?userRole=dm`),
+  grantStartingInventory: (playerId, mode = 'add') =>
+    request(
+      `${API_BASE}/dm/players/${playerId}/grant-starting-inventory?userRole=dm&mode=${encodeURIComponent(mode)}`,
+      { method: 'POST' }
+    ),
+  applyInventoryBulk: (playerId, items, mode = 'set') =>
+    request(`${API_BASE}/dm/players/${playerId}/inventory/bulk?userRole=dm&mode=${encodeURIComponent(mode)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ items })
+    }),
   getCatalog: () => request(`${API_BASE}/dm/item-catalog?userRole=dm`),
   getInventory: (playerId) =>
     request(`${API_BASE}/dm/players/${playerId}/inventory?userRole=dm`),
