@@ -2,10 +2,17 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { playerAPI } from '../utils/api.js'
 import { getMaterialImageUrlOrDefault, getTypeTabImage } from '../data/gameData.js'
+import ShelterSupplyCards from './ShelterSupplyCards.vue'
 
 const playerId = localStorage.getItem('playerId') || '1'
 const loading = ref(true)
 const rawMaterials = ref([])
+const foodSupply = ref({ totalKg: 0, items: [] })
+const energyReserve = ref({ items: [] })
+const hasPersonalSupply = ref(false)
+
+/** Generic material rows replaced by player_food_stock / player_energy_stock */
+const EXCLUDED_MATERIAL_IDS = new Set([5, 8])
 
 // 筛选状态
 const selectedTypes = ref(['item', 'weapon', 'ammo', 'material'])
@@ -307,9 +314,31 @@ const itemIconMap = {
 const loadMaterials = async () => {
   loading.value = true
   try {
-    const result = await playerAPI.getItems(playerId)
-    if (Array.isArray(result)) {
-      rawMaterials.value = result
+    const [itemsResult, resourcesResult] = await Promise.all([
+      playerAPI.getItems(playerId),
+      playerAPI.getResources(playerId)
+    ])
+    if (Array.isArray(itemsResult)) {
+      rawMaterials.value = itemsResult
+    }
+    if (resourcesResult?.success) {
+      hasPersonalSupply.value = Boolean(
+        resourcesResult.foodSupply || resourcesResult.energyReserve
+      )
+      if (resourcesResult.foodSupply) {
+        foodSupply.value = resourcesResult.foodSupply
+      } else {
+        foodSupply.value = { totalKg: resourcesResult.foodKg ?? 0, items: [] }
+      }
+      if (resourcesResult.energyReserve) {
+        energyReserve.value = resourcesResult.energyReserve
+      } else {
+        energyReserve.value = { items: [] }
+      }
+    } else {
+      hasPersonalSupply.value = false
+      foodSupply.value = { totalKg: 0, items: [] }
+      energyReserve.value = { items: [] }
     }
   } catch (error) {
     console.error('Failed to load materials:', error)
@@ -348,7 +377,9 @@ const currentAmmo = computed(() => {
 })
 
 const currentMaterials = computed(() => {
-  return rawMaterials.value.filter(i => i.type === 'material').map(i => transformItem('material', i))
+  return rawMaterials.value
+    .filter(i => i.type === 'material' && !EXCLUDED_MATERIAL_IDS.has(Number(i.id)))
+    .map(i => transformItem('material', i))
 })
 
 // 计算属性：根据筛选条件显示的物资
@@ -371,15 +402,23 @@ const filteredData = computed(() => {
 
 // 计算属性：是否有任何物资
 const hasAnyMaterials = computed(() => {
-  return currentItems.value.length > 0 || 
-         currentWeapons.value.length > 0 || 
-         currentAmmo.value.length > 0 || 
+  return hasPersonalSupply.value ||
+         currentItems.value.length > 0 ||
+         currentWeapons.value.length > 0 ||
+         currentAmmo.value.length > 0 ||
          currentMaterials.value.length > 0
+})
+
+const hasFoodOrEnergyStock = computed(() => {
+  const foodItems = (foodSupply.value.items || []).some(i => Number(i.quantity) > 0)
+  const energyItems = (energyReserve.value.items || []).some(i => Number(i.quantity) > 0)
+  return foodItems || energyItems || (foodSupply.value.totalKg ?? 0) > 0
 })
 
 // 计算属性：当前筛选条件下是否有物资
 const hasFilteredMaterials = computed(() => {
-  return Object.values(filteredData.value).some(arr => arr.length > 0)
+  return hasFoodOrEnergyStock.value ||
+         Object.values(filteredData.value).some(arr => arr.length > 0)
 })
 
 const toggleType = (type) => {
@@ -510,9 +549,30 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- 物资展示区域 -->
+    <!-- 食物 / 燃料明细 -->
+    <div
+      v-if="hasPersonalSupply || hasFoodOrEnergyStock"
+      class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-2xl p-5 mb-6"
+    >
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400/20 to-yellow-500/20 flex items-center justify-center text-xl">
+          🍞
+        </div>
+        <div>
+          <h2 class="text-white text-lg font-medium">食物与燃料</h2>
+          <p class="text-gray-500 text-xs">Food & Fuel (by type)</p>
+        </div>
+      </div>
+      <ShelterSupplyCards
+        embedded
+        food-title="个人食物"
+        energy-title="个人燃料"
+        :food="foodSupply"
+        :energy="energyReserve"
+      />
+    </div>
+
     <div v-if="hasFilteredMaterials" class="space-y-8">
-      <!-- 道具区域 -->
       <div v-if="selectedTypes.includes('item') && filteredData.item?.length > 0">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400/20 to-blue-500/20 flex items-center justify-center p-1.5">

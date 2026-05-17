@@ -62,6 +62,7 @@ export const playerAPI = {
   get: (id) => request(`${API_BASE}/players/${id}`),
   getDetails: (id) => request(`${API_BASE}/players/${id}/details`),
   getItems: (id) => request(`${API_BASE}/players/${id}/items`),
+  getResources: (id) => request(`${API_BASE}/players/${id}/resources`),
   create: (player, loginUsername) =>
     request(`${API_BASE}/players?loginUsername=${encodeURIComponent(loginUsername)}`, {
       method: 'POST',

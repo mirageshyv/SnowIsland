@@ -35,8 +35,14 @@ public class PlayerService {
     @Autowired
     private SkillRepository skillRepository;
 
+    @Autowired
+    private PlayerSupplyService playerSupplyService;
+
     @PersistenceContext
     private EntityManager entityManager;
+
+    private static final int MATERIAL_FOOD_ID = 5;
+    private static final int MATERIAL_FUEL_ID = 8;
 
     private Map<String, Map<Integer, String>> itemNames = new HashMap<>();
     private Map<String, Map<Integer, String>> itemUnits = new HashMap<>();
@@ -293,5 +299,64 @@ public class PlayerService {
         }
         
         return result;
+    }
+
+    /**
+     * Dashboard food (kg) and fuel (kg) from player_food_stock / player_energy_stock,
+     * with fallback to legacy material rows in player_items when stock tables are empty.
+     */
+    public Map<String, Object> getPersonalResources(Integer playerId) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("success", true);
+        result.put("playerId", playerId);
+
+        Map<String, Object> stock = playerSupplyService.getPersonalResourceTotals(playerId);
+        boolean hasFoodStock = Boolean.TRUE.equals(stock.get("hasFoodStockTable"));
+        boolean hasEnergyStock = Boolean.TRUE.equals(stock.get("hasEnergyStockTable"));
+
+        int foodKg = ((Number) stock.getOrDefault("foodKg", 0)).intValue();
+        int fuelKg = ((Number) stock.getOrDefault("fuelKg", 0)).intValue();
+        int fuelLiters = ((Number) stock.getOrDefault("fuelLiters", 0)).intValue();
+
+        if (!hasFoodStock) {
+            foodKg += sumMaterialQuantity(playerId, MATERIAL_FOOD_ID);
+        }
+        if (!hasEnergyStock) {
+            fuelKg += sumMaterialQuantity(playerId, MATERIAL_FUEL_ID);
+        }
+
+        result.put("foodKg", foodKg);
+        result.put("fuelKg", fuelKg);
+        result.put("fuelLiters", fuelLiters);
+
+        if (hasFoodStock) {
+            result.put("foodSupply", playerSupplyService.buildPlayerFoodSupply(playerId));
+        }
+        if (hasEnergyStock) {
+            result.put("energyReserve", playerSupplyService.buildPlayerEnergyReserve(playerId));
+        }
+
+        return result;
+    }
+
+    private int sumMaterialQuantity(Integer playerId, int materialId) {
+        loadItemNames();
+        int total = 0;
+        for (PlayerItem pi : playerItemRepository.findByPlayerId(playerId)) {
+            if (pi.getItemType() != com.example.snowisland.entity.TradeItem.ItemType.material) {
+                continue;
+            }
+            if (pi.getItemId() == null || pi.getItemId() != materialId) {
+                continue;
+            }
+            String unit = itemUnits.get("material").getOrDefault(pi.getItemId(), "kg");
+            int q = pi.getQuantity() != null ? pi.getQuantity() : 0;
+            if ("g".equalsIgnoreCase(unit)) {
+                total += q / 1000;
+            } else {
+                total += q;
+            }
+        }
+        return total;
     }
 }

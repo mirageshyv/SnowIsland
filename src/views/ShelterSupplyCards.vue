@@ -13,6 +13,18 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  embedded: {
+    type: Boolean,
+    default: false,
+  },
+  foodTitle: {
+    type: String,
+    default: '食物供应',
+  },
+  energyTitle: {
+    type: String,
+    default: '能量储备',
+  },
 })
 
 const showFood = ref(false)
@@ -21,9 +33,17 @@ const foodItemsWithStock = computed(() =>
   (props.food.items || []).filter((item) => Number(item.quantity) > 0),
 )
 
+function unitLabel(unit) {
+  const m = { kg: '千克', L: '升', portion: '份' }
+  return m[unit] || unit || '千克'
+}
+
 function energyUnitLabel(unit) {
-  const m = { kg: '千克', L: '升' }
-  return m[unit] || unit || ''
+  return unitLabel(unit)
+}
+
+function foodUnitLabel(item) {
+  return unitLabel(item?.unit || 'kg')
 }
 
 function toggleFood() {
@@ -32,7 +52,10 @@ function toggleFood() {
 </script>
 
 <template>
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 mt-2 border-t border-white/10">
+  <div
+    class="grid grid-cols-1 sm:grid-cols-2 gap-4"
+    :class="embedded ? '' : 'pt-6 mt-2 border-t border-white/10'"
+  >
     <div class="rounded-xl border border-white/10 bg-black/25 overflow-hidden">
       <button
         type="button"
@@ -42,7 +65,7 @@ function toggleFood() {
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-2">
             <img :src="foodIconUrl" alt="" class="w-7 h-7 object-contain shrink-0" aria-hidden="true" />
-            <span class="text-gray-400 text-sm">食物供应</span>
+            <span class="text-gray-400 text-sm">{{ foodTitle }}</span>
           </div>
           <svg
             class="w-4 h-4 text-gray-500 transition-transform duration-200 shrink-0"
@@ -73,7 +96,7 @@ function toggleFood() {
             class="flex items-center justify-between gap-2 text-sm"
           >
             <span class="text-gray-400">{{ item.name }}</span>
-            <span class="text-amber-400 font-medium tabular-nums shrink-0">{{ item.quantity }} 千克</span>
+            <span class="text-amber-400 font-medium tabular-nums shrink-0">{{ item.quantity }} {{ foodUnitLabel(item) }}</span>
           </div>
         </div>
       </div>
@@ -82,7 +105,7 @@ function toggleFood() {
     <div class="rounded-xl border border-white/10 bg-black/25 p-4">
       <div class="flex items-center gap-2 mb-3">
         <span class="text-2xl leading-none" aria-hidden="true">⚡</span>
-        <span class="text-gray-400 text-sm">能量储备</span>
+        <span class="text-gray-400 text-sm">{{ energyTitle }}</span>
       </div>
       <div class="space-y-2">
         <div

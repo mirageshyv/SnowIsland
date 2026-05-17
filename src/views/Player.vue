@@ -11,6 +11,7 @@ import RebelMilestoneView from './RebelMilestoneView.vue'
 import CatastrophePanel from '../components/CatastrophePanel.vue'
 import WarehouseView from './WarehouseView.vue'
 import { tradeAPI, playerAPI, milestoneAPI } from '../utils/api.js'
+import { sumPersonalFoodAndFuel, formatKgForDisplay } from '../utils/playerResources.js'
 
 const router = useRouter()
 const username = localStorage.getItem('username') || ''
@@ -24,6 +25,7 @@ const loading = ref(false)
 const error = ref(null)
 const playerInfo = ref(null)
 const playerItems = ref(null)
+const personalResources = ref(null)
 const isEditing = ref(false)
 const editForm = ref(null)
 const saving = ref(false)
@@ -72,9 +74,10 @@ const fetchPlayerInfo = async () => {
   loading.value = true
   error.value = null
   try {
-    const [infoResult, itemsResult] = await Promise.all([
+    const [infoResult, itemsResult, resourcesResult] = await Promise.all([
       playerAPI.getDetails(playerId),
-      playerAPI.getItems(playerId)
+      playerAPI.getItems(playerId),
+      playerAPI.getResources(playerId)
     ])
     
     if (infoResult && infoResult.success) {
@@ -88,6 +91,12 @@ const fetchPlayerInfo = async () => {
     } else {
       console.log('获取玩家物品失败:', itemsResult?.message)
       playerItems.value = null
+    }
+
+    if (resourcesResult && resourcesResult.success) {
+      personalResources.value = resourcesResult
+    } else {
+      personalResources.value = null
     }
   } catch (err) {
     error.value = '网络请求失败，请稍后重试'
@@ -157,39 +166,23 @@ const negativeStatuses = computed(() => {
 })
 
 const playerResources = computed(() => {
-  if (!playerItems.value) {
-    return { food: 0, energy: 0 }
-  }
-  
-  const items = Array.isArray(playerItems.value) ? playerItems.value : (playerItems.value.value || [])
-  
-  let foodTotal = 0
-  let energyTotal = 0
-  
-  items.forEach(item => {
-    if (item.type === 'material') {
-      const itemId = item.id
-      const quantity = item.quantity || 0
-      const unit = item.unit || ''
-      
-      let kgQuantity = quantity
-      if (unit === 'kg') {
-        kgQuantity = quantity
-      } else if (unit === 'g') {
-        kgQuantity = quantity / 1000
-      }
-      
-      if (itemId === 5) {
-        foodTotal += kgQuantity
-      } else if (itemId === 8) {
-        energyTotal += kgQuantity
-      }
+  const api = personalResources.value
+  if (api?.success) {
+    return {
+      food: formatKgForDisplay(api.foodKg ?? 0),
+      fuel: formatKgForDisplay(api.fuelKg ?? 0),
+      fuelLiters: api.fuelLiters ?? 0
     }
-  })
-  
+  }
+  if (!playerItems.value) {
+    return { food: 0, fuel: 0, fuelLiters: 0 }
+  }
+  const items = Array.isArray(playerItems.value) ? playerItems.value : []
+  const totals = sumPersonalFoodAndFuel(items)
   return {
-    food: Math.round(foodTotal),
-    energy: Math.round(energyTotal)
+    food: formatKgForDisplay(totals.food),
+    fuel: formatKgForDisplay(totals.fuel),
+    fuelLiters: 0
   }
 })
 
@@ -224,7 +217,7 @@ const dashboardProfile = computed(() => {
     negativeStatus: negativeStatuses.value,
     currentDay: dummy.currentDay,
     foodQuantity: resources.food,
-    energyQuantity: resources.energy,
+    fuelQuantity: resources.fuel,
     professionalSkill: {
       name: p.jobSkills ? `${p.professionSkill || '职业技能'}` : (p.job ? '职业技能' : '职业技能'),
       description: dummy.professionalSkillDescription
@@ -282,6 +275,12 @@ const handleLogout = () => {
   localStorage.removeItem('playerId')
   router.push('/')
 }
+
+watch(activeTab, (tab) => {
+  if (tab === 'info' && playerInfo.value) {
+    fetchPlayerInfo()
+  }
+})
 
 onMounted(() => {
   console.log('Player page mounted, playerId:', playerId)
@@ -655,8 +654,8 @@ onUnmounted(() => {
                             <div class="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center mx-auto mb-3">
                               <span class="text-2xl">⚡</span>
                             </div>
-                            <div class="text-slate-400 text-xs mb-1">能量</div>
-                            <div class="text-yellow-300 text-2xl font-bold">{{ dashboardProfile.energyQuantity }}</div>
+                            <div class="text-slate-400 text-xs mb-1">燃料</div>
+                            <div class="text-yellow-300 text-2xl font-bold">{{ dashboardProfile.fuelQuantity }}</div>
                             <div class="text-slate-500 text-xs mt-1">千克</div>
                           </div>
                         </div>
