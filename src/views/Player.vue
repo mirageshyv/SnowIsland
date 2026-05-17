@@ -6,6 +6,7 @@ import TradePanel from './TradePanel.vue'
 import ArkProgressView from './ArkProgressView.vue'
 import ShelterProgressView from './ShelterProgressView.vue'
 import ActionSubmitView from './ActionSubmitView.vue'
+import FactionActionSubmitView from './FactionActionSubmitView.vue'
 import RebelMilestoneView from './RebelMilestoneView.vue'
 import CatastrophePanel from '../components/CatastrophePanel.vue'
 import WarehouseView from './WarehouseView.vue'
@@ -37,12 +38,18 @@ const showShelterTab = computed(() => playerInfo.value?.faction === '统治者')
 const showMilestoneTab = computed(() => playerInfo.value?.faction === '反叛者')
 /** 仅天灾使者可见「天灾降临」 */
 const showCatastropheTab = computed(() => playerInfo.value?.faction === '天灾使者')
+/** Faction strategic actions — not available to civilians */
+const showFactionActionsTab = computed(() => {
+  const f = playerInfo.value?.faction
+  return f && f !== '平民'
+})
 
-watch([showArkTab, showShelterTab, showMilestoneTab, showCatastropheTab, activeTab], () => {
+watch([showArkTab, showShelterTab, showMilestoneTab, showCatastropheTab, showFactionActionsTab, activeTab], () => {
   if (activeTab.value === 'ark' && !showArkTab.value) activeTab.value = 'info'
   if (activeTab.value === 'shelter' && !showShelterTab.value) activeTab.value = 'info'
   if (activeTab.value === 'milestone' && !showMilestoneTab.value) activeTab.value = 'info'
   if (activeTab.value === 'catastrophe' && !showCatastropheTab.value) activeTab.value = 'info'
+  if (activeTab.value === 'factionActions' && !showFactionActionsTab.value) activeTab.value = 'info'
 })
 
 let pollTimer = null
@@ -307,26 +314,19 @@ onUnmounted(() => {
         <button
           type="button"
           class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'status' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'status'"
-        >
-          游戏状态
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'tasks' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'tasks'"
-        >
-          任务列表
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
           :class="activeTab === 'actions' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
           @click="activeTab = 'actions'"
         >
-          行动提交
+          个人行动提交
+        </button>
+        <button
+          v-if="showFactionActionsTab"
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'factionActions' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'factionActions'"
+        >
+          阵营行动提交
         </button>
         <button
           type="button"
@@ -721,20 +721,6 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div v-else-if="activeTab === 'status'">
-        <h1 class="text-white mb-6 tracking-tight text-2xl">游戏状态</h1>
-        <div class="bg-[#0f1419] border border-[#1f2937] rounded-xl p-6">
-          <p class="text-gray-500 font-normal">游戏状态功能开发中...</p>
-        </div>
-      </div>
-
-      <div v-else-if="activeTab === 'tasks'">
-        <h1 class="text-white mb-6 tracking-tight text-2xl">任务列表</h1>
-        <div class="bg-[#0f1419] border border-[#1f2937] rounded-xl p-6">
-          <p class="text-gray-500 font-normal">任务列表功能开发中...</p>
-        </div>
-      </div>
-
       <div v-else-if="activeTab === 'materials'">
         <MaterialsPanel />
       </div>
@@ -743,8 +729,12 @@ onUnmounted(() => {
         <ActionSubmitView embedded />
       </div>
 
+      <div v-else-if="activeTab === 'factionActions' && showFactionActionsTab">
+        <FactionActionSubmitView />
+      </div>
+
       <div v-else-if="activeTab === 'ark' && showArkTab">
-        <ArkProgressView />
+        <ArkProgressView embedded />
       </div>
 
       <div v-else-if="activeTab === 'shelter' && showShelterTab">
@@ -752,21 +742,11 @@ onUnmounted(() => {
       </div>
 
       <div v-else-if="activeTab === 'milestone' && showMilestoneTab">
-        <div class="max-w-4xl">
-          <div class="mb-6">
-            <h1 class="text-white mb-1 tracking-tight text-2xl">反叛者里程碑</h1>
-            <p class="text-gray-500 text-sm">追踪反抗者阵营的革命进展</p>
-          </div>
-          <RebelMilestoneView />
-        </div>
+        <RebelMilestoneView embedded />
       </div>
 
       <div v-else-if="activeTab === 'catastrophe' && showCatastropheTab">
-        <div class="mb-6">
-          <h1 class="text-white mb-1 tracking-tight text-2xl">天灾降临</h1>
-          <p class="text-gray-500 text-sm">掌控天灾的力量，决定岛屿的命运</p>
-        </div>
-        <CatastrophePanel :is-dm="false" />
+        <CatastrophePanel :is-dm="false" embedded />
       </div>
 
       <div v-else-if="activeTab === 'warehouse'">

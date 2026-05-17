@@ -4,6 +4,11 @@ import { useRouter } from 'vue-router';
 import { milestoneAPI } from '@/utils/api.js';
 import { ElMessage } from 'element-plus';
 
+const props = defineProps({
+  embedded: { type: Boolean, default: false },
+  showHeader: { type: Boolean, default: true },
+});
+
 const router = useRouter();
 const milestones = ref([]);
 const progress = ref({ completed: 0, total: 0, percentage: 0 });
@@ -15,24 +20,74 @@ const userRole = localStorage.getItem('userRole');
 const playerId = localStorage.getItem('playerId') || '1';
 const username = localStorage.getItem('username');
 
-const isRevolutionReady = computed(() => {
-  return progress.value.percentage >= 100;
+const isRevolutionReady = computed(() => progress.value.percentage >= 100);
+
+const progressLevel = computed(() => {
+  const p = progress.value.percentage;
+  if (p >= 100) return 'complete';
+  if (p >= 60) return 'high';
+  if (p >= 30) return 'medium';
+  return 'low';
 });
 
-const progressColor = computed(() => {
-  const p = progress.value.percentage;
-  if (p < 30) return 'from-gray-600 to-gray-400';
-  if (p < 60) return 'from-yellow-600 to-yellow-400';
-  if (p < 100) return 'from-orange-500 to-orange-400';
-  return 'from-red-600 to-red-500';
+const progressCardClass = computed(() => {
+  const map = {
+    complete: 'from-red-900/30 to-red-800/30 border-red-500/40',
+    high: 'from-orange-900/20 to-orange-800/20 border-orange-500/30',
+    medium: 'from-yellow-900/20 to-yellow-800/20 border-yellow-500/30',
+    low: 'from-gray-800/30 to-gray-700/30 border-gray-600/20',
+  };
+  return map[progressLevel.value];
 });
 
-const progressTextColor = computed(() => {
-  const p = progress.value.percentage;
-  if (p < 30) return 'text-gray-400';
-  if (p < 60) return 'text-yellow-400';
-  if (p < 100) return 'text-orange-400';
-  return 'text-red-400';
+const progressGlowClass = computed(() => {
+  const map = {
+    complete: 'bg-red-500/5',
+    high: 'bg-orange-500/5',
+    medium: 'bg-yellow-500/5',
+    low: 'bg-gray-500/5',
+  };
+  return map[progressLevel.value];
+});
+
+const progressPercentClass = computed(() => {
+  const map = {
+    complete: 'from-red-400 to-red-500',
+    high: 'from-orange-400 to-red-500',
+    medium: 'from-yellow-400 to-orange-500',
+    low: 'from-gray-400 to-gray-500',
+  };
+  return map[progressLevel.value];
+});
+
+const progressBarFillClass = computed(() => {
+  const map = {
+    complete: 'bg-gradient-to-r from-red-500 via-red-400 to-red-500',
+    high: 'bg-gradient-to-r from-orange-500 via-red-400 to-orange-500',
+    medium: 'bg-gradient-to-r from-yellow-500 via-orange-400 to-yellow-500',
+    low: 'bg-gradient-to-r from-gray-500 via-gray-400 to-gray-500',
+  };
+  return map[progressLevel.value];
+});
+
+const progressBarGlowClass = computed(() => {
+  const map = {
+    complete: 'bg-red-500/20',
+    high: 'bg-orange-500/20',
+    medium: 'bg-yellow-500/20',
+    low: 'bg-gray-500/20',
+  };
+  return map[progressLevel.value];
+});
+
+const progressEdgeGlowClass = computed(() => {
+  const map = {
+    complete: 'shadow-[0_0_20px_rgba(248,113,113,0.8)]',
+    high: 'shadow-[0_0_20px_rgba(251,146,60,0.8)]',
+    medium: 'shadow-[0_0_20px_rgba(250,204,21,0.8)]',
+    low: 'shadow-[0_0_20px_rgba(156,163,175,0.6)]',
+  };
+  return map[progressLevel.value];
 });
 
 const flameCanvas = ref(null);
@@ -275,6 +330,7 @@ async function fetchMilestones() {
       error.value = result?.message || '无访问权限';
     }
   } catch (e) {
+    hasAccess.value = true;
     error.value = '获取里程碑数据失败，请检查后端服务';
     console.error('Error fetching milestones:', e);
   } finally {
@@ -320,65 +376,164 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div v-if="loading" class="min-h-screen bg-[#0a0e1a] flex items-center justify-center">
+  <!-- Loading -->
+  <div
+    v-if="loading"
+    :class="embedded ? 'py-20' : 'min-h-screen'"
+    class="flex items-center justify-center p-4"
+    :style="embedded ? undefined : { background: '#0a0a0f' }"
+  >
     <div class="text-center">
-      <div class="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-      <p class="text-gray-400">加载中...</p>
+      <div class="relative w-16 h-16 mx-auto mb-6">
+        <div class="absolute inset-0 border-4 border-red-500/20 rounded-full" />
+        <div class="absolute inset-0 border-4 border-transparent border-t-red-500 rounded-full animate-spin" />
+      </div>
+      <p class="text-gray-400 text-lg">加载中...</p>
     </div>
   </div>
 
-  <div v-else-if="!hasAccess" class="min-h-screen bg-[#0a0e1a] flex items-center justify-center px-4">
-    <div class="text-center max-w-md">
-      <div class="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-        <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+  <!-- No access -->
+  <div
+    v-else-if="!hasAccess"
+    :class="embedded ? 'py-16' : 'min-h-screen'"
+    class="relative overflow-hidden flex items-center justify-center p-4"
+    :style="embedded ? undefined : { background: '#0a0a0f' }"
+  >
+    <div class="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-red-500/5" />
+    <div class="relative max-w-md w-full bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-xl border border-red-500/20 rounded-3xl p-10 text-center shadow-2xl">
+      <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-red-500/20 to-red-600/20 flex items-center justify-center border border-red-500/30 shadow-lg shadow-red-500/20">
+        <svg class="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
       </div>
-      <h2 class="text-2xl text-white font-bold mb-4">访问被拒绝</h2>
-      <p class="text-gray-400 mb-6">{{ error }}</p>
+      <h1 class="text-3xl text-white mb-3 font-bold">访问被拒绝</h1>
+      <p class="text-gray-400 mb-8 leading-relaxed">{{ error || '您的角色不属于反抗者阵营，无法查看此内容。' }}</p>
       <button
+        type="button"
+        class="bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white px-8 py-3 rounded-xl transition-all duration-150 shadow-lg"
         @click="router.push('/')"
-        class="px-6 py-3 bg-red-600/20 text-red-400 rounded-xl hover:bg-red-600/30 transition-colors"
       >
         返回首页
       </button>
     </div>
   </div>
 
-  <div v-else class="min-h-screen bg-[#0a0e1a]">
-    <div class="max-w-4xl mx-auto px-4 py-8">
-      <div class="text-center mb-10">
-        <h1 class="text-3xl md:text-4xl font-bold text-white mb-3 tracking-wide">反抗者里程碑</h1>
-        <p class="text-gray-400">追踪反抗者阵营的革命进展</p>
+  <!-- Error -->
+  <div
+    v-else-if="error"
+    :class="embedded ? 'py-16' : 'min-h-screen'"
+    class="relative overflow-hidden flex items-center justify-center p-4"
+    :style="embedded ? undefined : { background: '#0a0a0f' }"
+  >
+    <div class="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-orange-500/5" />
+    <div class="relative max-w-md w-full bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-xl border border-red-500/20 rounded-3xl p-10 text-center shadow-2xl">
+      <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-red-500/20 to-red-600/20 flex items-center justify-center border border-red-500/30 shadow-lg shadow-red-500/20">
+        <svg class="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
       </div>
+      <h1 class="text-2xl text-white mb-3 font-bold">获取里程碑数据失败</h1>
+      <p class="text-gray-400 leading-relaxed">{{ error }}</p>
+    </div>
+  </div>
 
-      <div class="relative bg-gradient-to-br from-[#1a1a2e] to-[#16213e] border border-red-500/20 rounded-3xl p-6 mb-10 overflow-hidden shadow-2xl"
-        :class="{ 'revolution-ready-card': isRevolutionReady }">
-        <div class="absolute top-0 right-0 w-64 h-64 bg-red-500/10 rounded-full blur-3xl"></div>
+  <!-- Main content -->
+  <div
+    v-else
+    :class="embedded ? 'relative' : 'min-h-screen relative overflow-hidden'"
+    :style="embedded ? undefined : { background: '#0a0a0f' }"
+  >
+    <div v-if="!embedded" class="fixed inset-0 pointer-events-none">
+      <div class="absolute top-0 left-1/4 w-96 h-96 bg-red-500/10 rounded-full blur-3xl opacity-50 animate-pulse" />
+      <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl opacity-50 animate-pulse milestone-bg-delay-1" />
+      <div class="absolute top-1/2 left-1/2 w-64 h-64 bg-yellow-500/10 rounded-full blur-3xl opacity-30 animate-pulse milestone-bg-delay-2" />
+    </div>
 
-        <div class="relative">
-          <div class="flex items-center justify-between mb-4">
-            <span class="text-gray-300 text-lg">革命进度</span>
-            <span :class="['text-3xl font-semibold tabular-nums', progressTextColor]">
-              {{ progress.percentage.toFixed(1) }}%
-            </span>
+    <div
+      class="relative mx-auto px-4"
+      :class="embedded ? 'max-w-5xl py-2' : 'max-w-5xl py-16'"
+    >
+      <header v-if="showHeader" :class="embedded ? 'mb-10' : 'mb-16'" class="text-center milestone-fade-in">
+        <div class="inline-block mb-4">
+          <div class="w-16 h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent rounded-full" />
+        </div>
+        <h1 class="text-3xl md:text-5xl text-white mb-3 font-bold tracking-tight bg-gradient-to-r from-white via-gray-100 to-white bg-clip-text text-transparent">
+          反叛者里程碑
+        </h1>
+        <p class="text-gray-400 text-base tracking-wide">追踪反抗者阵营的革命进展</p>
+        <div class="inline-block mt-4">
+          <div class="w-16 h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent rounded-full" />
+        </div>
+      </header>
+
+      <!-- Revolution progress -->
+      <section :class="embedded ? 'mb-10' : 'mb-16'" class="milestone-slide-up" aria-labelledby="progress-title" style="animation-delay: 0.1s">
+        <h2 id="progress-title" class="text-xl text-white mb-6 font-bold tracking-tight flex items-center gap-3">
+          <span class="w-1 h-8 bg-gradient-to-b from-red-500 to-orange-500 rounded-full" />
+          革命进度
+        </h2>
+
+        <div
+          class="relative group bg-gradient-to-br backdrop-blur-xl border rounded-3xl p-5 md:p-8 shadow-2xl overflow-hidden transition-shadow duration-150"
+          :class="[progressCardClass, { 'revolution-ready-card': isRevolutionReady }]"
+        >
+          <div
+            class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+            :class="progressGlowClass"
+          />
+
+          <div class="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+            <div>
+              <div
+                class="text-4xl md:text-7xl font-black mb-2 bg-gradient-to-br bg-clip-text text-transparent drop-shadow-2xl"
+                :class="progressPercentClass"
+                :aria-label="`革命进度 ${progress.percentage.toFixed(1)} 百分比`"
+              >
+                {{ progress.percentage.toFixed(1) }}%
+              </div>
+              <div class="text-gray-300 text-base font-medium">
+                {{ progress.completed }} / {{ progress.total }} 里程碑已完成
+              </div>
+            </div>
+
+            <div v-if="isRevolutionReady" class="sm:text-right animate-pulse">
+              <div class="inline-flex items-center gap-2 bg-gradient-to-r from-red-500/30 to-red-600/30 text-red-300 text-sm px-5 py-2.5 rounded-2xl border border-red-400/40 shadow-lg shadow-red-500/30">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                </svg>
+                <span class="font-bold">革命就绪</span>
+              </div>
+            </div>
           </div>
 
-          <div class="flame-wrapper relative w-full rounded-full overflow-visible">
-            <div class="relative w-full h-8 rounded-full bg-black/30 border border-white/10 overflow-visible"
-              :class="{ 'flame-border': isRevolutionReady }">
+          <div class="flame-wrapper relative w-full">
+            <div
+              class="relative w-full h-6 rounded-full bg-black/40 border border-white/10 shadow-inner overflow-visible"
+              :class="{ 'flame-border': isRevolutionReady }"
+              role="progressbar"
+              :aria-valuenow="progress.percentage"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-label="革命进度条"
+            >
+              <div
+                class="absolute inset-0 blur-md transition-all duration-1000 ease-out rounded-full"
+                :class="progressBarGlowClass"
+                :style="{ width: `${Math.min(100, progress.percentage)}%` }"
+              />
               <div
                 ref="progressBarRef"
-                class="h-full rounded-full bg-gradient-to-r transition-all duration-1000 ease-out relative"
-                :class="progressColor"
+                class="relative h-full rounded-full transition-all duration-1000 ease-out overflow-hidden"
+                :class="progressBarFillClass"
                 :style="{ width: `${Math.min(100, progress.percentage)}%` }"
               >
-                <div v-if="isRevolutionReady" class="absolute inset-0 rounded-full flame-inner-glow"></div>
-              </div>
-              <div class="absolute inset-0 flex items-center justify-center z-10">
-                <span class="text-white font-bold text-sm drop-shadow-lg">
-                  {{ progress.completed }} / {{ progress.total }}
-                </span>
+                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent milestone-shine" />
+                <div v-if="isRevolutionReady" class="absolute inset-0 rounded-full flame-inner-glow" />
+                <div class="absolute inset-0 bg-white/10 animate-pulse" />
+                <div
+                  class="absolute right-0 top-0 bottom-0 w-2 bg-white blur-sm"
+                  :class="progressEdgeGlowClass"
+                />
               </div>
             </div>
 
@@ -386,113 +541,131 @@ onUnmounted(() => {
               v-if="isRevolutionReady"
               ref="flameCanvas"
               class="flame-canvas"
-            ></canvas>
+            />
           </div>
 
-          <div v-if="isRevolutionReady" class="mt-3 text-right">
-            <span class="text-red-500 text-sm font-semibold revolution-text">起义已经准备好了，只需要一个时机，或许也可以准备的更加充分</span>
+          <div
+            v-if="isRevolutionReady"
+            class="relative mt-6 text-red-300 text-sm leading-relaxed text-center border-t border-red-500/20 pt-6 revolution-text"
+          >
+            起义已经准备好了，只需要一个时机，或许也可以准备的更加充分
           </div>
         </div>
-      </div>
+      </section>
 
-      <div class="space-y-4">
-        <h2 class="text-xl text-white font-semibold mb-2">里程碑列表</h2>
+      <!-- Milestone list -->
+      <section aria-labelledby="milestones-title">
+        <h2 id="milestones-title" class="text-xl text-white mb-6 font-bold tracking-tight flex items-center gap-3">
+          <span class="w-1 h-8 bg-gradient-to-b from-red-500 to-orange-500 rounded-full" />
+          里程碑列表
+        </h2>
 
-        <div
-          v-for="(milestone, index) in milestones"
-          :key="milestone.id"
-          :class="[
-            'relative border-l-4 pl-6 pb-6 transition-all duration-300',
-            milestone.isCompleted ? 'border-red-500' : 'border-white/20'
-          ]"
-        >
-          <div :class="[
-            'bg-gradient-to-br rounded-2xl p-5 transition-all duration-300',
-            milestone.isCompleted
-              ? 'from-[#1a0f0f] to-[#2d1818] border border-red-500/30'
-              : 'from-[#1a2332] to-[#0f1419] border border-white/10'
-          ]">
-            <div class="flex items-start justify-between gap-4">
-              <div class="flex-1">
-                <div class="flex items-center gap-3 mb-3">
-                  <span :class="[
-                    'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold',
-                    milestone.isCompleted
-                      ? 'bg-red-500 text-white'
-                      : 'bg-gray-600 text-gray-300'
-                  ]">
-                    {{ index + 1 }}
-                  </span>
-                  <h3 :class="[
-                    'text-xl font-bold tracking-tight',
-                    milestone.isCompleted ? 'text-red-400' : 'text-white'
-                  ]">
-                    {{ milestone.name }}
-                  </h3>
-                </div>
+        <div class="space-y-6">
+          <div
+            v-for="(milestone, index) in milestones"
+            :key="milestone.id"
+            class="relative group milestone-slide-up"
+            :style="{ animationDelay: `${0.2 + index * 0.05}s` }"
+          >
+            <div
+              class="relative bg-gradient-to-br backdrop-blur-xl border rounded-2xl p-5 md:p-6 transition-all duration-150 hover:shadow-2xl overflow-hidden"
+              :class="milestone.isCompleted
+                ? 'from-[#1a0f0f]/90 to-[#2d1818]/90 border-red-500/25 hover:border-red-500/45 hover:shadow-red-500/10'
+                : 'from-gray-900/40 to-gray-800/40 border-gray-700/30 hover:border-gray-600/40 hover:shadow-gray-500/10'"
+            >
+              <div
+                class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                :class="milestone.isCompleted ? 'bg-red-500/5' : 'bg-gray-500/5'"
+              />
 
-                <p :class="[
-                  'text-sm leading-relaxed',
-                  milestone.isCompleted ? 'text-gray-300' : 'text-gray-400'
-                ]">
-                  {{ milestone.description }}
-                </p>
-
-                <div v-if="milestone.completedAt" class="mt-3 flex items-center gap-2 text-xs text-gray-500">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                  </svg>
-                  <span>完成时间: {{ milestone.completedAt }}</span>
-                </div>
-              </div>
-
-              <div class="flex-shrink-0 flex items-center gap-3">
-                <div :class="[
-                  'w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500',
-                  milestone.isCompleted
-                    ? 'bg-red-500/20 animate-pulse'
-                    : 'bg-gray-700/50'
-                ]">
-                  <svg v-if="milestone.isCompleted" class="w-7 h-7 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                  </svg>
-                  <svg v-else class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                  </svg>
-                </div>
-
-                <button
-                  v-if="isDm"
-                  @click="toggleMilestone(milestone.id)"
-                  :class="[
-                    'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
-                    milestone.isCompleted
-                      ? 'bg-gray-600/50 text-gray-300 hover:bg-gray-600/70'
-                      : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-                  ]"
+              <div class="relative flex flex-col sm:flex-row gap-6">
+                <div
+                  class="flex-shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center font-black text-xl border-2 transition-all duration-150 group-hover:scale-105"
+                  :class="milestone.isCompleted
+                    ? 'bg-gradient-to-br from-red-500/30 to-red-600/30 border-red-400/50 text-red-300 shadow-lg shadow-red-500/30'
+                    : 'bg-gradient-to-br from-gray-700/30 to-gray-600/30 border-gray-500/30 text-gray-400'"
+                  :aria-label="`里程碑 ${index + 1}`"
                 >
-                  {{ milestone.isCompleted ? '取消点亮' : '点亮里程碑' }}
-                </button>
+                  <svg
+                    v-if="milestone.isCompleted"
+                    class="w-8 h-8"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    stroke-width="3"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span v-else>{{ index + 1 }}</span>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                  <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+                    <h3
+                      class="text-lg md:text-xl font-bold"
+                      :class="milestone.isCompleted ? 'text-red-400' : 'text-gray-300'"
+                    >
+                      {{ milestone.name }}
+                    </h3>
+                    <div class="flex flex-wrap items-center gap-2 shrink-0">
+                      <span
+                        class="text-xs px-4 py-2 rounded-full font-bold"
+                        :class="milestone.isCompleted
+                          ? 'bg-red-500/20 text-red-300 border border-red-400/40'
+                          : 'bg-gray-700/30 text-gray-400 border border-gray-600/30'"
+                        :aria-label="milestone.isCompleted ? '状态：已完成' : '状态：未完成'"
+                      >
+                        {{ milestone.isCompleted ? '已完成' : '未完成' }}
+                      </span>
+                      <button
+                        v-if="isDm"
+                        type="button"
+                        class="text-xs px-4 py-2 rounded-full font-bold transition-all duration-150"
+                        :class="milestone.isCompleted
+                          ? 'bg-gray-600/50 text-gray-300 hover:bg-gray-600/70 border border-gray-500/40'
+                          : 'bg-red-500/20 text-red-400 hover:bg-red-500/40 border border-red-400/40'"
+                        @click="toggleMilestone(milestone.id)"
+                      >
+                        {{ milestone.isCompleted ? '取消点亮' : '点亮里程碑' }}
+                      </button>
+                    </div>
+                    </div>
+
+                  <p
+                    class="leading-relaxed text-xs md:text-sm"
+                    :class="milestone.isCompleted ? 'text-gray-400' : 'text-gray-500'"
+                  >
+                    {{ milestone.description }}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div class="mt-12 text-center">
-        <p class="text-gray-500 text-sm">
+      <footer class="mt-12 text-center text-gray-500 text-sm border-t border-gray-800/50 pt-6 milestone-fade-in">
+        <p class="tracking-wide">
           {{ isDm ? '作为DM，您可以点击按钮点亮或取消点亮里程碑。' : '您可以查看反抗者阵营的里程碑进展。' }}
         </p>
-      </div>
+      </footer>
     </div>
   </div>
 </template>
 
 <style scoped>
+.milestone-bg-delay-1 {
+  animation-delay: 1s;
+}
+
+.milestone-bg-delay-2 {
+  animation-delay: 2s;
+}
+
 .flame-wrapper {
   position: relative;
   padding-top: 40px;
-  margin-top: -40px;
+  margin-top: -8px;
   padding-bottom: 4px;
 }
 
@@ -536,8 +709,23 @@ onUnmounted(() => {
 }
 
 .revolution-text {
-  text-shadow: 0 0 8px rgba(255, 60, 0, 0.5), 0 0 16px rgba(255, 30, 0, 0.3);
+  text-shadow: 0 0 8px rgba(248, 113, 113, 0.5), 0 0 16px rgba(255, 80, 0, 0.35);
   animation: text-flicker 2s ease-in-out infinite;
+}
+
+@keyframes milestone-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes milestone-slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes milestone-shine {
+  0% { transform: translateX(-100%) skewX(-15deg); }
+  100% { transform: translateX(200%) skewX(-15deg); }
 }
 
 @keyframes flame-border-pulse {
@@ -579,5 +767,18 @@ onUnmounted(() => {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.85; }
   75% { opacity: 0.95; }
+}
+
+.milestone-fade-in {
+  animation: milestone-fadeIn 1s ease-out;
+}
+
+.milestone-slide-up {
+  animation: milestone-slideUp 0.8s ease-out forwards;
+  opacity: 0;
+}
+
+.milestone-shine {
+  animation: milestone-shine 3s ease-in-out infinite;
 }
 </style>

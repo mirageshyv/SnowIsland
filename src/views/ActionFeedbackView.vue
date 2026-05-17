@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { actionAPI } from '@/utils/api.js'
+import { formatActionResultText, formatTransportItemLine } from '@/data/gameData.js'
 
 const actions = ref([])
 const loading = ref(true)
@@ -303,7 +304,7 @@ onMounted(() => { fetchActions() })
                 <div v-if="parseTransportNotes(action.notes).items && parseTransportNotes(action.notes).items.length > 0">
                   <p class="text-gray-500 mt-1">搬运物资：</p>
                   <p v-for="item in parseTransportNotes(action.notes).items" :key="`${item.itemType}-${item.itemId}`" class="ml-2">
-                    {{ item.itemType }}-{{ item.itemId }} × {{ item.quantity }} ({{ item.weight }}kg/单位)
+                    {{ formatTransportItemLine(item) }}
                   </p>
                 </div>
               </div>
@@ -313,7 +314,7 @@ onMounted(() => { fetchActions() })
           <div v-else-if="action.notes" class="text-gray-500 text-xs mb-2 italic">备注：{{ action.notes }}</div>
 
           <div v-if="action.result" class="text-gray-300 text-sm whitespace-pre-wrap bg-black/20 rounded-xl p-4 mb-3 border border-white/5">
-            {{ action.result }}
+            {{ formatActionResultText(action.result) }}
           </div>
 
           <div v-if="action.status === 'pending'" class="flex gap-2">

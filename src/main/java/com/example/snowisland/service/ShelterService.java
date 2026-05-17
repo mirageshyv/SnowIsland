@@ -58,6 +58,9 @@ public class ShelterService {
     @Autowired
     private EntityManager entityManager;
 
+    @Autowired
+    private ShelterSupplyService shelterSupplyService;
+
     @Transactional
     public Map<String, Object> getSummary() {
         Map<String, Object> out = new LinkedHashMap<>();
@@ -84,59 +87,14 @@ public class ShelterService {
             inventory.add(item);
         }
 
+        shelterSupplyService.ensureReady();
+
         out.put("success", true);
         out.put("currentBuildValue", progress.getCurrentBuildValue());
         out.put("inventory", inventory);
-        out.put("foodSupply", buildFoodSupply(rows));
-        out.put("energyReserve", buildEnergyReserve(rows));
+        out.put("foodSupply", shelterSupplyService.buildShelterFoodSupply());
+        out.put("energyReserve", shelterSupplyService.buildShelterEnergyReserve());
         return out;
-    }
-
-    private Map<String, Object> buildFoodSupply(List<ShelterStock> rows) {
-        int foodQuantity = 0;
-        for (ShelterStock row : rows) {
-            if (row.getItemType() == ShelterStock.ItemType.material && row.getItemId() == 5) {
-                foodQuantity = row.getQuantity();
-                break;
-            }
-        }
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("name", "食物");
-        result.put("itemType", "material");
-        result.put("itemId", 5);
-        result.put("quantity", foodQuantity);
-        result.put("unit", "kg");
-        return result;
-    }
-
-    private Map<String, Object> buildEnergyReserve(List<ShelterStock> rows) {
-        int woodQuantity = 0;
-        int fuelQuantity = 0;
-        for (ShelterStock row : rows) {
-            if (row.getItemType() == ShelterStock.ItemType.material && row.getItemId() == 2) {
-                woodQuantity = row.getQuantity();
-            }
-            if (row.getItemType() == ShelterStock.ItemType.material && row.getItemId() == 8) {
-                fuelQuantity = row.getQuantity();
-            }
-        }
-        Map<String, Object> wood = new LinkedHashMap<>();
-        wood.put("name", "木材");
-        wood.put("itemType", "material");
-        wood.put("itemId", 2);
-        wood.put("quantity", woodQuantity);
-        wood.put("unit", "kg");
-
-        Map<String, Object> fuel = new LinkedHashMap<>();
-        fuel.put("name", "燃油");
-        fuel.put("itemType", "material");
-        fuel.put("itemId", 8);
-        fuel.put("quantity", fuelQuantity);
-        fuel.put("unit", "kg");
-
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("items", Arrays.asList(wood, fuel));
-        return result;
     }
 
     private void enrichItemInfo(Map<String, Object> item) {

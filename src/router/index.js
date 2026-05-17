@@ -63,6 +63,18 @@ const router = createRouter({
       meta: { requiresAuth: true, role: 'dm' }
     },
     {
+      path: '/faction-actions',
+      name: 'FactionActions',
+      component: () => import('../views/FactionActionSubmitView.vue'),
+      meta: { requiresAuth: true, role: 'player' }
+    },
+    {
+      path: '/faction-action-feedback',
+      name: 'FactionActionFeedback',
+      component: () => import('../views/FactionActionFeedbackView.vue'),
+      meta: { requiresAuth: true, role: 'dm' }
+    },
+    {
       path: '/player/materials',
       name: 'PlayerMaterials',
       component: () => import('../views/PlayerMaterials.vue'),

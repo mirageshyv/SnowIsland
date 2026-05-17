@@ -210,6 +210,32 @@ export const locationAPI = {
   getById: (id) => request(`${API_BASE}/locations/${id}`),
 }
 
+export const factionActionAPI = {
+  getContext: (playerId, gameDay = 1) =>
+    request(`${API_BASE}/faction-actions/context/${playerId}?gameDay=${gameDay}`),
+  submitAction: (data) =>
+    request(`${API_BASE}/faction-actions/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
+  getPlayerHistory: (playerId, gameDay = 1) =>
+    request(`${API_BASE}/faction-actions/player/${playerId}?gameDay=${gameDay}`),
+  getAllActions: (params = {}) => {
+    const qs = Object.entries(params)
+      .filter(([, v]) => v != null && v !== '')
+      .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+      .join('&')
+    return request(`${API_BASE}/faction-actions/all${qs ? '?' + qs : ''}`)
+  },
+  feedbackAction: (actionId, feedback) =>
+    request(`${API_BASE}/faction-actions/${actionId}/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feedback }),
+    }),
+}
+
 export const actionAPI = {
   submitAction: (data) =>
     request(`${API_BASE}/actions/submit`, {
