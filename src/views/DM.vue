@@ -8,6 +8,7 @@ import RebelMilestoneView from './RebelMilestoneView.vue'
 import CatastrophePanel from '../components/CatastrophePanel.vue'
 import WarehouseView from './WarehouseView.vue'
 import ActionFeedbackView from './ActionFeedbackView.vue'
+import FactionActionFeedbackView from './FactionActionFeedbackView.vue'
 
 const router = useRouter()
 const username = localStorage.getItem('username') || ''
@@ -170,6 +171,14 @@ onMounted(() => {
           @click="activeTab = 'actionFeedback'"
         >
           📋 行动反馈
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'factionActionFeedback' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'factionActionFeedback'"
+        >
+          阵营行动反馈
         </button>
       </nav>
 
@@ -364,6 +373,10 @@ onMounted(() => {
           <p class="text-gray-500 text-sm">查看玩家提交的行动并给予反馈</p>
         </div>
         <ActionFeedbackView />
+      </div>
+
+      <div v-else-if="activeTab === 'factionActionFeedback'">
+        <FactionActionFeedbackView />
       </div>
 
       <!-- Other Tabs -->

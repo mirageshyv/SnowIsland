@@ -65,7 +65,11 @@ const actionHelpEntries = [
 
 function getTargetOptions(actionType) {
   if (actionType === 'go_location') return Array.isArray(locations.value) ? locations.value.map(l => ({ value: l.id, label: `${l.name}（${l.area}）` })) : []
-  if (actionType === 'investigate_player') return Array.isArray(players.value) ? players.value.filter(p => p.id !== parseInt(playerId)).map(p => ({ value: p.id, label: p.name })) : []
+  if (actionType === 'investigate_player') {
+    return Array.isArray(players.value)
+      ? players.value.filter(p => p.id !== parseInt(playerId)).map(p => ({ value: p.id, label: p.name }))
+      : []
+  }
   return []
 }
 

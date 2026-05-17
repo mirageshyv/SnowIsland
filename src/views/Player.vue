@@ -6,6 +6,7 @@ import TradePanel from './TradePanel.vue'
 import ArkProgressView from './ArkProgressView.vue'
 import ShelterProgressView from './ShelterProgressView.vue'
 import ActionSubmitView from './ActionSubmitView.vue'
+import FactionActionSubmitView from './FactionActionSubmitView.vue'
 import RebelMilestoneView from './RebelMilestoneView.vue'
 import CatastrophePanel from '../components/CatastrophePanel.vue'
 import WarehouseView from './WarehouseView.vue'
@@ -37,12 +38,18 @@ const showShelterTab = computed(() => playerInfo.value?.faction === '统治者')
 const showMilestoneTab = computed(() => playerInfo.value?.faction === '反叛者')
 /** 仅天灾使者可见「天灾降临」 */
 const showCatastropheTab = computed(() => playerInfo.value?.faction === '天灾使者')
+/** Faction strategic actions — not available to civilians */
+const showFactionActionsTab = computed(() => {
+  const f = playerInfo.value?.faction
+  return f && f !== '平民'
+})
 
-watch([showArkTab, showShelterTab, showMilestoneTab, showCatastropheTab, activeTab], () => {
+watch([showArkTab, showShelterTab, showMilestoneTab, showCatastropheTab, showFactionActionsTab, activeTab], () => {
   if (activeTab.value === 'ark' && !showArkTab.value) activeTab.value = 'info'
   if (activeTab.value === 'shelter' && !showShelterTab.value) activeTab.value = 'info'
   if (activeTab.value === 'milestone' && !showMilestoneTab.value) activeTab.value = 'info'
   if (activeTab.value === 'catastrophe' && !showCatastropheTab.value) activeTab.value = 'info'
+  if (activeTab.value === 'factionActions' && !showFactionActionsTab.value) activeTab.value = 'info'
 })
 
 let pollTimer = null
@@ -327,6 +334,15 @@ onUnmounted(() => {
           @click="activeTab = 'actions'"
         >
           行动提交
+        </button>
+        <button
+          v-if="showFactionActionsTab"
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'factionActions' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'factionActions'"
+        >
+          阵营行动提交
         </button>
         <button
           type="button"
@@ -741,6 +757,10 @@ onUnmounted(() => {
 
       <div v-else-if="activeTab === 'actions'">
         <ActionSubmitView embedded />
+      </div>
+
+      <div v-else-if="activeTab === 'factionActions' && showFactionActionsTab">
+        <FactionActionSubmitView />
       </div>
 
       <div v-else-if="activeTab === 'ark' && showArkTab">
