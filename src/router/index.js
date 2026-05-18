@@ -75,6 +75,18 @@ const router = createRouter({
       meta: { requiresAuth: true, role: 'dm' }
     },
     {
+      path: '/night-actions',
+      name: 'NightActions',
+      component: () => import('../views/NightActionSubmitView.vue'),
+      meta: { requiresAuth: true, role: 'player' }
+    },
+    {
+      path: '/night-action-settlement',
+      name: 'NightActionSettlement',
+      component: () => import('../views/NightActionSettlementView.vue'),
+      meta: { requiresAuth: true, role: 'dm' }
+    },
+    {
       path: '/player/materials',
       name: 'PlayerMaterials',
       component: () => import('../views/PlayerMaterials.vue'),

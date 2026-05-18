@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { actionAPI, playerAPI, warehouseAPI } from '@/utils/api.js'
+import { actionAPI, playerAPI, warehouseAPI, shelterAPI } from '@/utils/api.js'
 import {
   extractDmFeedback,
   actionShortLabel,
@@ -13,6 +13,7 @@ import {
 
 const actions = ref([])
 const players = ref([])
+const laborerIds = ref(new Set())
 const warehouseNameByKey = ref({})
 const loading = ref(true)
 const filterGameDay = ref('1')
@@ -54,6 +55,26 @@ async function fetchPlayers() {
     console.error('获取玩家列表失败:', e)
     players.value = []
   }
+}
+
+async function fetchLaborRoster() {
+  try {
+    const res = await shelterAPI.getSummary(parseInt(filterGameDay.value, 10))
+    const ids = new Set()
+    if (res?.success && Array.isArray(res.dailyLabor)) {
+      for (const row of res.dailyLabor) {
+        if (row.playerId != null) ids.add(row.playerId)
+      }
+    }
+    laborerIds.value = ids
+  } catch (e) {
+    console.error('获取劳工名单失败:', e)
+    laborerIds.value = new Set()
+  }
+}
+
+function isShelterLaborer(playerId) {
+  return laborerIds.value.has(playerId)
 }
 
 const dayActions = computed(() =>
@@ -257,7 +278,7 @@ async function fetchWarehouses() {
 }
 
 onMounted(async () => {
-  await Promise.all([fetchPlayers(), fetchActions(), fetchWarehouses()])
+  await Promise.all([fetchPlayers(), fetchActions(), fetchLaborRoster(), fetchWarehouses()])
 })
 </script>
 
@@ -273,7 +294,7 @@ onMounted(async () => {
           <select
             v-model="filterGameDay"
             class="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200"
-            @change="fetchActions"
+            @change="() => { fetchActions(); fetchLaborRoster() }"
           >
             <option value="1">第1天</option>
             <option value="2">第2天</option>
@@ -325,10 +346,18 @@ onMounted(async () => {
         <div
           v-for="row in playerRows"
           :key="row.playerId"
-          class="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 rounded-xl border border-white/10 bg-[#1a2332]/80"
+          class="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 rounded-xl border border-white/10 transition-colors"
+          :class="isShelterLaborer(row.playerId) ? 'bg-amber-500/[0.08]' : 'bg-[#1a2332]/80'"
         >
           <div class="min-w-[120px] shrink-0">
-            <span class="text-white text-sm font-medium">{{ row.playerName }}</span>
+            <span
+              class="text-sm font-medium"
+              :class="isShelterLaborer(row.playerId) ? 'text-amber-100/95' : 'text-white'"
+            >{{ row.playerName }}</span>
+            <span
+              v-if="isShelterLaborer(row.playerId)"
+              class="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/20 text-amber-300/90 border border-amber-500/25"
+            >劳工</span>
             <span v-if="row.faction" class="text-gray-500 text-xs ml-1.5">{{ row.faction }}</span>
           </div>
           <div class="flex flex-wrap items-center gap-2 flex-1">

@@ -105,15 +105,19 @@ export const shelterAPI = {
     const q = gameDay != null ? `?gameDay=${encodeURIComponent(gameDay)}` : ''
     return request(`${API_BASE}/shelter${q}`)
   },
-  /** 统治者：仅提交 playerIds */
-  setLaborRoster: (playerIds, gameDay) =>
-    request(`${API_BASE}/shelter/labor/roster`, {
+  /** 统治者：提交劳工名单；laborers 为 { playerId, exploited? }[]，最多3人压榨 */
+  setLaborRoster: (laborersOrIds, gameDay) => {
+    const body = { ...(gameDay != null ? { gameDay } : {}) }
+    if (Array.isArray(laborersOrIds) && laborersOrIds.length && typeof laborersOrIds[0] === 'object') {
+      body.laborers = laborersOrIds
+    } else {
+      body.playerIds = laborersOrIds
+    }
+    return request(`${API_BASE}/shelter/labor/roster`, {
       method: 'PUT',
-      body: JSON.stringify({
-        playerIds,
-        ...(gameDay != null ? { gameDay } : {})
-      })
-    }),
+      body: JSON.stringify(body)
+    })
+  },
   /** DM：完整编辑劳工 */
   setDailyLabor: (laborers, gameDay) =>
     request(`${API_BASE}/shelter/labor`, {
@@ -303,6 +307,30 @@ export const locationAPI = {
     return request(`${API_BASE}/locations${qs}`)
   },
   getById: (id) => request(`${API_BASE}/locations/${id}`),
+}
+
+export const nightActionAPI = {
+  getContext: (playerId, gameDay = 1) =>
+    request(`${API_BASE}/night-actions/context/${playerId}?gameDay=${gameDay}`),
+  submitAction: (data) =>
+    request(`${API_BASE}/night-actions/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
+  getAllActions: (params = {}) => {
+    const qs = Object.entries(params)
+      .filter(([, v]) => v != null && v !== '')
+      .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+      .join('&')
+    return request(`${API_BASE}/night-actions/all${qs ? '?' + qs : ''}`)
+  },
+  feedbackAction: (actionId, feedback) =>
+    request(`${API_BASE}/night-actions/${actionId}/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feedback }),
+    }),
 }
 
 export const factionActionAPI = {

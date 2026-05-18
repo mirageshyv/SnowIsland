@@ -206,6 +206,65 @@ public class ShelterService {
     }
 
     @Transactional
+    public Map<String, Object> setLaborRosterWithExploit(Integer gameDay, List<Map<String, Object>> laborers) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        if (gameDay == null || gameDay < 1) {
+            out.put("success", false);
+            out.put("message", "无效的游戏天数");
+            return out;
+        }
+        if (laborers == null) {
+            laborers = Collections.emptyList();
+        }
+        int exploitCount = 0;
+        Set<Integer> seen = new HashSet<>();
+        List<Integer> playerIds = new ArrayList<>();
+        Map<Integer, Boolean> exploitedByPlayer = new HashMap<>();
+        for (Map<String, Object> row : laborers) {
+            Integer playerId = toInt(row.get("playerId"));
+            if (playerId == null) {
+                out.put("success", false);
+                out.put("message", "劳工条目缺少 playerId");
+                return out;
+            }
+            if (!seen.add(playerId)) {
+                out.put("success", false);
+                out.put("message", "重复的玩家: " + playerId);
+                return out;
+            }
+            if (!playerRepository.findById(playerId).isPresent()) {
+                out.put("success", false);
+                out.put("message", "玩家不存在: " + playerId);
+                return out;
+            }
+            boolean exploited = toBool(row.get("exploited"));
+            if (exploited) exploitCount++;
+            playerIds.add(playerId);
+            exploitedByPlayer.put(playerId, exploited);
+        }
+        if (exploitCount > 3) {
+            out.put("success", false);
+            out.put("message", "最多压榨3名劳工");
+            return out;
+        }
+        if (isDayVerified(gameDay)) {
+            out.put("success", false);
+            out.put("message", "第 " + gameDay + " 天已结算，无法再修改劳工名单");
+            return out;
+        }
+
+        mergeLaborRoster(gameDay, playerIds);
+        for (Map.Entry<Integer, Boolean> e : exploitedByPlayer.entrySet()) {
+            shelterDailyLaborRepository.findByGameDayAndPlayerId(gameDay, e.getKey()).ifPresent(labor -> {
+                labor.setExploited(e.getValue());
+                shelterDailyLaborRepository.save(labor);
+            });
+        }
+        ensureLaborDayRow(gameDay, false);
+        return enrichLaborResponse(out, gameDay);
+    }
+
+    @Transactional
     public Map<String, Object> setDailyLabor(Integer gameDay, List<Map<String, Object>> laborers) {
         Map<String, Object> out = new LinkedHashMap<>();
         if (gameDay == null || gameDay < 1) {

@@ -23,9 +23,9 @@ public class FactionActionService {
     static {
 
         FACTION_ACTION_TYPES.put("统治者", new LinkedHashSet<>(Arrays.asList(
-                "govern_location", "assign_personnel", "assign_guard", "exploit_labor")));
+                "assign_personnel", "assign_guard")));
         FACTION_ACTION_TYPES.put("反叛者", new LinkedHashSet<>(Arrays.asList(
-                "extra_labor", "secret_contact", "group_discussion", "sabotage")));
+                "extra_labor", "secret_contact", "sabotage")));
         FACTION_ACTION_TYPES.put("冒险者", new LinkedHashSet<>(Arrays.asList(
                 "extra_investigate", "extra_labor", "guard_ark", "ark_construction")));
         FACTION_ACTION_TYPES.put("天灾使者", new LinkedHashSet<>(Arrays.asList(
@@ -33,7 +33,6 @@ public class FactionActionService {
     }
 
     @Autowired private FactionActionRepository factionActionRepository;
-    @Autowired private LocationGovernanceRepository governanceRepository;
     @Autowired private PlayerRepository playerRepository;
     @Autowired private JobRepository jobRepository;
     @Autowired private LocationRepository locationRepository;
@@ -66,15 +65,6 @@ public class FactionActionService {
         Set<String> usedTypes = todayActions.stream().map(FactionAction::getActionType).collect(Collectors.toSet());
         boolean hasSubmittedToday = !todayActions.isEmpty();
 
-        Set<String> usedPlayerNpcKeys = new HashSet<>();
-        Set<Integer> usedLaborerIds = new HashSet<>();
-        for (FactionAction fa : todayActions) {
-            collectRulerUsageFromPayload(fa.getActionType(), parsePayload(fa.getPayload()), usedPlayerNpcKeys, usedLaborerIds);
-        }
-
-        List<Integer> governedLocationIds = governanceRepository.findByGameDay(gameDay).stream()
-                .map(LocationGovernance::getLocationId).collect(Collectors.toList());
-
         boolean hasProduceToday = playerActionRepository.findByPlayerIdAndGameDayOrderByActionSlotAsc(playerId, gameDay)
                 .stream().anyMatch(a -> "produce".equals(a.getActionType()));
         ctx.put("success", true);
@@ -86,10 +76,9 @@ public class FactionActionService {
         ctx.put("hasSubmittedToday", hasSubmittedToday);
         ctx.put("canSubmitMore", unlimitedActions || !hasSubmittedToday);
         ctx.put("usedActionTypes", usedTypes);
-        ctx.put("usedPlayerNpcKeys", usedPlayerNpcKeys);
-        ctx.put("usedLaborerIds", usedLaborerIds);
-        ctx.put("exploitLaborUsedToday", usedTypes.contains("exploit_labor"));
-        ctx.put("governedLocationIds", governedLocationIds);
+        ctx.put("assignPersonnelUsedToday", usedTypes.contains("assign_personnel"));
+        ctx.put("assignGuardUsedToday", usedTypes.contains("assign_guard"));
+        ctx.put("governedLocationIds", Collections.emptyList());
         ctx.put("hasProduceToday", hasProduceToday);
         ctx.put("highThreatWeapons", getHighThreatWeapons(playerId));
         ctx.put("arkStatus", arkService.getStatus());
@@ -135,12 +124,10 @@ public class FactionActionService {
                 result.put("message", "今日已提交阵营行动，每天仅可执行一次");
                 return result;
             }
-        } else {
-            if ("exploit_labor".equals(actionType) && todayActions.stream().anyMatch(a -> "exploit_labor".equals(a.getActionType()))) {
-                result.put("success", false);
-                result.put("message", "今日已使用过压榨劳工");
-                return result;
-            }
+        } else if (todayActions.stream().anyMatch(a -> actionType.equals(a.getActionType()))) {
+            result.put("success", false);
+            result.put("message", "今日已使用过「" + getActionTypeLabel(actionType) + "」");
+            return result;
         }
 
         String validationError = validateAction(actionType, payload, playerId, gameDay, faction, todayActions);
@@ -179,36 +166,22 @@ public class FactionActionService {
                                   String faction, List<FactionAction> todayActions) {
         if (payload == null) payload = Collections.emptyMap();
 
-        if ("统治者".equals(faction)) {
-            String rulerErr = validateRulerDuplicateTargets(actionType, payload, todayActions);
-            if (rulerErr != null) return rulerErr;
-        }
-
         switch (actionType) {
-            case "govern_location": {
-                Integer actorId = toInt(payload.get("actorId"));
-                Integer locationId = toInt(payload.get("targetLocationId"));
-                if (actorId == null || locationId == null) return "请选择监管人员与地点";
-                if (!isMilitiaOrGuard(actorId)) return "执行人员须为民兵或治安官";
-                if (governanceRepository.existsByLocationIdAndGameDay(locationId, gameDay))
-                    return "该地点今日已被监管";
-                return null;
-            }
             case "assign_personnel": {
                 if (toInt(payload.get("targetId")) == null) return "请选择目标";
-                if (payload.get("assignedAction") == null) return "请选择指定自由行动";
+                List<Map<String, Object>> assigned = parseAssignedActions(payload);
+                if (assigned.isEmpty()) return "请至少指定一项对方须提交的自由行动";
+                if (assigned.size() > 2) return "最多指定两项自由行动";
+                for (Map<String, Object> item : assigned) {
+                    if (item.get("action") == null) return "请完整选择指定自由行动";
+                }
                 return null;
             }
             case "assign_guard": {
                 Integer actorId = toInt(payload.get("actorId"));
                 Integer locationId = toInt(payload.get("targetLocationId"));
                 if (actorId == null || locationId == null) return "请选择看守人员与地点";
-                return null;
-            }
-            case "exploit_labor": {
-                List<?> targets = asList(payload.get("targetIds"));
-                if (targets.isEmpty()) return "请至少选择一名劳工";
-                if (targets.size() > 3) return "最多选择3名劳工";
+                if (str(payload.get("assignedAction")) == null) return "请选择对方须提交的夜晚行动";
                 return null;
             }
             case "extra_labor": {
@@ -223,17 +196,10 @@ public class FactionActionService {
                 if (msg == null || msg.trim().length() < 3) return "请填写秘密信息";
                 return null;
             }
-            case "group_discussion": {
-                if (toInt(payload.get("secretLocationId")) == null) return "请选择秘密地点";
-                if (asList(payload.get("notifyPlayerIds")).isEmpty()) return "请选择要通知的玩家";
-                return null;
-            }
             case "sabotage": {
                 Integer locationId = toInt(payload.get("targetLocationId"));
                 Integer facilityId = toInt(payload.get("facilityId"));
                 if (locationId == null || facilityId == null) return "请选择地点与设施";
-                if (governanceRepository.existsByLocationIdAndGameDay(locationId, gameDay))
-                    return "无法破坏已被监管的地点";
                 return null;
             }
             case "extra_investigate": {
@@ -265,105 +231,28 @@ public class FactionActionService {
         }
     }
 
-    private String validateRulerDuplicateTargets(String actionType, Map<String, Object> payload, List<FactionAction> todayActions) {
-        Set<String> usedPlayerNpcKeys = new HashSet<>();
-        Set<Integer> usedLaborerIds = new HashSet<>();
-        for (FactionAction fa : todayActions) {
-            collectRulerUsageFromPayload(fa.getActionType(), parsePayload(fa.getPayload()), usedPlayerNpcKeys, usedLaborerIds);
-        }
-
-        if ("assign_personnel".equals(actionType)) {
-            Integer targetId = toInt(payload.get("targetId"));
-            if (targetId == null) return null;
-            String kind = str(payload.get("targetKind"));
-            if (kind == null) kind = "player";
-            String key = kind + ":" + targetId;
-            if (usedPlayerNpcKeys.contains(key)) {
-                return "今日已对该玩家/NPC安排过人员，请选择其他目标";
-            }
-        }
-
-        if ("assign_guard".equals(actionType)) {
-            Integer actorId = toInt(payload.get("actorId"));
-            if (actorId != null && usedPlayerNpcKeys.contains("player:" + actorId)) {
-                return "今日已对该玩家使用过，请选择其他人员";
-            }
-        }
-
-        if ("govern_location".equals(actionType)) {
-            Integer actorId = toInt(payload.get("actorId"));
-            if (actorId != null && usedPlayerNpcKeys.contains("player:" + actorId)) {
-                return "今日已对该玩家使用过，请选择其他监管人员";
-            }
-        }
-
-        if ("exploit_labor".equals(actionType)) {
-            for (Object o : asList(payload.get("targetIds"))) {
-                Integer id = toInt(o);
-                if (id != null && usedLaborerIds.contains(id)) {
-                    return "劳工「" + resolvePlayerName(id) + "」今日已被压榨过";
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private void collectRulerUsageFromPayload(String actionType, Map<String, Object> payload,
-                                              Set<String> usedPlayerNpcKeys, Set<Integer> usedLaborerIds) {
-        if (payload == null || payload.isEmpty()) return;
-        if ("assign_personnel".equals(actionType)) {
-            Integer targetId = toInt(payload.get("targetId"));
-            if (targetId != null) {
-                String kind = str(payload.get("targetKind"));
-                if (kind == null) kind = "player";
-                usedPlayerNpcKeys.add(kind + ":" + targetId);
-            }
-        }
-        if ("assign_guard".equals(actionType)) {
-            Integer actorId = toInt(payload.get("actorId"));
-            if (actorId != null) usedPlayerNpcKeys.add("player:" + actorId);
-        }
-        if ("govern_location".equals(actionType)) {
-            Integer actorId = toInt(payload.get("actorId"));
-            if (actorId != null) usedPlayerNpcKeys.add("player:" + actorId);
-        }
-        if ("exploit_labor".equals(actionType)) {
-            for (Object o : asList(payload.get("targetIds"))) {
-                Integer id = toInt(o);
-                if (id != null) usedLaborerIds.add(id);
-            }
-        }
-    }
-
     private String buildAutoResult(String actionType, Map<String, Object> payload, Player player, Integer gameDay) {
         if (payload == null) payload = Collections.emptyMap();
         Integer selfId = player.getId();
         switch (actionType) {
-            case "govern_location": {
-                String loc = resolveLocationName(toInt(payload.get("targetLocationId")));
-                String actor = resolvePlayerName(toInt(payload.get("actorId")));
-                String note = str(payload.get("note"));
-                StringBuilder sb = new StringBuilder();
-                sb.append("✓ 已提交【安排监管】\n\n");
-                sb.append("监管地点：").append(loc).append("\n");
-                sb.append("监管人员：").append(actor).append("\n");
-                if (note != null && !note.trim().isEmpty()) sb.append("备注：").append(note.trim()).append("\n");
-                sb.append("\n效果：其他玩家无法前往该地点、无法交互设施与 NPC。\n等待主持人确认。");
-                return sb.toString();
-            }
             case "assign_personnel": {
                 String target = resolveActorName(toInt(payload.get("targetId")), str(payload.get("targetKind")));
-                String assigned = labelAssignedAction(str(payload.get("assignedAction")));
-                Integer locId = toInt(payload.get("targetLocationId"));
+                List<Map<String, Object>> assignedList = parseAssignedActions(payload);
                 String note = str(payload.get("note"));
                 StringBuilder sb = new StringBuilder();
                 sb.append("✓ 已提交【安排人员】\n\n");
                 sb.append("目标：").append(target).append("\n");
-                sb.append("指定自由行动：").append(assigned).append("\n");
-                if (locId != null) sb.append("相关地点：").append(resolveLocationName(locId)).append("\n");
+                sb.append("须提交的自由行动（共").append(assignedList.size()).append("项）：\n");
+                int idx = 1;
+                for (Map<String, Object> item : assignedList) {
+                    String actionKey = str(item.get("action"));
+                    sb.append("  ").append(idx++).append(". ").append(labelAssignedAction(actionKey));
+                    Integer locId = toInt(item.get("targetLocationId"));
+                    if (locId != null) sb.append("（").append(resolveLocationName(locId)).append("）");
+                    sb.append("\n");
+                }
                 if (note != null && !note.trim().isEmpty()) sb.append("附加说明：").append(note.trim()).append("\n");
-                sb.append("\n对方可拒绝（可作为审判理由）。等待主持人裁定。");
+                sb.append("\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。");
                 return sb.toString();
             }
             case "assign_guard": {
@@ -372,23 +261,19 @@ public class FactionActionService {
                 int total = 3 + weaponBonus;
                 String actor = resolvePlayerName(actorId);
                 String loc = resolveLocationName(toInt(payload.get("targetLocationId")));
+                String nightAction = labelNightAssignedAction(str(payload.get("assignedAction")));
                 StringBuilder sb = new StringBuilder();
                 sb.append("✓ 已提交【安排看守】\n\n");
                 sb.append("看守人员：").append(actor).append("\n");
                 sb.append("看守地点：").append(loc).append("\n");
+                sb.append("须提交的夜晚行动：").append(nightAction).append("\n");
+                sb.append("消耗对方夜晚行动点：是\n");
                 sb.append("计入武器：").append(Boolean.TRUE.equals(payload.get("armed")) ? "是" : "否").append("\n");
                 sb.append("基础防御：+3\n");
                 if (weaponBonus > 0) sb.append("武器威胁加成：+").append(weaponBonus).append("\n");
                 sb.append("总防御值：").append(total).append("\n");
-                sb.append("\n等待主持人确认。");
+                sb.append("\n对方须提交与上述一致的夜晚行动。等待主持人确认。");
                 return sb.toString();
-            }
-            case "exploit_labor": {
-                List<String> names = namesFromIds(asList(payload.get("targetIds")));
-                return "✓ 已提交【压榨劳工】\n\n"
-                        + "目标劳工：" + String.join("、", names) + "\n"
-                        + "人数：" + names.size() + "\n\n"
-                        + "效果（结算后）：建造值×2、获得「受伤」、无法生产、格斗技能失效。\n等待主持人确认。";
             }
             case "extra_labor":
                 return "✓ 已提交【额外劳动】\n\n"
@@ -405,18 +290,6 @@ public class FactionActionService {
                         + "匿名发送：" + (anon ? "是" : "否") + "\n"
                         + "信息摘要：" + (preview != null ? preview : "—") + "\n\n"
                         + "仅主持人与目标可见。等待主持人确认。";
-            }
-            case "group_discussion": {
-                String loc = resolveLocationName(toInt(payload.get("secretLocationId")));
-                String notified = String.join("、", namesFromIds(asList(payload.get("notifyPlayerIds"))));
-                String note = str(payload.get("note"));
-                StringBuilder sb = new StringBuilder();
-                sb.append("✓ 已提交【群组讨论】\n\n");
-                sb.append("秘密地点：").append(loc).append("\n");
-                sb.append("通知玩家：").append(notified.isEmpty() ? "—" : notified).append("\n");
-                if (note != null && !note.trim().isEmpty()) sb.append("备注：").append(note.trim()).append("\n");
-                sb.append("\n已授予临时地点访问权。等待主持人确认。");
-                return sb.toString();
             }
             case "sabotage": {
                 String fac = resolveFacilityName(toInt(payload.get("facilityId")));
@@ -499,22 +372,7 @@ public class FactionActionService {
     }
 
     private void applySideEffects(FactionAction action, Map<String, Object> payload, Integer gameDay) {
-        if (payload == null) return;
-        if ("govern_location".equals(action.getActionType())) {
-            Integer locationId = toInt(payload.get("targetLocationId"));
-            if (locationId == null) return;
-            LocationGovernance gov = new LocationGovernance();
-            gov.setLocationId(locationId);
-            gov.setLocationName(resolveLocationName(locationId));
-            gov.setActorId(toInt(payload.get("actorId")));
-            gov.setActorName(resolveActorName(toInt(payload.get("actorId")), str(payload.get("actorKind"))));
-            gov.setActorKind(str(payload.get("actorKind")) != null ? str(payload.get("actorKind")) : "player");
-            gov.setGameDay(gameDay);
-            gov.setSourceFactionActionId(action.getId());
-            if (!governanceRepository.existsByLocationIdAndGameDay(locationId, gameDay)) {
-                governanceRepository.save(gov);
-            }
-        }
+        // 无自动副作用；由主持人裁定
     }
 
     public List<Map<String, Object>> getPlayerHistory(Integer playerId, Integer gameDay) {
@@ -738,6 +596,59 @@ public class FactionActionService {
         }
     }
 
+    private String labelNightAssignedAction(String key) {
+        if (key == null) return "?";
+        switch (key) {
+            case "hide": return "隐藏";
+            case "conspiracy": return "密谋";
+            case "patrol": return "巡逻";
+            case "assassinate": return "暗杀";
+            case "other": return "其他夜晚行动";
+            default: return key;
+        }
+    }
+
+    private String labelPlayerActionType(String key) {
+        if (key == null) return "?";
+        switch (key) {
+            case "go_location": return "前往地点";
+            case "investigate_player": return "调查玩家";
+            case "produce": return "生产";
+            case "use_trait": return "使用特性";
+            case "use_skill": return "使用职业技能";
+            case "hide": return "隐藏";
+            default: return key;
+        }
+    }
+
+    private String formatExtraActionTarget(String actionType, Integer targetId, Integer selfPlayerId) {
+        if (targetId == null) return "未指定";
+        if ("go_location".equals(actionType)) return resolveLocationName(targetId);
+        if (selfPlayerId != null && targetId.equals(selfPlayerId)) return "自己";
+        return resolvePlayerName(targetId);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> parseAssignedActions(Map<String, Object> payload) {
+        if (payload == null) return Collections.emptyList();
+        Object raw = payload.get("assignedActions");
+        if (raw instanceof List && !((List<?>) raw).isEmpty()) {
+            List<Map<String, Object>> out = new ArrayList<>();
+            for (Object item : (List<?>) raw) {
+                if (item instanceof Map) {
+                    out.add((Map<String, Object>) item);
+                }
+            }
+            return out;
+        }
+        String single = str(payload.get("assignedAction"));
+        if (single == null) return Collections.emptyList();
+        Map<String, Object> one = new LinkedHashMap<>();
+        one.put("action", single);
+        one.put("targetLocationId", payload.get("targetLocationId"));
+        return Collections.singletonList(one);
+    }
+
     private List<String> namesFromIds(List<?> ids) {
         List<String> names = new ArrayList<>();
         for (Object o : ids) {
@@ -775,13 +686,10 @@ public class FactionActionService {
 
     public String getActionTypeLabel(String type) {
         switch (type) {
-            case "govern_location": return "安排监管";
             case "assign_personnel": return "安排人员";
             case "assign_guard": return "安排看守";
-            case "exploit_labor": return "压榨劳工";
             case "extra_labor": return "额外劳动";
             case "secret_contact": return "暗中联络";
-            case "group_discussion": return "群组讨论";
             case "sabotage": return "破坏";
             case "extra_investigate": return "额外调查";
             case "guard_ark": return "看守方舟";

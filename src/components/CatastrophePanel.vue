@@ -1,48 +1,43 @@
 <template>
   <div
-    class="relative overflow-hidden"
-    :class="embedded ? '' : 'min-h-screen bg-[#0a0a0f]'"
+    class="cat-page relative overflow-hidden"
+    :class="embedded ? 'cat-page--embedded' : 'min-h-screen cat-page--standalone'"
   >
-    <!-- Animated background -->
-    <div class="pointer-events-none absolute inset-0 overflow-hidden" :class="embedded ? '' : 'fixed'">
-      <div class="cat-bg-orb cat-bg-orb-1 absolute top-0 left-1/4 h-[800px] w-[800px] rounded-full bg-gradient-to-br from-purple-600/15 via-pink-500/10 to-transparent blur-[120px]" />
-      <div class="cat-bg-orb cat-bg-orb-2 absolute bottom-0 right-1/4 h-[700px] w-[700px] rounded-full bg-gradient-to-tl from-red-500/15 via-orange-500/10 to-transparent blur-[120px]" />
-      <div class="cat-bg-orb cat-bg-orb-3 absolute top-1/2 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-cyan-500/10 to-blue-500/10 blur-[100px]" />
+    <div class="cat-ambient pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      <div class="cat-ambient-violet" />
+      <div class="cat-ambient-ember" />
     </div>
 
-    <div class="relative mx-auto max-w-5xl px-4 py-4 md:px-6 md:py-6" :class="embedded ? '' : 'py-6'">
-      <!-- Header -->
-      <header class="cat-fade-in mb-6 mt-2 text-center md:mt-6">
-        <div class="relative mb-2 inline-block">
-          <div class="absolute -inset-4 animate-pulse rounded-full bg-gradient-to-r from-red-500/20 via-orange-500/30 to-purple-500/20 opacity-70 blur-3xl" />
-          <h1 class="relative text-3xl font-black tracking-tight text-white md:text-4xl">
-            <span class="bg-gradient-to-r from-red-300 via-orange-300 to-purple-300 bg-clip-text text-transparent drop-shadow-[0_0_50px_rgba(239,68,68,0.5)]">
-              天灾降临
-            </span>
-          </h1>
-        </div>
-        <p class="text-sm tracking-wide text-gray-400/90">
-          {{ isDm ? '管理天灾进度和天灾牌系统' : '掌控天灾的力量，决定岛屿的命运' }}
+    <div class="relative mx-auto max-w-5xl px-4 py-5 md:px-6 md:py-8">
+      <header class="cat-hero mb-8 md:mb-10" :class="entranceClass">
+        <div class="cat-hero-glow" aria-hidden="true" />
+        <p class="cat-hero-eyebrow">CATASTROPHE PROTOCOL</p>
+        <h1 class="cat-hero-title">天灾降临</h1>
+        <p class="cat-hero-subtitle">
+          {{ isDm ? '管理天灾进度与牌组，推动命运之轮' : '掌控天灾之力，为雪岛写下终局' }}
         </p>
+        <div class="cat-hero-rule" />
       </header>
 
       <div
-        class="grid grid-cols-1 gap-4"
+        class="grid grid-cols-1 gap-5"
         :class="isDm ? 'lg:grid-cols-3' : 'max-w-3xl lg:mx-auto'"
       >
         <!-- Main column -->
-        <div class="space-y-4" :class="isDm ? 'lg:col-span-2' : ''">
+        <div class="space-y-5" :class="isDm ? 'lg:col-span-2' : ''">
           <!-- Progress -->
-          <section class="cat-slide-up" style="animation-delay: 0.1s">
-            <div class="group relative overflow-hidden rounded-2xl border border-purple-500/30 bg-gradient-to-br from-gray-900/90 to-gray-800/90 p-5 shadow-2xl backdrop-blur-2xl transition-all duration-500 hover:border-purple-400/50 hover:shadow-purple-500/20">
-              <div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-pink-500/5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-              <div class="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-purple-500/20 blur-3xl" />
+          <section :class="entranceClass" :style="embedded ? undefined : { animationDelay: '0.1s' }">
+            <div class="cat-panel cat-panel--purple group">
+              <div class="cat-panel-hover" />
 
               <div class="relative">
-                <div class="mb-4 flex items-center justify-between">
-                  <h2 class="text-lg font-black tracking-tight text-white">命运之轮：天灾</h2>
+                <div class="mb-5 flex items-start justify-between gap-4">
+                  <div>
+                    <p class="cat-section-eyebrow">进度</p>
+                    <h2 class="cat-section-title">命运之轮 · 天灾</h2>
+                  </div>
                   <div
-                    class="text-3xl font-black bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(16,185,129,0.4)]"
+                    class="cat-progress-pct text-3xl font-black bg-clip-text text-transparent md:text-4xl"
                     :class="progressDisplayClass"
                   >
                     {{ progress }}%
@@ -51,20 +46,12 @@
 
                 <!-- Progress bar -->
                 <div class="mb-4">
-                  <div class="relative h-8 overflow-hidden rounded-2xl border-2 border-purple-500/20 bg-gradient-to-r from-black/70 via-gray-900/70 to-black/70 shadow-[inset_0_4px_30px_rgba(0,0,0,0.9)]">
+                  <div class="cat-progress-track relative h-9 overflow-hidden rounded-2xl">
                     <div
-                      class="absolute inset-0 blur-lg transition-all duration-1000 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-purple-500/20"
-                      :style="{ width: progress + '%' }"
-                    />
-                    <div
-                      class="relative h-full transition-all duration-1000 shadow-[0_0_40px_rgba(168,85,247,0.7)]"
+                      class="cat-progress-fill relative h-full transition-[width] duration-500 ease-out"
                       :class="progressBarFillClass"
                       :style="{ width: progress + '%' }"
-                    >
-                      <div class="cat-shine absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-                      <div class="absolute inset-0 animate-pulse bg-white/10" />
-                      <div v-if="progress > 0" class="absolute bottom-0 right-0 top-0 w-1 bg-white shadow-[0_0_30px_rgba(255,255,255,1)]" />
-                    </div>
+                    />
                     <div
                       v-for="marker in [33, 67]"
                       :key="marker"
@@ -79,8 +66,8 @@
                       class="text-center"
                     >
                       <div
-                        class="text-xs font-bold transition-all duration-300"
-                        :class="progress >= stage.value ? 'scale-110 text-purple-400' : 'text-gray-600'"
+                        class="text-xs font-bold transition-colors duration-200"
+                        :class="progress >= stage.value ? 'text-purple-300' : 'text-gray-600'"
                       >
                         {{ stage.label }}
                       </div>
@@ -117,17 +104,16 @@
                   </div>
                   <button
                     type="button"
-                    class="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-purple-600 via-purple-500 to-purple-600 py-3 font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.02] hover:from-purple-500 hover:via-purple-400 hover:to-purple-500 hover:shadow-purple-500/50"
+                    class="cat-btn cat-btn--purple w-full"
                     @click="submitProgress"
                   >
-                    <div class="cat-shine absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100" />
-                    <span class="relative">更新天灾进度</span>
+                    <span>更新天灾进度</span>
                   </button>
                 </div>
 
                 <div
                   v-if="progress >= 100"
-                  class="mt-4 rounded-xl border border-red-500/50 bg-red-500/10 p-4 backdrop-blur-sm"
+                  class="mt-4 rounded-xl border border-red-500/50 bg-red-500/10 p-4"
                 >
                   <div class="flex items-center gap-2 font-semibold text-red-400">
                     <span class="text-xl">🔥</span>
@@ -139,22 +125,21 @@
           </section>
 
           <!-- DM draw -->
-          <section v-if="isDm" class="cat-slide-up" style="animation-delay: 0.2s">
-            <div class="group relative overflow-hidden rounded-2xl border border-red-500/30 bg-gradient-to-br from-gray-900/90 to-gray-800/90 p-5 shadow-2xl backdrop-blur-2xl transition-all duration-500 hover:border-red-400/50 hover:shadow-red-500/20">
-              <div class="absolute inset-0 bg-gradient-to-br from-red-500/5 to-orange-500/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-              <div class="absolute -bottom-20 -left-20 h-40 w-40 rounded-full bg-red-500/20 blur-3xl" />
+          <section v-if="isDm" :class="entranceClass" :style="embedded ? undefined : { animationDelay: '0.2s' }">
+            <div class="cat-panel cat-panel--red group">
+              <div class="cat-panel-hover" />
 
               <div class="relative">
-                <h2 class="mb-4 text-lg font-black tracking-tight text-white">DM抽取表</h2>
+                <p class="cat-section-eyebrow">牌组</p>
+                <h2 class="cat-section-title mb-5">DM 抽取表</h2>
 
                 <button
                   type="button"
                   :disabled="isDrawing"
-                  class="group relative mb-4 w-full overflow-hidden rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-red-600 py-3 font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.02] hover:from-red-500 hover:via-red-400 hover:to-red-500 hover:shadow-red-500/50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+                  class="cat-btn cat-btn--red mb-4 w-full disabled:cursor-not-allowed disabled:opacity-50"
                   @click="drawCards"
                 >
-                  <div class="cat-shine absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100" />
-                  <span class="relative flex items-center justify-center gap-2">
+                  <span class="flex items-center justify-center gap-2">
                     <span v-if="isDrawing">⏳</span>
                     <span>抽取3张天灾牌</span>
                   </span>
@@ -175,7 +160,7 @@
                   <div
                     v-for="(card, index) in drawnCards"
                     :key="card.deckId"
-                    class="rounded-xl border border-red-500/20 bg-gradient-to-br from-gray-900/70 to-gray-800/70 p-3 backdrop-blur-sm"
+                    class="cat-card-tile cat-card-tile--red"
                   >
                     <div class="mb-1 flex items-start justify-between">
                       <span class="text-xs text-gray-500">#{{ index + 1 }}</span>
@@ -187,7 +172,7 @@
 
                   <button
                     type="button"
-                    class="w-full rounded-xl bg-gradient-to-r from-emerald-600 via-green-500 to-emerald-600 py-3 font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-green-500/40"
+                    class="cat-btn cat-btn--green w-full"
                     @click="confirmCards"
                   >
                     确认并发送牌组
@@ -196,7 +181,7 @@
 
                 <div
                   v-else
-                  class="flex min-h-[120px] flex-col items-center justify-center rounded-2xl border border-red-500/20 bg-gradient-to-br from-gray-900/70 to-gray-800/70 p-8 backdrop-blur-sm"
+                  class="cat-empty-state cat-empty-state--red"
                 >
                   <div class="mb-4 text-5xl opacity-50">🃏</div>
                   <p class="font-medium text-gray-400">尚未抽取卡牌</p>
@@ -207,7 +192,7 @@
                   <button
                     type="button"
                     :disabled="isResetting"
-                    class="w-full rounded-xl bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-600 py-3 font-bold text-white shadow-lg transition-all hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50"
+                    class="w-full rounded-xl bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-600 py-3 font-bold text-white shadow-lg transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50"
                     @click="resetCatastrophe"
                   >
                     <span class="flex items-center justify-center gap-2">
@@ -222,20 +207,22 @@
           </section>
 
           <!-- Card selection -->
-          <section class="cat-slide-up" :style="{ animationDelay: isDm ? '0.3s' : '0.2s' }">
-            <div class="group relative overflow-hidden rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-gray-900/90 to-gray-800/90 p-5 shadow-2xl backdrop-blur-2xl transition-all duration-500 hover:border-cyan-400/50 hover:shadow-cyan-500/20">
-              <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-blue-500/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-              <div class="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-cyan-500/20 blur-3xl" />
+          <section :class="entranceClass" :style="embedded ? undefined : { animationDelay: isDm ? '0.3s' : '0.2s' }">
+            <div class="cat-panel cat-panel--cyan group">
+              <div class="cat-panel-hover" />
 
               <div class="relative">
-                <div class="mb-4 flex items-center justify-between gap-2">
-                  <h2 class="text-lg font-black tracking-tight text-white">天灾牌选择</h2>
-                  <span class="text-xs font-semibold text-cyan-400/70">选择一张天灾牌触发</span>
+                <div class="mb-5 flex flex-wrap items-end justify-between gap-2">
+                  <div>
+                    <p class="cat-section-eyebrow">抉择</p>
+                    <h2 class="cat-section-title">天灾牌选择</h2>
+                  </div>
+                  <span class="cat-section-hint">选择一张天灾牌触发</span>
                 </div>
 
                 <div
                   v-if="selectableCards.length === 0"
-                  class="flex min-h-[120px] flex-col items-center justify-center rounded-2xl border border-cyan-500/20 bg-gradient-to-br from-gray-900/70 to-gray-800/70 p-8 backdrop-blur-sm"
+                  class="cat-empty-state cat-empty-state--cyan"
                 >
                   <div class="mb-4 text-5xl opacity-50">🗂️</div>
                   <p class="font-medium text-gray-400">暂无可用的天灾牌</p>
@@ -246,7 +233,7 @@
                   <div
                     v-for="(card, index) in selectableCards"
                     :key="card.selectedId"
-                    class="relative rounded-xl border-2 p-4 transition-all duration-300"
+                    class="cat-play-card relative p-4 transition-[border-color,box-shadow,background] duration-150"
                     :class="cardSelectionClass(card)"
                     @click="selectCard(card)"
                   >
@@ -268,8 +255,8 @@
                     :disabled="selectedCardId === null || hasConfirmedSelection"
                     class="group relative overflow-hidden rounded-xl px-8 py-3 font-bold text-white shadow-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50"
                     :class="hasConfirmedSelection || selectedCardId === null
-                      ? 'bg-gray-700'
-                      : 'bg-gradient-to-r from-purple-600 via-purple-500 to-purple-600 hover:scale-[1.02] hover:shadow-purple-500/40'"
+                      ? 'cat-btn cat-btn--muted'
+                      : 'cat-btn cat-btn--purple'"
                     @click="confirmSelection"
                   >
                     <span class="relative">
@@ -285,30 +272,26 @@
 
         <!-- Sidebar: game state (DM) -->
         <div v-if="isDm" class="space-y-4">
-          <section class="cat-slide-up" style="animation-delay: 0.15s">
-            <div class="relative overflow-hidden rounded-2xl border border-gray-700/40 bg-gradient-to-br from-gray-900/90 to-gray-800/90 p-5 shadow-2xl backdrop-blur-2xl">
-              <div class="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-blue-500/10 blur-2xl" />
-
+          <section :class="entranceClass" :style="embedded ? undefined : { animationDelay: '0.15s' }">
+            <div class="cat-panel cat-panel--slate">
               <div class="relative">
-                <h2 class="mb-4 flex items-center gap-2 text-base font-black text-white">
-                  <div class="h-5 w-1 rounded-full bg-gradient-to-b from-cyan-500 to-blue-500" />
-                  游戏状态
-                </h2>
+                <p class="cat-section-eyebrow">概览</p>
+                <h2 class="cat-section-title mb-5">游戏状态</h2>
 
                 <div class="space-y-2.5">
-                  <div class="rounded-xl border border-gray-700/40 bg-gradient-to-br from-gray-900/80 to-gray-800/80 p-3 transition-all hover:border-gray-600/60">
+                  <div class="cat-stat-tile">
                     <div class="mb-1.5 text-xs uppercase tracking-wider text-gray-400">当前天数</div>
                     <div class="text-2xl font-black bg-gradient-to-br from-white to-cyan-100 bg-clip-text text-transparent">
                       {{ gameState.currentDay }}
                     </div>
                   </div>
-                  <div class="rounded-xl border border-gray-700/40 bg-gradient-to-br from-gray-900/80 to-gray-800/80 p-3 transition-all hover:border-gray-600/60">
+                  <div class="cat-stat-tile">
                     <div class="mb-1.5 text-xs uppercase tracking-wider text-gray-400">当前阶段</div>
                     <div class="text-2xl font-black bg-gradient-to-br from-white to-blue-100 bg-clip-text text-transparent">
                       {{ gameState.currentPhase === 'DAY' ? '白天' : '夜晚' }}
                     </div>
                   </div>
-                  <div class="rounded-xl border border-gray-700/40 bg-gradient-to-br from-gray-900/80 to-gray-800/80 p-3 transition-all hover:border-gray-600/60">
+                  <div class="cat-stat-tile">
                     <div class="mb-1.5 text-xs uppercase tracking-wider text-gray-400">天灾触发</div>
                     <div
                       class="text-2xl font-black bg-clip-text text-transparent"
@@ -319,7 +302,7 @@
                       {{ gameState.catastropheTriggered ? '是' : '否' }}
                     </div>
                   </div>
-                  <div class="rounded-xl border border-gray-700/40 bg-gradient-to-br from-gray-900/80 to-gray-800/80 p-3 transition-all hover:border-gray-600/60">
+                  <div class="cat-stat-tile">
                     <div class="mb-1.5 text-xs uppercase tracking-wider text-gray-400">额外卡牌待触发</div>
                     <div
                       class="text-2xl font-black bg-clip-text text-transparent"
@@ -338,14 +321,13 @@
       </div>
 
       <!-- Advance day -->
-      <section v-if="isDm" class="cat-slide-up mt-4" style="animation-delay: 0.35s">
+      <section v-if="isDm" class="mt-4" :class="entranceClass" :style="embedded ? undefined : { animationDelay: '0.35s' }">
         <button
           type="button"
-          class="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 py-4 font-bold text-white shadow-2xl transition-all duration-300 hover:scale-[1.01] hover:from-blue-500 hover:via-blue-400 hover:to-blue-500 hover:shadow-blue-500/50"
+          class="cat-btn cat-btn--blue w-full py-4"
           @click="advanceDay"
         >
-          <div class="cat-shine absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100" />
-          <span class="relative">推进一天 (+{{ gameState.currentDay < 3 ? 33 : 34 }}进度)</span>
+          推进一天 (+{{ gameState.currentDay < 3 ? 33 : 34 }}进度)
         </button>
       </section>
     </div>
@@ -366,6 +348,9 @@ const props = defineProps({
     default: true,
   },
 })
+
+/** Skip entrance animations in embedded tabs (less layout work on mount). */
+const entranceClass = computed(() => (props.embedded ? '' : 'cat-slide-up'))
 
 const userRole = props.isDm ? 'dm' : (localStorage.getItem('userRole') || '').toLowerCase()
 const playerId = localStorage.getItem('playerId') || null
@@ -413,16 +398,10 @@ const hasConfirmedSelection = computed(() => {
 })
 
 function cardSelectionClass(card) {
-  if (card.isSelected) {
-    return 'cursor-default border-emerald-500/60 bg-emerald-500/10 shadow-lg shadow-emerald-500/20'
-  }
-  if (selectedCardId.value === card.selectedId) {
-    return 'cursor-pointer border-purple-500/60 bg-purple-500/15 shadow-lg shadow-purple-500/30 hover:scale-[1.02]'
-  }
-  if (!props.isDm && !hasConfirmedSelection.value) {
-    return 'cursor-pointer border-gray-600/60 bg-gray-900/50 hover:scale-[1.02] hover:border-cyan-500/40'
-  }
-  return 'cursor-default border-gray-600/60 bg-gray-900/50'
+  if (card.isSelected) return 'cat-play-card--selected cursor-default'
+  if (selectedCardId.value === card.selectedId) return 'cat-play-card--active cursor-pointer'
+  if (!props.isDm && !hasConfirmedSelection.value) return 'cursor-pointer'
+  return 'cursor-default opacity-90'
 }
 
 const fetchProgress = async () => {
@@ -576,19 +555,19 @@ const resetCatastrophe = async () => {
   }
 }
 
-onMounted(() => {
-  fetchProgress()
-  fetchSelectableCards()
-  fetchGameState()
-
+onMounted(async () => {
+  const tasks = [fetchProgress(), fetchSelectableCards(), fetchGameState()]
   if (props.isDm) {
-    catastropheAPI.getDrawnCards().then(response => {
-      if (response.success && response.cards.length > 0) {
-        drawnCards.value = response.cards
-        currentDrawRound.value = response.drawRound
-      }
-    })
+    tasks.push(
+      catastropheAPI.getDrawnCards().then((response) => {
+        if (response.success && response.cards.length > 0) {
+          drawnCards.value = response.cards
+          currentDrawRound.value = response.drawRound
+        }
+      }),
+    )
   }
+  await Promise.all(tasks)
 })
 </script>
 
@@ -601,58 +580,305 @@ onMounted(() => {
   overflow: hidden;
 }
 
-@keyframes cat-fadeIn {
-  from { opacity: 0; transform: translateY(-20px); }
-  to { opacity: 1; transform: translateY(0); }
+/* —— Page shell —— */
+.cat-page--standalone {
+  background: #08080f;
 }
 
-@keyframes cat-slideUp {
-  from { opacity: 0; transform: translateY(40px); }
-  to { opacity: 1; transform: translateY(0); }
+.cat-page--embedded {
+  background: linear-gradient(180deg, rgba(12, 10, 22, 0.6) 0%, transparent 12rem);
 }
 
-@keyframes cat-slowFloat {
-  0%, 100% { opacity: 0.3; transform: translate(0, 0) scale(1); }
-  33% { opacity: 0.5; transform: translate(30px, -30px) scale(1.05); }
-  66% { opacity: 0.4; transform: translate(-20px, 20px) scale(0.98); }
+.cat-ambient-violet {
+  position: absolute;
+  inset: -20% 0 auto;
+  height: 55%;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(124, 58, 237, 0.18), transparent 70%);
 }
 
-@keyframes cat-shine {
-  0% { transform: translateX(-100%) skewX(-15deg); }
-  100% { transform: translateX(200%) skewX(-15deg); }
+.cat-ambient-ember {
+  position: absolute;
+  inset: auto 0 -10% 0;
+  height: 45%;
+  background: radial-gradient(ellipse 60% 50% at 80% 100%, rgba(220, 38, 38, 0.1), transparent 70%);
 }
 
-.cat-fade-in {
-  animation: cat-fadeIn 1.2s ease-out;
+/* —— Hero —— */
+.cat-hero {
+  position: relative;
+  text-align: center;
+  padding-top: 0.25rem;
 }
 
-.cat-slide-up {
-  animation: cat-slideUp 0.9s ease-out forwards;
+.cat-hero-glow {
+  position: absolute;
+  left: 50%;
+  top: 0.5rem;
+  width: min(100%, 32rem);
+  height: 7rem;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgba(192, 38, 211, 0.22), rgba(239, 68, 68, 0.08) 45%, transparent 72%);
+  pointer-events: none;
+}
+
+.cat-hero-eyebrow {
+  position: relative;
+  margin-bottom: 0.75rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  color: rgba(216, 180, 254, 0.65);
+}
+
+.cat-hero-title {
+  position: relative;
+  margin: 0;
+  font-size: clamp(2.75rem, 9vw, 4.75rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: 0.12em;
+  padding-left: 0.12em;
+  background: linear-gradient(165deg, #fecaca 0%, #fdba74 28%, #f0abfc 58%, #c4b5fd 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 4px 28px rgba(239, 68, 68, 0.35));
+}
+
+.cat-hero-subtitle {
+  position: relative;
+  margin: 1.25rem auto 0;
+  max-width: 26rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: rgba(203, 213, 225, 0.75);
+}
+
+.cat-hero-rule {
+  position: relative;
+  margin: 1.75rem auto 0;
+  width: min(12rem, 40%);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.55), rgba(239, 68, 68, 0.45), transparent);
+}
+
+/* —— Panels —— */
+.cat-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  padding: 1.35rem 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: linear-gradient(165deg, rgba(22, 26, 38, 0.98) 0%, rgba(12, 14, 22, 0.98) 100%);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.cat-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cat-accent, rgba(168, 85, 247, 0.7)), transparent);
+}
+
+.cat-panel--purple {
+  --cat-accent: rgba(192, 132, 252, 0.85);
+  --cat-accent-soft: rgba(168, 85, 247, 0.08);
+}
+.cat-panel--red {
+  --cat-accent: rgba(248, 113, 113, 0.85);
+  --cat-accent-soft: rgba(239, 68, 68, 0.08);
+}
+.cat-panel--cyan {
+  --cat-accent: rgba(34, 211, 238, 0.85);
+  --cat-accent-soft: rgba(34, 211, 238, 0.08);
+}
+.cat-panel--slate { --cat-accent: rgba(148, 163, 184, 0.5); }
+
+.cat-panel-hover {
+  position: absolute;
+  inset: 0;
   opacity: 0;
+  transition: opacity 0.25s ease;
+  background: linear-gradient(135deg, var(--cat-accent-soft, rgba(168, 85, 247, 0.06)), transparent 55%);
+  pointer-events: none;
 }
 
-.cat-bg-orb {
-  animation: cat-slowFloat 12s ease-in-out infinite;
+.group:hover .cat-panel-hover {
+  opacity: 1;
 }
 
-.cat-bg-orb-2 {
-  animation-delay: 3s;
+.cat-section-eyebrow {
+  margin-bottom: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.75);
 }
 
-.cat-bg-orb-3 {
-  animation-delay: 6s;
+.cat-section-title {
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #f8fafc;
 }
 
-.cat-shine {
-  animation: cat-shine 3s ease-in-out infinite;
+.cat-section-hint {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(34, 211, 238, 0.75);
 }
 
+/* —— Progress bar —— */
+.cat-progress-track {
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.55), rgba(15, 15, 25, 0.9));
+  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.65);
+}
+
+.cat-progress-fill {
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+  border-radius: inherit;
+}
+
+.cat-progress-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 45%);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.cat-progress-pct {
+  line-height: 1;
+  text-shadow: 0 0 24px rgba(168, 85, 247, 0.25);
+}
+
+/* —— Cards & tiles —— */
+.cat-play-card {
+  border-radius: 0.875rem;
+  border: 1px solid rgba(71, 85, 105, 0.55);
+  background: linear-gradient(160deg, rgba(15, 18, 28, 0.95), rgba(22, 26, 38, 0.85));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.cat-play-card:not(.cat-play-card--selected):not(.cat-play-card--active):hover {
+  border-color: rgba(34, 211, 238, 0.45);
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.12);
+}
+
+.cat-play-card--active {
+  border-color: rgba(192, 132, 252, 0.65);
+  background: linear-gradient(160deg, rgba(88, 28, 135, 0.25), rgba(15, 18, 28, 0.95));
+  box-shadow: 0 0 24px rgba(168, 85, 247, 0.2);
+}
+
+.cat-play-card--selected {
+  border-color: rgba(52, 211, 153, 0.55);
+  background: linear-gradient(160deg, rgba(6, 78, 59, 0.35), rgba(15, 18, 28, 0.95));
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+}
+
+.cat-card-tile {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  background: rgba(15, 18, 28, 0.85);
+  padding: 0.85rem;
+}
+
+.cat-card-tile--red {
+  border-color: rgba(248, 113, 113, 0.2);
+}
+
+.cat-empty-state {
+  display: flex;
+  min-height: 7.5rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  border: 1px dashed rgba(100, 116, 139, 0.35);
+  padding: 2rem;
+  background: rgba(10, 12, 20, 0.5);
+}
+
+.cat-empty-state--red {
+  border-color: rgba(248, 113, 113, 0.25);
+  background: rgba(69, 10, 10, 0.12);
+}
+
+.cat-empty-state--cyan {
+  border-color: rgba(34, 211, 238, 0.25);
+  background: rgba(8, 51, 68, 0.12);
+}
+
+.cat-stat-tile {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(71, 85, 105, 0.35);
+  background: linear-gradient(160deg, rgba(15, 18, 28, 0.9), rgba(22, 26, 38, 0.75));
+  padding: 0.85rem;
+  transition: border-color 0.2s ease;
+}
+
+.cat-stat-tile:hover {
+  border-color: rgba(100, 116, 139, 0.5);
+}
+
+/* —— Buttons —— */
+.cat-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  transition: filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cat-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.cat-btn--purple {
+  background: linear-gradient(135deg, #7c3aed, #a855f7, #9333ea);
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.35);
+}
+
+.cat-btn--red {
+  background: linear-gradient(135deg, #dc2626, #ef4444, #dc2626);
+  box-shadow: 0 4px 20px rgba(220, 38, 38, 0.35);
+}
+
+.cat-btn--green {
+  background: linear-gradient(135deg, #059669, #22c55e, #059669);
+  box-shadow: 0 4px 20px rgba(34, 197, 94, 0.3);
+}
+
+.cat-btn--blue {
+  background: linear-gradient(135deg, #2563eb, #3b82f6, #2563eb);
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.35);
+}
+
+.cat-btn--muted {
+  background: #374151;
+  box-shadow: none;
+}
+
+/* —— Slider —— */
 .cat-slider {
   height: 0.5rem;
   appearance: none;
   cursor: pointer;
   border-radius: 9999px;
-  background: linear-gradient(to right, rgba(55, 65, 81, 0.3), rgba(75, 85, 99, 0.3), rgba(55, 65, 81, 0.3));
+  background: linear-gradient(to right, rgba(55, 65, 81, 0.4), rgba(75, 85, 99, 0.4));
 }
 
 .cat-slider::-webkit-slider-thumb {
@@ -660,28 +886,35 @@ onMounted(() => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.35);
   background: linear-gradient(135deg, #a855f7, #ec4899);
-  box-shadow: 0 0 20px rgba(168, 85, 247, 0.7), 0 0 40px rgba(168, 85, 247, 0.4);
-  transition: all 0.3s;
-}
-
-.cat-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.3);
-  box-shadow: 0 0 30px rgba(168, 85, 247, 1), 0 0 60px rgba(168, 85, 247, 0.6);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.55);
 }
 
 .cat-slider::-moz-range-thumb {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.35);
   background: linear-gradient(135deg, #a855f7, #ec4899);
-  box-shadow: 0 0 20px rgba(168, 85, 247, 0.7), 0 0 40px rgba(168, 85, 247, 0.4);
-  transition: all 0.3s;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.55);
 }
 
-.cat-slider::-moz-range-thumb:hover {
-  transform: scale(1.3);
+@keyframes cat-slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cat-slide-up {
+  animation: cat-slideUp 0.45s ease-out forwards;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cat-slide-up {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }
 </style>

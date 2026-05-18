@@ -19,6 +19,25 @@ export const ASSIGNED_FREE_ACTIONS = [
   { value: 'other', label: '其他自由行动' },
 ]
 
+/** 安排看守：对方须提交一致的夜晚行动 */
+export const NIGHT_ASSIGNED_ACTIONS = [
+  { value: 'hide', label: '隐藏' },
+  { value: 'conspiracy', label: '密谋' },
+  { value: 'patrol', label: '巡逻' },
+  { value: 'assassinate', label: '暗杀' },
+  { value: 'other', label: '其他夜晚行动' },
+]
+
+/** 额外行动：与白天个人行动类型一致（不含搬运） */
+export const EXTRA_DAY_ACTION_TYPES = [
+  { value: 'go_location', label: '前往地点' },
+  { value: 'investigate_player', label: '调查玩家' },
+  { value: 'produce', label: '生产' },
+  { value: 'use_trait', label: '使用特性' },
+  { value: 'use_skill', label: '使用职业技能' },
+  { value: 'hide', label: '隐藏' },
+]
+
 export const INVESTIGATE_TYPES = [
   { value: 'investigate_location', label: '调查地点' },
   { value: 'investigate_player', label: '调查玩家' },
@@ -31,6 +50,11 @@ export const PAYLOAD_FIELD_LABELS = {
   targetId: '目标',
   targetKind: '目标类型',
   assignedAction: '指定行动',
+  assignedActions: '指定行动列表',
+  mode: '模式',
+  actionType: '行动类型',
+  npcId: '交互NPC',
+  notes: '备注',
   targetIds: '目标列表',
   targetPlayerId: '目标玩家',
   message: '秘密信息',
@@ -52,28 +76,16 @@ export const PAYLOAD_FIELD_LABELS = {
 export const FACTION_ACTION_DEFS = {
   '统治者': [
     {
-      type: 'govern_location',
-      title: '安排监管',
-      description: '安排民兵或治安官监管某地点，限制其他玩家进入与交互设施/NPC。',
-      tooltip: '监管期间禁止其他玩家前往该地点、交互设施与 NPC。',
-    },
-    {
       type: 'assign_personnel',
       title: '安排人员',
-      description: '强制某玩家/NPC 执行自由行动并共享结果；对方可拒绝（可作为审判理由）。',
-      tooltip: '目标可拒绝，拒绝可能成为审判理由。',
+      description: '指定某玩家/NPC 在白天提交一项或两项自由行动（须与你安排的一致）；对方可拒绝（可作为审判理由）。每日限用一次。',
+      tooltip: '可安排 1～2 项对方白天自由行动；对方须提交相同行动。每日一次。',
     },
     {
       type: 'assign_guard',
       title: '安排看守',
-      description: '夜晚前安排人员驻守地点，基础防御 +3，另加武器威胁值加成。',
-      tooltip: '基础防御 +3，装备武器威胁值计入额外防御。',
-    },
-    {
-      type: 'exploit_labor',
-      title: '压榨劳工',
-      description: '劳工建造值翻倍，但获得「受伤」：无法生产、格斗技能失效。',
-      tooltip: '最多选 3 名劳工；建造 ×2，获得受伤，无法生产。',
+      description: '指定人员在夜晚驻守地点（消耗对方夜晚行动点），须提交与你安排一致的夜晚行动；基础防御 +3，可计入武器威胁值。每日限用一次。',
+      tooltip: '占用对方夜晚行动点；须提交相同夜晚行动。每日一次。',
     },
   ],
   '反叛者': [
@@ -88,12 +100,6 @@ export const FACTION_ACTION_DEFS = {
       title: '暗中联络',
       description: '向某玩家发送秘密信息，仅主持人与目标可见。',
       tooltip: '仅 DM 与收件人可见。',
-    },
-    {
-      type: 'group_discussion',
-      title: '群组讨论',
-      description: '向选定玩家公开秘密地点路径，对方获得临时访问权限。',
-      tooltip: '被通知玩家获得该秘密地点临时访问权。',
     },
     {
       type: 'sabotage',

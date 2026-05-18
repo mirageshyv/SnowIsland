@@ -6,6 +6,7 @@ import {
   FACTION_ACTION_DEFS,
   GM_FACTION_TABS,
   ASSIGNED_FREE_ACTIONS,
+  NIGHT_ASSIGNED_ACTIONS,
   INVESTIGATE_TYPES,
 } from '@/data/factionActions.js'
 
@@ -26,13 +27,16 @@ const selectedType = ref('')
 const actionResult = ref('')
 
 const forms = reactive({
-  govern_location: { actorId: '', targetLocationId: '', note: '' },
-  assign_personnel: { targetId: '', targetKind: 'player', assignedAction: '', targetLocationId: '', note: '' },
-  assign_guard: { actorId: '', targetLocationId: '', armed: true },
-  exploit_labor: { targetIds: [] },
+  assign_personnel: {
+    targetId: '',
+    targetKind: 'player',
+    actionCount: 1,
+    assignedActions: [{ action: '', targetLocationId: '' }, { action: '', targetLocationId: '' }],
+    note: '',
+  },
+  assign_guard: { actorId: '', targetLocationId: '', assignedAction: '', armed: true },
   extra_labor: { note: '' },
   secret_contact: { targetPlayerId: '', message: '', anonymous: false },
-  group_discussion: { secretLocationId: '', notifyPlayerIds: [], note: '' },
   sabotage: { targetLocationId: '', facilityId: '' },
   extra_investigate: { investigateType: 'investigate_player', targetId: '' },
   guard_ark: { guardId: '', useWeaponOrSkill: false },
@@ -51,15 +55,11 @@ const locationOptions = computed(() =>
 
 const allPlayers = computed(() => context.value?.allPlayers || [])
 const militiaPlayers = computed(() => context.value?.militiaPlayers || [])
-const laborCandidates = computed(() => context.value?.laborCandidates || [])
-
 const governedIds = computed(() => new Set(context.value?.governedLocationIds || []))
-const usedTypes = computed(() => new Set(context.value?.usedActionTypes || []))
 const unlimitedActions = computed(() => !!context.value?.unlimitedActions)
 const hasSubmittedToday = computed(() => !!context.value?.hasSubmittedToday)
-const usedPlayerNpcKeys = computed(() => new Set(context.value?.usedPlayerNpcKeys || []))
-const usedLaborerIds = computed(() => new Set(context.value?.usedLaborerIds || []))
-const exploitLaborUsedToday = computed(() => !!context.value?.exploitLaborUsedToday)
+const assignPersonnelUsedToday = computed(() => !!context.value?.assignPersonnelUsedToday)
+const assignGuardUsedToday = computed(() => !!context.value?.assignGuardUsedToday)
 
 const npcOptions = computed(() => {
   const out = []
@@ -126,20 +126,21 @@ const canSubmit = computed(() =>
   !submitting.value
 )
 
-function isPersonnelTargetUsed(kind, id) {
-  return usedPlayerNpcKeys.value.has(`${kind}:${id}`)
+function isRulerActionUsedToday(type) {
+  if (type === 'assign_personnel') return assignPersonnelUsedToday.value
+  if (type === 'assign_guard') return assignGuardUsedToday.value
+
+  return false
 }
 
-function isLaborerUsed(id) {
-  return usedLaborerIds.value.has(id)
-}
+
 
 function getActionStatus(type) {
   if (!type) return { key: 'none', label: '', btn: 'disabled' }
   if (!unlimitedActions.value && hasSubmittedToday.value) {
     return { key: 'quota', label: '今日已提交', btn: 'disabled' }
   }
-  if (unlimitedActions.value && type === 'exploit_labor' && exploitLaborUsedToday.value) {
+  if (unlimitedActions.value && isRulerActionUsedToday(type)) {
     return { key: 'used', label: '今日已使用', btn: 'disabled' }
   }
   if (type === 'extra_labor' && !context.value?.hasProduceToday) {
@@ -160,13 +161,16 @@ function getActionStatus(type) {
 
 function resetFormFields(type) {
   const defaults = {
-    govern_location: { actorId: '', targetLocationId: '', note: '' },
-    assign_personnel: { targetId: '', targetKind: 'player', assignedAction: '', targetLocationId: '', note: '' },
-    assign_guard: { actorId: '', targetLocationId: '', armed: true },
-    exploit_labor: { targetIds: [] },
+    assign_personnel: {
+      targetId: '',
+      targetKind: 'player',
+      actionCount: 1,
+      assignedActions: [{ action: '', targetLocationId: '' }, { action: '', targetLocationId: '' }],
+      note: '',
+    },
+    assign_guard: { actorId: '', targetLocationId: '', assignedAction: '', armed: true },
     extra_labor: { note: '' },
     secret_contact: { targetPlayerId: '', message: '', anonymous: false },
-    group_discussion: { secretLocationId: '', notifyPlayerIds: [], note: '' },
     sabotage: { targetLocationId: '', facilityId: '' },
     extra_investigate: { investigateType: 'investigate_player', targetId: '' },
     guard_ark: { guardId: '', useWeaponOrSkill: false },
@@ -190,6 +194,8 @@ watch(() => forms.sabotage.targetLocationId, () => {
 watch(() => forms.extra_investigate.investigateType, () => {
   forms.extra_investigate.targetId = ''
 })
+
+
 
 async function loadContext() {
   loading.value = true
@@ -244,33 +250,32 @@ watch(viewFaction, () => {
 function buildPayload(type) {
   const f = forms[type]
   switch (type) {
-    case 'govern_location':
-      return { actorId: parseInt(f.actorId), targetLocationId: parseInt(f.targetLocationId), note: f.note || '' }
     case 'assign_personnel': {
       const raw = f.targetId
       const [kind, id] = raw.includes(':') ? raw.split(':') : ['player', raw]
+      const count = Math.min(2, Math.max(1, f.actionCount || 1))
+      const assignedActions = f.assignedActions.slice(0, count).map((item) => ({
+        action: item.action,
+        targetLocationId: item.targetLocationId ? parseInt(item.targetLocationId) : null,
+      }))
       return {
         targetId: parseInt(id),
         targetKind: kind,
-        assignedAction: f.assignedAction,
-        targetLocationId: f.targetLocationId ? parseInt(f.targetLocationId) : null,
+        assignedActions,
         note: f.note || '',
       }
     }
     case 'assign_guard':
-      return { actorId: parseInt(f.actorId), targetLocationId: parseInt(f.targetLocationId), armed: f.armed }
-    case 'exploit_labor':
-      return { targetIds: [...f.targetIds].map(Number) }
+      return {
+        actorId: parseInt(f.actorId),
+        targetLocationId: parseInt(f.targetLocationId),
+        assignedAction: f.assignedAction,
+        armed: f.armed,
+      }
     case 'extra_labor':
       return { note: f.note || '' }
     case 'secret_contact':
       return { targetPlayerId: parseInt(f.targetPlayerId), message: f.message, anonymous: f.anonymous }
-    case 'group_discussion':
-      return {
-        secretLocationId: parseInt(f.secretLocationId),
-        notifyPlayerIds: f.notifyPlayerIds.map(Number),
-        note: f.note || '',
-      }
     case 'sabotage':
       return { targetLocationId: parseInt(f.targetLocationId), facilityId: parseInt(f.facilityId) }
     case 'extra_investigate':
@@ -300,23 +305,20 @@ function buildPayload(type) {
 function validateClient(type) {
   const f = forms[type]
   switch (type) {
-    case 'govern_location':
-      if (!f.actorId || !f.targetLocationId) return '请选择监管人员与地点'
+    case 'assign_personnel': {
+      if (!f.targetId) return '请选择目标'
+      const count = Math.min(2, Math.max(1, f.actionCount || 1))
+      for (let i = 0; i < count; i++) {
+        if (!f.assignedActions[i]?.action) return `请填写第 ${i + 1} 项指定自由行动`
+      }
       break
-    case 'assign_personnel':
-      if (!f.targetId || !f.assignedAction) return '请选择目标与指定行动'
-      break
+    }
     case 'assign_guard':
       if (!f.actorId || !f.targetLocationId) return '请选择看守人员与地点'
-      break
-    case 'exploit_labor':
-      if (!f.targetIds.length) return '请至少选择一名劳工'
+      if (!f.assignedAction) return '请选择对方须提交的夜晚行动'
       break
     case 'secret_contact':
       if (!f.targetPlayerId || !f.message?.trim()) return '请选择目标并填写秘密信息'
-      break
-    case 'group_discussion':
-      if (!f.secretLocationId || !f.notifyPlayerIds.length) return '请选择秘密地点与通知玩家'
       break
     case 'sabotage':
       if (!f.targetLocationId || !f.facilityId) return '请选择地点与设施'
@@ -380,19 +382,8 @@ async function submitAction() {
   }
 }
 
-function toggleLabor(id) {
-  if (isLaborerUsed(id)) return
-  const ids = forms.exploit_labor.targetIds
-  const i = ids.indexOf(id)
-  if (i >= 0) ids.splice(i, 1)
-  else if (ids.length < 3) ids.push(id)
-}
-
-function toggleNotify(id) {
-  const ids = forms.group_discussion.notifyPlayerIds
-  const i = ids.indexOf(id)
-  if (i >= 0) ids.splice(i, 1)
-  else ids.push(id)
+function needsLocationForAssigned(action) {
+  return ['go_location', 'investigate_location', 'guard'].includes(action)
 }
 
 const guardDefensePreview = computed(() => {
@@ -504,71 +495,40 @@ onMounted(async () => {
                 <p class="text-gray-300 text-sm">{{ selectedDef.description }}</p>
               </div>
 
-              <!-- 安排监管 -->
-              <template v-if="selectedType === 'govern_location'">
-                <div>
-                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">执行人员（民兵/治安官）</label>
-                  <select v-model="forms.govern_location.actorId" :class="selectClass">
-                    <option value="">请选择</option>
-                    <option
-                      v-for="p in militiaPlayers"
-                      :key="p.id"
-                      :value="p.id"
-                      :disabled="isPersonnelTargetUsed('player', p.id)"
-                    >
-                      {{ p.name }}（{{ p.job }}）{{ isPersonnelTargetUsed('player', p.id) ? '（今日已用）' : '' }}
-                    </option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">监管地点</label>
-                  <select v-model="forms.govern_location.targetLocationId" :class="selectClass">
-                    <option value="">请选择地点</option>
-                    <option
-                      v-for="o in locationOptions"
-                      :key="o.value"
-                      :value="o.value"
-                      :disabled="governedIds.has(o.value)"
-                    >
-                      {{ o.label }}{{ governedIds.has(o.value) ? '（已监管）' : '' }}
-                    </option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">备注（可选）</label>
-                  <textarea v-model="forms.govern_location.note" rows="2" :class="textareaClass" placeholder="主持人备注..." />
-                </div>
-              </template>
-
               <!-- 安排人员 -->
-              <template v-else-if="selectedType === 'assign_personnel'">
+              <template v-if="selectedType === 'assign_personnel'">
+                <p class="text-amber-300/90 text-xs">对方须提交与你安排一致的一项或两项白天自由行动。本行动每日限用一次。</p>
                 <div>
                   <label class="block text-gray-500 text-xs mb-2 ml-0.5">目标玩家/NPC</label>
                   <select v-model="forms.assign_personnel.targetId" :class="selectClass">
                     <option value="">请选择</option>
-                    <option
-                      v-for="t in personnelTargets"
-                      :key="t.value"
-                      :value="t.value"
-                      :disabled="isPersonnelTargetUsed(t.kind, t.id)"
-                    >
-                      {{ t.label }}{{ isPersonnelTargetUsed(t.kind, t.id) ? '（今日已用）' : '' }}
-                    </option>
+                    <option v-for="t in personnelTargets" :key="t.value" :value="t.value">{{ t.label }}</option>
                   </select>
                 </div>
                 <div>
-                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">指定自由行动</label>
-                  <select v-model="forms.assign_personnel.assignedAction" :class="selectClass">
+                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">安排几项行动</label>
+                  <select v-model.number="forms.assign_personnel.actionCount" :class="selectClass">
+                    <option :value="1">一项</option>
+                    <option :value="2">两项</option>
+                  </select>
+                </div>
+                <div
+                  v-for="idx in forms.assign_personnel.actionCount"
+                  :key="'ap-'+idx"
+                  class="rounded-xl border border-white/10 bg-black/20 p-3 space-y-3"
+                >
+                  <p class="text-gray-400 text-xs">第 {{ idx }} 项自由行动</p>
+                  <select v-model="forms.assign_personnel.assignedActions[idx - 1].action" :class="selectClass">
                     <option value="">请选择</option>
                     <option v-for="a in ASSIGNED_FREE_ACTIONS" :key="a.value" :value="a.value">{{ a.label }}</option>
                   </select>
-                </div>
-                <div v-if="['go_location', 'investigate_location', 'guard'].includes(forms.assign_personnel.assignedAction)">
-                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">地点（如需要）</label>
-                  <select v-model="forms.assign_personnel.targetLocationId" :class="selectClass">
-                    <option value="">请选择地点</option>
-                    <option v-for="o in locationOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
-                  </select>
+                  <div v-if="needsLocationForAssigned(forms.assign_personnel.assignedActions[idx - 1].action)">
+                    <label class="block text-gray-500 text-xs mb-2">相关地点</label>
+                    <select v-model="forms.assign_personnel.assignedActions[idx - 1].targetLocationId" :class="selectClass">
+                      <option value="">请选择地点</option>
+                      <option v-for="o in locationOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label class="block text-gray-500 text-xs mb-2 ml-0.5">附加说明</label>
@@ -578,18 +538,12 @@ onMounted(async () => {
 
               <!-- 安排看守 -->
               <template v-else-if="selectedType === 'assign_guard'">
+                <p class="text-amber-300/90 text-xs">消耗对方夜晚行动点，对方须提交与你安排一致的夜晚行动。本行动每日限用一次。</p>
                 <div>
                   <label class="block text-gray-500 text-xs mb-2 ml-0.5">看守人员</label>
                   <select v-model="forms.assign_guard.actorId" :class="selectClass">
                     <option value="">请选择</option>
-                    <option
-                      v-for="p in allPlayers"
-                      :key="p.id"
-                      :value="p.id"
-                      :disabled="isPersonnelTargetUsed('player', p.id)"
-                    >
-                      {{ p.name }}{{ isPersonnelTargetUsed('player', p.id) ? '（今日已用）' : '' }}
-                    </option>
+                    <option v-for="p in allPlayers" :key="p.id" :value="p.id">{{ p.name }}</option>
                   </select>
                 </div>
                 <div>
@@ -597,6 +551,13 @@ onMounted(async () => {
                   <select v-model="forms.assign_guard.targetLocationId" :class="selectClass">
                     <option value="">请选择地点</option>
                     <option v-for="o in locationOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">对方须提交的夜晚行动</label>
+                  <select v-model="forms.assign_guard.assignedAction" :class="selectClass">
+                    <option value="">请选择</option>
+                    <option v-for="a in NIGHT_ASSIGNED_ACTIONS" :key="a.value" :value="a.value">{{ a.label }}</option>
                   </select>
                 </div>
                 <label class="flex items-center gap-2 text-gray-400 text-sm">
@@ -610,30 +571,7 @@ onMounted(async () => {
                 </div>
               </template>
 
-              <!-- 压榨劳工 -->
-              <template v-else-if="selectedType === 'exploit_labor'">
-                <p class="text-amber-300/90 text-xs">效果：建造×2、受伤、无法生产、格斗失效</p>
-                <label class="block text-gray-500 text-xs mb-2 mt-2">目标劳工（最多3人）</label>
-                <div class="flex flex-wrap gap-2">
-                  <button
-                    v-for="p in laborCandidates.length ? laborCandidates : allPlayers"
-                    :key="p.id"
-                    type="button"
-                    class="px-3 py-1.5 rounded-lg text-xs border transition-colors"
-                    :class="[
-                      forms.exploit_labor.targetIds.includes(p.id)
-                        ? 'bg-amber-500/20 border-amber-500/40 text-amber-200'
-                        : 'bg-white/5 border-white/10 text-gray-400',
-                      isLaborerUsed(p.id) ? 'opacity-40 cursor-not-allowed' : '',
-                    ]"
-                    :disabled="isLaborerUsed(p.id)"
-                    @click="toggleLabor(p.id)"
-                  >
-                    {{ p.name }}{{ isLaborerUsed(p.id) ? '（今日已压榨）' : '' }}
-                  </button>
-                </div>
-              </template>
-
+              <!-- 额外劳动 -->
               <!-- 额外劳动 -->
               <template v-else-if="selectedType === 'extra_labor'">
                 <p v-if="!context?.hasProduceToday" class="text-red-400 text-sm">须今日已提交生产类自由行动。</p>
@@ -661,35 +599,6 @@ onMounted(async () => {
                   <input v-model="forms.secret_contact.anonymous" type="checkbox" class="rounded" />
                   匿名发送
                 </label>
-              </template>
-
-              <!-- 群组讨论 -->
-              <template v-else-if="selectedType === 'group_discussion'">
-                <div>
-                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">秘密地点</label>
-                  <select v-model="forms.group_discussion.secretLocationId" :class="selectClass">
-                    <option value="">请选择地点</option>
-                    <option v-for="o in locationOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">通知玩家</label>
-                  <div class="flex flex-wrap gap-2">
-                    <button
-                      v-for="p in allPlayers.filter(x => x.id !== playerId)"
-                      :key="p.id"
-                      type="button"
-                      class="px-3 py-1.5 rounded-lg text-xs border transition-colors"
-                      :class="forms.group_discussion.notifyPlayerIds.includes(p.id)
-                        ? 'bg-purple-500/20 border-purple-500/40 text-purple-200'
-                        : 'bg-white/5 border-white/10 text-gray-400'"
-                      @click="toggleNotify(p.id)"
-                    >
-                      {{ p.name }}
-                    </button>
-                  </div>
-                </div>
-                <textarea v-model="forms.group_discussion.note" rows="2" :class="textareaClass" placeholder="讨论内容（可选）" />
               </template>
 
               <!-- 破坏 -->

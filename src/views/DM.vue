@@ -9,6 +9,7 @@ import CatastrophePanel from '../components/CatastrophePanel.vue'
 import WarehouseView from './WarehouseView.vue'
 import ActionFeedbackView from './ActionFeedbackView.vue'
 import FactionActionFeedbackView from './FactionActionFeedbackView.vue'
+import NightActionSettlementView from './NightActionSettlementView.vue'
 import DmPlayerInventoryView from './DmPlayerInventoryView.vue'
 import DmPlayerModalInventory from '../components/DmPlayerModalInventory.vue'
 import { dmPlayerAPI, jobAPI, skillAPI } from '../utils/api.js'
@@ -394,6 +395,14 @@ onMounted(() => {
           @click="activeTab = 'factionActionFeedback'"
         >
           阵营行动反馈
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'nightActionSettlement' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'nightActionSettlement'"
+        >
+          夜晚行动结算
         </button>
         <button
           type="button"
@@ -813,6 +822,10 @@ onMounted(() => {
 
       <div v-else-if="activeTab === 'factionActionFeedback'">
         <FactionActionFeedbackView />
+      </div>
+
+      <div v-else-if="activeTab === 'nightActionSettlement'">
+        <NightActionSettlementView />
       </div>
 
       <!-- Other Tabs -->

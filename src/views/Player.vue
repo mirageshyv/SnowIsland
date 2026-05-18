@@ -7,6 +7,7 @@ import ArkProgressView from './ArkProgressView.vue'
 import ShelterProgressView from './ShelterProgressView.vue'
 import ActionSubmitView from './ActionSubmitView.vue'
 import FactionActionSubmitView from './FactionActionSubmitView.vue'
+import NightActionSubmitView from './NightActionSubmitView.vue'
 import RebelMilestoneView from './RebelMilestoneView.vue'
 import CatastrophePanel from '../components/CatastrophePanel.vue'
 import WarehouseView from './WarehouseView.vue'
@@ -49,6 +50,7 @@ const showFactionActionsTab = computed(() => {
   const f = playerInfo.value?.faction
   return f && f !== '平民'
 })
+const showNightActionsTab = showFactionActionsTab
 
 watch([showArkTab, showShelterTab, showMilestoneTab, showCatastropheTab, showFactionActionsTab, activeTab], () => {
   if (activeTab.value === 'ark' && !showArkTab.value) activeTab.value = 'info'
@@ -56,6 +58,7 @@ watch([showArkTab, showShelterTab, showMilestoneTab, showCatastropheTab, showFac
   if (activeTab.value === 'milestone' && !showMilestoneTab.value) activeTab.value = 'info'
   if (activeTab.value === 'catastrophe' && !showCatastropheTab.value) activeTab.value = 'info'
   if (activeTab.value === 'factionActions' && !showFactionActionsTab.value) activeTab.value = 'info'
+  if (activeTab.value === 'nightActions' && !showNightActionsTab.value) activeTab.value = 'info'
 })
 
 let pollTimer = null
@@ -330,6 +333,15 @@ onUnmounted(() => {
           @click="activeTab = 'factionActions'"
         >
           阵营行动提交
+        </button>
+        <button
+          v-if="showNightActionsTab"
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'nightActions' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'nightActions'"
+        >
+          夜晚行动提交
         </button>
         <button
           type="button"
@@ -734,6 +746,10 @@ onUnmounted(() => {
 
       <div v-else-if="activeTab === 'factionActions' && showFactionActionsTab">
         <FactionActionSubmitView />
+      </div>
+
+      <div v-else-if="activeTab === 'nightActions' && showNightActionsTab">
+        <NightActionSubmitView />
       </div>
 
       <div v-else-if="activeTab === 'ark' && showArkTab">

@@ -8,11 +8,14 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ShelterDailyLaborRepository extends JpaRepository<ShelterDailyLabor, Integer> {
 
     List<ShelterDailyLabor> findByGameDayOrderByPlayerIdAsc(Integer gameDay);
+
+    Optional<ShelterDailyLabor> findByGameDayAndPlayerId(Integer gameDay, Integer playerId);
 
     List<ShelterDailyLabor> findAllByOrderByGameDayDescPlayerIdAsc();
 

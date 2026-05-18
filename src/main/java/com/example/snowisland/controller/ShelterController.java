@@ -24,12 +24,16 @@ public class ShelterController {
         return shelterService.getSummary(gameDay);
     }
 
-    /** 统治者：仅提交当日劳工名单（playerId），不含建造值/逃役 */
+    /** 统治者：提交当日劳工名单；可标记压榨（最多3人），不含建造值/逃役 */
     @PutMapping("/labor/roster")
     public Map<String, Object> setLaborRoster(@RequestBody Map<String, Object> body) {
         Integer gameDay = toInt(body.get("gameDay"));
         if (gameDay == null) {
             gameDay = shelterService.getCurrentGameDay();
+        }
+        List<Map<String, Object>> laborers = extractLaborerRows(body);
+        if (!laborers.isEmpty()) {
+            return shelterService.setLaborRosterWithExploit(gameDay, laborers);
         }
         return shelterService.setLaborRoster(gameDay, extractPlayerIds(body.get("playerIds")));
     }
@@ -81,6 +85,22 @@ public class ShelterController {
             gameDay = shelterService.getCurrentGameDay();
         }
         return shelterService.verifyLaborDay(gameDay);
+    }
+
+    private static List<Map<String, Object>> extractLaborerRows(Map<String, Object> body) {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        Object raw = body.get("laborers");
+        if (!(raw instanceof List)) {
+            return rows;
+        }
+        for (Object item : (List<?>) raw) {
+            if (item instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> row = (Map<String, Object>) item;
+                rows.add(row);
+            }
+        }
+        return rows;
     }
 
     private static List<Integer> extractPlayerIds(Object raw) {

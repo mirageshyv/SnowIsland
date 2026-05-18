@@ -434,7 +434,7 @@ INSERT INTO `item` VALUES ('15', '火柴', '盒', '点火工具', '2026-04-27 11
 INSERT INTO `item` VALUES ('16', '铅笔', '盒', '书写工具', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `item` VALUES ('17', '破损海图', '张', '导航参考', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `item` VALUES ('18', '便当', '份', '额外行动', '2026-04-27 11:36:23', '2026-05-02 19:26:21');
-INSERT INTO `item` VALUES ('19', '仓库钥匙', '把', '仓库通行', '2026-05-14 21:23:51', '2026-05-14 21:24:10');
+INSERT INTO `item` VALUES ('19', '矿场仓库钥匙', '把', '矿场仓库通行', '2026-05-14 21:23:51', '2026-05-17 00:00:00');
 INSERT INTO `item` VALUES ('20', '燃料仓库钥匙', '把', '燃料仓库通行', '2026-05-14 21:24:04', '2026-05-14 21:24:22');
 INSERT INTO `item` VALUES ('21', '镇武库钥匙', '把', '镇武库通行', '2026-05-14 21:24:57', '2026-05-14 21:24:57');
 INSERT INTO `item` VALUES ('22', '码头集换站钥匙', '把', '码头集购站通行', '2026-05-14 21:25:32', '2026-05-14 21:25:32');
@@ -886,7 +886,7 @@ INSERT INTO `material` VALUES ('4', '木板', 'kg', '建筑材料', '2026-04-27 
 INSERT INTO `material` VALUES ('5', '食物', 'kg', '通用食物（千克）', '2026-04-27 11:36:23', '2026-05-16 12:00:00');
 INSERT INTO `material` VALUES ('6', '沥青', 'kg', '建筑材料', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `material` VALUES ('7', '石料', 'kg', '建筑材料', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
-INSERT INTO `material` VALUES ('8', '燃料', 'kg', '通用燃料（千克）', '2026-04-27 11:36:23', '2026-05-16 12:00:00');
+INSERT INTO `material` VALUES ('8', '煤油', '升', '基础照明取暖燃料', '2026-04-27 11:36:23', '2026-05-17 00:00:00');
 INSERT INTO `material` VALUES ('9', '帆布', '米', '制作帐篷', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `material` VALUES ('10', '发动机', '个', '机械动力', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `material` VALUES ('11', '螺旋桨', '个', '船只推进', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
@@ -1119,7 +1119,7 @@ CREATE TABLE `faction_action` (
   `player_id` int(11) NOT NULL COMMENT '提交玩家ID',
   `player_name` varchar(50) DEFAULT NULL COMMENT '玩家名称快照',
   `faction` varchar(20) NOT NULL COMMENT '提交时阵营',
-  `action_type` varchar(40) NOT NULL COMMENT '阵营行动类型：govern_location/assign_personnel/sabotage等',
+  `action_type` varchar(40) NOT NULL COMMENT '阵营行动类型：assign_personnel/assign_guard/sabotage等',
   `payload` text COMMENT 'JSON输入数据',
   `result` text COMMENT '行动结果/DM反馈',
   `status` enum('pending','feedbacked') NOT NULL DEFAULT 'pending' COMMENT '反馈状态',
@@ -1139,25 +1139,30 @@ CREATE TABLE `faction_action` (
 -- ----------------------------
 
 -- ----------------------------
--- Table structure for location_governance
+-- Table structure for night_action
 -- ----------------------------
-CREATE TABLE `location_governance` (
+DROP TABLE IF EXISTS `night_action`;
+CREATE TABLE `night_action` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `location_id` int(11) NOT NULL COMMENT '监管地点ID',
-  `location_name` varchar(100) DEFAULT NULL COMMENT '地点名称',
-  `actor_id` int(11) DEFAULT NULL COMMENT '监管人员ID(玩家或NPC)',
-  `actor_name` varchar(50) DEFAULT NULL COMMENT '监管人员名称',
-  `actor_kind` varchar(10) DEFAULT 'player' COMMENT 'player或npc',
-  `game_day` int(11) NOT NULL COMMENT '生效游戏天数',
-  `source_faction_action_id` int(11) DEFAULT NULL COMMENT '来源阵营行动ID',
+  `player_id` int(11) NOT NULL COMMENT '提交玩家ID',
+  `player_name` varchar(50) DEFAULT NULL COMMENT '玩家名称快照',
+  `faction` varchar(20) NOT NULL COMMENT '提交时阵营',
+  `action_type` varchar(40) NOT NULL COMMENT '夜晚行动类型：night_personal_action/public_trial/conspiracy等',
+  `payload` text COMMENT 'JSON输入数据',
+  `result` text COMMENT '行动结果/DM结算',
+  `status` enum('pending','feedbacked') NOT NULL DEFAULT 'pending' COMMENT '结算状态',
+  `game_day` int(11) NOT NULL DEFAULT '1' COMMENT '游戏天数',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_location_day` (`location_id`,`game_day`),
-  KEY `idx_game_day` (`game_day`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='地点监管状态表';
+  KEY `idx_player_day` (`player_id`,`game_day`),
+  KEY `idx_faction_day` (`faction`,`game_day`),
+  KEY `idx_action_type` (`action_type`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='夜晚行动表';
 
 -- ----------------------------
--- Records of location_governance
+-- Records of night_action
 -- ----------------------------
 
 -- ----------------------------
@@ -1469,15 +1474,17 @@ CREATE TABLE `warehouse_ark` (
   UNIQUE KEY `uk_warehouse_ark_type_item` (`item_type`,`item_id`),
   KEY `idx_item_type` (`item_type`),
   KEY `idx_item_id` (`item_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COMMENT='仓库-方舟仓库';
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COMMENT='仓库-冒险者阵营仓库';
 
 -- ----------------------------
 -- Records of warehouse_ark
+-- 冒险者阵营初始物资：猎弓×2、箭矢×12、鱼叉×1、制式手枪×1、手枪弹×2
 -- ----------------------------
-INSERT INTO `warehouse_ark` VALUES ('2', 'material', '11', '1', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
-INSERT INTO `warehouse_ark` VALUES ('4', 'material', '3', '15', '2026-05-14 21:50:25', '2026-05-15 13:58:56');
-INSERT INTO `warehouse_ark` VALUES ('5', 'material', '5', '10', '2026-05-15 13:58:56', '2026-05-15 13:58:56');
-INSERT INTO `warehouse_ark` VALUES ('6', 'material', '10', '2', '2026-05-15 13:58:56', '2026-05-15 13:58:56');
+INSERT INTO `warehouse_ark` VALUES ('1', 'weapon', '7', '2', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_ark` VALUES ('2', 'ammo', '4', '12', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_ark` VALUES ('3', 'weapon', '6', '1', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_ark` VALUES ('4', 'weapon', '1', '1', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_ark` VALUES ('5', 'ammo', '1', '2', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
 
 -- ----------------------------
 -- Table structure for warehouse_armory
@@ -1494,18 +1501,24 @@ CREATE TABLE `warehouse_armory` (
   UNIQUE KEY `uk_warehouse_armory_type_item` (`item_type`,`item_id`),
   KEY `idx_item_type` (`item_type`),
   KEY `idx_item_id` (`item_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COMMENT='仓库-镇武库';
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COMMENT='仓库-镇武库（镇长厅）';
 
 -- ----------------------------
 -- Records of warehouse_armory
+-- 统治者镇武库初始物资（不含统治者个人配枪）
 -- ----------------------------
-INSERT INTO `warehouse_armory` VALUES ('1', 'weapon', '1', '5', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
-INSERT INTO `warehouse_armory` VALUES ('2', 'weapon', '3', '3', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
-INSERT INTO `warehouse_armory` VALUES ('3', 'weapon', '5', '2', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
-INSERT INTO `warehouse_armory` VALUES ('4', 'ammo', '1', '50', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
-INSERT INTO `warehouse_armory` VALUES ('5', 'ammo', '2', '30', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
-INSERT INTO `warehouse_armory` VALUES ('6', 'item', '5', '10', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
-INSERT INTO `warehouse_armory` VALUES ('7', 'item', '6', '5', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
+INSERT INTO `warehouse_armory` VALUES ('1', 'weapon', '1', '2', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_armory` VALUES ('2', 'ammo', '1', '4', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_armory` VALUES ('3', 'weapon', '2', '1', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_armory` VALUES ('4', 'ammo', '2', '2', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_armory` VALUES ('5', 'weapon', '7', '1', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_armory` VALUES ('6', 'ammo', '4', '4', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_armory` VALUES ('7', 'weapon', '4', '2', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_armory` VALUES ('8', 'weapon', '3', '3', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_armory` VALUES ('9', 'item', '6', '2', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_armory` VALUES ('10', 'item', '5', '1', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_armory` VALUES ('11', 'item', '3', '2', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_armory` VALUES ('12', 'material', '12', '1', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
 
 -- ----------------------------
 -- Table structure for warehouse_config
@@ -1526,12 +1539,12 @@ CREATE TABLE `warehouse_config` (
 -- ----------------------------
 -- Records of warehouse_config
 -- ----------------------------
-INSERT INTO `warehouse_config` VALUES ('1', 'general', '通用仓库', 'warehouse_general', '19', 'box', '1');
+INSERT INTO `warehouse_config` VALUES ('1', 'general', '矿场仓库', 'warehouse_general', '19', 'box', '1');
 INSERT INTO `warehouse_config` VALUES ('2', 'fuel', '燃料仓库', 'warehouse_fuel', '20', 'fuel', '2');
 INSERT INTO `warehouse_config` VALUES ('3', 'armory', '镇武库', 'warehouse_armory', '21', 'sword', '3');
-INSERT INTO `warehouse_config` VALUES ('4', 'dock', '码头集换站', 'warehouse_dock', '22', 'anchor', '4');
-INSERT INTO `warehouse_config` VALUES ('5', 'rebel', '反叛者基地', 'warehouse_rebel', '23', 'flag', '5');
-INSERT INTO `warehouse_config` VALUES ('6', 'ark', '方舟仓库', 'warehouse_ark', '24', 'ship', '6');
+INSERT INTO `warehouse_config` VALUES ('4', 'dock', '码头集购仓', 'warehouse_dock', '22', 'anchor', '4');
+INSERT INTO `warehouse_config` VALUES ('5', 'rebel', '反抗者阵营仓库', 'warehouse_rebel', '23', 'flag', '5');
+INSERT INTO `warehouse_config` VALUES ('6', 'ark', '冒险者阵营仓库', 'warehouse_ark', '24', 'ship', '6');
 
 -- ----------------------------
 -- Table structure for warehouse_dock
@@ -1548,15 +1561,24 @@ CREATE TABLE `warehouse_dock` (
   UNIQUE KEY `uk_warehouse_dock_type_item` (`item_type`,`item_id`),
   KEY `idx_item_type` (`item_type`),
   KEY `idx_item_id` (`item_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COMMENT='仓库-码头集换站';
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COMMENT='仓库-码头集购仓';
 
 -- ----------------------------
 -- Records of warehouse_dock
+-- 统治者码头集购仓初始物资（发动机0台，不录入）
 -- ----------------------------
-INSERT INTO `warehouse_dock` VALUES ('1', 'material', '5', '15', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
-INSERT INTO `warehouse_dock` VALUES ('2', 'material', '10', '5', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
-INSERT INTO `warehouse_dock` VALUES ('3', 'material', '11', '3', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
-INSERT INTO `warehouse_dock` VALUES ('4', 'item', '12', '8', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
+INSERT INTO `warehouse_dock` VALUES ('1', 'material', '5', '100', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_dock` VALUES ('2', 'item', '18', '1', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_dock` VALUES ('3', 'item', '10', '20', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_dock` VALUES ('4', 'item', '14', '5', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_dock` VALUES ('5', 'item', '1', '1', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_dock` VALUES ('6', 'item', '11', '3', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_dock` VALUES ('7', 'item', '12', '1', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_dock` VALUES ('8', 'weapon', '6', '1', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_dock` VALUES ('9', 'item', '7', '1', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_dock` VALUES ('10', 'ammo', '3', '2', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_dock` VALUES ('11', 'item', '17', '1', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_dock` VALUES ('12', 'material', '11', '1', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
 
 -- ----------------------------
 -- Table structure for warehouse_fuel
@@ -1573,13 +1595,17 @@ CREATE TABLE `warehouse_fuel` (
   UNIQUE KEY `uk_warehouse_fuel_type_item` (`item_type`,`item_id`),
   KEY `idx_item_type` (`item_type`),
   KEY `idx_item_id` (`item_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT='仓库-燃料仓库';
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COMMENT='仓库-燃料仓库（警察局）';
 
 -- ----------------------------
 -- Records of warehouse_fuel
+-- 统治者燃料仓库初始物资（照明、取暖、燃料）
 -- ----------------------------
-INSERT INTO `warehouse_fuel` VALUES ('1', 'material', '9', '100', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
-INSERT INTO `warehouse_fuel` VALUES ('2', 'material', '4', '40', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
+INSERT INTO `warehouse_fuel` VALUES ('1', 'material', '8', '150', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_fuel` VALUES ('2', 'material', '2', '50000', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_fuel` VALUES ('3', 'item', '15', '2', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_fuel` VALUES ('4', 'item', '13', '20', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_fuel` VALUES ('5', 'item', '2', '2', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
 
 -- ----------------------------
 -- Table structure for warehouse_general
@@ -1596,16 +1622,21 @@ CREATE TABLE `warehouse_general` (
   UNIQUE KEY `uk_warehouse_general_type_item` (`item_type`,`item_id`),
   KEY `idx_item_type` (`item_type`),
   KEY `idx_item_id` (`item_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COMMENT='仓库-通用仓库';
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COMMENT='仓库-矿场仓库';
 
 -- ----------------------------
 -- Records of warehouse_general
+-- 统治者矿场仓库初始物资（工具、建材、金属、石料、维修物品）
 -- ----------------------------
-INSERT INTO `warehouse_general` VALUES ('1', 'material', '1', '50', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
-INSERT INTO `warehouse_general` VALUES ('2', 'material', '2', '25', '2026-05-14 21:50:25', '2026-05-15 12:33:01');
-INSERT INTO `warehouse_general` VALUES ('3', 'material', '3', '20', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
-INSERT INTO `warehouse_general` VALUES ('4', 'item', '15', '10', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
-INSERT INTO `warehouse_general` VALUES ('5', 'item', '13', '15', '2026-05-14 21:50:25', '2026-05-14 21:50:25');
+INSERT INTO `warehouse_general` VALUES ('1', 'material', '1', '50000', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_general` VALUES ('2', 'material', '7', '5000', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_general` VALUES ('3', 'material', '4', '80', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_general` VALUES ('4', 'material', '3', '60', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_general` VALUES ('5', 'material', '9', '20', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_general` VALUES ('6', 'weapon', '8', '2', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_general` VALUES ('7', 'weapon', '9', '1', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_general` VALUES ('8', 'item', '8', '1', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_general` VALUES ('9', 'material', '12', '1', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
 
 -- ----------------------------
 -- Table structure for warehouse_rebel
@@ -1622,11 +1653,16 @@ CREATE TABLE `warehouse_rebel` (
   UNIQUE KEY `uk_warehouse_rebel_type_item` (`item_type`,`item_id`),
   KEY `idx_item_type` (`item_type`),
   KEY `idx_item_id` (`item_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COMMENT='仓库-反叛者基地';
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COMMENT='仓库-反抗者阵营仓库';
 
 -- ----------------------------
 -- Records of warehouse_rebel
+-- 反抗者阵营初始物资：猎枪×1、猎枪弹×2、猎弓×2、箭矢×4
 -- ----------------------------
+INSERT INTO `warehouse_rebel` VALUES ('1', 'weapon', '2', '1', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_rebel` VALUES ('2', 'ammo', '2', '2', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_rebel` VALUES ('3', 'weapon', '7', '2', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
+INSERT INTO `warehouse_rebel` VALUES ('4', 'ammo', '4', '4', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
 
 -- ----------------------------
 -- Table structure for weapon

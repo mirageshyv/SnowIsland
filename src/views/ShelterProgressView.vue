@@ -55,6 +55,15 @@ function toggleLabor(playerId) {
   }
 }
 
+function onExploitChange(row) {
+  if (!row.exploited) return
+  const count = dailyLabor.value.filter((r) => r.exploited).length
+  if (count > 3) {
+    row.exploited = false
+    alert('最多压榨3名劳工')
+  }
+}
+
 function removeLaborRow(playerId) {
   dailyLabor.value = dailyLabor.value.filter((r) => r.playerId !== playerId)
 }
@@ -84,8 +93,17 @@ async function saveLaborRoster() {
       }))
       result = await shelterAPI.setDailyLabor(laborers, editGameDay.value)
     } else {
-      const playerIds = dailyLabor.value.map((r) => r.playerId)
-      result = await shelterAPI.setLaborRoster(playerIds, currentGameDay.value)
+      const exploitedCount = dailyLabor.value.filter((r) => r.exploited).length
+      if (exploitedCount > 3) {
+        alert('最多压榨3名劳工')
+        savingLabor.value = false
+        return
+      }
+      const laborers = dailyLabor.value.map((r) => ({
+        playerId: r.playerId,
+        exploited: Boolean(r.exploited),
+      }))
+      result = await shelterAPI.setLaborRoster(laborers, currentGameDay.value)
     }
     if (applyLaborResult(result)) {
       alert(isDm.value ? '劳工名单已保存' : '今日劳工名单已提交')
@@ -409,7 +427,7 @@ onMounted(() => {
             <template v-else>
               <h2 class="text-xl text-white font-medium tracking-tight">第 {{ currentGameDay }} 天 · 今日劳工</h2>
               <p class="text-gray-500 text-sm mt-1">
-                选择今日在避难所劳作的玩家；「压榨」请在阵营行动页提交
+                选择今日在避难所劳作的玩家；可对已选劳工标记「压榨」（最多3人，建造×2、受伤、无法生产）
               </p>
               <p v-if="dayVerified" class="text-amber-400/90 text-xs mt-1">今日名单已由主持人结算，无法再修改</p>
             </template>
@@ -505,16 +523,32 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Ruler: read-only list after save (no build value / escape) -->
+        <!-- 统治者：已选劳工与压榨标记 -->
         <div v-else-if="!isDm && dailyLabor.length" class="mt-4 space-y-2">
           <div
             v-for="row in dailyLabor"
             :key="row.playerId"
-            class="flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 bg-black/20"
+            class="flex flex-wrap items-center gap-3 px-3 py-3 rounded-xl border border-white/10 bg-black/20"
           >
-            <span class="text-white text-sm font-medium">{{ row.name }}</span>
-            <span class="text-gray-500 text-xs">{{ row.jobName }}</span>
+            <div class="min-w-[100px] flex-1">
+              <span class="text-white text-sm font-medium">{{ row.name }}</span>
+              <span class="text-gray-500 text-xs ml-2">{{ row.jobName }}</span>
+            </div>
+            <label
+              class="flex items-center gap-1.5 text-xs text-red-300 cursor-pointer"
+              :class="dayVerified ? 'opacity-50 pointer-events-none' : ''"
+            >
+              <input
+                v-model="row.exploited"
+                type="checkbox"
+                class="rounded"
+                :disabled="dayVerified"
+                @change="onExploitChange(row)"
+              />
+              压榨
+            </label>
           </div>
+          <p class="text-gray-500 text-xs">已压榨 {{ dailyLabor.filter(r => r.exploited).length }} / 3 人</p>
         </div>
       </div>
 
