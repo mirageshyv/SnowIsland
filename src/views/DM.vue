@@ -776,7 +776,7 @@ onMounted(() => {
       </div>
 
       <div v-else-if="activeTab === 'shelter'">
-        <ShelterProgressView />
+        <ShelterProgressView mode="dm" />
       </div>
 
       <div v-else-if="activeTab === 'trades'">

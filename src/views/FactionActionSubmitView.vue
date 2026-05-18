@@ -51,11 +51,7 @@ const locationOptions = computed(() =>
 
 const allPlayers = computed(() => context.value?.allPlayers || [])
 const militiaPlayers = computed(() => context.value?.militiaPlayers || [])
-const laborCandidates = computed(() => {
-  const list = context.value?.laborCandidates || []
-  if (list.length > 0) return list
-  return allPlayers.value.filter(p => p.isOverworked)
-})
+const laborCandidates = computed(() => context.value?.laborCandidates || [])
 
 const governedIds = computed(() => new Set(context.value?.governedLocationIds || []))
 const usedTypes = computed(() => new Set(context.value?.usedActionTypes || []))

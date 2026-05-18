@@ -1,8 +1,16 @@
 package com.example.snowisland.service;
 
-import com.example.snowisland.entity.ShelterProgress;
+import com.example.snowisland.entity.GameState;
+import com.example.snowisland.entity.Job;
+import com.example.snowisland.entity.Player;
+import com.example.snowisland.entity.ShelterDailyLabor;
+import com.example.snowisland.entity.ShelterLaborDay;
 import com.example.snowisland.entity.ShelterStock;
-import com.example.snowisland.repository.ShelterProgressRepository;
+import com.example.snowisland.repository.GameStateRepository;
+import com.example.snowisland.repository.JobRepository;
+import com.example.snowisland.repository.PlayerRepository;
+import com.example.snowisland.repository.ShelterDailyLaborRepository;
+import com.example.snowisland.repository.ShelterLaborDayRepository;
 import com.example.snowisland.repository.ShelterStockRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -10,12 +18,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ShelterService {
-
-    private static final int DEFAULT_BUILD_VALUE = 76;
 
     private static final Object[][] DEFAULT_STOCK = {
             {ShelterStock.ItemType.material, 2, 45},
@@ -50,9 +58,6 @@ public class ShelterService {
     };
 
     @Autowired
-    private ShelterProgressRepository shelterProgressRepository;
-
-    @Autowired
     private ShelterStockRepository shelterStockRepository;
 
     @Autowired
@@ -61,16 +66,50 @@ public class ShelterService {
     @Autowired
     private ShelterSupplyService shelterSupplyService;
 
+    @Autowired
+    private ShelterDailyLaborRepository shelterDailyLaborRepository;
+
+    @Autowired
+    private ShelterLaborDayRepository shelterLaborDayRepository;
+
+    @Autowired
+    private PlayerRepository playerRepository;
+
+    @Autowired
+    private JobRepository jobRepository;
+
+    @Autowired
+    private GameStateRepository gameStateRepository;
+
+    public int getCurrentGameDay() {
+        GameState state = gameStateRepository.findFirstByOrderByIdAsc();
+        if (state == null || state.getCurrentDay() == null) {
+            return 1;
+        }
+        return state.getCurrentDay();
+    }
+
+    public int getTotalBuildValue() {
+        return shelterDailyLaborRepository.sumVerifiedBuildValue();
+    }
+
+    public boolean isDayVerified(int gameDay) {
+        return shelterLaborDayRepository.findById(gameDay)
+                .map(d -> Boolean.TRUE.equals(d.getVerified()))
+                .orElse(false);
+    }
+
+    public List<Integer> getLaborPlayerIdsForDay(int gameDay) {
+        return shelterDailyLaborRepository.findByGameDayOrderByPlayerIdAsc(gameDay).stream()
+                .filter(l -> !Boolean.TRUE.equals(l.getEscaped()))
+                .map(ShelterDailyLabor::getPlayerId)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
-    public Map<String, Object> getSummary() {
+    public Map<String, Object> getSummary(Integer viewGameDay) {
         Map<String, Object> out = new LinkedHashMap<>();
-        ShelterProgress progress = shelterProgressRepository.findById(ShelterProgress.SINGLETON_ID)
-                .orElseGet(() -> {
-                    ShelterProgress p = new ShelterProgress();
-                    p.setId(ShelterProgress.SINGLETON_ID);
-                    p.setCurrentBuildValue(DEFAULT_BUILD_VALUE);
-                    return shelterProgressRepository.save(p);
-                });
+
         List<ShelterStock> rows = shelterStockRepository.findAllByOrderByItemTypeAscItemIdAsc();
         if (rows.isEmpty()) {
             seedDefaultStock();
@@ -89,12 +128,375 @@ public class ShelterService {
 
         shelterSupplyService.ensureReady();
 
+        int currentGameDay = getCurrentGameDay();
+        int gameDay = viewGameDay != null && viewGameDay >= 1 ? viewGameDay : currentGameDay;
+        Map<Integer, Player> playersById = playerRepository.findAll().stream()
+                .collect(Collectors.toMap(Player::getId, p -> p, (a, b) -> a));
+        Map<Integer, String> jobNames = jobRepository.findAll().stream()
+                .collect(Collectors.toMap(Job::getId, Job::getName, (a, b) -> a));
+
+        List<Map<String, Object>> dailyLabor = buildLaborRowMaps(
+                shelterDailyLaborRepository.findByGameDayOrderByPlayerIdAsc(gameDay),
+                playersById,
+                jobNames
+        );
+
         out.put("success", true);
-        out.put("currentBuildValue", progress.getCurrentBuildValue());
+        out.put("currentGameDay", currentGameDay);
+        out.put("gameDay", gameDay);
+        out.put("dayVerified", isDayVerified(gameDay));
+        out.put("currentBuildValue", getTotalBuildValue());
         out.put("inventory", inventory);
         out.put("foodSupply", shelterSupplyService.buildShelterFoodSupply());
         out.put("energyReserve", shelterSupplyService.buildShelterEnergyReserve());
+        out.put("laborCandidates", buildLaborCandidates(jobNames));
+        out.put("dailyLabor", dailyLabor);
+        out.put("buildLogs", buildLogsGroupedByDay(playersById, jobNames));
+        out.put("laborDays", buildLaborDayOptions(currentGameDay));
         return out;
+    }
+
+    @Transactional
+    public Map<String, Object> setLaborRoster(Integer gameDay, List<Integer> playerIds) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        if (gameDay == null || gameDay < 1) {
+            out.put("success", false);
+            out.put("message", "无效的游戏天数");
+            return out;
+        }
+        if (playerIds == null) {
+            playerIds = Collections.emptyList();
+        }
+        Set<Integer> seen = new HashSet<>();
+        for (Integer playerId : playerIds) {
+            if (playerId == null) {
+                out.put("success", false);
+                out.put("message", "劳工条目缺少 playerId");
+                return out;
+            }
+            if (!seen.add(playerId)) {
+                out.put("success", false);
+                out.put("message", "重复的玩家: " + playerId);
+                return out;
+            }
+            if (!playerRepository.findById(playerId).isPresent()) {
+                out.put("success", false);
+                out.put("message", "玩家不存在: " + playerId);
+                return out;
+            }
+        }
+        if (isDayVerified(gameDay)) {
+            out.put("success", false);
+            out.put("message", "第 " + gameDay + " 天已结算，无法再修改劳工名单");
+            return out;
+        }
+
+        mergeLaborRoster(gameDay, playerIds);
+        ensureLaborDayRow(gameDay, false);
+
+        return enrichLaborResponse(out, gameDay);
+    }
+
+    @Transactional
+    public Map<String, Object> setDailyLabor(Integer gameDay, List<Map<String, Object>> laborers) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        if (gameDay == null || gameDay < 1) {
+            out.put("success", false);
+            out.put("message", "无效的游戏天数");
+            return out;
+        }
+        if (laborers == null) {
+            laborers = Collections.emptyList();
+        }
+
+        Set<Integer> seenPlayerIds = new HashSet<>();
+        for (Map<String, Object> row : laborers) {
+            Integer playerId = toInt(row.get("playerId"));
+            if (playerId == null) {
+                out.put("success", false);
+                out.put("message", "劳工条目缺少 playerId");
+                return out;
+            }
+            if (!seenPlayerIds.add(playerId)) {
+                out.put("success", false);
+                out.put("message", "重复的玩家: " + playerId);
+                return out;
+            }
+            if (!playerRepository.findById(playerId).isPresent()) {
+                out.put("success", false);
+                out.put("message", "玩家不存在: " + playerId);
+                return out;
+            }
+        }
+
+        mergeDailyLabor(gameDay, laborers);
+        ensureLaborDayRow(gameDay, isDayVerified(gameDay));
+
+        out.put("message", "劳工名单已保存");
+        return enrichLaborResponse(out, gameDay);
+    }
+
+    @Transactional
+    public Map<String, Object> verifyLaborDay(Integer gameDay) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        if (gameDay == null || gameDay < 1) {
+            out.put("success", false);
+            out.put("message", "无效的游戏天数");
+            return out;
+        }
+        List<ShelterDailyLabor> rows = shelterDailyLaborRepository.findByGameDayOrderByPlayerIdAsc(gameDay);
+        if (rows.isEmpty()) {
+            out.put("success", false);
+            out.put("message", "第 " + gameDay + " 天尚无劳工记录");
+            return out;
+        }
+
+        ShelterLaborDay day = shelterLaborDayRepository.findById(gameDay).orElseGet(() -> {
+            ShelterLaborDay d = new ShelterLaborDay();
+            d.setGameDay(gameDay);
+            return d;
+        });
+        day.setVerified(true);
+        day.setVerifiedAt(LocalDateTime.now());
+        shelterLaborDayRepository.save(day);
+
+        out.put("message", "第 " + gameDay + " 天建造已结算");
+        return enrichLaborResponse(out, gameDay);
+    }
+
+    private Map<String, Object> enrichLaborResponse(Map<String, Object> out, int gameDay) {
+        Map<Integer, Player> playersById = playerRepository.findAll().stream()
+                .collect(Collectors.toMap(Player::getId, p -> p, (a, b) -> a));
+        Map<Integer, String> jobNames = jobRepository.findAll().stream()
+                .collect(Collectors.toMap(Job::getId, Job::getName, (a, b) -> a));
+
+        out.put("success", true);
+        out.put("gameDay", gameDay);
+        out.put("currentGameDay", getCurrentGameDay());
+        out.put("dayVerified", isDayVerified(gameDay));
+        out.put("currentBuildValue", getTotalBuildValue());
+        out.put("dailyLabor", buildLaborRowMaps(
+                shelterDailyLaborRepository.findByGameDayOrderByPlayerIdAsc(gameDay),
+                playersById,
+                jobNames
+        ));
+        out.put("buildLogs", buildLogsGroupedByDay(playersById, jobNames));
+        out.put("laborDays", buildLaborDayOptions(getCurrentGameDay()));
+        return out;
+    }
+
+    /**
+     * Upsert roster without delete-all-then-insert (avoids UK violations on repeated saves).
+     */
+    private void mergeLaborRoster(int gameDay, List<Integer> playerIds) {
+        List<ShelterDailyLabor> existingRows = shelterDailyLaborRepository.findByGameDayOrderByPlayerIdAsc(gameDay);
+        Map<Integer, ShelterDailyLabor> existingByPlayer = existingRows.stream()
+                .collect(Collectors.toMap(ShelterDailyLabor::getPlayerId, l -> l, (a, b) -> a));
+        Set<Integer> targetIds = new LinkedHashSet<>(playerIds);
+
+        for (ShelterDailyLabor row : existingRows) {
+            if (!targetIds.contains(row.getPlayerId())) {
+                shelterDailyLaborRepository.delete(row);
+            }
+        }
+        entityManager.flush();
+
+        for (Integer playerId : targetIds) {
+            ShelterDailyLabor labor = existingByPlayer.get(playerId);
+            if (labor == null) {
+                labor = new ShelterDailyLabor();
+                labor.setGameDay(gameDay);
+                labor.setPlayerId(playerId);
+                labor.setBuildValue(0);
+                labor.setExploited(false);
+                labor.setEscaped(false);
+            }
+            shelterDailyLaborRepository.save(labor);
+        }
+    }
+
+    private void mergeDailyLabor(int gameDay, List<Map<String, Object>> laborers) {
+        List<ShelterDailyLabor> existingRows = shelterDailyLaborRepository.findByGameDayOrderByPlayerIdAsc(gameDay);
+        Map<Integer, ShelterDailyLabor> existingByPlayer = existingRows.stream()
+                .collect(Collectors.toMap(ShelterDailyLabor::getPlayerId, l -> l, (a, b) -> a));
+
+        Set<Integer> targetIds = new HashSet<>();
+        for (Map<String, Object> row : laborers) {
+            targetIds.add(toInt(row.get("playerId")));
+        }
+
+        for (ShelterDailyLabor row : existingRows) {
+            if (!targetIds.contains(row.getPlayerId())) {
+                shelterDailyLaborRepository.delete(row);
+            }
+        }
+        entityManager.flush();
+
+        for (Map<String, Object> row : laborers) {
+            Integer playerId = toInt(row.get("playerId"));
+            ShelterDailyLabor labor = existingByPlayer.get(playerId);
+            if (labor == null) {
+                labor = new ShelterDailyLabor();
+                labor.setGameDay(gameDay);
+                labor.setPlayerId(playerId);
+            }
+            int buildValue = toInt(row.get("buildValue")) != null ? Math.max(0, toInt(row.get("buildValue"))) : 0;
+            labor.setBuildValue(buildValue);
+            labor.setExploited(toBool(row.get("exploited")));
+            labor.setEscaped(toBool(row.get("escaped")));
+            shelterDailyLaborRepository.save(labor);
+        }
+    }
+
+    private void ensureLaborDayRow(int gameDay, boolean verified) {
+        if (!shelterLaborDayRepository.findById(gameDay).isPresent()) {
+            ShelterLaborDay day = new ShelterLaborDay();
+            day.setGameDay(gameDay);
+            day.setVerified(verified);
+            if (verified) {
+                day.setVerifiedAt(LocalDateTime.now());
+            }
+            shelterLaborDayRepository.save(day);
+        }
+    }
+
+    private List<Map<String, Object>> buildLaborDayOptions(int currentGameDay) {
+        Set<Integer> days = new TreeSet<>();
+        for (int d = 1; d <= Math.max(1, currentGameDay); d++) {
+            days.add(d);
+        }
+        shelterDailyLaborRepository.findAllByOrderByGameDayDescPlayerIdAsc().forEach(l -> days.add(l.getGameDay()));
+        List<Map<String, Object>> options = new ArrayList<>();
+        for (Integer day : days) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("gameDay", day);
+            m.put("verified", isDayVerified(day));
+            options.add(m);
+        }
+        options.sort((a, b) -> Integer.compare((Integer) b.get("gameDay"), (Integer) a.get("gameDay")));
+        return options;
+    }
+
+    private List<Map<String, Object>> buildLaborRowMaps(
+            List<ShelterDailyLabor> labors,
+            Map<Integer, Player> playersById,
+            Map<Integer, String> jobNames
+    ) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (ShelterDailyLabor labor : labors) {
+            Player player = playersById.get(labor.getPlayerId());
+            if (player == null) {
+                continue;
+            }
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("id", labor.getId());
+            row.put("playerId", labor.getPlayerId());
+            row.put("name", player.getName());
+            row.put("jobId", player.getJobId());
+            row.put("jobName", player.getJobId() != null ? jobNames.getOrDefault(player.getJobId(), "—") : "—");
+            row.put("buildValue", labor.getBuildValue() != null ? labor.getBuildValue() : 0);
+            row.put("exploited", Boolean.TRUE.equals(labor.getExploited()));
+            row.put("escaped", Boolean.TRUE.equals(labor.getEscaped()));
+            row.put("isWeak", Boolean.TRUE.equals(player.getIsWeak()));
+            row.put("isOverworked", Boolean.TRUE.equals(player.getIsOverworked()));
+            row.put("isInjured", Boolean.TRUE.equals(player.getIsInjured()));
+            result.add(row);
+        }
+        return result;
+    }
+
+    private List<Map<String, Object>> buildLogsGroupedByDay(
+            Map<Integer, Player> playersById,
+            Map<Integer, String> jobNames
+    ) {
+        Map<Integer, List<ShelterDailyLabor>> byDay = new TreeMap<>(Comparator.reverseOrder());
+        for (ShelterDailyLabor labor : shelterDailyLaborRepository.findAllByOrderByGameDayDescPlayerIdAsc()) {
+            byDay.computeIfAbsent(labor.getGameDay(), k -> new ArrayList<>()).add(labor);
+        }
+
+        List<Map<String, Object>> logs = new ArrayList<>();
+        for (Map.Entry<Integer, List<ShelterDailyLabor>> entry : byDay.entrySet()) {
+            boolean verified = isDayVerified(entry.getKey());
+            int dayTotal = 0;
+            List<Map<String, Object>> workers = new ArrayList<>();
+            for (ShelterDailyLabor labor : entry.getValue()) {
+                Player player = playersById.get(labor.getPlayerId());
+                if (player == null) {
+                    continue;
+                }
+                int value = labor.getBuildValue() != null ? labor.getBuildValue() : 0;
+                if (verified) {
+                    dayTotal += value;
+                }
+                Map<String, Object> w = new LinkedHashMap<>();
+                w.put("playerId", labor.getPlayerId());
+                w.put("name", player.getName());
+                w.put("jobName", player.getJobId() != null ? jobNames.getOrDefault(player.getJobId(), "—") : "—");
+                if (verified) {
+                    w.put("value", value);
+                }
+                w.put("isProfessional", player.getJobId() != null);
+                w.put("isOppressed", Boolean.TRUE.equals(labor.getExploited()));
+                w.put("escaped", Boolean.TRUE.equals(labor.getEscaped()));
+                workers.add(w);
+            }
+            if (workers.isEmpty()) {
+                continue;
+            }
+            Map<String, Object> log = new LinkedHashMap<>();
+            log.put("day", entry.getKey());
+            log.put("verified", verified);
+            log.put("dayTotal", verified ? dayTotal : null);
+            log.put("workers", workers);
+            logs.add(log);
+        }
+        return logs;
+    }
+
+    private List<Map<String, Object>> buildLaborCandidates(Map<Integer, String> jobNames) {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (Player player : playerRepository.findAll()) {
+            if (player.getFaction() == Player.Faction.统治者) {
+                continue;
+            }
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("id", player.getId());
+            row.put("name", player.getName());
+            row.put("faction", player.getFaction() != null ? player.getFaction().name() : null);
+            row.put("jobId", player.getJobId());
+            row.put("jobName", player.getJobId() != null ? jobNames.getOrDefault(player.getJobId(), "—") : "—");
+            row.put("isWeak", Boolean.TRUE.equals(player.getIsWeak()));
+            row.put("isOverworked", Boolean.TRUE.equals(player.getIsOverworked()));
+            row.put("isInjured", Boolean.TRUE.equals(player.getIsInjured()));
+            rows.add(row);
+        }
+        rows.sort(Comparator.comparing(m -> String.valueOf(m.get("name"))));
+        return rows;
+    }
+
+    private static Integer toInt(Object o) {
+        if (o == null || "".equals(o)) {
+            return null;
+        }
+        if (o instanceof Number) {
+            return ((Number) o).intValue();
+        }
+        try {
+            return Integer.parseInt(String.valueOf(o));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private static boolean toBool(Object o) {
+        if (o == null) {
+            return false;
+        }
+        if (o instanceof Boolean) {
+            return (Boolean) o;
+        }
+        String s = String.valueOf(o).trim();
+        return "true".equalsIgnoreCase(s) || "1".equals(s);
     }
 
     private void enrichItemInfo(Map<String, Object> item) {

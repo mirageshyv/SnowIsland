@@ -741,7 +741,7 @@ onUnmounted(() => {
       </div>
 
       <div v-else-if="activeTab === 'shelter' && showShelterTab">
-        <ShelterProgressView />
+        <ShelterProgressView mode="ruler" />
       </div>
 
       <div v-else-if="activeTab === 'milestone' && showMilestoneTab">

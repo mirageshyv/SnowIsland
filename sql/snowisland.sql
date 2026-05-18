@@ -1070,6 +1070,7 @@ INSERT INTO `player_items` VALUES ('26', '4', 'weapon', '5', '1', '2026-04-27 11
 INSERT INTO `player_items` VALUES ('27', '4', 'weapon', '7', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('28', '4', 'ammo', '4', '20', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('29', '4', 'material', '7', '20', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `player_items` VALUES ('30', '4', 'energy', '1', '10', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('31', '5', 'item', '6', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('32', '5', 'item', '14', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('33', '5', 'weapon', '9', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
@@ -1077,8 +1078,10 @@ INSERT INTO `player_items` VALUES ('34', '5', 'weapon', '10', '1', '2026-04-27 1
 INSERT INTO `player_items` VALUES ('35', '5', 'material', '10', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('36', '5', 'material', '11', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('37', '5', 'material', '12', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `player_items` VALUES ('38', '1', 'food', '5', '7', '2026-05-01 10:54:53', '2026-05-05 21:17:17');
 INSERT INTO `player_items` VALUES ('39', '4', 'item', '24', '1', '2026-05-14 21:53:29', '2026-05-14 21:53:29');
 INSERT INTO `player_items` VALUES ('40', '4', 'item', '23', '1', '2026-05-14 21:54:25', '2026-05-14 21:54:25');
+INSERT INTO `player_items` VALUES ('41', '1', 'energy', '1', '10', '2026-05-15 11:03:26', '2026-05-15 11:03:26');
 INSERT INTO `player_items` VALUES ('42', '4', 'material', '2', '5', '2026-05-15 12:33:01', '2026-05-15 12:33:01');
 
 -- ----------------------------
@@ -1179,23 +1182,6 @@ CREATE TABLE `selected_catastrophe` (
 -- ----------------------------
 
 -- ----------------------------
--- Table structure for shelter_progress
--- ----------------------------
-DROP TABLE IF EXISTS `shelter_progress`;
-CREATE TABLE `shelter_progress` (
-  `id` int(11) NOT NULL,
-  `created_at` datetime(6) NOT NULL,
-  `current_build_value` int(11) NOT NULL,
-  `updated_at` datetime(6) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- ----------------------------
--- Records of shelter_progress
--- ----------------------------
-INSERT INTO `shelter_progress` VALUES ('1', '2026-05-12 09:58:06.701000', '50', '2026-05-12 09:58:06.701000');
-
--- ----------------------------
 -- Table structure for shelter_stock
 -- ----------------------------
 DROP TABLE IF EXISTS `shelter_stock`;
@@ -1244,6 +1230,37 @@ INSERT INTO `shelter_stock` VALUES ('55', 'weapon', '6', '1', '2026-05-13 18:52:
 INSERT INTO `shelter_stock` VALUES ('56', 'weapon', '7', '1', '2026-05-13 18:52:32.227988', '2026-05-13 18:52:32.227988');
 INSERT INTO `shelter_stock` VALUES ('57', 'weapon', '8', '2', '2026-05-13 18:52:32.227988', '2026-05-13 18:52:32.227988');
 INSERT INTO `shelter_stock` VALUES ('58', 'weapon', '9', '1', '2026-05-13 18:52:32.227988', '2026-05-13 18:52:32.227988');
+
+-- ----------------------------
+-- Table structure for shelter_daily_labor
+-- ----------------------------
+DROP TABLE IF EXISTS `shelter_daily_labor`;
+CREATE TABLE `shelter_daily_labor` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `game_day` int(11) NOT NULL COMMENT '游戏天数',
+  `player_id` int(11) NOT NULL COMMENT '劳工玩家ID',
+  `build_value` int(11) NOT NULL DEFAULT '0' COMMENT '当日贡献建造值',
+  `is_exploited` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否压榨（建造值翻倍等由主持人裁定）',
+  `is_escaped` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否逃役（不计入劳工）',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UK_shelter_labor_day_player` (`game_day`,`player_id`),
+  KEY `idx_game_day` (`game_day`),
+  CONSTRAINT `shelter_daily_labor_ibfk_1` FOREIGN KEY (`player_id`) REFERENCES `player` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='避难所每日劳工名单（总建造值=SUM(build_value)）';
+
+-- ----------------------------
+-- Table structure for shelter_labor_day
+-- ----------------------------
+DROP TABLE IF EXISTS `shelter_labor_day`;
+CREATE TABLE `shelter_labor_day` (
+  `game_day` int(11) NOT NULL COMMENT '游戏天数',
+  `verified` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'DM是否已结算确认',
+  `verified_at` datetime DEFAULT NULL,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`game_day`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='避难所每日劳工结算状态';
+
 -- ----------------------------
 -- Table structure for food
 -- ----------------------------
@@ -1357,7 +1374,6 @@ INSERT INTO `player_energy_stock` (`player_id`, `item_id`, `quantity`) VALUES
 (1, 1, 3), (1, 2, 1),
 (2, 1, 3), (2, 2, 1),
 (3, 1, 3), (3, 2, 1),
-(4, 1, 10),
 (5, 1, 3), (5, 2, 1);
 
 -- ----------------------------

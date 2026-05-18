@@ -35,7 +35,20 @@ async function request(url, options = {}) {
     clearTimeout(timeoutId)
     backendAvailable = true
     checkedBackend = true
-    return await response.json()
+    const text = await response.text()
+    let data = null
+    try {
+      data = text ? JSON.parse(text) : {}
+    } catch {
+      data = { success: false, message: text || `请求失败 (${response.status})` }
+    }
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data?.message || data?.error || `请求失败 (${response.status})`
+      }
+    }
+    return data
   } catch (error) {
     backendAvailable = false
     checkedBackend = true
@@ -88,7 +101,33 @@ export const skillAPI = {
 }
 
 export const shelterAPI = {
-  getSummary: () => request(`${API_BASE}/shelter`),
+  getSummary: (gameDay) => {
+    const q = gameDay != null ? `?gameDay=${encodeURIComponent(gameDay)}` : ''
+    return request(`${API_BASE}/shelter${q}`)
+  },
+  /** 统治者：仅提交 playerIds */
+  setLaborRoster: (playerIds, gameDay) =>
+    request(`${API_BASE}/shelter/labor/roster`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        playerIds,
+        ...(gameDay != null ? { gameDay } : {})
+      })
+    }),
+  /** DM：完整编辑劳工 */
+  setDailyLabor: (laborers, gameDay) =>
+    request(`${API_BASE}/shelter/labor`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        laborers,
+        ...(gameDay != null ? { gameDay } : {})
+      })
+    }),
+  verifyLaborDay: (gameDay) =>
+    request(`${API_BASE}/shelter/labor/verify`, {
+      method: 'POST',
+      body: JSON.stringify({ ...(gameDay != null ? { gameDay } : {}) })
+    })
 }
 
 export const tradeAPI = {

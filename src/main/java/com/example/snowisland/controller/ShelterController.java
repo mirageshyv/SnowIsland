@@ -2,11 +2,10 @@ package com.example.snowisland.controller;
 
 import com.example.snowisland.service.ShelterService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,7 +20,76 @@ public class ShelterController {
     private ShelterService shelterService;
 
     @GetMapping
-    public Map<String, Object> getSummary() {
-        return shelterService.getSummary();
+    public Map<String, Object> getSummary(@RequestParam(required = false) Integer gameDay) {
+        return shelterService.getSummary(gameDay);
+    }
+
+    /** 统治者：仅提交当日劳工名单（playerId），不含建造值/逃役 */
+    @PutMapping("/labor/roster")
+    public Map<String, Object> setLaborRoster(@RequestBody Map<String, Object> body) {
+        Integer gameDay = toInt(body.get("gameDay"));
+        if (gameDay == null) {
+            gameDay = shelterService.getCurrentGameDay();
+        }
+        return shelterService.setLaborRoster(gameDay, extractPlayerIds(body.get("playerIds")));
+    }
+
+    /** DM：完整编辑指定日劳工（建造值、压榨、逃役） */
+    @PutMapping("/labor")
+    public Map<String, Object> setDailyLabor(@RequestBody Map<String, Object> body) {
+        Integer gameDay = toInt(body.get("gameDay"));
+        if (gameDay == null) {
+            gameDay = shelterService.getCurrentGameDay();
+        }
+        List<Map<String, Object>> laborers = new ArrayList<>();
+        Object raw = body.get("laborers");
+        if (raw instanceof List) {
+            for (Object item : (List<?>) raw) {
+                if (item instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> row = (Map<String, Object>) item;
+                    laborers.add(row);
+                }
+            }
+        }
+        return shelterService.setDailyLabor(gameDay, laborers);
+    }
+
+    /** DM：结算指定日建造日志 */
+    @PostMapping("/labor/verify")
+    public Map<String, Object> verifyLaborDay(@RequestBody Map<String, Object> body) {
+        Integer gameDay = toInt(body.get("gameDay"));
+        if (gameDay == null) {
+            gameDay = shelterService.getCurrentGameDay();
+        }
+        return shelterService.verifyLaborDay(gameDay);
+    }
+
+    private static List<Integer> extractPlayerIds(Object raw) {
+        List<Integer> ids = new ArrayList<>();
+        if (!(raw instanceof List)) {
+            return ids;
+        }
+        for (Object item : (List<?>) raw) {
+            Integer id = toInt(item);
+            if (id != null) {
+                ids.add(id);
+            }
+        }
+        return ids;
+    }
+
+    private static Integer toInt(Object o) {
+        if (o == null || "".equals(o)) {
+            return null;
+        }
+        if (o instanceof Number) {
+            return ((Number) o).intValue();
+        }
+        try {
+            return Integer.parseInt(String.valueOf(o));
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

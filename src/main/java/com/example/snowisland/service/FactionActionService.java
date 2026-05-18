@@ -41,6 +41,7 @@ public class FactionActionService {
     @Autowired private LocationNpcRepository npcRepository;
     @Autowired private PlayerActionRepository playerActionRepository;
     @Autowired private ArkService arkService;
+    @Autowired private ShelterService shelterService;
     @Autowired private EntityManager entityManager;
 
     public Map<String, Object> getContext(Integer playerId, Integer gameDay) {
@@ -95,7 +96,7 @@ public class FactionActionService {
         ctx.put("allowedActionTypes", FACTION_ACTION_TYPES.getOrDefault(faction, Collections.emptySet()));
         ctx.put("militiaPlayers", getPlayersByJobs(GUARD_JOBS));
         ctx.put("allPlayers", getPlayerSummaries());
-        ctx.put("laborCandidates", getLaborCandidates());
+        ctx.put("laborCandidates", getLaborCandidates(gameDay));
         ctx.put("history", todayActions.stream().map(this::toMap).collect(Collectors.toList()));
 
         return ctx;
@@ -665,9 +666,22 @@ public class FactionActionService {
         }).collect(Collectors.toList());
     }
 
-    private List<Map<String, Object>> getLaborCandidates() {
+    private List<Map<String, Object>> getLaborCandidates(int gameDay) {
+        List<Integer> assigned = shelterService.getLaborPlayerIdsForDay(gameDay);
+        if (!assigned.isEmpty()) {
+            List<Map<String, Object>> rows = new ArrayList<>();
+            for (Integer id : assigned) {
+                playerRepository.findById(id).ifPresent(p -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", p.getId());
+                    m.put("name", p.getName());
+                    rows.add(m);
+                });
+            }
+            return rows;
+        }
         return playerRepository.findAll().stream()
-                .filter(p -> Boolean.TRUE.equals(p.getIsOverworked()) || Boolean.TRUE.equals(p.getIsWeak()))
+                .filter(p -> p.getFaction() != Player.Faction.统治者)
                 .map(p -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", p.getId());

@@ -1,9 +1,9 @@
 package com.example.snowisland.repository;
 
-import com.example.snowisland.entity.ShelterProgress;
+import com.example.snowisland.entity.ShelterLaborDay;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface ShelterProgressRepository extends JpaRepository<ShelterProgress, Integer> {
+public interface ShelterLaborDayRepository extends JpaRepository<ShelterLaborDay, Integer> {
 }
