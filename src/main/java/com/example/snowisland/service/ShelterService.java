@@ -106,6 +106,11 @@ public class ShelterService {
                 .collect(Collectors.toList());
     }
 
+    public boolean isPlayerLaborerForDay(int playerId, int gameDay) {
+        return shelterDailyLaborRepository.findByGameDayOrderByPlayerIdAsc(gameDay).stream()
+                .anyMatch(l -> playerId == l.getPlayerId() && !Boolean.TRUE.equals(l.getEscaped()));
+    }
+
     @Transactional
     public Map<String, Object> getSummary(Integer viewGameDay) {
         Map<String, Object> out = new LinkedHashMap<>();

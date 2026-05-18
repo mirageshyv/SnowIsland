@@ -22,6 +22,10 @@ public class ActionService {
     @Autowired private LocationFacilityRepository facilityRepository;
     @Autowired private JobRepository jobRepository;
     @Autowired private EntityManager entityManager;
+    @Autowired private ShelterService shelterService;
+
+    /** Shown to players while status is pending (DM sees full computed result). */
+    public static final String PENDING_PLAYER_MESSAGE = "已提交，等待主持人确认。";
 
     private static final Map<String, String> PRODUCTION_JOB_MAP = new LinkedHashMap<>();
     private static final Map<String, Map<String, Object>> PRODUCTION_OUTPUT_MAP = new LinkedHashMap<>();
@@ -79,7 +83,6 @@ public class ActionService {
             result.put("success", false); result.put("message", "该行动槽位已提交");
             return result;
         }
-
         PlayerAction action = new PlayerAction();
         action.setPlayerId(playerId);
         action.setPlayerName(player.getName());
@@ -104,7 +107,7 @@ public class ActionService {
         } else if ("produce".equals(actionType)) {
             autoResult = resolveProduce(player);
         } else if ("hide".equals(actionType)) {
-            autoResult = resolveHide(playerId, player.getName(), gameDay, action);
+            autoResult = buildHideResultMessage();
         } else if ("use_trait".equals(actionType)) {
             autoResult = "等待DM反馈";
         } else if ("use_skill".equals(actionType)) {
@@ -127,6 +130,44 @@ public class ActionService {
 
         result.put("success", true);
         result.put("message", "个人行动提交成功");
+        result.put("data", toMapForPlayer(action));
+        return result;
+    }
+
+    public Map<String, Object> getSubmitContext(Integer playerId, Integer gameDay) {
+        Map<String, Object> ctx = new LinkedHashMap<>();
+        int day = gameDay != null && gameDay >= 1 ? gameDay : 1;
+        boolean laborer = playerId != null && shelterService.isPlayerLaborerForDay(playerId, day);
+        ctx.put("gameDay", day);
+        ctx.put("isShelterLaborer", laborer);
+        if (laborer) {
+            ctx.put("laborerMessage", "你今日被指定为避难所劳工，按规定当天不应提交个人行动；但不管怎么样，想要试试也是可以的。");
+        }
+        return ctx;
+    }
+
+    @Transactional
+    public Map<String, Object> approveAction(Integer actionId) {
+        Map<String, Object> result = new HashMap<>();
+        Optional<PlayerAction> optAction = actionRepository.findById(actionId);
+        if (!optAction.isPresent()) {
+            result.put("success", false);
+            result.put("message", "行动不存在");
+            return result;
+        }
+        PlayerAction action = optAction.get();
+        if (action.getStatus() != PlayerAction.ActionStatus.pending) {
+            result.put("success", false);
+            result.put("message", "该行动已处理");
+            return result;
+        }
+        if ("hide".equals(action.getActionType())) {
+            applyHideEffects(action);
+        }
+        action.setStatus(PlayerAction.ActionStatus.feedbacked);
+        actionRepository.save(action);
+        result.put("success", true);
+        result.put("message", "行动已确认");
         result.put("data", toMap(action));
         return result;
     }
@@ -206,22 +247,29 @@ public class ActionService {
         return "【生产】" + output.get("description") + "\n等待DM结算后物资将发放到您的背包中";
     }
 
-    private String resolveHide(Integer playerId, String playerName, Integer gameDay, PlayerAction action) {
-        int nextDay = gameDay + 1;
+    private String buildHideResultMessage() {
+        return "【隐藏】您将进入隐藏状态，明天将无法被调查、私聊或成为统治者与密谋的行动目标";
+    }
+
+    private void applyHideEffects(PlayerAction action) {
+        int nextDay = action.getGameDay() + 1;
+        Integer playerId = action.getPlayerId();
+        if (playerId == null) {
+            return;
+        }
         if (!stealthRepository.existsByPlayerIdAndGameDay(playerId, nextDay)) {
             PlayerStealth stealth = new PlayerStealth();
             stealth.setPlayerId(playerId);
-            stealth.setPlayerName(playerName);
+            stealth.setPlayerName(action.getPlayerName());
             stealth.setGameDay(nextDay);
             stealth.setSourceActionId(action.getId());
             stealthRepository.save(stealth);
         }
-        return "【隐藏】您已进入隐藏状态，明天将无法被调查、私聊或成为统治者与密谋的行动目标";
     }
 
     public List<Map<String, Object>> getPlayerActions(Integer playerId, Integer gameDay) {
         List<PlayerAction> actions = actionRepository.findByPlayerIdAndGameDayOrderByActionSlotAsc(playerId, gameDay);
-        return actions.stream().map(this::toMap).collect(Collectors.toList());
+        return actions.stream().map(this::toMapForPlayer).collect(Collectors.toList());
     }
 
     public List<Map<String, Object>> getAllActions(Integer gameDay, String actionType, String status, Integer playerId) {
@@ -258,6 +306,17 @@ public class ActionService {
         result.put("success", true); result.put("message", "反馈成功");
         result.put("data", toMap(action));
         return result;
+    }
+
+    private Map<String, Object> toMapForPlayer(PlayerAction action) {
+        Map<String, Object> map = toMap(action);
+        if (action.getStatus() == PlayerAction.ActionStatus.pending) {
+            map.put("result", PENDING_PLAYER_MESSAGE);
+            map.put("resultPending", true);
+        } else {
+            map.put("resultPending", false);
+        }
+        return map;
     }
 
     @Transactional
@@ -678,6 +737,13 @@ public class ActionService {
         map.put("status", action.getStatus().name());
         map.put("gameDay", action.getGameDay());
         map.put("createdAt", action.getCreatedAt());
+        boolean laborer = action.getPlayerId() != null && action.getGameDay() != null
+                && shelterService.isPlayerLaborerForDay(action.getPlayerId(), action.getGameDay());
+        map.put("playerIsShelterLaborer", laborer);
+        if (laborer) {
+            map.put("laborerDmWarning",
+                    "该玩家已列入第 " + action.getGameDay() + " 天避难所劳工名单，按规定不应提交个人行动。");
+        }
         return map;
     }
 }

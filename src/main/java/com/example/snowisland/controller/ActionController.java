@@ -28,6 +28,18 @@ public class ActionController {
         return ResponseEntity.ok(actionService.submitAction(playerId, actionSlot, actionType, targetId, npcId, notes, gameDay));
     }
 
+    @GetMapping("/submit-context")
+    public ResponseEntity<Map<String, Object>> getSubmitContext(
+            @RequestParam Integer playerId,
+            @RequestParam(required = false, defaultValue = "1") Integer gameDay) {
+        return ResponseEntity.ok(actionService.getSubmitContext(playerId, gameDay));
+    }
+
+    @PostMapping("/{actionId}/approve")
+    public ResponseEntity<Map<String, Object>> approveAction(@PathVariable Integer actionId) {
+        return ResponseEntity.ok(actionService.approveAction(actionId));
+    }
+
     @GetMapping("/player/{playerId}")
     public ResponseEntity<List<Map<String, Object>>> getPlayerActions(
             @PathVariable Integer playerId,

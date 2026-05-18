@@ -328,8 +328,12 @@ export const actionAPI = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     }),
+  getSubmitContext: (playerId, gameDay = 1) =>
+    request(`${API_BASE}/actions/submit-context?playerId=${encodeURIComponent(playerId)}&gameDay=${encodeURIComponent(gameDay)}`),
   getPlayerActions: (playerId, gameDay = 1) =>
     request(`${API_BASE}/actions/player/${playerId}?gameDay=${gameDay}`),
+  approveAction: (actionId) =>
+    request(`${API_BASE}/actions/${actionId}/approve`, { method: 'POST' }),
   getAllActions: (params = {}) => {
     const qs = Object.entries(params).filter(([, v]) => v != null && v !== '').map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')
     return request(`${API_BASE}/actions/all${qs ? '?' + qs : ''}`)

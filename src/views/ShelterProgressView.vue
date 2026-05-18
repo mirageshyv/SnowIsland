@@ -245,6 +245,9 @@ onMounted(() => {
           </p>
         </div>
         <ShelterSupplyCards :food="foodSupply" :energy="energyReserve" />
+        <p class="text-gray-600 text-xs text-center mt-4">
+          食物与能量为硬编码默认值，首次加载时写入数据库；尚未接入 DM 编辑
+        </p>
       </div>
 
       <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-6 md:p-8 mb-10">

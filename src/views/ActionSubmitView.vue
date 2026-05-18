@@ -19,6 +19,11 @@ const productionInfo = ref(null)
 const submittedActions = ref([])
 const showActionHelpModal = ref(false)
 const submitMessage = ref(null)
+const submitContext = ref({ isShelterLaborer: false, laborerMessage: '' })
+
+const PENDING_RESULT_TEXT = '已提交，等待主持人确认。'
+
+const isShelterLaborer = computed(() => Boolean(submitContext.value?.isShelterLaborer))
 
 const warehouses = ref([])
 const warehouseStock = ref([])
@@ -178,6 +183,18 @@ async function loadWarehouses() {
   } catch (e) { console.error('加载仓库列表失败:', e) }
 }
 
+async function loadSubmitContext() {
+  try {
+    const pid = parseInt(playerId)
+    if (isNaN(pid)) return
+    const ctx = await actionAPI.getSubmitContext(pid, gameDay.value)
+    submitContext.value = ctx || { isShelterLaborer: false }
+  } catch (e) {
+    console.error('加载行动上下文失败:', e)
+    submitContext.value = { isShelterLaborer: false }
+  }
+}
+
 async function loadSubmittedActions() {
   try {
     if (actionAPI && playerId) {
@@ -243,7 +260,7 @@ async function submitActions() {
       }
       const res = await actionAPI.submitAction(data)
       if (res && res.success) {
-        ad.result = res.data?.result || '已提交'
+        ad.result = res.data?.result || PENDING_RESULT_TEXT
         anySuccess = true
       } else {
         ad.result = '提交失败：' + (res?.message || '未知错误')
@@ -264,10 +281,21 @@ async function submitActions() {
   }
 }
 
-onMounted(async () => {
-  await Promise.all([loadData(), loadPlayerData(), loadWarehouses()])
+watch(gameDay, async () => {
+  await loadSubmitContext()
   await loadSubmittedActions()
 })
+
+onMounted(async () => {
+  await Promise.all([loadData(), loadPlayerData(), loadWarehouses(), loadSubmitContext()])
+  await loadSubmittedActions()
+})
+
+function displayActionResult(action) {
+  if (!action) return ''
+  if (action.status === 'pending' || action.resultPending) return PENDING_RESULT_TEXT
+  return action.result ? formatActionResultText(action.result) : ''
+}
 </script>
 
 <template>
@@ -278,12 +306,21 @@ onMounted(async () => {
         <p class="text-gray-500 text-sm">选择你的两个个人行动并提交</p>
         <div class="mt-3 flex items-center justify-center gap-2">
           <label class="text-gray-400 text-sm">当前天数：</label>
-          <select v-model="gameDay" @change="loadSubmittedActions" class="bg-black/30 border border-white/10 rounded-lg px-3 py-1 text-sm text-gray-200 focus:outline-none">
+          <select v-model="gameDay" class="bg-black/30 border border-white/10 rounded-lg px-3 py-1 text-sm text-gray-200 focus:outline-none">
             <option :value="1">第1天</option>
             <option :value="2">第2天</option>
             <option :value="3">第3天</option>
           </select>
         </div>
+      </div>
+
+      <div
+        v-if="isShelterLaborer"
+        class="mb-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-5 py-4 text-center"
+      >
+        <p class="text-amber-200 text-sm font-medium">
+          {{ submitContext.laborerMessage || '你今日被指定为避难所劳工，按规定当天不应提交个人行动；但不管怎么样，想要试试也是可以的。' }}
+        </p>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-10">
@@ -414,7 +451,7 @@ onMounted(async () => {
             <div>
               <label class="block text-gray-500 text-xs mb-2 ml-0.5">行动结果</label>
               <div class="min-h-[5.5rem] rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-gray-400 whitespace-pre-wrap">
-                {{ actionData[s].result || '结果将在此显示' }}
+                {{ actionData[s].result || '提交后等待主持人确认，结果将在此显示' }}
               </div>
             </div>
           </div>
@@ -451,10 +488,10 @@ onMounted(async () => {
               </div>
               <span class="text-xs px-2 py-0.5 rounded-full"
                 :class="action.status === 'pending' ? 'bg-amber-500/20 text-amber-400' : 'bg-green-500/20 text-green-400'">
-                {{ action.status === 'pending' ? '待反馈' : '已反馈' }}
+                {{ action.status === 'pending' ? '待确认' : '已确认' }}
               </span>
             </div>
-            <div v-if="action.result" class="text-gray-400 text-xs whitespace-pre-wrap bg-black/20 rounded-lg p-3 mt-2">{{ formatActionResultText(action.result) }}</div>
+            <div v-if="displayActionResult(action)" class="text-gray-400 text-xs whitespace-pre-wrap bg-black/20 rounded-lg p-3 mt-2">{{ displayActionResult(action) }}</div>
           </div>
         </div>
       </div>

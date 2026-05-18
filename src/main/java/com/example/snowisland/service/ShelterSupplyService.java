@@ -10,6 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
+/**
+ * Shelter public food/energy. Item catalog and default quantities are hard-coded below;
+ * persisted in shelter_food_stock / shelter_energy_stock after first ensureReady().
+ */
 @Service
 public class ShelterSupplyService {
 

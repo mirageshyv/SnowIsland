@@ -79,6 +79,28 @@ async function fetchActions() {
   }
 }
 
+function canApproveAction(action) {
+  return action?.status === 'pending' && ['go_location', 'hide'].includes(action.actionType)
+}
+
+async function approveAction(actionId) {
+  resolving.value = true
+  try {
+    const res = await actionAPI.approveAction(actionId)
+    if (res?.success) {
+      showResolveMessage('success', res.message || '行动已确认')
+      selectedActionId.value = null
+      await fetchActions()
+    } else {
+      showResolveMessage('error', res?.message || '确认失败')
+    }
+  } catch (e) {
+    showResolveMessage('error', '确认行动异常')
+  } finally {
+    resolving.value = false
+  }
+}
+
 async function submitFeedback() {
   if (!selectedActionId.value || !feedbackText.value.trim()) return
   try {
@@ -294,6 +316,13 @@ onMounted(() => { fetchActions() })
             </span>
           </div>
 
+          <p
+            v-if="action.playerIsShelterLaborer"
+            class="mb-3 text-xs text-amber-300/95 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2"
+          >
+            {{ action.laborerDmWarning || `该玩家已列入第 ${action.gameDay} 天避难所劳工名单，按规定不应提交个人行动。` }}
+          </p>
+
           <div v-if="action.actionType === 'transport' && action.notes" class="mb-3 rounded-xl border border-teal-500/20 bg-teal-500/5 p-3">
             <p class="text-teal-300 text-xs font-medium mb-2">搬运详情</p>
             <template v-if="parseTransportNotes(action.notes)">
@@ -317,7 +346,16 @@ onMounted(() => { fetchActions() })
             {{ formatActionResultText(action.result) }}
           </div>
 
-          <div v-if="action.status === 'pending'" class="flex gap-2">
+          <div v-if="action.status === 'pending'" class="flex flex-wrap gap-2">
+            <button
+              v-if="canApproveAction(action)"
+              type="button"
+              @click="approveAction(action.id)"
+              :disabled="resolving"
+              class="px-4 py-1.5 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-sm hover:bg-emerald-600/30 disabled:opacity-50 transition-colors"
+            >
+              确认行动
+            </button>
             <button v-if="action.actionType !== 'transport'" @click="selectForFeedback(action)"
               class="px-4 py-1.5 bg-cyan-600/20 text-cyan-400 border border-cyan-500/30 rounded-lg text-sm hover:bg-cyan-600/30 transition-colors">
               {{ selectedActionId === action.id ? '编辑反馈中...' : '给予反馈' }}
