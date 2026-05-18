@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch, onMounted } from 'vue'
-import { resolveShelterInventoryRows } from '../data/gameData.js'
+import { resolveShelterInventoryRows, getMaterialImageUrlOrDefault } from '../data/gameData.js'
 import { shelterAPI } from '../utils/api.js'
 import ShelterSupplyCards from './ShelterSupplyCards.vue'
 
@@ -41,10 +41,7 @@ function defaultLaborRow(playerId) {
     jobName: p?.jobName ?? '—',
     buildValue: 0,
     exploited: false,
-    escaped: false,
-    isWeak: p?.isWeak,
-    isOverworked: p?.isOverworked,
-    isInjured: p?.isInjured
+    escaped: false
   }
 }
 
@@ -125,6 +122,127 @@ const selectedShelterRow = computed(() => {
   return shelterDisplayRows.value.find((r) => r.id === selectedShelterItemId.value) || null
 })
 
+const savingStock = ref(false)
+const stockEditQty = ref(0)
+const showAddStockModal = ref(false)
+const catalogItems = ref([])
+const addSelected = ref(null)
+const addQuantity = ref(1)
+const addSearch = ref('')
+const addFilterType = ref('all')
+
+const addCatalogFiltered = computed(() => {
+  let items = catalogItems.value
+  if (addFilterType.value !== 'all') {
+    items = items.filter((i) => i.itemType === addFilterType.value)
+  }
+  if (addSearch.value.trim()) {
+    const q = addSearch.value.trim().toLowerCase()
+    items = items.filter((i) => (i.name || '').toLowerCase().includes(q))
+  }
+  return items.map((item) => ({
+    ...item,
+    imageUrl: getMaterialImageUrlOrDefault(item.itemType, item.itemId)
+  }))
+})
+
+watch(selectedShelterRow, (row) => {
+  if (row) stockEditQty.value = row.quantity
+})
+
+function stockKeysFromRow(row) {
+  if (row?.itemType != null && row?.itemId != null) {
+    return { itemType: row.itemType, itemId: row.itemId }
+  }
+  const id = row?.id
+  if (!id || !String(id).includes('_')) return null
+  const [itemType, ...rest] = String(id).split('_')
+  const itemId = parseInt(rest.join('_'), 10)
+  if (!itemType || Number.isNaN(itemId)) return null
+  return { itemType, itemId }
+}
+
+async function loadShelterCatalog() {
+  if (!isDm.value) return
+  try {
+    const result = await shelterAPI.getItemCatalog()
+    if (result?.success) catalogItems.value = result.items || []
+  } catch (e) {
+    console.error('加载物品目录失败:', e)
+  }
+}
+
+async function persistShelterStock(itemType, itemId, quantity) {
+  savingStock.value = true
+  try {
+    const result = await shelterAPI.upsertStock(itemType, itemId, quantity)
+    if (!result?.success) {
+      alert(result?.message || '更新失败')
+      return false
+    }
+    await loadShelterFromApi()
+    showAddStockModal.value = false
+    addSelected.value = null
+    return true
+  } catch (e) {
+    alert('更新库存失败: ' + (e.message || '未知错误'))
+    return false
+  } finally {
+    savingStock.value = false
+  }
+}
+
+async function saveShelterStockQty() {
+  if (!isDm.value || !selectedShelterRow.value) return
+  const keys = stockKeysFromRow(selectedShelterRow.value)
+  if (!keys) return
+  const q = Math.max(0, Math.floor(Number(stockEditQty.value) || 0))
+  await persistShelterStock(keys.itemType, keys.itemId, q)
+}
+
+async function removeShelterStockItem() {
+  if (!isDm.value || !selectedShelterRow.value) return
+  const keys = stockKeysFromRow(selectedShelterRow.value)
+  if (!keys) return
+  if (!confirm(`确定从避难所移除「${selectedShelterRow.value.name}」？`)) return
+  savingStock.value = true
+  try {
+    const result = await shelterAPI.deleteStock(keys.itemType, keys.itemId)
+    if (!result?.success) {
+      alert(result?.message || '移除失败')
+      return
+    }
+    selectedShelterItemId.value = null
+    await loadShelterFromApi()
+  } catch (e) {
+    alert('移除失败: ' + (e.message || '未知错误'))
+  } finally {
+    savingStock.value = false
+  }
+}
+
+function openAddStockModal() {
+  addSelected.value = null
+  addQuantity.value = 1
+  addSearch.value = ''
+  addFilterType.value = 'all'
+  showAddStockModal.value = true
+}
+
+async function confirmAddShelterStock() {
+  if (!addSelected.value) {
+    alert('请选择要添加的物品')
+    return
+  }
+  const q = Math.max(1, Math.floor(Number(addQuantity.value) || 1))
+  const { itemType, itemId } = addSelected.value
+  const existing = shelterDisplayRows.value.find(
+    (r) => r.itemType === itemType && r.itemId === itemId
+  )
+  const total = (existing?.quantity || 0) + q
+  await persistShelterStock(itemType, itemId, total)
+}
+
 function shelterCategoryLabel(c) {
   return { prop: '道具', weapon: '武器', material: '建材' }[c] || '未知'
 }
@@ -166,7 +284,14 @@ async function loadShelterFromApi() {
       .filter((row) => row && (row.id != null || (row.itemType != null && row.itemId != null)))
       .map((row) => {
         if (row.itemType != null && row.itemId != null) {
-          return { itemType: row.itemType, itemId: row.itemId, quantity: Number(row.quantity) || 0 }
+          return {
+            itemType: row.itemType,
+            itemId: row.itemId,
+            quantity: Number(row.quantity) || 0,
+            name: row.name,
+            description: row.description,
+            unit: row.unit
+          }
         }
         return { id: String(row.id), quantity: Number(row.quantity) || 0 }
       })
@@ -206,6 +331,7 @@ watch(shelterDisplayRows, (rows) => {
 
 onMounted(() => {
   loadShelterFromApi()
+  if (isDm.value) loadShelterCatalog()
 })
 </script>
 
@@ -245,9 +371,6 @@ onMounted(() => {
           </p>
         </div>
         <ShelterSupplyCards :food="foodSupply" :energy="energyReserve" />
-        <p class="text-gray-600 text-xs text-center mt-4">
-          食物与能量为硬编码默认值，首次加载时写入数据库；尚未接入 DM 编辑
-        </p>
       </div>
 
       <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-6 md:p-8 mb-10">
@@ -338,9 +461,6 @@ onMounted(() => {
           >
             <span class="font-medium">{{ p.name }}</span>
             <span class="text-gray-500 text-xs ml-1">{{ p.jobName }}</span>
-            <span v-if="p.isWeak" class="ml-1 text-amber-400 text-[10px]">虚弱</span>
-            <span v-if="p.isOverworked" class="ml-1 text-blue-400 text-[10px]">过劳</span>
-            <span v-if="p.isInjured" class="ml-1 text-red-400 text-[10px]">受伤</span>
           </button>
         </div>
 
@@ -399,10 +519,21 @@ onMounted(() => {
       </div>
 
       <div class="mb-10">
-        <h2 class="text-2xl text-white mb-4 tracking-tight">物资库存</h2>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <h2 class="text-2xl text-white tracking-tight">物资库存</h2>
+          <button
+            v-if="isDm"
+            type="button"
+            class="shrink-0 px-4 py-2 rounded-xl bg-cyan-600/30 hover:bg-cyan-600/40 text-cyan-300 text-sm font-medium border border-cyan-500/30 disabled:opacity-50 transition-colors"
+            :disabled="savingStock"
+            @click="openAddStockModal"
+          >
+            添加物资
+          </button>
+        </div>
         <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-5 md:p-6">
           <div v-if="!shelterDisplayRows.length" class="text-center text-gray-500 text-sm py-12">
-            暂无物资库存
+            {{ isDm ? '暂无物资，可点击「添加物资」' : '暂无物资库存' }}
           </div>
           <div v-else class="flex flex-col lg:flex-row gap-6 lg:gap-8">
             <div class="flex-1 min-w-0">
@@ -434,7 +565,36 @@ onMounted(() => {
                     {{ shelterCategoryLabel(selectedShelterRow.category) }}
                   </span>
                 </div>
-                <p class="text-cyan-400 text-center text-sm mb-3 tabular-nums">数量：{{ selectedShelterRow.quantity }}</p>
+                <p v-if="!isDm" class="text-cyan-400 text-center text-sm mb-3 tabular-nums">数量：{{ selectedShelterRow.quantity }}</p>
+                <div v-else class="mb-3 space-y-2">
+                  <label class="flex items-center justify-center gap-2 text-sm text-gray-400">
+                    数量
+                    <input
+                      v-model.number="stockEditQty"
+                      type="number"
+                      min="0"
+                      class="w-20 bg-black/40 border border-white/10 rounded px-2 py-1 text-white text-sm text-right"
+                    />
+                  </label>
+                  <div class="flex gap-2 justify-center">
+                    <button
+                      type="button"
+                      class="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-medium disabled:opacity-50"
+                      :disabled="savingStock"
+                      @click="saveShelterStockQty"
+                    >
+                      {{ savingStock ? '保存中…' : '保存数量' }}
+                    </button>
+                    <button
+                      type="button"
+                      class="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-300 border border-red-500/30 text-xs disabled:opacity-50"
+                      :disabled="savingStock"
+                      @click="removeShelterStockItem"
+                    >
+                      移除
+                    </button>
+                  </div>
+                </div>
                 <p class="text-gray-400 text-sm leading-relaxed text-left flex-1 overflow-y-auto max-h-48">
                   {{ selectedShelterRow.description }}
                 </p>
@@ -504,5 +664,84 @@ onMounted(() => {
         </div>
       </div>
     </template>
+
+    <div
+      v-if="showAddStockModal && isDm"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
+      @click.self="showAddStockModal = false"
+    >
+      <div class="bg-[#1a2332] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-xl">
+        <div class="p-5 border-b border-white/10 flex justify-between items-center">
+          <h3 class="text-white text-lg font-medium">添加物资到避难所</h3>
+          <button type="button" class="text-gray-500 hover:text-white" @click="showAddStockModal = false">✕</button>
+        </div>
+        <div class="p-4 flex gap-2 border-b border-white/5">
+          <input
+            v-model="addSearch"
+            type="text"
+            placeholder="搜索..."
+            class="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200"
+          />
+          <select
+            v-model="addFilterType"
+            class="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200"
+          >
+            <option value="all">全部</option>
+            <option value="item">道具</option>
+            <option value="weapon">武器</option>
+            <option value="ammo">弹药</option>
+            <option value="material">材料</option>
+          </select>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 grid grid-cols-4 sm:grid-cols-5 gap-2 min-h-[200px]">
+          <button
+            v-for="item in addCatalogFiltered"
+            :key="`${item.itemType}-${item.itemId}`"
+            type="button"
+            class="aspect-square rounded-xl border-2 p-1 flex flex-col items-center justify-center transition-all"
+            :class="
+              addSelected &&
+              addSelected.itemType === item.itemType &&
+              addSelected.itemId === item.itemId
+                ? 'border-cyan-500 bg-cyan-500/10'
+                : 'border-white/10 bg-black/20 hover:border-white/20'
+            "
+            @click="addSelected = item"
+          >
+            <img :src="item.imageUrl" :alt="item.name" class="w-[70%] h-[70%] object-contain" />
+            <span class="text-[9px] text-gray-400 mt-1 truncate w-full text-center px-0.5">{{ item.name }}</span>
+          </button>
+        </div>
+        <div class="p-4 border-t border-white/10 flex items-center justify-between gap-4">
+          <div class="flex items-center gap-2 text-sm text-gray-400">
+            <span>数量</span>
+            <input
+              v-model.number="addQuantity"
+              type="number"
+              min="1"
+              class="w-20 bg-black/30 border border-white/10 rounded px-2 py-1 text-white text-center"
+            />
+            <span v-if="addSelected">{{ addSelected.unit }}</span>
+          </div>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="px-4 py-2 text-gray-400 rounded-lg hover:bg-white/5"
+              @click="showAddStockModal = false"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              class="px-4 py-2 bg-cyan-600 text-white rounded-lg disabled:opacity-50"
+              :disabled="!addSelected || savingStock"
+              @click="confirmAddShelterStock"
+            >
+              添加
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

@@ -131,25 +131,15 @@ const MATERIAL_IMAGES = {
   10: imgEngine,
   11: imgPropeller,
   12: imgGenerator,
+  5: imgFood,
+  8: imgFuel,
 }
-
-/** All food catalog ids use Food.png */
-const FOOD_IMAGES = Object.fromEntries(
-  Array.from({ length: 24 }, (_, i) => [i + 1, imgFood]),
-)
-
-/** All energy (fuel) catalog ids use Fuel.png */
-const ENERGY_IMAGES = Object.fromEntries(
-  Array.from({ length: 3 }, (_, i) => [i + 1, imgFuel]),
-)
 
 const MATERIAL_MAPS = {
   item: ITEM_IMAGES,
   weapon: WEAPON_IMAGES,
   ammo: AMMO_IMAGES,
   material: MATERIAL_IMAGES,
-  food: FOOD_IMAGES,
-  energy: ENERGY_IMAGES,
 }
 
 // 与数据库 item / weapon / ammo / material 表同步（snowisland_5_15.sql）
@@ -210,7 +200,7 @@ export const GAME_ITEM_NAMES = {
     5: '食物',
     6: '沥青',
     7: '石料',
-    8: '燃料/煤油',
+    8: '燃料',
     9: '帆布',
     10: '发动机',
     11: '螺旋桨',
@@ -269,9 +259,9 @@ const materialUrlOrDefaultCache = new Map()
 export function getMaterialImageUrlOrDefault(type, id) {
   if (type == null || id === '' || id === undefined) return DEFAULT_MATERIAL_IMAGE_URL
   const t = String(type).toLowerCase()
-  if (t === 'food') return imgFood
-  if (t === 'energy') return imgFuel
   const numId = typeof id === 'number' && Number.isFinite(id) ? id : parseInt(String(id), 10)
+  if (t === 'material' && numId === 5) return imgFood
+  if (t === 'material' && numId === 8) return imgFuel
   if (Number.isNaN(numId)) return DEFAULT_MATERIAL_IMAGE_URL
   const key = `${t}:${numId}`
   let cached = materialUrlOrDefaultCache.get(key)
@@ -309,8 +299,6 @@ export function getTypeTabImage(type) {
   if (type === 'weapon') return imgRifle
   if (type === 'ammo') return imgServicePistol
   if (type === 'material') return imgWood
-  if (type === 'food') return imgFood
-  if (type === 'energy') return imgFuel
   return imgMedicalKit
 }
 
@@ -417,6 +405,8 @@ export function resolveShelterInventoryRows(items) {
         const category = { item: 'prop', weapon: 'weapon', ammo: 'ammo', material: 'material' }[row.itemType] || 'prop'
         return {
           id: key,
+          itemType: row.itemType,
+          itemId: row.itemId,
           name: row.name,
           category,
           description: row.description || '',
@@ -441,6 +431,8 @@ export function resolveShelterInventoryRows(items) {
         const category = { item: 'prop', weapon: 'weapon', ammo: 'ammo', material: 'material' }[row.itemType] || 'prop'
         return {
           id: key,
+          itemType: row.itemType,
+          itemId: row.itemId,
           name: getItemDisplayName(row.itemType, row.itemId),
           category,
           description: '',
@@ -449,7 +441,16 @@ export function resolveShelterInventoryRows(items) {
           quantity: row.quantity,
         }
       }
-      return { ...def, quantity: row.quantity }
+      const key = row.itemType != null && row.itemId != null
+        ? `${row.itemType}_${row.itemId}`
+        : def.id
+      return {
+        ...def,
+        id: key,
+        itemType: row.itemType,
+        itemId: row.itemId,
+        quantity: row.quantity,
+      }
     })
     .filter(Boolean)
 }

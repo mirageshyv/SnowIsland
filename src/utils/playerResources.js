@@ -40,8 +40,8 @@ export function sumPersonalFoodAndFuel(items) {
   let fuel = 0
   for (const item of items) {
     const q = quantityToKg(item.quantity, item.unit)
-    if (item.type === 'food') food += q
-    if (item.type === 'energy' && String(item.unit || '').toUpperCase() !== 'L') fuel += q
+    if (item.type === 'material' && item.id === 5) food += q
+    if (item.type === 'material' && item.id === 8) fuel += q
   }
   return { food, fuel }
 }

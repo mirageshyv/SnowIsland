@@ -53,15 +53,11 @@ public class PlayerService {
         itemNames.put("weapon", new HashMap<>());
         itemNames.put("ammo", new HashMap<>());
         itemNames.put("material", new HashMap<>());
-        itemNames.put("food", new HashMap<>());
-        itemNames.put("energy", new HashMap<>());
 
         itemUnits.put("item", new HashMap<>());
         itemUnits.put("weapon", new HashMap<>());
         itemUnits.put("ammo", new HashMap<>());
         itemUnits.put("material", new HashMap<>());
-        itemUnits.put("food", new HashMap<>());
-        itemUnits.put("energy", new HashMap<>());
     }
 
     public void loadItemNames() {
@@ -69,9 +65,7 @@ public class PlayerService {
             "SELECT 'item' as type, id, name, unit FROM item " +
             "UNION ALL SELECT 'weapon', id, name, unit FROM weapon " +
             "UNION ALL SELECT 'ammo', id, name, unit FROM ammo " +
-            "UNION ALL SELECT 'material', id, name, unit FROM material " +
-            "UNION ALL SELECT 'food', id, name, unit FROM food " +
-            "UNION ALL SELECT 'energy', id, name, unit FROM energy"
+            "UNION ALL SELECT 'material', id, name, unit FROM material"
         ).getResultList();
 
         for (Object[] row : items) {
@@ -85,39 +79,22 @@ public class PlayerService {
     }
 
     public List<Map<String, Object>> getPlayerItems(Integer playerId) {
-        System.out.println("=== getPlayerItems called for playerId: " + playerId);
         loadItemNames();
-        System.out.println("=== itemNames loaded, material size: " + itemNames.get("material").size());
-        
-        // Try native query first for debugging
-        List<PlayerItem> playerItemsNative = playerItemRepository.findByPlayerIdNative(playerId);
-        System.out.println("=== [NATIVE] Found " + playerItemsNative.size() + " player items for player " + playerId);
-        
         List<PlayerItem> playerItems = playerItemRepository.findByPlayerId(playerId);
-        System.out.println("=== [JPA] Found " + playerItems.size() + " player items for player " + playerId);
-        
         List<Map<String, Object>> result = new ArrayList<>();
 
         for (PlayerItem pi : playerItems) {
             String type = pi.getItemType().name().toLowerCase();
-            if ("food".equals(type) || "energy".equals(type)) {
-                continue;
-            }
-            if ("material".equals(type) && (pi.getItemId() == 5 || pi.getItemId() == 8)) {
-                continue;
-            }
+            int itemId = pi.getItemId();
             Map<String, Object> item = new HashMap<>();
-            item.put("id", pi.getItemId());
+            item.put("id", itemId);
             item.put("type", type);
             item.put("quantity", pi.getQuantity());
-            String name = itemNames.get(type).getOrDefault(pi.getItemId(), "未知物品");
+            String name = itemNames.get(type).getOrDefault(itemId, "未知物品");
             item.put("name", name);
-            item.put("unit", itemUnits.get(type).getOrDefault(pi.getItemId(), "个"));
+            item.put("unit", itemUnits.get(type).getOrDefault(itemId, "个"));
             result.add(item);
         }
-
-        result.addAll(playerSupplyService.buildPlayerFoodItemsForTrade(playerId));
-        result.addAll(playerSupplyService.buildPlayerEnergyItemsForTrade(playerId));
 
         return result;
     }
@@ -310,7 +287,7 @@ public class PlayerService {
         return result;
     }
 
-    /** Dashboard food (kg) and fuel from player_food_stock / player_energy_stock. */
+    /** Dashboard food (kg) and fuel from player_items material 5 / 8. */
     public Map<String, Object> getPersonalResources(Integer playerId) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", true);

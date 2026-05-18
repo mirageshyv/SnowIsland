@@ -34,8 +34,6 @@ const typeLabels = {
   weapon: '武器',
   ammo: '弹药',
   material: '材料',
-  food: '食物',
-  energy: '燃料'
 }
 
 const displayRows = computed(() => {
@@ -55,7 +53,7 @@ const displayRows = computed(() => {
 
 const groupedRows = computed(() => {
   const groups = {}
-  const order = ['food', 'energy', 'material', 'weapon', 'ammo', 'item']
+  const order = ['material', 'weapon', 'ammo', 'item']
   for (const item of displayRows.value) {
     const type = item.itemType
     if (!groups[type]) groups[type] = []
@@ -310,8 +308,6 @@ defineExpose({ openPlayer: (id) => { selectedPlayerId.value = id } })
             class="bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50"
           >
             <option value="all">全部</option>
-            <option value="food">食物</option>
-            <option value="energy">燃料</option>
             <option value="item">道具</option>
             <option value="weapon">武器</option>
             <option value="ammo">弹药</option>
@@ -484,8 +480,6 @@ defineExpose({ openPlayer: (id) => { selectedPlayerId.value = id } })
             class="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200"
           >
             <option value="all">全部</option>
-            <option value="food">食物</option>
-            <option value="energy">燃料</option>
             <option value="item">道具</option>
             <option value="weapon">武器</option>
             <option value="ammo">弹药</option>

@@ -14,8 +14,8 @@ import { tradeAPI, playerAPI, milestoneAPI } from '../utils/api.js'
 import { sumPersonalFoodAndFuel, formatKgForDisplay } from '../utils/playerResources.js'
 import { getMaterialImageUrlOrDefault } from '../data/gameData.js'
 
-const foodIconUrl = getMaterialImageUrlOrDefault('food', 5)
-const fuelIconUrl = getMaterialImageUrlOrDefault('energy', 1)
+const foodIconUrl = getMaterialImageUrlOrDefault('material', 5)
+const fuelIconUrl = getMaterialImageUrlOrDefault('material', 8)
 
 const router = useRouter()
 const username = localStorage.getItem('username') || ''

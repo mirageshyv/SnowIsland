@@ -37,14 +37,14 @@ public class ActionService {
         PRODUCTION_JOB_MAP.put("猎户", "hunting");
 
         Map<String, Object> fishing = new LinkedHashMap<>();
-        fishing.put("itemType", "food"); fishing.put("itemId", 5); fishing.put("quantity", 10);
+        fishing.put("itemType", "material"); fishing.put("itemId", 5); fishing.put("quantity", 10);
         fishing.put("unit", "kg"); fishing.put("itemName", "食物");
         fishing.put("description", "在码头使用渔船设施，获得食物10kg");
         fishing.put("requiredLocation", "码头"); fishing.put("requiredFacility", "渔船");
         PRODUCTION_OUTPUT_MAP.put("fishing", fishing);
 
         Map<String, Object> farming = new LinkedHashMap<>();
-        farming.put("itemType", "food"); farming.put("itemId", 5); farming.put("quantity", 15);
+        farming.put("itemType", "material"); farming.put("itemId", 5); farming.put("quantity", 15);
         farming.put("unit", "kg"); farming.put("itemName", "食物");
         farming.put("description", "使用牲畜设施，获得食物15kg");
         PRODUCTION_OUTPUT_MAP.put("farming", farming);
@@ -62,7 +62,7 @@ public class ActionService {
         PRODUCTION_OUTPUT_MAP.put("mining", mining);
 
         Map<String, Object> hunting = new LinkedHashMap<>();
-        hunting.put("itemType", "food"); hunting.put("itemId", 5); hunting.put("quantity", 5);
+        hunting.put("itemType", "material"); hunting.put("itemId", 5); hunting.put("quantity", 5);
         hunting.put("unit", "kg"); hunting.put("itemName", "食物");
         hunting.put("description", "需要远程武器（无需子弹或弓箭）5kg食物");
         PRODUCTION_OUTPUT_MAP.put("hunting", hunting);
@@ -519,8 +519,6 @@ public class ActionService {
             case "weapon": tableName = "weapon"; break;
             case "ammo": tableName = "ammo"; break;
             case "material": tableName = "material"; break;
-            case "food": tableName = "food"; break;
-            case "energy": tableName = "energy"; break;
             default: tableName = "item"; break;
         }
         try {
@@ -613,62 +611,6 @@ public class ActionService {
             }
         } catch (Exception e) {
             throw new RuntimeException("添加物品失败: " + e.getMessage());
-        }
-    }
-
-    private void adjustPlayerFoodStock(Integer playerId, Integer foodId, Integer quantity) {
-        try {
-            Query checkQuery = entityManager.createNativeQuery(
-                    "SELECT quantity FROM player_food_stock WHERE player_id = ?1 AND item_id = ?2");
-            checkQuery.setParameter(1, playerId);
-            checkQuery.setParameter(2, foodId);
-            List<?> existing = checkQuery.getResultList();
-            if (!existing.isEmpty()) {
-                int currentQty = ((Number) existing.get(0)).intValue();
-                Query updateQuery = entityManager.createNativeQuery(
-                        "UPDATE player_food_stock SET quantity = ?1 WHERE player_id = ?2 AND item_id = ?3");
-                updateQuery.setParameter(1, currentQty + quantity);
-                updateQuery.setParameter(2, playerId);
-                updateQuery.setParameter(3, foodId);
-                updateQuery.executeUpdate();
-            } else {
-                Query insertQuery = entityManager.createNativeQuery(
-                        "INSERT INTO player_food_stock (player_id, item_id, quantity) VALUES (?1, ?2, ?3)");
-                insertQuery.setParameter(1, playerId);
-                insertQuery.setParameter(2, foodId);
-                insertQuery.setParameter(3, quantity);
-                insertQuery.executeUpdate();
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("添加食物失败: " + e.getMessage());
-        }
-    }
-
-    private void adjustPlayerEnergyStock(Integer playerId, Integer energyId, Integer quantity) {
-        try {
-            Query checkQuery = entityManager.createNativeQuery(
-                    "SELECT quantity FROM player_energy_stock WHERE player_id = ?1 AND item_id = ?2");
-            checkQuery.setParameter(1, playerId);
-            checkQuery.setParameter(2, energyId);
-            List<?> existing = checkQuery.getResultList();
-            if (!existing.isEmpty()) {
-                int currentQty = ((Number) existing.get(0)).intValue();
-                Query updateQuery = entityManager.createNativeQuery(
-                        "UPDATE player_energy_stock SET quantity = ?1 WHERE player_id = ?2 AND item_id = ?3");
-                updateQuery.setParameter(1, currentQty + quantity);
-                updateQuery.setParameter(2, playerId);
-                updateQuery.setParameter(3, energyId);
-                updateQuery.executeUpdate();
-            } else {
-                Query insertQuery = entityManager.createNativeQuery(
-                        "INSERT INTO player_energy_stock (player_id, item_id, quantity) VALUES (?1, ?2, ?3)");
-                insertQuery.setParameter(1, playerId);
-                insertQuery.setParameter(2, energyId);
-                insertQuery.setParameter(3, quantity);
-                insertQuery.executeUpdate();
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("添加燃料失败: " + e.getMessage());
         }
     }
 

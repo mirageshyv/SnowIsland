@@ -55,6 +55,24 @@ public class ShelterController {
         return shelterService.setDailyLabor(gameDay, laborers);
     }
 
+    @GetMapping("/catalog")
+    public Map<String, Object> getItemCatalog() {
+        return shelterService.getShelterItemCatalog();
+    }
+
+    @PutMapping("/stock")
+    public Map<String, Object> upsertStock(@RequestBody Map<String, Object> body) {
+        String itemType = body.get("itemType") != null ? String.valueOf(body.get("itemType")) : null;
+        return shelterService.upsertShelterStock(itemType, toInt(body.get("itemId")), toInt(body.get("quantity")));
+    }
+
+    @DeleteMapping("/stock")
+    public Map<String, Object> deleteStock(
+            @RequestParam String itemType,
+            @RequestParam Integer itemId) {
+        return shelterService.removeShelterStock(itemType, itemId);
+    }
+
     /** DM：结算指定日建造日志 */
     @PostMapping("/labor/verify")
     public Map<String, Object> verifyLaborDay(@RequestBody Map<String, Object> body) {

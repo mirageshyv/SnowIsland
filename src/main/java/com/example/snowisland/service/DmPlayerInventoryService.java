@@ -17,7 +17,7 @@ import java.util.*;
 public class DmPlayerInventoryService {
 
     private static final Set<String> VALID_TYPES = new HashSet<>(
-            Arrays.asList("item", "weapon", "ammo", "material", "food", "energy"));
+            Arrays.asList("item", "weapon", "ammo", "material"));
 
     @Autowired
     private PlayerRepository playerRepository;
@@ -119,20 +119,7 @@ public class DmPlayerInventoryService {
             result.put("message", "数量不能为负数");
             return result;
         }
-        if ("material".equals(type) && (itemId == 5 || itemId == 8)) {
-            result.put("success", false);
-            result.put("message", "请使用 food / energy 类型管理食物与燃料");
-            return result;
-        }
-
-        boolean ok;
-        if ("food".equals(type)) {
-            ok = playerSupplyService.setFoodStock(playerId, itemId, quantity);
-        } else if ("energy".equals(type)) {
-            ok = playerSupplyService.setEnergyStock(playerId, itemId, quantity);
-        } else {
-            ok = setPlayerItemRow(playerId, ItemType.valueOf(type), itemId, quantity);
-        }
+        boolean ok = setPlayerItemRow(playerId, ItemType.valueOf(type), itemId, quantity);
 
         if (!ok) {
             result.put("success", false);
@@ -168,9 +155,7 @@ public class DmPlayerInventoryService {
                 "SELECT 'item' as type, id, name, unit FROM item " +
                 "UNION ALL SELECT 'weapon', id, name, unit FROM weapon " +
                 "UNION ALL SELECT 'ammo', id, name, unit FROM ammo " +
-                "UNION ALL SELECT 'material', id, name, unit FROM material WHERE id NOT IN (5, 8) " +
-                "UNION ALL SELECT 'food', id, name, unit FROM food " +
-                "UNION ALL SELECT 'energy', id, name, unit FROM energy " +
+                "UNION ALL SELECT 'material', id, name, unit FROM material " +
                 "ORDER BY type, id"
         ).getResultList();
 

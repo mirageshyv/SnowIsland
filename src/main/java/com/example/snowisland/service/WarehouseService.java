@@ -23,7 +23,7 @@ public class WarehouseService {
     ));
 
     private static final Set<String> VALID_ITEM_TYPES = new HashSet<>(Arrays.asList(
-            "item", "weapon", "ammo", "material", "food", "energy"
+            "item", "weapon", "ammo", "material"
     ));
 
     @Autowired
@@ -126,11 +126,6 @@ public class WarehouseService {
             result.put("message", "无效的物品类型");
             return result;
         }
-        if ("material".equals(itemType) && (itemId == 5 || itemId == 8)) {
-            result.put("success", false);
-            result.put("message", "请使用 food / energy 类型管理食物与燃料");
-            return result;
-        }
 
         Optional<WarehouseConfig> optionalConfig = configRepository.findByWarehouseKey(warehouseKey);
         if (!optionalConfig.isPresent()) {
@@ -212,8 +207,6 @@ public class WarehouseService {
             case "weapon": tableName = "weapon"; break;
             case "ammo": tableName = "ammo"; break;
             case "material": tableName = "material"; break;
-            case "food": tableName = "food"; break;
-            case "energy": tableName = "energy"; break;
             default: tableName = "item"; break;
         }
         try {

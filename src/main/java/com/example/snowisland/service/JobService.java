@@ -85,40 +85,9 @@ public class JobService {
         materialNames.put(10, "发动机");
         materialNames.put(11, "螺旋桨");
         materialNames.put(12, "发电机");
+        materialNames.put(com.example.snowisland.util.ItemCatalog.FOOD_MATERIAL_ID, com.example.snowisland.util.ItemCatalog.FOOD_NAME);
+        materialNames.put(com.example.snowisland.util.ItemCatalog.FUEL_MATERIAL_ID, com.example.snowisland.util.ItemCatalog.FUEL_NAME);
         ITEM_NAMES.put("material", materialNames);
-
-        Map<Integer, String> foodNames = new HashMap<>();
-        foodNames.put(1, "咸肉");
-        foodNames.put(2, "鱼干");
-        foodNames.put(3, "面粉");
-        foodNames.put(4, "果酱");
-        foodNames.put(5, "面包");
-        foodNames.put(6, "土豆");
-        foodNames.put(7, "硬饼干");
-        foodNames.put(8, "酸菜");
-        foodNames.put(9, "干洋葱");
-        foodNames.put(10, "苹果干");
-        foodNames.put(11, "燕麦片");
-        foodNames.put(12, "鱼肉");
-        foodNames.put(13, "羊奶");
-        foodNames.put(14, "肉干");
-        foodNames.put(15, "熏肉");
-        foodNames.put(16, "罐头");
-        foodNames.put(17, "糖果");
-        foodNames.put(18, "麦片");
-        foodNames.put(19, "军用压缩干粮");
-        foodNames.put(20, "贝类");
-        foodNames.put(21, "食用菌菇");
-        foodNames.put(22, "虫茧");
-        foodNames.put(23, "野生蓝莓");
-        foodNames.put(24, "树莓");
-        ITEM_NAMES.put("food", foodNames);
-
-        Map<Integer, String> energyNames = new HashMap<>();
-        energyNames.put(1, "木柴");
-        energyNames.put(2, "煤炭");
-        energyNames.put(3, "油料");
-        ITEM_NAMES.put("energy", energyNames);
     }
 
     public List<Job> getAllJobs() {
@@ -187,7 +156,7 @@ public class JobService {
 
     private String getItemName(ItemType itemType, Integer itemId) {
         Map<Integer, String> names = ITEM_NAMES.get(itemType.name().toLowerCase());
-        if (names != null) {
+        if (names != null && itemId != null) {
             String name = names.get(itemId);
             if (name != null) {
                 return name;

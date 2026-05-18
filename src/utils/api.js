@@ -127,6 +127,16 @@ export const shelterAPI = {
     request(`${API_BASE}/shelter/labor/verify`, {
       method: 'POST',
       body: JSON.stringify({ ...(gameDay != null ? { gameDay } : {}) })
+    }),
+  getItemCatalog: () => request(`${API_BASE}/shelter/catalog`),
+  upsertStock: (itemType, itemId, quantity) =>
+    request(`${API_BASE}/shelter/stock`, {
+      method: 'PUT',
+      body: JSON.stringify({ itemType, itemId, quantity })
+    }),
+  deleteStock: (itemType, itemId) =>
+    request(`${API_BASE}/shelter/stock?itemType=${encodeURIComponent(itemType)}&itemId=${itemId}`, {
+      method: 'DELETE'
     })
 }
 

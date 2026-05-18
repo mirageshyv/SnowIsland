@@ -17,8 +17,6 @@ const typeLabels = {
   weapon: '武器',
   ammo: '弹药',
   material: '材料',
-  food: '食物',
-  energy: '燃料'
 }
 
 const loading = ref(false)

@@ -278,45 +278,17 @@ public class DmPlayerManagementService {
     }
 
     private void applyOneItem(Integer playerId, String itemType, Integer itemId, int quantity, boolean replace) {
-        if ("food".equals(itemType)) {
-            int target = quantity;
-            if (!replace) {
-                target = playerSupplyService.getFoodQuantity(playerId, itemId) + quantity;
-            }
-            if (!playerSupplyService.setFoodStock(playerId, itemId, target)) {
-                throw new IllegalStateException("更新食物失败");
-            }
-            return;
-        }
-        if ("energy".equals(itemType)) {
-            int target = quantity;
-            if (!replace) {
-                target = playerSupplyService.getEnergyQuantity(playerId, itemId) + quantity;
-            }
-            if (!playerSupplyService.setEnergyStock(playerId, itemId, target)) {
-                throw new IllegalStateException("更新燃料失败");
-            }
-            return;
-        }
-
-        ItemType type = ItemType.valueOf(itemType);
+        ItemType type = ItemType.valueOf(itemType.toLowerCase(Locale.ROOT));
         Optional<PlayerItem> opt = playerItemRepository.findByPlayerIdAndItemTypeAndItemId(playerId, type, itemId);
         int target = quantity;
         if (!replace && opt.isPresent()) {
             target = opt.get().getQuantity() + quantity;
         }
-        dmPlayerInventoryService.setPlayerItemQuantity(playerId, itemType, itemId, target, "dm");
+        dmPlayerInventoryService.setPlayerItemQuantity(playerId, type.name(), itemId, target, "dm");
     }
 
     private NormalizedItem normalizeItemType(String itemType, int itemId) {
-        String type = itemType.toLowerCase(Locale.ROOT);
-        if ("material".equals(type) && itemId == 5) {
-            return new NormalizedItem("food", 5);
-        }
-        if ("material".equals(type) && itemId == 8) {
-            return new NormalizedItem("energy", 1);
-        }
-        return new NormalizedItem(type, itemId);
+        return new NormalizedItem(itemType.toLowerCase(Locale.ROOT), itemId);
     }
 
     private void applyPlayerFieldsFromBody(Player player, Map<String, Object> body, boolean isCreate) {

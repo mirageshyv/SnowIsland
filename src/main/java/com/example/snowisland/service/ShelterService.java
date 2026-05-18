@@ -55,6 +55,8 @@ public class ShelterService {
             {ShelterStock.ItemType.weapon, 9, 1},
             {ShelterStock.ItemType.material, 4, 24},
             {ShelterStock.ItemType.material, 3, 35},
+            {ShelterStock.ItemType.material, com.example.snowisland.util.ItemCatalog.FOOD_MATERIAL_ID, 127},
+            {ShelterStock.ItemType.material, com.example.snowisland.util.ItemCatalog.FUEL_MATERIAL_ID, 40},
     };
 
     @Autowired
@@ -124,6 +126,7 @@ public class ShelterService {
         List<Map<String, Object>> inventory = new ArrayList<>();
         for (ShelterStock row : rows) {
             Map<String, Object> item = new LinkedHashMap<>();
+            item.put("stockId", row.getId());
             item.put("itemType", row.getItemType().name());
             item.put("itemId", row.getItemId());
             item.put("quantity", row.getQuantity());
@@ -543,5 +546,93 @@ public class ShelterService {
             s.setQuantity((Integer) row[2]);
             shelterStockRepository.save(s);
         }
+    }
+
+    public Map<String, Object> getShelterItemCatalog() {
+        Map<String, Object> out = new LinkedHashMap<>();
+        @SuppressWarnings("unchecked")
+        List<Object[]> raw = entityManager.createNativeQuery(
+                "SELECT 'item' as type, id, name, unit FROM item "
+                        + "UNION ALL SELECT 'weapon', id, name, unit FROM weapon "
+                        + "UNION ALL SELECT 'ammo', id, name, unit FROM ammo "
+                        + "UNION ALL SELECT 'material', id, name, unit FROM material "
+                        + "ORDER BY type, id"
+        ).getResultList();
+        List<Map<String, Object>> items = new ArrayList<>();
+        for (Object[] row : raw) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("itemType", row[0]);
+            item.put("itemId", ((Number) row[1]).intValue());
+            item.put("name", row[2]);
+            item.put("unit", row[3]);
+            items.add(item);
+        }
+        out.put("success", true);
+        out.put("items", items);
+        return out;
+    }
+
+    @Transactional
+    public Map<String, Object> upsertShelterStock(String itemType, Integer itemId, Integer quantity) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        if (itemType == null || itemType.isBlank() || itemId == null) {
+            out.put("success", false);
+            out.put("message", "参数不完整");
+            return out;
+        }
+        if (quantity == null || quantity < 0) {
+            out.put("success", false);
+            out.put("message", "数量不能为负数");
+            return out;
+        }
+        ShelterStock.ItemType type;
+        try {
+            type = ShelterStock.ItemType.valueOf(itemType.trim().toLowerCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            out.put("success", false);
+            out.put("message", "无效的物品类型");
+            return out;
+        }
+        Optional<ShelterStock> opt = shelterStockRepository.findByItemTypeAndItemId(type, itemId);
+        if (quantity == 0) {
+            opt.ifPresent(shelterStockRepository::delete);
+            out.put("success", true);
+            out.put("message", "已从避难所库存移除");
+            return out;
+        }
+        ShelterStock row = opt.orElseGet(() -> {
+            ShelterStock s = new ShelterStock();
+            s.setItemType(type);
+            s.setItemId(itemId);
+            return s;
+        });
+        row.setQuantity(quantity);
+        shelterStockRepository.save(row);
+        out.put("success", true);
+        out.put("message", "库存已更新");
+        return out;
+    }
+
+    @Transactional
+    public Map<String, Object> removeShelterStock(String itemType, Integer itemId) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        if (itemType == null || itemType.isBlank() || itemId == null) {
+            out.put("success", false);
+            out.put("message", "参数不完整");
+            return out;
+        }
+        ShelterStock.ItemType type;
+        try {
+            type = ShelterStock.ItemType.valueOf(itemType.trim().toLowerCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            out.put("success", false);
+            out.put("message", "无效的物品类型");
+            return out;
+        }
+        shelterStockRepository.findByItemTypeAndItemId(type, itemId)
+                .ifPresent(shelterStockRepository::delete);
+        out.put("success", true);
+        out.put("message", "已从避难所库存移除");
+        return out;
     }
 }

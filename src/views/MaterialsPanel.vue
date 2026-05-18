@@ -11,7 +11,7 @@ const foodSupply = ref({ totalKg: 0, items: [] })
 const energyReserve = ref({ items: [] })
 const resourcesLoaded = ref(false)
 
-/** Generic material rows replaced by player_food_stock / player_energy_stock */
+/** Food/fuel are material ids 5 and 8 in player_items */
 const EXCLUDED_MATERIAL_IDS = new Set([5, 8])
 
 // 筛选状态
@@ -555,7 +555,7 @@ onUnmounted(() => {
         </div>
       </div>
       <p v-if="!loading && !resourcesLoaded" class="text-amber-500/90 text-sm mb-3">
-        无法加载食物与燃料数据。请确认 Spring Boot 后端已启动，且数据库已包含 player_food_stock / player_energy_stock 表。
+        无法加载食物与燃料数据。请确认 Spring Boot 后端已启动，且 material 表包含 id 5（食物）与 id 8（燃料）。
       </p>
       <ShelterSupplyCards
         v-else
