@@ -12,8 +12,6 @@ const typeLabel = (t) =>
     weapon: '武器',
     ammo: '弹药',
     material: '物资',
-    food: '食物',
-    energy: '燃料'
   }[String(t || '').toLowerCase()] || String(t || ''))
 
 const formatUnit = (u) => ({ kg: '千克', portion: '份', L: '升' }[u] || u || '')

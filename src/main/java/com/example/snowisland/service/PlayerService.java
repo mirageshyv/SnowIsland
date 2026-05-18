@@ -35,6 +35,9 @@ public class PlayerService {
     @Autowired
     private SkillRepository skillRepository;
 
+    @Autowired
+    private PlayerSupplyService playerSupplyService;
+
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -76,34 +79,23 @@ public class PlayerService {
     }
 
     public List<Map<String, Object>> getPlayerItems(Integer playerId) {
-        System.out.println("=== getPlayerItems called for playerId: " + playerId);
         loadItemNames();
-        System.out.println("=== itemNames loaded, material size: " + itemNames.get("material").size());
-        
-        // Try native query first for debugging
-        List<PlayerItem> playerItemsNative = playerItemRepository.findByPlayerIdNative(playerId);
-        System.out.println("=== [NATIVE] Found " + playerItemsNative.size() + " player items for player " + playerId);
-        
         List<PlayerItem> playerItems = playerItemRepository.findByPlayerId(playerId);
-        System.out.println("=== [JPA] Found " + playerItems.size() + " player items for player " + playerId);
-        
         List<Map<String, Object>> result = new ArrayList<>();
 
         for (PlayerItem pi : playerItems) {
-            Map<String, Object> item = new HashMap<>();
-            item.put("id", pi.getItemId());
-            item.put("type", pi.getItemType().name().toLowerCase());
-            item.put("quantity", pi.getQuantity());
             String type = pi.getItemType().name().toLowerCase();
-            String name = itemNames.get(type).getOrDefault(pi.getItemId(), "未知物品");
+            int itemId = pi.getItemId();
+            Map<String, Object> item = new HashMap<>();
+            item.put("id", itemId);
+            item.put("type", type);
+            item.put("quantity", pi.getQuantity());
+            String name = itemNames.get(type).getOrDefault(itemId, "未知物品");
             item.put("name", name);
-            item.put("unit", itemUnits.get(type).getOrDefault(pi.getItemId(), "个"));
+            item.put("unit", itemUnits.get(type).getOrDefault(itemId, "个"));
             result.add(item);
-            
-            System.out.println("=== Added item: itemId=" + pi.getItemId() + ", type=" + type + ", quantity=" + pi.getQuantity() + ", name=" + name);
         }
 
-        System.out.println("=== Returning " + result.size() + " items");
         return result;
     }
 
@@ -292,6 +284,22 @@ public class PlayerService {
             result.put("message", "获取玩家信息失败: " + e.getMessage());
         }
         
+        return result;
+    }
+
+    /** Dashboard food (kg) and fuel from player_items material 5 / 8. */
+    public Map<String, Object> getPersonalResources(Integer playerId) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("success", true);
+        result.put("playerId", playerId);
+
+        Map<String, Object> stock = playerSupplyService.getPersonalResourceTotals(playerId);
+        result.put("foodKg", stock.getOrDefault("foodKg", 0));
+        result.put("fuelKg", stock.getOrDefault("fuelKg", 0));
+        result.put("fuelLiters", stock.getOrDefault("fuelLiters", 0));
+        result.put("foodSupply", playerSupplyService.buildPlayerFoodSupply(playerId));
+        result.put("energyReserve", playerSupplyService.buildPlayerEnergyReserve(playerId));
+
         return result;
     }
 }

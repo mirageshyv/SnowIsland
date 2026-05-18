@@ -8,9 +8,7 @@ const tradeTypeLabel = (t) =>
     item: '道具',
     weapon: '武器',
     ammo: '弹药',
-    material: '其他物资',
-    food: '食物',
-    energy: '燃料'
+    material: '物资'
   }[String(t || '').toLowerCase()] || String(t || ''))
 
 const playerId = parseInt(localStorage.getItem('playerId') || '1')
@@ -42,7 +40,10 @@ const allMaterialsMap = {
     { id: 19, name: '仓库钥匙', unit: '把', icon: '🔑' },
     { id: 20, name: '燃料仓库钥匙', unit: '把', icon: '🔑' },
     { id: 21, name: '镇武库钥匙', unit: '把', icon: '🔑' },
-    { id: 22, name: '码头集购站钥匙', unit: '把', icon: '🔑' }
+    { id: 22, name: '码头集购站钥匙', unit: '把', icon: '🔑' },
+    { id: 23, name: '反叛者基地钥匙', unit: '把', icon: '🔑' },
+    { id: 24, name: '方舟钥匙', unit: '把', icon: '🔑' },
+    { id: 25, name: '监狱钥匙', unit: '把', icon: '🔑' }
   ],
   weapon: [
     { id: 1, name: '制式手枪', unit: '把', icon: '🔫' },
@@ -56,7 +57,8 @@ const allMaterialsMap = {
     { id: 9, name: '斧头', unit: '把', icon: '🪓' },
     { id: 10, name: '电锯', unit: '把', icon: '⚙️' },
     { id: 11, name: '手术刀', unit: '把', icon: '🔪' },
-    { id: 12, name: '炸药', unit: 'kg', icon: '💣' }
+    { id: 12, name: '炸药', unit: 'kg', icon: '💣' },
+    { id: 13, name: '电钻', unit: '把', icon: '🔧' }
   ],
   ammo: [
     { id: 1, name: '手枪弹', unit: '枚', icon: '🎯' },
@@ -69,14 +71,14 @@ const allMaterialsMap = {
     { id: 2, name: '木材', unit: 'kg', icon: '🌲' },
     { id: 3, name: '绳索', unit: '米', icon: '🪢' },
     { id: 4, name: '木板', unit: 'kg', icon: '🪵' },
-    { id: 5, name: '食物', unit: 'kg', icon: '🍞' },
     { id: 6, name: '沥青', unit: 'kg', icon: '🔧' },
     { id: 7, name: '石料', unit: 'kg', icon: '🪨' },
-    { id: 8, name: '燃料', unit: 'kg', icon: '⛽' },
     { id: 9, name: '帆布', unit: '米', icon: '🧵' },
     { id: 10, name: '发动机', unit: '个', icon: '🔧' },
     { id: 11, name: '螺旋桨', unit: '个', icon: '🌀' },
-    { id: 12, name: '发电机', unit: '个', icon: '⚡' }
+    { id: 12, name: '发电机', unit: '个', icon: '⚡' },
+    { id: 5, name: '食物', unit: 'kg', icon: '🍖' },
+    { id: 8, name: '燃料', unit: 'kg', icon: '⛽' }
   ]
 }
 
@@ -85,7 +87,7 @@ const takePaletteTabs = [
   { key: 'item', label: '道具' },
   { key: 'weapon', label: '武器' },
   { key: 'ammo', label: '弹药' },
-  { key: 'material', label: '其他物资' }
+  { key: 'material', label: '物资' }
 ]
 
 const takePaletteRows = (() => {
@@ -190,11 +192,11 @@ const receivedItems = computed(() => {
 })
 
 function tradeRowWithThumb(item) {
-  const fallbackType = item.itemType === 'food' ? 'material' : item.itemType === 'energy' ? 'material' : item.itemType
-  const fallbackId = item.itemType === 'food' ? 5 : item.itemType === 'energy' ? 8 : item.itemId
+  const type = item.itemType || 'item'
+  const id = item.itemId ?? 1
   return {
     ...item,
-    imageUrl: item.imageUrl ?? getMaterialImageUrlOrDefault(fallbackType, fallbackId)
+    imageUrl: item.imageUrl ?? getMaterialImageUrlOrDefault(type, id)
   }
 }
 
@@ -209,11 +211,7 @@ const receivedItemsDisplay = computed(() => receivedItems.value.map(tradeRowWith
 
 const isSameTradeEntry = (a, b) => {
   if (!a || !b) return false
-  if (a.itemType !== b.itemType) return false
-  const aKey = a.itemKey ?? null
-  const bKey = b.itemKey ?? null
-  if (aKey !== null && bKey !== null) return aKey === bKey
-  return a.itemId === b.itemId
+  return a.itemType === b.itemType && a.itemId === b.itemId
 }
 
 const selectedCountIn = (rows, probe) =>
@@ -222,15 +220,13 @@ const selectedCountIn = (rows, probe) =>
 const selectedGiveCount = (row) =>
   selectedCountIn(giveItems.value, {
     itemType: row.itemType || row.type,
-    itemId: typeof row.id === 'number' ? row.id : null,
-    itemKey: row.itemKey ?? (typeof row.id === 'string' ? row.id : null)
+    itemId: row.id
   })
 
 const selectedTakeCount = (row) =>
   selectedCountIn(takeItems.value, {
     itemType: row.itemType,
-    itemId: typeof row.id === 'number' ? row.id : null,
-    itemKey: row.itemKey ?? (typeof row.id === 'string' ? row.id : null)
+    itemId: row.id
   })
 
 const openTradeModal = () => {
@@ -257,13 +253,9 @@ const goPreviewStep = () => {
 
 const addGiveItem = (item) => {
   const itemType = item.itemType || item.type
-  const itemId = typeof item.id === 'number' ? item.id : null
-  const itemKey = item.itemKey ?? (typeof item.id === 'string' ? item.id : null)
+  const itemId = item.id
   const existItem = giveItems.value.find((i) =>
-    isSameTradeEntry(
-      { itemType: i.itemType, itemId: i.itemId, itemKey: i.itemKey },
-      { itemType, itemId, itemKey }
-    )
+    isSameTradeEntry({ itemType: i.itemType, itemId: i.itemId }, { itemType, itemId })
   )
   if (existItem) {
     if (existItem.quantity < item.quantity) {
@@ -272,7 +264,6 @@ const addGiveItem = (item) => {
   } else {
     giveItems.value.push({
       itemId,
-      itemKey,
       itemType,
       name: item.name,
       unit: item.unit,
@@ -288,20 +279,17 @@ const removeGiveItem = (index) => {
 }
 
 const addTakeItem = (row) => {
-  const rowItemId = typeof row.id === 'number' ? row.id : null
-  const rowItemKey = row.itemKey ?? (typeof row.id === 'string' ? row.id : null)
   const existItem = takeItems.value.find((i) =>
     isSameTradeEntry(
-      { itemType: i.itemType, itemId: i.itemId, itemKey: i.itemKey },
-      { itemType: row.itemType, itemId: rowItemId, itemKey: rowItemKey }
+      { itemType: i.itemType, itemId: i.itemId },
+      { itemType: row.itemType, itemId: row.id }
     )
   )
   if (existItem) {
     existItem.quantity = Math.min(500, Number(existItem.quantity || 0) + 1)
   } else {
     takeItems.value.push({
-      itemId: typeof row.id === 'number' ? row.id : null,
-      itemKey: row.itemKey ?? (typeof row.id === 'string' ? row.id : null),
+      itemId: row.id,
       itemType: row.itemType,
       name: row.name,
       unit: row.unit,
@@ -336,14 +324,12 @@ const sendTrade = async () => {
       ...giveItems.value.map(i => ({
         itemType: i.itemType,
         itemId: i.itemId,
-        itemKey: i.itemKey ?? null,
         quantity: i.quantity,
         direction: 'give'
       })),
       ...takeItems.value.map(i => ({
         itemType: i.itemType,
         itemId: i.itemId,
-        itemKey: i.itemKey ?? null,
         quantity: i.quantity,
         direction: 'take'
       }))
@@ -631,7 +617,7 @@ defineExpose({
                   <div class="space-y-2 flex-1 min-h-0">
                     <div
                       v-for="(item, index) in giveItems"
-                      :key="`selected-item-${item.itemType}-${item.itemId}-${item.itemKey}-${index}`"
+                      :key="`selected-item-${item.itemType}-${item.itemId}-${index}`"
                       class="bg-white/5 rounded-lg px-2 py-2 flex items-center justify-between gap-2"
                     >
                       <div class="flex items-center gap-2 min-w-0 flex-1">
@@ -696,7 +682,7 @@ defineExpose({
                   <div class="space-y-2 flex-1 min-h-0">
                     <div
                       v-for="(item, index) in takeItems"
-                      :key="`selected-take-item-${item.itemType}-${item.itemId}-${item.itemKey}-${index}`"
+                      :key="`selected-take-item-${item.itemType}-${item.itemId}-${index}`"
                       class="bg-white/5 rounded-lg px-2 py-2 flex items-center justify-between gap-2"
                     >
                       <div class="flex items-center gap-2 min-w-0 flex-1">

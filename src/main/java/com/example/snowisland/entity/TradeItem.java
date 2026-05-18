@@ -36,7 +36,7 @@ public class TradeItem {
     private LocalDateTime createdAt;
 
     public enum ItemType {
-        item, weapon, ammo, material, food, energy
+        item, weapon, ammo, material
     }
 
     public enum Direction {

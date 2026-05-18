@@ -35,6 +35,11 @@ public class PlayerController {
         return playerService.getPlayerItems(id);
     }
 
+    @GetMapping("/{id}/resources")
+    public Map<String, Object> getPersonalResources(@PathVariable Integer id) {
+        return playerService.getPersonalResources(id);
+    }
+
     @PostMapping
     public Map<String, Object> createPlayer(@RequestBody Player player,
                                              @RequestParam(required = false) String loginUsername) {

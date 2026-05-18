@@ -63,7 +63,10 @@ const loadMaterials = async () => {
     
     if (Array.isArray(result)) {
       console.log('=== All items from API:', JSON.stringify(result, null, 2))
-      const filtered = result.filter(item => item.type === 'material')
+      const excludedMaterialIds = new Set([5, 8])
+      const filtered = result.filter(
+        item => item.type === 'material' && !excludedMaterialIds.has(Number(item.id))
+      )
       console.log('=== Filtered material items:', JSON.stringify(filtered, null, 2))
       
       materials.value = filtered.map(item => ({

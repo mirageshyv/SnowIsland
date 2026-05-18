@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
@@ -45,6 +46,17 @@ public class WarehouseService {
             result.add(map);
         }
         return result;
+    }
+
+    public boolean playerHasWarehouseKey(Integer playerId, String warehouseKey) {
+        if (playerId == null || warehouseKey == null || warehouseKey.isEmpty()) {
+            return false;
+        }
+        Optional<WarehouseConfig> optionalConfig = configRepository.findByWarehouseKey(warehouseKey);
+        if (!optionalConfig.isPresent()) {
+            return false;
+        }
+        return checkPlayerHasKey(playerId, optionalConfig.get().getKeyItemId());
     }
 
     public boolean checkPlayerHasKey(Integer playerId, Integer keyItemId) {
@@ -107,6 +119,7 @@ public class WarehouseService {
         return result;
     }
 
+    @Transactional
     public Map<String, Object> updateWarehouseStock(String warehouseKey, String itemType, Integer itemId, Integer quantity, String userRole) {
         Map<String, Object> result = new HashMap<>();
 
@@ -116,6 +129,9 @@ public class WarehouseService {
             return result;
         }
 
+        if (itemType != null) {
+            itemType = itemType.toLowerCase(Locale.ROOT);
+        }
         if (!VALID_ITEM_TYPES.contains(itemType)) {
             result.put("success", false);
             result.put("message", "无效的物品类型");

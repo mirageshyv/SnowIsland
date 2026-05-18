@@ -3,7 +3,7 @@
  *
  * 包含：
  * - 物资管理页：后端 item / weapon / ammo / material 的 id 与本地素材对应关系
- * - 统治者避难所：图鉴、shelter 建材库存、建造日志；食物/能量：避难所公共库存与玩家个人库存分开展示（本地回退数据见 DEFAULT_SHELTER_*）
+ * - 统治者避难所：图鉴、物资展示映射、建造日志（演示数据）
  *
  * 说明：
  * - 有对应 PNG 的 id 会映射到素材；无映射时 `getMaterialImageUrl` 返回 null。
@@ -31,6 +31,8 @@ import imgMatches from '@/assets/火柴.png?url'
 import imgPencil from '@/assets/铅笔.png?url'
 import imgSeaChart from '@/assets/破损海图.png?url'
 import imgBento from '@/assets/便当.png?url'
+import imgFood from '@/assets/Food.png?url'
+import imgFuel from '@/assets/Fuel.png?url'
 import imgServicePistol from '@/assets/制式手枪.png?url'
 import imgHuntingShotgun from '@/assets/猎枪.png?url'
 import imgBaton from '@/assets/警棍.png?url'
@@ -48,6 +50,11 @@ import imgWarehouseKey from '@/assets/仓库钥匙.png?url'
 import imgFuelDepotKey from '@/assets/燃料仓库钥匙.png?url'
 import imgArmoryKey from '@/assets/镇武库钥匙.png?url'
 import imgDockMarketKey from '@/assets/码头集购站钥匙.png?url'
+import imgRebelBaseKey from '@/assets/反叛者基地钥匙.png?url'
+import imgArkKey from '@/assets/方舟钥匙.png?url'
+import imgPrisonKey from '@/assets/监狱钥匙.png?url'
+import imgSailorKnife from '@/assets/水手刀.png?url'
+import imgElectricDrill from '@/assets/电钻.png?url'
 import imgMetalProducts from '@/assets/金属制品.png?url'
 import imgAsphalt from '@/assets/沥青.png?url'
 import imgCanvas from '@/assets/帆布.png?url'
@@ -84,6 +91,9 @@ const ITEM_IMAGES = {
   20: imgFuelDepotKey,
   21: imgArmoryKey,
   22: imgDockMarketKey,
+  23: imgRebelBaseKey,
+  24: imgArkKey,
+  25: imgPrisonKey,
 }
 
 const WEAPON_IMAGES = {
@@ -91,8 +101,7 @@ const WEAPON_IMAGES = {
   2: imgHuntingShotgun,
   3: imgBaton,
   4: imgBayonet,
-  // 5 水手刀暂无独立素材，用刺刀占位
-  5: imgBayonet,
+  5: imgSailorKnife,
   6: imgHarpoon,
   7: imgHuntingBow,
   8: imgPickaxe,
@@ -100,6 +109,7 @@ const WEAPON_IMAGES = {
   10: imgChainsaw,
   11: imgScalpel,
   12: imgExplosives,
+  13: imgElectricDrill,
 }
 
 const AMMO_IMAGES = {
@@ -115,14 +125,14 @@ const MATERIAL_IMAGES = {
   2: imgWood,
   3: imgRope,
   4: imgPlank,
-  5: imgBento,
   6: imgAsphalt,
   7: imgStone,
-  8: imgCandle,
   9: imgCanvas,
   10: imgEngine,
   11: imgPropeller,
   12: imgGenerator,
+  5: imgFood,
+  8: imgFuel,
 }
 
 const MATERIAL_MAPS = {
@@ -130,6 +140,384 @@ const MATERIAL_MAPS = {
   weapon: WEAPON_IMAGES,
   ammo: AMMO_IMAGES,
   material: MATERIAL_IMAGES,
+}
+
+// 与数据库 item / weapon / ammo / material 表同步（snowisland_5_15.sql）
+export const GAME_ITEM_NAMES = {
+  item: {
+    1: '医疗包',
+    2: '手电筒',
+    3: '手铐',
+    4: '哨子',
+    5: '防弹衣',
+    6: '复合盾',
+    7: '信号枪',
+    8: '维修工具包',
+    9: '协议书',
+    10: '朗姆酒',
+    11: '草药',
+    12: '渔网',
+    13: '蜡烛',
+    14: '医用酒精',
+    15: '火柴',
+    16: '铅笔',
+    17: '破损海图',
+    18: '便当',
+    19: '仓库钥匙',
+    20: '燃料仓库钥匙',
+    21: '镇武库钥匙',
+    22: '码头集换站钥匙',
+    23: '反叛者基地钥匙',
+    24: '方舟钥匙',
+    25: '监狱钥匙',
+  },
+  weapon: {
+    1: '制式手枪',
+    2: '猎枪',
+    3: '警棍',
+    4: '刺刀',
+    5: '水手刀',
+    6: '鱼叉/矛',
+    7: '猎弓',
+    8: '十字镐',
+    9: '斧头',
+    10: '电锯',
+    11: '手术刀',
+    12: '炸药',
+    13: '电钻',
+  },
+  ammo: {
+    1: '手枪弹',
+    2: '猎枪弹',
+    3: '信号弹',
+    4: '箭矢',
+  },
+  material: {
+    1: '金属制品',
+    2: '木材',
+    3: '绳索',
+    4: '木板',
+    5: '食物',
+    6: '沥青',
+    7: '石料',
+    8: '燃料',
+    9: '帆布',
+    10: '发动机',
+    11: '螺旋桨',
+    12: '发电机',
+  },
+}
+
+/**
+ * @param {'item'|'weapon'|'ammo'|'material'|string} itemType
+ * @param {number|string} itemId
+ */
+export function getItemDisplayName(itemType, itemId) {
+  if (itemType == null || itemId === '' || itemId === undefined) return '未知物品'
+  const t = String(itemType).toLowerCase()
+  const numId = typeof itemId === 'number' && Number.isFinite(itemId) ? itemId : parseInt(String(itemId), 10)
+  if (Number.isNaN(numId)) return '未知物品'
+  return GAME_ITEM_NAMES[t]?.[numId] ?? '未知物品'
+}
+
+export function formatTransportItemLine(item) {
+  const name = getItemDisplayName(item.itemType, item.itemId)
+  return `${name} × ${item.quantity}（${item.weight}千克/单位）`
+}
+
+/** 将行动结果中的 material-3 等形式替换为中文名称 */
+export function formatActionResultText(text) {
+  if (!text) return text
+  return String(text).replace(
+    /\b(item|weapon|ammo|material)-(\d+)\b/g,
+    (_, type, id) => getItemDisplayName(type, id),
+  )
+}
+
+const WAREHOUSE_LABELS = {
+  general: '通用仓库',
+  fuel: '燃料仓库',
+  armory: '镇武库',
+  dock: '码头集换站',
+  rebel: '反叛者基地',
+  ark: '方舟仓库',
+}
+
+const TRANSPORT_MODE_LABELS = {
+  warehouse_to_warehouse: '仓库→仓库（上限500千克）',
+  warehouse_to_player: '仓库→个人（上限300千克）',
+  player_to_warehouse: '个人→仓库（上限300千克）',
+}
+
+const STRUCTURED_NOTE_LINE = /^\[(mode|source|dest|item|target|player_deducted):/
+
+/** @returns {{ mode: string, source: string, dest: string, items: Array<{ itemType: string, itemId: string, quantity: string, weight: string }> } | null} */
+export function parseTransportNotes(notes) {
+  if (!notes) return null
+  const info = { mode: '', source: '', dest: '', targetPlayerId: '', items: [] }
+  let hasStructured = false
+  for (const line of String(notes).split('\n')) {
+    const trimmed = line.trim()
+    if (trimmed.startsWith('[target:')) {
+      hasStructured = true
+      const closeIdx = trimmed.indexOf(']')
+      if (closeIdx > 8) info.targetPlayerId = trimmed.substring(8, closeIdx)
+    } else if (trimmed.startsWith('[mode:')) {
+      hasStructured = true
+      const closeIdx = trimmed.indexOf(']')
+      if (closeIdx > 6) info.mode = trimmed.substring(6, closeIdx)
+    } else if (trimmed.startsWith('[source:')) {
+      hasStructured = true
+      const closeIdx = trimmed.indexOf(']')
+      if (closeIdx > 8) info.source = trimmed.substring(8, closeIdx)
+    } else if (trimmed.startsWith('[dest:')) {
+      hasStructured = true
+      const closeIdx = trimmed.indexOf(']')
+      if (closeIdx > 6) info.dest = trimmed.substring(6, closeIdx)
+    } else if (trimmed.startsWith('[item:')) {
+      hasStructured = true
+      const closeIdx = trimmed.indexOf(']')
+      if (closeIdx > 6) {
+        const parts = trimmed.substring(6, closeIdx).split('|')
+        if (parts.length >= 4) {
+          info.items.push({
+            itemType: parts[0],
+            itemId: parts[1],
+            quantity: parts[2],
+            weight: parts[3],
+          })
+        }
+      }
+    }
+  }
+  return hasStructured ? info : null
+}
+
+function warehouseLabel(key, warehouseNameByKey = {}) {
+  if (!key) return ''
+  return warehouseNameByKey[key] || WAREHOUSE_LABELS[key] || key
+}
+
+/** 将搬运结构化备注格式化为中文（供 DM 查看玩家提交） */
+export function formatTransportNotesForDisplay(notes, warehouseNameByKey = {}) {
+  const info = parseTransportNotes(notes)
+  if (!info) return ''
+  const lines = []
+  if (info.mode) {
+    lines.push(`模式：${TRANSPORT_MODE_LABELS[info.mode] || info.mode}`)
+  }
+  if (info.source) lines.push(`源仓库：${warehouseLabel(info.source, warehouseNameByKey)}`)
+  if (info.dest) lines.push(`目标仓库：${warehouseLabel(info.dest, warehouseNameByKey)}`)
+  if (info.targetPlayerId) lines.push(`目标玩家ID：${info.targetPlayerId}`)
+  for (const item of info.items) {
+    lines.push(`物资：${formatTransportItemLine(item)}`)
+  }
+  return lines.join('\n')
+}
+
+/** 玩家自由填写的备注（排除搬运结构化行） */
+export function extractFreeformPlayerNotes(notes) {
+  if (!notes) return ''
+  return String(notes)
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l && !STRUCTURED_NOTE_LINE.test(l))
+    .join('\n')
+    .trim()
+}
+
+/** DM 弹窗顶部：玩家备注（搬运仅显示中文摘要，隐藏结构化行） */
+export function getPlayerNotesDisplay(action, warehouseNameByKey = {}) {
+  if (!action?.notes?.trim()) return '（无备注）'
+  if (action.actionType === 'transport') {
+    const plan = formatTransportNotesForDisplay(action.notes, warehouseNameByKey)
+    const free = extractFreeformPlayerNotes(action.notes)
+    if (plan) return free ? `${plan}\n\n${free}` : plan
+    return free || '（无备注）'
+  }
+  return action.notes.trim()
+}
+
+/** 数量输入：非负整数，上限 optional */
+export function sanitizeNonNegativeInt(value, max = Infinity) {
+  let n = parseInt(String(value), 10)
+  if (Number.isNaN(n) || n < 0) n = 0
+  n = Math.floor(n)
+  if (n > max) n = max
+  return n
+}
+
+/** 数量输入：正整数（至少 1），上限 optional；无效时返回 1 */
+export function sanitizePositiveInt(value, max = Infinity) {
+  let n = parseInt(String(value), 10)
+  if (Number.isNaN(n) || n < 1) n = 1
+  n = Math.floor(n)
+  if (n > max) n = max
+  return n
+}
+
+const TRANSPORT_PENDING_MARKER = '\n\n【搬运待发布】\n'
+
+export function stripTransportPendingFromResult(result) {
+  if (!result) return ''
+  const text = String(result)
+  const idx = text.indexOf(TRANSPORT_PENDING_MARKER)
+  if (idx >= 0) return text.slice(0, idx).trim()
+  return text.trim()
+}
+
+function stripPendingPlaceholders(text) {
+  if (!text) return ''
+  return String(text)
+    .replace(/^等待DM反馈[^\n]*\n?/gm, '')
+    .replace(/^已提交，等待主持人确认。[^\n]*\n?/gm, '')
+    .trim()
+}
+
+/** DM 反馈编辑框初始内容：已保存的 DM 文案，或系统/auto 结算文本 */
+export function getDmFeedbackDraft(action) {
+  if (isActionFailed(action)) {
+    const saved = extractDmFeedback(action?.result) || action?.dmFeedback
+    return saved ? formatActionResultText(saved) : generateActionFailureFeedback(action)
+  }
+  const saved = extractDmFeedback(action?.result) || action?.dmFeedback
+  if (saved) return formatActionResultText(saved)
+  let system = stripDmFeedbackFromResult(action?.result)
+  system = stripTransportPendingFromResult(system)
+  system = stripPendingPlaceholders(system)
+  return formatActionResultText(system) || ''
+}
+
+/** 玩家端展示：优先 DM 反馈正文，否则系统结果 */
+export function formatPlayerActionResult(result) {
+  if (!result) return ''
+  const dm = extractDmFeedback(result)
+  if (dm) return formatActionResultText(dm)
+  return formatActionResultText(stripDmFeedbackFromResult(result))
+}
+
+const DM_FEEDBACK_MARKER = '【DM反馈】'
+export const ACTION_FAILED_MARKER = '【行动失败】'
+
+export function isActionFailed(actionOrResult) {
+  const result = typeof actionOrResult === 'string' ? actionOrResult : actionOrResult?.result
+  if (!result) return Boolean(actionOrResult?.actionFailed)
+  return String(result).includes(ACTION_FAILED_MARKER) || Boolean(actionOrResult?.actionFailed)
+}
+
+/** 按行动类型生成失败反馈文案（不含【行动失败】标记，标记由后端写入） */
+export function generateActionFailureFeedback(action) {
+  if (!action) return '你的行动未能成功，请等待主持人说明具体情况。'
+  const target = action.targetName || ''
+  const lines = []
+  switch (action.actionType) {
+    case 'go_location':
+      lines.push(
+        target
+          ? `你前往「${target}」的行动未能成功，未能按预期完成探索或互动。`
+          : '你的前往地点行动未能成功。',
+      )
+      break
+    case 'investigate_player':
+      lines.push(
+        target
+          ? `你对「${target}」的调查未能成功，未能掌握其当日行动情报。`
+          : '你的调查玩家行动未能成功。',
+      )
+      break
+    case 'produce':
+      lines.push('你的生产行动未能成功，今日未获得预期产出。')
+      break
+    case 'use_trait':
+      lines.push('你的特性使用未能生效（条件不满足、被打断或遭否决）。')
+      break
+    case 'use_skill':
+      lines.push('你的职业技能未能生效（条件不满足、被打断或遭否决）。')
+      break
+    case 'transport':
+      lines.push('你的搬运行动未能成功，物资未按申请完成转移。')
+      if (action.notes?.includes('[player_deducted:1]')) {
+        lines.push('已从你背包预扣的物资将退还。')
+      }
+      break
+    case 'hide':
+      lines.push('你的隐藏行动未能成功，你未能进入隐藏状态。')
+      break
+    default:
+      lines.push(`你的行动（${actionShortLabel(action)}）未能成功。`)
+  }
+  return lines.join('\n')
+}
+
+/** Extract DM-authored feedback from stored action result. */
+export function extractDmFeedback(result) {
+  if (!result) return ''
+  const text = String(result)
+  const marker = text.indexOf(DM_FEEDBACK_MARKER)
+  if (marker < 0) return ''
+  const after = text.indexOf('\n', marker)
+  if (after < 0) return ''
+  return text.slice(after + 1).trim()
+}
+
+export function stripDmFeedbackFromResult(result) {
+  if (!result) return ''
+  const text = String(result)
+  const idx = text.indexOf(`\n\n${DM_FEEDBACK_MARKER}`)
+  if (idx >= 0) return text.slice(0, idx).trim()
+  const idx2 = text.indexOf(DM_FEEDBACK_MARKER)
+  if (idx2 >= 0) return text.slice(0, idx2).trim()
+  return text.trim()
+}
+
+const ACTION_TYPE_LABELS = {
+  go_location: '前往地点',
+  investigate_player: '调查玩家',
+  produce: '生产',
+  use_trait: '使用特性',
+  use_skill: '使用职业技能',
+  transport: '搬运',
+  hide: '隐藏',
+}
+
+export function actionTypeLabel(action) {
+  if (!action) return '—'
+  return action.actionTypeLabel || ACTION_TYPE_LABELS[action.actionType] || action.actionType || '—'
+}
+
+export function actionShortLabel(action) {
+  if (!action) return '未提交'
+  let label = actionTypeLabel(action)
+  if (action.targetName) label += ` → ${action.targetName}`
+  if (action.npcName) label += ` · ${action.npcName}`
+  return label
+}
+
+/** Combined copy-paste summary for both action slots. */
+export function buildPlayerFeedbackSummary(playerName, gameDay, slot1, slot2) {
+  const day = gameDay ?? ''
+  const lines = [`【${playerName} · 第${day}天 行动反馈总结】`, '']
+  const slots = [
+    { n: '行动一', a: slot1 },
+    { n: '行动二', a: slot2 },
+  ]
+  for (const { n, a } of slots) {
+    if (!a) {
+      lines.push(`${n}：未提交`, '')
+      continue
+    }
+    lines.push(`${n}（${actionShortLabel(a)}）`)
+    const draft = getDmFeedbackDraft(a)
+    if (draft) {
+      lines.push(draft)
+    } else if (a.status === 'feedbacked') {
+      lines.push('（已处理，无反馈文案）')
+    } else {
+      lines.push('（待反馈）')
+    }
+    lines.push('')
+  }
+  return lines.join('\n').trim()
 }
 
 /**
@@ -158,6 +546,8 @@ export function getMaterialImageUrlOrDefault(type, id) {
   if (type == null || id === '' || id === undefined) return DEFAULT_MATERIAL_IMAGE_URL
   const t = String(type).toLowerCase()
   const numId = typeof id === 'number' && Number.isFinite(id) ? id : parseInt(String(id), 10)
+  if (t === 'material' && numId === 5) return imgFood
+  if (t === 'material' && numId === 8) return imgFuel
   if (Number.isNaN(numId)) return DEFAULT_MATERIAL_IMAGE_URL
   const key = `${t}:${numId}`
   let cached = materialUrlOrDefaultCache.get(key)
@@ -265,38 +655,6 @@ export const SHELTER_ITEM_CATALOG_BY_TYPE = {
   'material_7': SHELTER_ITEM_CATALOG.stone,
 }
 
-export const DEFAULT_SHELTER_INVENTORY = [
-  { id: 'wood', quantity: 45 },
-  { id: 'stone', quantity: 32 },
-  { id: 'medical_kit', quantity: 8 },
-  { id: 'flashlight', quantity: 4 },
-  { id: 'handcuffs', quantity: 2 },
-  { id: 'whistle', quantity: 3 },
-  { id: 'body_armor', quantity: 1 },
-  { id: 'composite_shield', quantity: 1 },
-  { id: 'flare_gun', quantity: 1 },
-  { id: 'repair_kit', quantity: 5 },
-  { id: 'contract', quantity: 2 },
-  { id: 'rum', quantity: 10 },
-  { id: 'herbs', quantity: 12 },
-  { id: 'fishing_net', quantity: 2 },
-  { id: 'candle', quantity: 18 },
-  { id: 'rubbing_alcohol', quantity: 3 },
-  { id: 'matches', quantity: 6 },
-  { id: 'pencil', quantity: 4 },
-  { id: 'tattered_chart', quantity: 1 },
-  { id: 'service_pistol', quantity: 1 },
-  { id: 'hunting_shotgun', quantity: 1 },
-  { id: 'baton', quantity: 2 },
-  { id: 'bayonet', quantity: 1 },
-  { id: 'harpoon_spear', quantity: 1 },
-  { id: 'hunting_bow', quantity: 1 },
-  { id: 'pickaxe', quantity: 2 },
-  { id: 'axe', quantity: 1 },
-  { id: 'plank', quantity: 24 },
-  { id: 'rope', quantity: 35 },
-]
-
 export const SHELTER_DAILY_LOGS = [
   { day: 1, workers: [
     { name: '张三', isProfessional: true, isOppressed: false, value: 5 },
@@ -333,6 +691,8 @@ export function resolveShelterInventoryRows(items) {
         const category = { item: 'prop', weapon: 'weapon', ammo: 'ammo', material: 'material' }[row.itemType] || 'prop'
         return {
           id: key,
+          itemType: row.itemType,
+          itemId: row.itemId,
           name: row.name,
           category,
           description: row.description || '',
@@ -357,7 +717,9 @@ export function resolveShelterInventoryRows(items) {
         const category = { item: 'prop', weapon: 'weapon', ammo: 'ammo', material: 'material' }[row.itemType] || 'prop'
         return {
           id: key,
-          name: row.itemType + '-' + row.itemId,
+          itemType: row.itemType,
+          itemId: row.itemId,
+          name: getItemDisplayName(row.itemType, row.itemId),
           category,
           description: '',
           imageUrl: getMaterialImageUrlOrDefault(row.itemType, row.itemId),
@@ -365,7 +727,16 @@ export function resolveShelterInventoryRows(items) {
           quantity: row.quantity,
         }
       }
-      return { ...def, quantity: row.quantity }
+      const key = row.itemType != null && row.itemId != null
+        ? `${row.itemType}_${row.itemId}`
+        : def.id
+      return {
+        ...def,
+        id: key,
+        itemType: row.itemType,
+        itemId: row.itemId,
+        quantity: row.quantity,
+      }
     })
     .filter(Boolean)
 }

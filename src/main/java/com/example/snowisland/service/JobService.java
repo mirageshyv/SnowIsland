@@ -79,14 +79,14 @@ public class JobService {
         materialNames.put(2, "木材");
         materialNames.put(3, "绳索");
         materialNames.put(4, "木板");
-        materialNames.put(5, "食物");
         materialNames.put(6, "沥青");
         materialNames.put(7, "石料");
-        materialNames.put(8, "燃料");
         materialNames.put(9, "帆布");
         materialNames.put(10, "发动机");
         materialNames.put(11, "螺旋桨");
         materialNames.put(12, "发电机");
+        materialNames.put(com.example.snowisland.util.ItemCatalog.FOOD_MATERIAL_ID, com.example.snowisland.util.ItemCatalog.FOOD_NAME);
+        materialNames.put(com.example.snowisland.util.ItemCatalog.FUEL_MATERIAL_ID, com.example.snowisland.util.ItemCatalog.FUEL_NAME);
         ITEM_NAMES.put("material", materialNames);
     }
 
@@ -156,7 +156,7 @@ public class JobService {
 
     private String getItemName(ItemType itemType, Integer itemId) {
         Map<Integer, String> names = ITEM_NAMES.get(itemType.name().toLowerCase());
-        if (names != null) {
+        if (names != null && itemId != null) {
             String name = names.get(itemId);
             if (name != null) {
                 return name;

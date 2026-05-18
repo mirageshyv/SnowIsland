@@ -2,10 +2,17 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { playerAPI } from '../utils/api.js'
 import { getMaterialImageUrlOrDefault, getTypeTabImage } from '../data/gameData.js'
+import ShelterSupplyCards from './ShelterSupplyCards.vue'
 
 const playerId = localStorage.getItem('playerId') || '1'
 const loading = ref(true)
 const rawMaterials = ref([])
+const foodSupply = ref({ totalKg: 0, items: [] })
+const energyReserve = ref({ items: [] })
+const resourcesLoaded = ref(false)
+
+/** Food/fuel are material ids 5 and 8 in player_items */
+const EXCLUDED_MATERIAL_IDS = new Set([5, 8])
 
 // 筛选状态
 const selectedTypes = ref(['item', 'weapon', 'ammo', 'material'])
@@ -42,7 +49,10 @@ const itemNamesMap = {
     19: '仓库钥匙',
     20: '燃料仓库钥匙',
     21: '镇武库钥匙',
-    22: '码头集购站钥匙'
+    22: '码头集购站钥匙',
+    23: '反叛者基地钥匙',
+    24: '方舟钥匙',
+    25: '监狱钥匙'
   },
   weapon: {
     1: '制式手枪',
@@ -56,7 +66,8 @@ const itemNamesMap = {
     9: '斧头',
     10: '电锯',
     11: '手术刀',
-    12: '炸药'
+    12: '炸药',
+    13: '电钻'
   },
   ammo: {
     1: '手枪弹',
@@ -104,7 +115,10 @@ const itemUnitsMap = {
     19: '把',
     20: '把',
     21: '把',
-    22: '把'
+    22: '把',
+    23: '把',
+    24: '把',
+    25: '把'
   },
   weapon: {
     1: '把',
@@ -118,7 +132,8 @@ const itemUnitsMap = {
     9: '把',
     10: '把',
     11: '把',
-    12: 'kg'
+    12: 'kg',
+    13: '把'
   },
   ammo: {
     1: '枚',
@@ -166,7 +181,10 @@ const itemRemarksMap = {
     19: '仓库通行',
     20: '燃料仓库通行',
     21: '镇武库通行',
-    22: '码头集购站通行'
+    22: '码头集购站通行',
+    23: '反叛者基地通行',
+    24: '方舟通行',
+    25: '监狱通行'
   },
   weapon: {
     1: '标准配备',
@@ -180,7 +198,8 @@ const itemRemarksMap = {
     9: '砍伐工具',
     10: '切割工具',
     11: '医疗工具',
-    12: '爆炸物'
+    12: '爆炸物',
+    13: '钻孔工具'
   },
   ammo: {
     1: '制式手枪子弹',
@@ -217,7 +236,8 @@ const weaponThreatMap = {
   9: 6,
   10: 7,
   11: 2,
-  12: 10
+  12: 10,
+  13: 4
 }
 
 // 弹药适用武器映射
@@ -294,9 +314,23 @@ const itemIconMap = {
 const loadMaterials = async () => {
   loading.value = true
   try {
-    const result = await playerAPI.getItems(playerId)
-    if (Array.isArray(result)) {
-      rawMaterials.value = result
+    const [itemsResult, resourcesResult] = await Promise.all([
+      playerAPI.getItems(playerId),
+      playerAPI.getResources(playerId)
+    ])
+    if (Array.isArray(itemsResult)) {
+      rawMaterials.value = itemsResult
+    }
+    resourcesLoaded.value = Boolean(resourcesResult?.success)
+    if (resourcesResult?.success) {
+      foodSupply.value = resourcesResult.foodSupply ?? {
+        totalKg: resourcesResult.foodKg ?? 0,
+        items: []
+      }
+      energyReserve.value = resourcesResult.energyReserve ?? { items: [] }
+    } else {
+      foodSupply.value = { totalKg: 0, items: [] }
+      energyReserve.value = { items: [] }
     }
   } catch (error) {
     console.error('Failed to load materials:', error)
@@ -335,7 +369,9 @@ const currentAmmo = computed(() => {
 })
 
 const currentMaterials = computed(() => {
-  return rawMaterials.value.filter(i => i.type === 'material').map(i => transformItem('material', i))
+  return rawMaterials.value
+    .filter(i => i.type === 'material' && !EXCLUDED_MATERIAL_IDS.has(Number(i.id)))
+    .map(i => transformItem('material', i))
 })
 
 // 计算属性：根据筛选条件显示的物资
@@ -358,15 +394,23 @@ const filteredData = computed(() => {
 
 // 计算属性：是否有任何物资
 const hasAnyMaterials = computed(() => {
-  return currentItems.value.length > 0 || 
-         currentWeapons.value.length > 0 || 
-         currentAmmo.value.length > 0 || 
+  return resourcesLoaded.value ||
+         currentItems.value.length > 0 ||
+         currentWeapons.value.length > 0 ||
+         currentAmmo.value.length > 0 ||
          currentMaterials.value.length > 0
+})
+
+const hasFoodOrEnergyStock = computed(() => {
+  const foodItems = (foodSupply.value.items || []).some(i => Number(i.quantity) > 0)
+  const energyItems = (energyReserve.value.items || []).some(i => Number(i.quantity) > 0)
+  return foodItems || energyItems || (foodSupply.value.totalKg ?? 0) > 0
 })
 
 // 计算属性：当前筛选条件下是否有物资
 const hasFilteredMaterials = computed(() => {
-  return Object.values(filteredData.value).some(arr => arr.length > 0)
+  return hasFoodOrEnergyStock.value ||
+         Object.values(filteredData.value).some(arr => arr.length > 0)
 })
 
 const toggleType = (type) => {
@@ -497,9 +541,33 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- 物资展示区域 -->
+    <!-- 食物 / 燃料明细 -->
+    <div
+      class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-2xl p-5 mb-6"
+    >
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400/20 to-yellow-500/20 flex items-center justify-center text-xl">
+          🍞
+        </div>
+        <div>
+          <h2 class="text-white text-lg font-medium">食物与燃料</h2>
+          <p class="text-gray-500 text-xs">Food & Fuel (by type)</p>
+        </div>
+      </div>
+      <p v-if="!loading && !resourcesLoaded" class="text-amber-500/90 text-sm mb-3">
+        无法加载食物与燃料数据。请确认 Spring Boot 后端已启动，且 material 表包含 id 5（食物）与 id 8（燃料）。
+      </p>
+      <ShelterSupplyCards
+        v-else
+        embedded
+        food-title="个人食物"
+        energy-title="个人燃料"
+        :food="foodSupply"
+        :energy="energyReserve"
+      />
+    </div>
+
     <div v-if="hasFilteredMaterials" class="space-y-8">
-      <!-- 道具区域 -->
       <div v-if="selectedTypes.includes('item') && filteredData.item?.length > 0">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400/20 to-blue-500/20 flex items-center justify-center p-1.5">
