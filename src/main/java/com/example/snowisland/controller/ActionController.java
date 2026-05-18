@@ -64,6 +64,12 @@ public class ActionController {
         return ResponseEntity.ok(actionService.feedbackAction(actionId, feedback));
     }
 
+    @PostMapping("/publish")
+    public ResponseEntity<Map<String, Object>> publishFeedback(
+            @RequestParam(defaultValue = "1") Integer gameDay) {
+        return ResponseEntity.ok(actionService.publishFeedback(gameDay));
+    }
+
     @PostMapping("/resolve/investigate")
     public ResponseEntity<Map<String, Object>> batchResolveInvestigate(
             @RequestParam(defaultValue = "1") Integer gameDay) {

@@ -27,6 +27,8 @@ public class ActionService {
     /** Shown to players while status is pending (DM sees full computed result). */
     public static final String PENDING_PLAYER_MESSAGE = "已提交，等待主持人确认。";
 
+    private static final String DM_FEEDBACK_MARKER = "\n\n【DM反馈】\n";
+
     private static final Map<String, String> PRODUCTION_JOB_MAP = new LinkedHashMap<>();
     private static final Map<String, Map<String, Object>> PRODUCTION_OUTPUT_MAP = new LinkedHashMap<>();
     static {
@@ -165,6 +167,7 @@ public class ActionService {
             applyHideEffects(action);
         }
         action.setStatus(PlayerAction.ActionStatus.feedbacked);
+        action.setFeedbackPublished(false);
         actionRepository.save(action);
         result.put("success", true);
         result.put("message", "行动已确认");
@@ -298,19 +301,97 @@ public class ActionService {
             result.put("success", false); result.put("message", "行动不存在");
             return result;
         }
+        if (feedback == null || feedback.trim().isEmpty()) {
+            result.put("success", false); result.put("message", "反馈内容不能为空");
+            return result;
+        }
         PlayerAction action = optAction.get();
-        String existingResult = action.getResult() != null ? action.getResult() : "";
-        action.setResult(existingResult + "\n\n【DM反馈】\n" + feedback);
+        action.setResult(attachDmFeedback(action.getResult(), feedback.trim()));
         action.setStatus(PlayerAction.ActionStatus.feedbacked);
+        action.setFeedbackPublished(false);
         actionRepository.save(action);
-        result.put("success", true); result.put("message", "反馈成功");
+        result.put("success", true); result.put("message", "反馈已保存");
         result.put("data", toMap(action));
         return result;
     }
 
+    @Transactional
+    public Map<String, Object> publishFeedback(Integer gameDay) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (gameDay == null || gameDay < 1) {
+            result.put("success", false);
+            result.put("message", "无效的游戏日");
+            return result;
+        }
+        List<PlayerAction> actions = actionRepository.findByGameDayOrderByCreatedAtAsc(gameDay);
+        int published = 0;
+        int pending = 0;
+        for (PlayerAction action : actions) {
+            if (action.getStatus() == PlayerAction.ActionStatus.feedbacked) {
+                if (!Boolean.TRUE.equals(action.getFeedbackPublished())) {
+                    action.setFeedbackPublished(true);
+                    actionRepository.save(action);
+                    published++;
+                }
+            } else {
+                pending++;
+            }
+        }
+        result.put("success", true);
+        result.put("publishedCount", published);
+        result.put("pendingCount", pending);
+        result.put("message", published > 0
+                ? "已发布 " + published + " 条行动反馈" + (pending > 0 ? "（另有 " + pending + " 条仍待处理）" : "")
+                : (pending > 0 ? "暂无新反馈可发布，仍有 " + pending + " 条待处理" : "当日暂无行动记录"));
+        return result;
+    }
+
+    public static String extractDmFeedback(String result) {
+        if (result == null || result.isEmpty()) {
+            return "";
+        }
+        int marker = result.indexOf("【DM反馈】");
+        if (marker < 0) {
+            return "";
+        }
+        int contentStart = result.indexOf('\n', marker);
+        if (contentStart < 0) {
+            return "";
+        }
+        return result.substring(contentStart + 1).trim();
+    }
+
+    private static String stripDmFeedback(String result) {
+        if (result == null || result.isEmpty()) {
+            return "";
+        }
+        int marker = result.indexOf(DM_FEEDBACK_MARKER);
+        if (marker >= 0) {
+            return result.substring(0, marker).trim();
+        }
+        marker = result.indexOf("【DM反馈】");
+        if (marker >= 0) {
+            return result.substring(0, marker).trim();
+        }
+        return result.trim();
+    }
+
+    private static String attachDmFeedback(String result, String feedback) {
+        String base = stripDmFeedback(result);
+        if (feedback == null || feedback.isEmpty()) {
+            return base;
+        }
+        if (base.isEmpty()) {
+            return "【DM反馈】\n" + feedback;
+        }
+        return base + DM_FEEDBACK_MARKER + feedback;
+    }
+
     private Map<String, Object> toMapForPlayer(PlayerAction action) {
         Map<String, Object> map = toMap(action);
-        if (action.getStatus() == PlayerAction.ActionStatus.pending) {
+        boolean published = Boolean.TRUE.equals(action.getFeedbackPublished());
+        boolean showToPlayer = action.getStatus() == PlayerAction.ActionStatus.feedbacked && published;
+        if (!showToPlayer) {
             map.put("result", PENDING_PLAYER_MESSAGE);
             map.put("resultPending", true);
         } else {
@@ -345,6 +426,7 @@ public class ActionService {
                 action.setResult(sb.toString());
             }
             action.setStatus(PlayerAction.ActionStatus.feedbacked);
+            action.setFeedbackPublished(false);
             actionRepository.save(action);
             resolved++;
         }
@@ -385,6 +467,7 @@ public class ActionService {
             String existingResult = action.getResult() != null ? action.getResult() : "";
             action.setResult(existingResult + "\n\n【生产结算】已获得" + output.get("itemName") + " " + quantity + output.get("unit"));
             action.setStatus(PlayerAction.ActionStatus.feedbacked);
+            action.setFeedbackPublished(false);
             actionRepository.save(action);
             resolved++;
         }
@@ -445,6 +528,7 @@ public class ActionService {
             if (mode == null || sourceWarehouse == null || items.isEmpty()) {
                 action.setResult((action.getResult() != null ? action.getResult() : "") + "\n\n【搬运结算失败】搬运数据格式错误");
                 action.setStatus(PlayerAction.ActionStatus.feedbacked);
+                action.setFeedbackPublished(false);
                 actionRepository.save(action);
                 result.put("success", false); result.put("message", "搬运数据格式错误");
                 return result;
@@ -501,6 +585,7 @@ public class ActionService {
             String existingResult = action.getResult() != null ? action.getResult() : "";
             action.setResult(existingResult + "\n\n" + resultLog.toString());
             action.setStatus(PlayerAction.ActionStatus.feedbacked);
+            action.setFeedbackPublished(false);
             actionRepository.save(action);
 
             result.put("success", true);
@@ -677,6 +762,8 @@ public class ActionService {
         map.put("notes", action.getNotes());
         map.put("result", action.getResult());
         map.put("status", action.getStatus().name());
+        map.put("feedbackPublished", Boolean.TRUE.equals(action.getFeedbackPublished()));
+        map.put("dmFeedback", extractDmFeedback(action.getResult()));
         map.put("gameDay", action.getGameDay());
         map.put("createdAt", action.getCreatedAt());
         boolean laborer = action.getPlayerId() != null && action.getGameDay() != null

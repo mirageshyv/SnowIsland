@@ -234,6 +234,79 @@ export function formatActionResultText(text) {
   )
 }
 
+const DM_FEEDBACK_MARKER = '【DM反馈】'
+
+/** Extract DM-authored feedback from stored action result. */
+export function extractDmFeedback(result) {
+  if (!result) return ''
+  const text = String(result)
+  const marker = text.indexOf(DM_FEEDBACK_MARKER)
+  if (marker < 0) return ''
+  const after = text.indexOf('\n', marker)
+  if (after < 0) return ''
+  return text.slice(after + 1).trim()
+}
+
+export function stripDmFeedbackFromResult(result) {
+  if (!result) return ''
+  const text = String(result)
+  const idx = text.indexOf(`\n\n${DM_FEEDBACK_MARKER}`)
+  if (idx >= 0) return text.slice(0, idx).trim()
+  const idx2 = text.indexOf(DM_FEEDBACK_MARKER)
+  if (idx2 >= 0) return text.slice(0, idx2).trim()
+  return text.trim()
+}
+
+const ACTION_TYPE_LABELS = {
+  go_location: '前往地点',
+  investigate_player: '调查玩家',
+  produce: '生产',
+  use_trait: '使用特性',
+  use_skill: '使用职业技能',
+  transport: '搬运',
+  hide: '隐藏',
+}
+
+export function actionTypeLabel(action) {
+  if (!action) return '—'
+  return action.actionTypeLabel || ACTION_TYPE_LABELS[action.actionType] || action.actionType || '—'
+}
+
+export function actionShortLabel(action) {
+  if (!action) return '未提交'
+  let label = actionTypeLabel(action)
+  if (action.targetName) label += ` → ${action.targetName}`
+  if (action.npcName) label += ` · ${action.npcName}`
+  return label
+}
+
+/** Combined copy-paste summary for both action slots. */
+export function buildPlayerFeedbackSummary(playerName, gameDay, slot1, slot2) {
+  const day = gameDay ?? ''
+  const lines = [`【${playerName} · 第${day}天 行动反馈总结】`, '']
+  const slots = [
+    { n: '行动一', a: slot1 },
+    { n: '行动二', a: slot2 },
+  ]
+  for (const { n, a } of slots) {
+    if (!a) {
+      lines.push(`${n}：未提交`, '')
+      continue
+    }
+    lines.push(`${n}（${actionShortLabel(a)}）`)
+    const fb = extractDmFeedback(a.result) || a.dmFeedback
+    if (fb) {
+      lines.push(fb)
+    } else if (a.status === 'feedbacked') {
+      lines.push(formatActionResultText(stripDmFeedbackFromResult(a.result)) || '（已处理，无单独反馈文案）')
+    } else {
+      lines.push('（待反馈）')
+    }
+    lines.push('')
+  }
+  return lines.join('\n').trim()
+}
+
 /**
  * 获取物资图片 url；若没有对应素材返回 null。
  * @param {'item'|'weapon'|'ammo'|'material'} type

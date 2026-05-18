@@ -360,6 +360,8 @@ export const actionAPI = {
     request(`${API_BASE}/actions/resolve/produce?gameDay=${gameDay}`, { method: 'POST' }),
   resolveTransport: (actionId) =>
     request(`${API_BASE}/actions/resolve/transport/${actionId}`, { method: 'POST' }),
+  publishFeedback: (gameDay = 1) =>
+    request(`${API_BASE}/actions/publish?gameDay=${encodeURIComponent(gameDay)}`, { method: 'POST' }),
   getProductionInfo: (playerId) =>
     request(`${API_BASE}/actions/production-info/${playerId}`),
   checkStealth: (playerId, gameDay = 1) =>

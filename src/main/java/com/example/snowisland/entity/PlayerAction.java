@@ -48,6 +48,9 @@ public class PlayerAction {
     @Column(nullable = false, length = 15)
     private ActionStatus status = ActionStatus.pending;
 
+    @Column(name = "feedback_published", nullable = false)
+    private Boolean feedbackPublished = false;
+
     @Column(name = "game_day", nullable = false)
     private Integer gameDay = 1;
 
@@ -96,6 +99,8 @@ public class PlayerAction {
     public void setResult(String result) { this.result = result; }
     public ActionStatus getStatus() { return status; }
     public void setStatus(ActionStatus status) { this.status = status; }
+    public Boolean getFeedbackPublished() { return feedbackPublished; }
+    public void setFeedbackPublished(Boolean feedbackPublished) { this.feedbackPublished = feedbackPublished; }
     public Integer getGameDay() { return gameDay; }
     public void setGameDay(Integer gameDay) { this.gameDay = gameDay; }
     public LocalDateTime getCreatedAt() { return createdAt; }
