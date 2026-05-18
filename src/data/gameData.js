@@ -234,7 +234,220 @@ export function formatActionResultText(text) {
   )
 }
 
+const WAREHOUSE_LABELS = {
+  general: '通用仓库',
+  fuel: '燃料仓库',
+  armory: '镇武库',
+  dock: '码头集换站',
+  rebel: '反叛者基地',
+  ark: '方舟仓库',
+}
+
+const TRANSPORT_MODE_LABELS = {
+  warehouse_to_warehouse: '仓库→仓库（上限500千克）',
+  warehouse_to_player: '仓库→个人（上限300千克）',
+  player_to_warehouse: '个人→仓库（上限300千克）',
+}
+
+const STRUCTURED_NOTE_LINE = /^\[(mode|source|dest|item|target|player_deducted):/
+
+/** @returns {{ mode: string, source: string, dest: string, items: Array<{ itemType: string, itemId: string, quantity: string, weight: string }> } | null} */
+export function parseTransportNotes(notes) {
+  if (!notes) return null
+  const info = { mode: '', source: '', dest: '', targetPlayerId: '', items: [] }
+  let hasStructured = false
+  for (const line of String(notes).split('\n')) {
+    const trimmed = line.trim()
+    if (trimmed.startsWith('[target:')) {
+      hasStructured = true
+      const closeIdx = trimmed.indexOf(']')
+      if (closeIdx > 8) info.targetPlayerId = trimmed.substring(8, closeIdx)
+    } else if (trimmed.startsWith('[mode:')) {
+      hasStructured = true
+      const closeIdx = trimmed.indexOf(']')
+      if (closeIdx > 6) info.mode = trimmed.substring(6, closeIdx)
+    } else if (trimmed.startsWith('[source:')) {
+      hasStructured = true
+      const closeIdx = trimmed.indexOf(']')
+      if (closeIdx > 8) info.source = trimmed.substring(8, closeIdx)
+    } else if (trimmed.startsWith('[dest:')) {
+      hasStructured = true
+      const closeIdx = trimmed.indexOf(']')
+      if (closeIdx > 6) info.dest = trimmed.substring(6, closeIdx)
+    } else if (trimmed.startsWith('[item:')) {
+      hasStructured = true
+      const closeIdx = trimmed.indexOf(']')
+      if (closeIdx > 6) {
+        const parts = trimmed.substring(6, closeIdx).split('|')
+        if (parts.length >= 4) {
+          info.items.push({
+            itemType: parts[0],
+            itemId: parts[1],
+            quantity: parts[2],
+            weight: parts[3],
+          })
+        }
+      }
+    }
+  }
+  return hasStructured ? info : null
+}
+
+function warehouseLabel(key, warehouseNameByKey = {}) {
+  if (!key) return ''
+  return warehouseNameByKey[key] || WAREHOUSE_LABELS[key] || key
+}
+
+/** 将搬运结构化备注格式化为中文（供 DM 查看玩家提交） */
+export function formatTransportNotesForDisplay(notes, warehouseNameByKey = {}) {
+  const info = parseTransportNotes(notes)
+  if (!info) return ''
+  const lines = []
+  if (info.mode) {
+    lines.push(`模式：${TRANSPORT_MODE_LABELS[info.mode] || info.mode}`)
+  }
+  if (info.source) lines.push(`源仓库：${warehouseLabel(info.source, warehouseNameByKey)}`)
+  if (info.dest) lines.push(`目标仓库：${warehouseLabel(info.dest, warehouseNameByKey)}`)
+  if (info.targetPlayerId) lines.push(`目标玩家ID：${info.targetPlayerId}`)
+  for (const item of info.items) {
+    lines.push(`物资：${formatTransportItemLine(item)}`)
+  }
+  return lines.join('\n')
+}
+
+/** 玩家自由填写的备注（排除搬运结构化行） */
+export function extractFreeformPlayerNotes(notes) {
+  if (!notes) return ''
+  return String(notes)
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l && !STRUCTURED_NOTE_LINE.test(l))
+    .join('\n')
+    .trim()
+}
+
+/** DM 弹窗顶部：玩家备注（搬运仅显示中文摘要，隐藏结构化行） */
+export function getPlayerNotesDisplay(action, warehouseNameByKey = {}) {
+  if (!action?.notes?.trim()) return '（无备注）'
+  if (action.actionType === 'transport') {
+    const plan = formatTransportNotesForDisplay(action.notes, warehouseNameByKey)
+    const free = extractFreeformPlayerNotes(action.notes)
+    if (plan) return free ? `${plan}\n\n${free}` : plan
+    return free || '（无备注）'
+  }
+  return action.notes.trim()
+}
+
+/** 数量输入：非负整数，上限 optional */
+export function sanitizeNonNegativeInt(value, max = Infinity) {
+  let n = parseInt(String(value), 10)
+  if (Number.isNaN(n) || n < 0) n = 0
+  n = Math.floor(n)
+  if (n > max) n = max
+  return n
+}
+
+/** 数量输入：正整数（至少 1），上限 optional；无效时返回 1 */
+export function sanitizePositiveInt(value, max = Infinity) {
+  let n = parseInt(String(value), 10)
+  if (Number.isNaN(n) || n < 1) n = 1
+  n = Math.floor(n)
+  if (n > max) n = max
+  return n
+}
+
+const TRANSPORT_PENDING_MARKER = '\n\n【搬运待发布】\n'
+
+export function stripTransportPendingFromResult(result) {
+  if (!result) return ''
+  const text = String(result)
+  const idx = text.indexOf(TRANSPORT_PENDING_MARKER)
+  if (idx >= 0) return text.slice(0, idx).trim()
+  return text.trim()
+}
+
+function stripPendingPlaceholders(text) {
+  if (!text) return ''
+  return String(text)
+    .replace(/^等待DM反馈[^\n]*\n?/gm, '')
+    .replace(/^已提交，等待主持人确认。[^\n]*\n?/gm, '')
+    .trim()
+}
+
+/** DM 反馈编辑框初始内容：已保存的 DM 文案，或系统/auto 结算文本 */
+export function getDmFeedbackDraft(action) {
+  if (isActionFailed(action)) {
+    const saved = extractDmFeedback(action?.result) || action?.dmFeedback
+    return saved ? formatActionResultText(saved) : generateActionFailureFeedback(action)
+  }
+  const saved = extractDmFeedback(action?.result) || action?.dmFeedback
+  if (saved) return formatActionResultText(saved)
+  let system = stripDmFeedbackFromResult(action?.result)
+  system = stripTransportPendingFromResult(system)
+  system = stripPendingPlaceholders(system)
+  return formatActionResultText(system) || ''
+}
+
+/** 玩家端展示：优先 DM 反馈正文，否则系统结果 */
+export function formatPlayerActionResult(result) {
+  if (!result) return ''
+  const dm = extractDmFeedback(result)
+  if (dm) return formatActionResultText(dm)
+  return formatActionResultText(stripDmFeedbackFromResult(result))
+}
+
 const DM_FEEDBACK_MARKER = '【DM反馈】'
+export const ACTION_FAILED_MARKER = '【行动失败】'
+
+export function isActionFailed(actionOrResult) {
+  const result = typeof actionOrResult === 'string' ? actionOrResult : actionOrResult?.result
+  if (!result) return Boolean(actionOrResult?.actionFailed)
+  return String(result).includes(ACTION_FAILED_MARKER) || Boolean(actionOrResult?.actionFailed)
+}
+
+/** 按行动类型生成失败反馈文案（不含【行动失败】标记，标记由后端写入） */
+export function generateActionFailureFeedback(action) {
+  if (!action) return '你的行动未能成功，请等待主持人说明具体情况。'
+  const target = action.targetName || ''
+  const lines = []
+  switch (action.actionType) {
+    case 'go_location':
+      lines.push(
+        target
+          ? `你前往「${target}」的行动未能成功，未能按预期完成探索或互动。`
+          : '你的前往地点行动未能成功。',
+      )
+      break
+    case 'investigate_player':
+      lines.push(
+        target
+          ? `你对「${target}」的调查未能成功，未能掌握其当日行动情报。`
+          : '你的调查玩家行动未能成功。',
+      )
+      break
+    case 'produce':
+      lines.push('你的生产行动未能成功，今日未获得预期产出。')
+      break
+    case 'use_trait':
+      lines.push('你的特性使用未能生效（条件不满足、被打断或遭否决）。')
+      break
+    case 'use_skill':
+      lines.push('你的职业技能未能生效（条件不满足、被打断或遭否决）。')
+      break
+    case 'transport':
+      lines.push('你的搬运行动未能成功，物资未按申请完成转移。')
+      if (action.notes?.includes('[player_deducted:1]')) {
+        lines.push('已从你背包预扣的物资将退还。')
+      }
+      break
+    case 'hide':
+      lines.push('你的隐藏行动未能成功，你未能进入隐藏状态。')
+      break
+    default:
+      lines.push(`你的行动（${actionShortLabel(action)}）未能成功。`)
+  }
+  return lines.join('\n')
+}
 
 /** Extract DM-authored feedback from stored action result. */
 export function extractDmFeedback(result) {
@@ -294,11 +507,11 @@ export function buildPlayerFeedbackSummary(playerName, gameDay, slot1, slot2) {
       continue
     }
     lines.push(`${n}（${actionShortLabel(a)}）`)
-    const fb = extractDmFeedback(a.result) || a.dmFeedback
-    if (fb) {
-      lines.push(fb)
+    const draft = getDmFeedbackDraft(a)
+    if (draft) {
+      lines.push(draft)
     } else if (a.status === 'feedbacked') {
-      lines.push(formatActionResultText(stripDmFeedbackFromResult(a.result)) || '（已处理，无单独反馈文案）')
+      lines.push('（已处理，无反馈文案）')
     } else {
       lines.push('（待反馈）')
     }

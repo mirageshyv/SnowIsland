@@ -1,17 +1,19 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { actionAPI, playerAPI } from '@/utils/api.js'
+import { actionAPI, playerAPI, warehouseAPI } from '@/utils/api.js'
 import {
-  formatActionResultText,
-  formatTransportItemLine,
   extractDmFeedback,
-  stripDmFeedbackFromResult,
   actionShortLabel,
   buildPlayerFeedbackSummary,
+  getDmFeedbackDraft,
+  getPlayerNotesDisplay,
+  isActionFailed,
+  generateActionFailureFeedback,
 } from '@/data/gameData.js'
 
 const actions = ref([])
 const players = ref([])
+const warehouseNameByKey = ref({})
 const loading = ref(true)
 const filterGameDay = ref('1')
 const resolving = ref(false)
@@ -22,6 +24,7 @@ const modalMode = ref(null)
 const modalAction = ref(null)
 const modalPlayerRow = ref(null)
 const feedbackText = ref('')
+const actionFailed = ref(false)
 const summaryText = ref('')
 const savingFeedback = ref(false)
 
@@ -110,8 +113,28 @@ function openActionModal(action) {
   modalMode.value = 'action'
   modalAction.value = action
   modalPlayerRow.value = null
-  feedbackText.value = extractDmFeedback(action.result) || action.dmFeedback || ''
+  actionFailed.value = isActionFailed(action)
+  feedbackText.value = getDmFeedbackDraft(action)
 }
+
+function onActionFailedToggle() {
+  if (!modalAction.value) return
+  if (actionFailed.value) {
+    const saved = extractDmFeedback(modalAction.value.result)
+    feedbackText.value = saved || generateActionFailureFeedback(modalAction.value)
+  } else {
+    feedbackText.value = getDmFeedbackDraft({ ...modalAction.value, result: stripFailedFromDraft(modalAction.value.result) })
+  }
+}
+
+function stripFailedFromDraft(result) {
+  if (!result) return ''
+  return String(result).replace(/\n?\n?【行动失败】/g, '').trim()
+}
+
+const modalPlayerNotes = computed(() =>
+  modalAction.value ? getPlayerNotesDisplay(modalAction.value, warehouseNameByKey.value) : '',
+)
 
 function openSummaryModal(row) {
   modalMode.value = 'summary'
@@ -130,28 +153,7 @@ function closeModal() {
   modalAction.value = null
   modalPlayerRow.value = null
   feedbackText.value = ''
-}
-
-function canApproveAction(action) {
-  return action?.status === 'pending' && ['go_location', 'hide'].includes(action.actionType)
-}
-
-async function approveAction(actionId) {
-  resolving.value = true
-  try {
-    const res = await actionAPI.approveAction(actionId)
-    if (res?.success) {
-      showResolveMessage('success', res.message || '行动已确认')
-      await fetchActions()
-      closeModal()
-    } else {
-      showResolveMessage('error', res?.message || '确认失败')
-    }
-  } catch {
-    showResolveMessage('error', '确认行动异常')
-  } finally {
-    resolving.value = false
-  }
+  actionFailed.value = false
 }
 
 async function resolveTransport(actionId) {
@@ -176,12 +178,16 @@ async function resolveTransport(actionId) {
 }
 
 async function saveModalFeedback() {
-  if (!modalAction.value || !feedbackText.value.trim()) return
+  if (!modalAction.value) return
   savingFeedback.value = true
   try {
-    const res = await actionAPI.feedbackAction(modalAction.value.id, feedbackText.value.trim())
+    const res = await actionAPI.feedbackAction(
+      modalAction.value.id,
+      feedbackText.value.trim(),
+      actionFailed.value,
+    )
     if (res?.success) {
-      showResolveMessage('success', '反馈已保存')
+      showResolveMessage('success', actionFailed.value ? '失败反馈已保存' : '反馈已保存')
       await fetchActions()
       closeModal()
     } else {
@@ -194,27 +200,14 @@ async function saveModalFeedback() {
   }
 }
 
-async function batchResolveInvestigate() {
+async function batchResolveAll() {
   resolving.value = true
   try {
-    const res = await actionAPI.batchResolveInvestigate(parseInt(filterGameDay.value, 10))
-    showResolveMessage(res?.success ? 'success' : 'error', res?.message || (res?.success ? '调查结算完成' : '结算失败'))
+    const res = await actionAPI.batchResolveAll(parseInt(filterGameDay.value, 10))
+    showResolveMessage(res?.success ? 'success' : 'error', res?.message || (res?.success ? '结算完成' : '结算失败'))
     await fetchActions()
   } catch {
-    showResolveMessage('error', '调查结算异常')
-  } finally {
-    resolving.value = false
-  }
-}
-
-async function batchResolveProduce() {
-  resolving.value = true
-  try {
-    const res = await actionAPI.batchResolveProduce(parseInt(filterGameDay.value, 10))
-    showResolveMessage(res?.success ? 'success' : 'error', res?.message || (res?.success ? '生产结算完成' : '结算失败'))
-    await fetchActions()
-  } catch {
-    showResolveMessage('error', '生产结算异常')
+    showResolveMessage('error', '一键结算异常')
   } finally {
     resolving.value = false
   }
@@ -222,11 +215,15 @@ async function batchResolveProduce() {
 
 async function publishAllFeedback() {
   if (publishing.value) return
-  if (!confirm(`确定发布第 ${filterGameDay.value} 天所有已保存的行动反馈？玩家将可在行动页查看结果。`)) return
+  if (!confirm(`确定发布第 ${filterGameDay.value} 天所有已保存的行动反馈？搬运库存变更将一并生效，玩家可在行动页查看结果。`)) return
   publishing.value = true
   try {
     const res = await actionAPI.publishFeedback(parseInt(filterGameDay.value, 10))
-    showResolveMessage(res?.success ? 'success' : 'error', res?.message || (res?.success ? '已发布' : '发布失败'))
+    const hasErrors = Array.isArray(res?.errors) && res.errors.length > 0
+    showResolveMessage(
+      res?.success && !hasErrors ? 'success' : 'error',
+      res?.message || (res?.success ? '已发布' : '发布失败'),
+    )
     await fetchActions()
   } catch {
     showResolveMessage('error', '发布反馈异常')
@@ -244,47 +241,23 @@ async function copySummary() {
   }
 }
 
-const transportNotesCache = new Map()
-
-function parseTransportNotes(notes) {
-  if (!notes) return null
-  if (transportNotesCache.has(notes)) return transportNotesCache.get(notes)
-  const info = { mode: '', source: '', dest: '', items: [] }
-  for (const line of notes.split('\n')) {
-    const trimmed = line.trim()
-    if (trimmed.startsWith('[mode:')) {
-      const closeIdx = trimmed.indexOf(']')
-      if (closeIdx > 6) info.mode = trimmed.substring(6, closeIdx)
-    } else if (trimmed.startsWith('[source:')) {
-      const closeIdx = trimmed.indexOf(']')
-      if (closeIdx > 8) info.source = trimmed.substring(8, closeIdx)
-    } else if (trimmed.startsWith('[dest:')) {
-      const closeIdx = trimmed.indexOf(']')
-      if (closeIdx > 6) info.dest = trimmed.substring(6, closeIdx)
-    } else if (trimmed.startsWith('[item:')) {
-      const closeIdx = trimmed.indexOf(']')
-      if (closeIdx > 6) {
-        const parts = trimmed.substring(6, closeIdx).split('|')
-        if (parts.length >= 4) {
-          info.items.push({ itemType: parts[0], itemId: parts[1], quantity: parts[2], weight: parts[3] })
-        }
-      }
+async function fetchWarehouses() {
+  try {
+    const userRole = localStorage.getItem('userRole') || 'dm'
+    const list = await warehouseAPI.getAccessibleWarehouses('', userRole)
+    const map = {}
+    for (const w of Array.isArray(list) ? list : []) {
+      const key = w.warehouseKey ?? w.warehouse_key
+      if (key) map[key] = w.warehouseName ?? w.warehouse_name ?? key
     }
+    warehouseNameByKey.value = map
+  } catch (e) {
+    console.error('获取仓库列表失败:', e)
   }
-  transportNotesCache.set(notes, info)
-  if (transportNotesCache.size > 200) {
-    transportNotesCache.delete(transportNotesCache.keys().next().value)
-  }
-  return info
-}
-
-function systemResultPreview(action) {
-  if (!action?.result) return ''
-  return formatActionResultText(stripDmFeedbackFromResult(action.result))
 }
 
 onMounted(async () => {
-  await Promise.all([fetchPlayers(), fetchActions()])
+  await Promise.all([fetchPlayers(), fetchActions(), fetchWarehouses()])
 })
 </script>
 
@@ -308,19 +281,11 @@ onMounted(async () => {
           </select>
           <button
             type="button"
-            class="px-3 py-2 text-xs rounded-lg bg-yellow-600/20 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-600/30 disabled:opacity-50"
+            class="px-3 py-2 text-xs rounded-lg bg-cyan-600/20 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-600/30 disabled:opacity-50"
             :disabled="resolving"
-            @click="batchResolveInvestigate"
+            @click="batchResolveAll"
           >
-            结算调查
-          </button>
-          <button
-            type="button"
-            class="px-3 py-2 text-xs rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30 disabled:opacity-50"
-            :disabled="resolving"
-            @click="batchResolveProduce"
-          >
-            结算生产
+            一键结算
           </button>
         </div>
       </div>
@@ -377,7 +342,12 @@ onMounted(async () => {
               @click="row.slot1 && openActionModal(row.slot1)"
             >
               <span
-                v-if="row.slot1 && isActionSaved(row.slot1)"
+                v-if="row.slot1 && isActionFailed(row.slot1)"
+                class="text-red-400 shrink-0"
+                title="行动失败"
+              >✕</span>
+              <span
+                v-else-if="row.slot1 && isActionSaved(row.slot1)"
                 class="text-emerald-400 shrink-0"
                 title="已保存反馈"
               >✓</span>
@@ -393,7 +363,12 @@ onMounted(async () => {
               @click="row.slot2 && openActionModal(row.slot2)"
             >
               <span
-                v-if="row.slot2 && isActionSaved(row.slot2)"
+                v-if="row.slot2 && isActionFailed(row.slot2)"
+                class="text-red-400 shrink-0"
+                title="行动失败"
+              >✕</span>
+              <span
+                v-else-if="row.slot2 && isActionSaved(row.slot2)"
                 class="text-emerald-400 shrink-0"
                 title="已保存反馈"
               >✓</span>
@@ -453,46 +428,43 @@ onMounted(async () => {
             {{ modalAction.laborerDmWarning }}
           </p>
 
-          <div v-if="modalAction.actionType === 'transport' && modalAction.notes" class="rounded-lg border border-teal-500/20 bg-teal-500/5 p-3 text-xs text-gray-400">
-            <p class="text-teal-300 font-medium mb-1">搬运</p>
-            <template v-if="parseTransportNotes(modalAction.notes)">
-              <p>模式：{{ parseTransportNotes(modalAction.notes).mode === 'warehouse_to_warehouse' ? '仓库→仓库' : '仓库→个人' }}</p>
-              <p>源：{{ parseTransportNotes(modalAction.notes).source }}</p>
-              <p v-if="parseTransportNotes(modalAction.notes).dest">目标：{{ parseTransportNotes(modalAction.notes).dest }}</p>
-              <p v-for="item in parseTransportNotes(modalAction.notes).items" :key="`${item.itemType}-${item.itemId}`" class="ml-2">
-                {{ formatTransportItemLine(item) }}
-              </p>
-            </template>
+          <div class="text-gray-400 text-xs whitespace-pre-wrap bg-black/20 rounded-lg p-3 border border-white/5 max-h-40 overflow-y-auto">
+            <span class="text-gray-500 block mb-1">玩家备注</span>
+            {{ modalPlayerNotes }}
           </div>
-          <p v-else-if="modalAction.notes" class="text-gray-500 text-xs italic">备注：{{ modalAction.notes }}</p>
 
-          <div v-if="systemResultPreview(modalAction)" class="text-gray-400 text-xs whitespace-pre-wrap bg-black/20 rounded-lg p-3 border border-white/5 max-h-40 overflow-y-auto">
-            {{ systemResultPreview(modalAction) }}
-          </div>
+          <label
+            class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition-colors"
+            :class="actionFailed
+              ? 'border-red-500/40 bg-red-500/10'
+              : 'border-white/10 bg-black/20 hover:border-white/20'"
+          >
+            <span class="text-sm" :class="actionFailed ? 'text-red-300' : 'text-gray-300'">行动失败</span>
+            <input
+              v-model="actionFailed"
+              type="checkbox"
+              class="w-4 h-4 rounded border-white/20 bg-black/40 text-red-500 focus:ring-red-500/40"
+              @change="onActionFailedToggle"
+            />
+          </label>
 
           <div>
-            <label class="block text-gray-400 text-xs mb-1.5">DM 反馈（发给玩家）</label>
+            <label class="block text-gray-400 text-xs mb-1.5">
+              {{ actionFailed ? '失败反馈（发给玩家）' : 'DM 反馈（发给玩家，可编辑系统结算文案）' }}
+            </label>
             <textarea
               v-model="feedbackText"
-              rows="7"
-              placeholder="输入反馈内容…"
-              class="w-full resize-none bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50"
+              rows="10"
+              :placeholder="actionFailed ? '已根据行动类型生成失败说明，可修改后保存…' : '系统结算将预填于此，可直接修改后保存…'"
+              class="w-full resize-none bg-black/30 border rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50"
+              :class="actionFailed ? 'border-red-500/30' : 'border-white/10'"
             />
           </div>
         </div>
 
         <div class="p-4 border-t border-white/10 flex flex-wrap gap-2">
           <button
-            v-if="canApproveAction(modalAction)"
-            type="button"
-            class="px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-xs disabled:opacity-50"
-            :disabled="resolving"
-            @click="approveAction(modalAction.id)"
-          >
-            确认行动
-          </button>
-          <button
-            v-if="modalAction.actionType === 'transport' && modalAction.status === 'pending'"
+            v-if="modalAction.actionType === 'transport' && !actionFailed"
             type="button"
             class="px-3 py-1.5 rounded-lg bg-teal-600/20 text-teal-400 border border-teal-500/30 text-xs disabled:opacity-50"
             :disabled="resolving"
@@ -507,7 +479,7 @@ onMounted(async () => {
           <button
             type="button"
             class="px-4 py-1.5 bg-cyan-600 text-white rounded-lg text-sm disabled:opacity-50"
-            :disabled="savingFeedback || !feedbackText.trim()"
+            :disabled="savingFeedback"
             @click="saveModalFeedback"
           >
             {{ savingFeedback ? '保存中…' : '保存反馈' }}

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch, reactive } from 'vue'
 import { actionAPI, playerAPI, locationAPI, warehouseAPI } from '@/utils/api.js'
-import { formatActionResultText } from '@/data/gameData.js'
+import { formatPlayerActionResult, sanitizeNonNegativeInt } from '@/data/gameData.js'
 
 const playerId = localStorage.getItem('playerId') || ''
 const gameDay = ref(1)
@@ -64,7 +64,7 @@ const actionHelpEntries = [
   { title: '使用特性', body: '消耗行动点使用你的特性技能。必须在备注说明中详细描述所使用的特性名称及具体效果，DM将根据描述给予反馈。' },
   { title: '使用职业技能', body: '使用你的职业技能。必须在备注说明中详细描述所使用的职业技能及具体效果，DM将根据描述给予反馈。' },
   { title: '生产', body: '根据职业技能生产对应资源。需要DM结算后物资才会发放到背包中。' },
-  { title: '搬运', body: '在仓库间转移物资或将仓库物资搬运到个人背包。需要持有源仓库的钥匙。仓库→仓库上限500kg，仓库→个人上限300kg。未标注重量的物资按1kg/单位计算。' },
+  { title: '搬运', body: '在仓库与个人背包间转移物资。须持有相关仓库钥匙。个人→仓库在提交时即从背包扣除，入仓在主持人发布后生效。仓库→仓库上限500kg，其余上限300kg。' },
   { title: '隐藏', body: '隐藏自己：第二天不会被调查，也无法被私聊，无法成为统治者与密谋的行动目标。' },
 ]
 
@@ -86,7 +86,9 @@ function getNpcOptions(targetId) {
 }
 
 const warehouseOptions = computed(() => {
-  return warehouses.value.map(w => ({ value: w.warehouseKey, label: w.warehouseName }))
+  return warehouses.value
+    .filter((w) => w.accessible === true)
+    .map((w) => ({ value: w.warehouseKey, label: w.warehouseName }))
 })
 
 watch(() => actionData[1].type, (nv) => { actionData[1].target = ''; actionData[1].npc = ''; transportMode[1] = ''; transportSource[1] = ''; transportDest[1] = ''; transportItems[1] = [] })
@@ -94,8 +96,46 @@ watch(() => actionData[2].type, (nv) => { actionData[2].target = ''; actionData[
 watch(() => actionData[1].target, () => { actionData[1].npc = '' })
 watch(() => actionData[2].target, () => { actionData[2].npc = '' })
 
-watch(() => transportSource[1], (nv) => { if (nv) loadWarehouseStock(nv, 1) })
-watch(() => transportSource[2], (nv) => { if (nv) loadWarehouseStock(nv, 2) })
+watch(() => transportMode[1], () => onTransportModeChange(1))
+watch(() => transportMode[2], () => onTransportModeChange(2))
+watch(() => transportSource[1], (nv) => {
+  if (nv && ['warehouse_to_warehouse', 'warehouse_to_player'].includes(transportMode[1])) loadWarehouseStock(nv, 1)
+})
+watch(() => transportSource[2], (nv) => {
+  if (nv && ['warehouse_to_warehouse', 'warehouse_to_player'].includes(transportMode[2])) loadWarehouseStock(nv, 2)
+})
+
+function onTransportModeChange(slot) {
+  transportSource[slot] = ''
+  transportDest[slot] = ''
+  transportItems[slot] = []
+  const mode = transportMode[slot]
+  if (mode === 'player_to_warehouse') {
+    loadPlayerInventory(slot)
+  }
+}
+
+async function loadPlayerInventory(slot) {
+  try {
+    const pid = parseInt(playerId)
+    if (isNaN(pid)) return
+    const list = await playerAPI.getItems(pid)
+    transportItems[slot] = (Array.isArray(list) ? list : [])
+      .filter((item) => (item.quantity || 0) > 0)
+      .map((item) => ({
+        itemType: item.type || item.itemType,
+        itemId: item.id ?? item.itemId,
+        name: item.name || '未知物品',
+        unit: item.unit || '个',
+        available: item.quantity,
+        quantity: 0,
+        weightPerUnit: getWeightPerUnit(item.type || item.itemType, item.id ?? item.itemId),
+      }))
+  } catch (e) {
+    console.error('加载个人背包失败:', e)
+    transportItems[slot] = []
+  }
+}
 
 async function loadWarehouseStock(warehouseKey, slot) {
   try {
@@ -131,11 +171,19 @@ function getTransportMaxWeight(slot) {
   return transportMode[slot] === 'warehouse_to_warehouse' ? 500 : 300
 }
 
+function onTransportQuantityInput(item) {
+  const max = item.available ?? 0
+  item.quantity = sanitizeNonNegativeInt(item.quantity, max)
+}
+
 function buildTransportNotes(slot) {
   const lines = []
-  lines.push(`[mode:${transportMode[slot] || ''}]`)
-  lines.push(`[source:${transportSource[slot] || ''}]`)
-  if (transportMode[slot] === 'warehouse_to_warehouse' && transportDest[slot]) {
+  const mode = transportMode[slot] || ''
+  lines.push(`[mode:${mode}]`)
+  if (['warehouse_to_warehouse', 'warehouse_to_player'].includes(mode) && transportSource[slot]) {
+    lines.push(`[source:${transportSource[slot]}]`)
+  }
+  if (['warehouse_to_warehouse', 'player_to_warehouse'].includes(mode) && transportDest[slot]) {
     lines.push(`[dest:${transportDest[slot]}]`)
   }
   const items = transportItems[slot]
@@ -220,8 +268,16 @@ function validateAction(slot) {
   }
   if (ad.type === 'transport') {
     if (!transportMode[slot]) { alert(`行动${slot === 1 ? '一' : '二'}：请选择搬运模式`); return false }
-    if (!transportSource[slot]) { alert(`行动${slot === 1 ? '一' : '二'}：请选择源仓库`); return false }
-    if (transportMode[slot] === 'warehouse_to_warehouse' && !transportDest[slot]) { alert(`行动${slot === 1 ? '一' : '二'}：请选择目标仓库`); return false }
+    const mode = transportMode[slot]
+    if (['warehouse_to_warehouse', 'warehouse_to_player'].includes(mode) && !transportSource[slot]) {
+      alert(`行动${slot === 1 ? '一' : '二'}：请选择源仓库`); return false
+    }
+    if (mode === 'warehouse_to_warehouse' && !transportDest[slot]) {
+      alert(`行动${slot === 1 ? '一' : '二'}：请选择目标仓库`); return false
+    }
+    if (mode === 'player_to_warehouse' && !transportDest[slot]) {
+      alert(`行动${slot === 1 ? '一' : '二'}：请选择目标仓库`); return false
+    }
     const hasItems = Array.isArray(transportItems[slot]) && transportItems[slot].some(i => i.quantity > 0)
     if (!hasItems) { alert(`行动${slot === 1 ? '一' : '二'}：请至少选择一项搬运物资`); return false }
     const totalWeight = getTransportTotalWeight(slot)
@@ -247,7 +303,7 @@ async function submitActions() {
       if (!ad.type) continue
       let notes = ad.notes || ''
       if (ad.type === 'transport') {
-        notes = buildTransportNotes(s) + (ad.notes ? '\n' + ad.notes : '')
+        notes = buildTransportNotes(s)
       }
       const data = {
         playerId: pid,
@@ -294,7 +350,7 @@ onMounted(async () => {
 function displayActionResult(action) {
   if (!action) return ''
   if (action.status === 'pending' || action.resultPending) return PENDING_RESULT_TEXT
-  return action.result ? formatActionResultText(action.result) : ''
+  return action.result ? formatPlayerActionResult(action.result) : ''
 }
 </script>
 
@@ -396,9 +452,10 @@ function displayActionResult(action) {
                   <option value="">请选择模式</option>
                   <option value="warehouse_to_warehouse">仓库 → 仓库（上限500kg）</option>
                   <option value="warehouse_to_player">仓库 → 个人（上限300kg）</option>
+                  <option value="player_to_warehouse">个人 → 仓库（上限300kg，提交时扣除背包）</option>
                 </select>
               </div>
-              <div class="grid grid-cols-2 gap-3">
+              <div v-if="['warehouse_to_warehouse', 'warehouse_to_player'].includes(transportMode[s])" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label class="block text-gray-500 text-xs mb-2 ml-0.5">源仓库（需持有钥匙）</label>
                   <select v-model="transportSource[s]"
@@ -408,7 +465,7 @@ function displayActionResult(action) {
                   </select>
                 </div>
                 <div v-if="transportMode[s] === 'warehouse_to_warehouse'">
-                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">目标仓库</label>
+                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">目标仓库（需持有钥匙）</label>
                   <select v-model="transportDest[s]"
                     class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50">
                     <option value="">选择仓库</option>
@@ -416,7 +473,18 @@ function displayActionResult(action) {
                   </select>
                 </div>
               </div>
-              <div v-if="transportSource[s] && Array.isArray(transportItems[s]) && transportItems[s].length > 0">
+              <div v-if="transportMode[s] === 'player_to_warehouse'">
+                <label class="block text-gray-500 text-xs mb-2 ml-0.5">目标仓库（需持有钥匙）</label>
+                <select v-model="transportDest[s]"
+                  class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50">
+                  <option value="">选择仓库</option>
+                  <option v-for="w in warehouseOptions" :key="w.value" :value="w.value">{{ w.label }}</option>
+                </select>
+              </div>
+              <div v-if="transportMode[s] && (
+                (['warehouse_to_warehouse', 'warehouse_to_player'].includes(transportMode[s]) && transportSource[s]) ||
+                transportMode[s] === 'player_to_warehouse'
+              ) && Array.isArray(transportItems[s]) && transportItems[s].length > 0">
                 <div class="flex items-center justify-between mb-2">
                   <label class="text-gray-500 text-xs">选择搬运物资</label>
                   <span class="text-xs" :class="getTransportTotalWeight(s) > getTransportMaxWeight(s) ? 'text-red-400' : 'text-gray-400'">
@@ -430,15 +498,23 @@ function displayActionResult(action) {
                       <span class="text-gray-200 text-xs">{{ item.name }}</span>
                       <span class="text-gray-500 text-xs ml-1">库存:{{ item.available }}{{ item.unit }}</span>
                     </div>
-                    <input v-model.number="item.quantity" type="number" min="0" :max="item.available"
-                      class="w-16 bg-white/10 rounded px-2 py-1 text-gray-200 text-xs text-center" />
+                    <input
+                      v-model.number="item.quantity"
+                      type="number"
+                      min="0"
+                      step="1"
+                      inputmode="numeric"
+                      :max="item.available"
+                      class="w-16 bg-white/10 rounded px-2 py-1 text-gray-200 text-xs text-center"
+                      @input="onTransportQuantityInput(item)"
+                    />
                     <span class="text-gray-500 text-xs w-12 text-right">{{ (item.quantity || 0) * item.weightPerUnit }}kg</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div>
+            <div v-if="actionData[s].type !== 'transport'">
               <label class="block text-gray-500 text-xs mb-2 ml-0.5">
                 备注说明
                 <span v-if="actionData[s].type === 'use_trait' || actionData[s].type === 'use_skill'" class="text-red-400">（必填）</span>

@@ -348,16 +348,24 @@ export const actionAPI = {
     const qs = Object.entries(params).filter(([, v]) => v != null && v !== '').map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')
     return request(`${API_BASE}/actions/all${qs ? '?' + qs : ''}`)
   },
-  feedbackAction: (actionId, feedback) =>
+  feedbackAction: (actionId, feedback, failed = false) =>
     request(`${API_BASE}/actions/${actionId}/feedback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ feedback })
+      body: JSON.stringify({ feedback, failed: Boolean(failed) }),
     }),
   batchResolveInvestigate: (gameDay = 1) =>
     request(`${API_BASE}/actions/resolve/investigate?gameDay=${gameDay}`, { method: 'POST' }),
   batchResolveProduce: (gameDay = 1) =>
     request(`${API_BASE}/actions/resolve/produce?gameDay=${gameDay}`, { method: 'POST' }),
+  batchResolveAll: (gameDay = 1) =>
+    request(`${API_BASE}/actions/resolve/all?gameDay=${gameDay}`, { method: 'POST' }),
+  updateAction: (actionId, data) =>
+    request(`${API_BASE}/actions/${actionId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
   resolveTransport: (actionId) =>
     request(`${API_BASE}/actions/resolve/transport/${actionId}`, { method: 'POST' }),
   publishFeedback: (gameDay = 1) =>

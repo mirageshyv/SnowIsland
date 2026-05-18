@@ -60,8 +60,13 @@ public class ActionController {
     public ResponseEntity<Map<String, Object>> feedbackAction(
             @PathVariable Integer actionId,
             @RequestBody Map<String, Object> body) {
-        String feedback = (String) body.get("feedback");
-        return ResponseEntity.ok(actionService.feedbackAction(actionId, feedback));
+        String feedback = body.get("feedback") != null ? body.get("feedback").toString() : null;
+        boolean failed = false;
+        if (body.containsKey("failed")) {
+            Object f = body.get("failed");
+            failed = f instanceof Boolean ? (Boolean) f : Boolean.parseBoolean(String.valueOf(f));
+        }
+        return ResponseEntity.ok(actionService.feedbackAction(actionId, feedback, failed));
     }
 
     @PostMapping("/publish")
@@ -80,6 +85,19 @@ public class ActionController {
     public ResponseEntity<Map<String, Object>> batchResolveProduce(
             @RequestParam(defaultValue = "1") Integer gameDay) {
         return ResponseEntity.ok(actionService.batchResolveProduce(gameDay));
+    }
+
+    @PostMapping("/resolve/all")
+    public ResponseEntity<Map<String, Object>> batchResolveAll(
+            @RequestParam(defaultValue = "1") Integer gameDay) {
+        return ResponseEntity.ok(actionService.batchResolveAll(gameDay));
+    }
+
+    @PutMapping("/{actionId}")
+    public ResponseEntity<Map<String, Object>> updateAction(
+            @PathVariable Integer actionId,
+            @RequestBody Map<String, Object> body) {
+        return ResponseEntity.ok(actionService.updateActionByDm(actionId, body));
     }
 
     @PostMapping("/resolve/transport/{actionId}")

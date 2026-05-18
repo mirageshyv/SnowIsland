@@ -48,6 +48,17 @@ public class WarehouseService {
         return result;
     }
 
+    public boolean playerHasWarehouseKey(Integer playerId, String warehouseKey) {
+        if (playerId == null || warehouseKey == null || warehouseKey.isEmpty()) {
+            return false;
+        }
+        Optional<WarehouseConfig> optionalConfig = configRepository.findByWarehouseKey(warehouseKey);
+        if (!optionalConfig.isPresent()) {
+            return false;
+        }
+        return checkPlayerHasKey(playerId, optionalConfig.get().getKeyItemId());
+    }
+
     public boolean checkPlayerHasKey(Integer playerId, Integer keyItemId) {
         if (playerId == null || keyItemId == null) return false;
         try {

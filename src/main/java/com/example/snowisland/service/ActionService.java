@@ -23,11 +23,15 @@ public class ActionService {
     @Autowired private JobRepository jobRepository;
     @Autowired private EntityManager entityManager;
     @Autowired private ShelterService shelterService;
+    @Autowired private WarehouseConfigRepository warehouseConfigRepository;
+    @Autowired private TransportSettlementService transportSettlementService;
 
     /** Shown to players while status is pending (DM sees full computed result). */
     public static final String PENDING_PLAYER_MESSAGE = "已提交，等待主持人确认。";
 
     private static final String DM_FEEDBACK_MARKER = "\n\n【DM反馈】\n";
+    private static final String DM_FEEDBACK_MARKER_INLINE = "【DM反馈】";
+    public static final String ACTION_FAILED_MARKER = "【行动失败】";
 
     private static final Map<String, String> PRODUCTION_JOB_MAP = new LinkedHashMap<>();
     private static final Map<String, Map<String, Object>> PRODUCTION_OUTPUT_MAP = new LinkedHashMap<>();
@@ -116,6 +120,26 @@ public class ActionService {
             autoResult = "等待DM反馈";
         } else if ("transport".equals(actionType)) {
             autoResult = "等待DM反馈";
+            TransportSettlementService.TransportPlan transportPlan =
+                    transportSettlementService.parseNotes(notes, targetId);
+            List<String> transportErrors = validateTransportSubmission(player.getId(), notes, targetId);
+            if (!transportErrors.isEmpty()) {
+                result.put("success", false);
+                result.put("message", String.join("；", transportErrors));
+                return result;
+            }
+            if ("player_to_warehouse".equals(transportPlan.mode)) {
+                String deductErr = transportSettlementService.deductPlayerItemsForSubmit(
+                        transportPlan, player.getId());
+                if (deductErr != null) {
+                    result.put("success", false);
+                    result.put("message", deductErr);
+                    return result;
+                }
+                notes = transportSettlementService.appendPlayerDeductedMarker(notes);
+                action.setNotes(notes);
+                autoResult = "【搬运】个人背包已扣除，等待主持人确认入仓";
+            }
         }
 
         if (targetId != null && "go_location".equals(actionType)) {
@@ -294,23 +318,35 @@ public class ActionService {
     }
 
     @Transactional
-    public Map<String, Object> feedbackAction(Integer actionId, String feedback) {
+    public Map<String, Object> feedbackAction(Integer actionId, String feedback, Boolean failed) {
         Map<String, Object> result = new HashMap<>();
         Optional<PlayerAction> optAction = actionRepository.findById(actionId);
         if (!optAction.isPresent()) {
             result.put("success", false); result.put("message", "行动不存在");
             return result;
         }
-        if (feedback == null || feedback.trim().isEmpty()) {
-            result.put("success", false); result.put("message", "反馈内容不能为空");
-            return result;
-        }
         PlayerAction action = optAction.get();
-        action.setResult(attachDmFeedback(action.getResult(), feedback.trim()));
+        String feedbackText = feedback != null ? feedback.trim() : "";
+        boolean markFailed = Boolean.TRUE.equals(failed);
+        boolean wasFailed = isActionFailed(action.getResult());
+
+        if (markFailed) {
+            refundPlayerTransportIfDeducted(action);
+            String base = stripActionFailed(stripDmFeedback(action.getResult() != null ? action.getResult() : ""));
+            base = TransportSettlementService.stripPendingBlock(base);
+            action.setResult(attachDmFeedbackWithFlags(base, feedbackText, true));
+        } else {
+            if (wasFailed) {
+                // 从失败改为成功时不再自动退还（主持人需自行处理库存）
+            }
+            String base = stripActionFailed(stripDmFeedback(action.getResult() != null ? action.getResult() : ""));
+            action.setResult(attachDmFeedbackWithFlags(base, feedbackText, false));
+        }
         action.setStatus(PlayerAction.ActionStatus.feedbacked);
         action.setFeedbackPublished(false);
         actionRepository.save(action);
-        result.put("success", true); result.put("message", "反馈已保存");
+        result.put("success", true);
+        result.put("message", markFailed ? "失败反馈已保存" : "反馈已保存");
         result.put("data", toMap(action));
         return result;
     }
@@ -326,9 +362,21 @@ public class ActionService {
         List<PlayerAction> actions = actionRepository.findByGameDayOrderByCreatedAtAsc(gameDay);
         int published = 0;
         int pending = 0;
+        List<String> errors = new ArrayList<>();
         for (PlayerAction action : actions) {
             if (action.getStatus() == PlayerAction.ActionStatus.feedbacked) {
                 if (!Boolean.TRUE.equals(action.getFeedbackPublished())) {
+                    boolean failed = isActionFailed(action.getResult());
+                    if (!failed && "transport".equals(action.getActionType())) {
+                        String execError = applyPendingTransportOnPublish(action);
+                        if (execError != null) {
+                            errors.add(action.getPlayerName() + "（行动" + action.getActionSlot() + "）：" + execError);
+                            continue;
+                        }
+                    }
+                    if (!failed && "hide".equals(action.getActionType())) {
+                        applyHideEffects(action);
+                    }
                     action.setFeedbackPublished(true);
                     actionRepository.save(action);
                     published++;
@@ -337,13 +385,170 @@ public class ActionService {
                 pending++;
             }
         }
-        result.put("success", true);
+        result.put("success", errors.isEmpty());
         result.put("publishedCount", published);
         result.put("pendingCount", pending);
-        result.put("message", published > 0
-                ? "已发布 " + published + " 条行动反馈" + (pending > 0 ? "（另有 " + pending + " 条仍待处理）" : "")
-                : (pending > 0 ? "暂无新反馈可发布，仍有 " + pending + " 条待处理" : "当日暂无行动记录"));
+        if (!errors.isEmpty()) {
+            result.put("errors", errors);
+            result.put("message", "发布完成 " + published + " 条，以下搬运未能执行：" + String.join("；", errors));
+        } else {
+            result.put("message", published > 0
+                    ? "已发布 " + published + " 条行动反馈" + (pending > 0 ? "（另有 " + pending + " 条仍待处理）" : "")
+                    : (pending > 0 ? "暂无新反馈可发布，仍有 " + pending + " 条待处理" : "当日暂无行动记录"));
+        }
         return result;
+    }
+
+    private String applyPendingTransportOnPublish(PlayerAction action) {
+        String payload = TransportSettlementService.extractPendingPayload(action.getResult());
+        TransportSettlementService.TransportPlan plan;
+        if (payload != null && !payload.isEmpty()) {
+            plan = transportSettlementService.deserializePlan(payload);
+            if (!plan.playerDeducted) {
+                TransportSettlementService.TransportPlan fromNotes =
+                        transportSettlementService.parseNotes(action.getNotes(), action.getTargetId());
+                plan.playerDeducted = fromNotes.playerDeducted;
+            }
+        } else {
+            plan = transportSettlementService.parseNotes(action.getNotes(), action.getTargetId());
+            if (plan.mode == null || plan.mode.isEmpty()) {
+                return null;
+            }
+            List<String> prepErrors = transportSettlementService.computeTransfer(plan, action.getPlayerId());
+            if (!prepErrors.isEmpty()) {
+                return String.join("；", prepErrors);
+            }
+        }
+        if (plan.items.stream().noneMatch(i -> i.actualQty > 0)) {
+            return "没有可执行的搬运物资";
+        }
+        String err = transportSettlementService.executePlan(plan, action.getPlayerId());
+        if (err != null) {
+            return err;
+        }
+        String base = TransportSettlementService.stripPendingBlock(action.getResult());
+        if (base.contains("（库存变更将在发布反馈后生效）")) {
+            base = base.replace("（库存变更将在发布反馈后生效）", "（库存已变更）");
+        }
+        if (base.contains("（个人背包已扣除，入仓将在发布反馈后生效）")) {
+            base = base.replace("（个人背包已扣除，入仓将在发布反馈后生效）", "（个人背包已扣除，已入仓）");
+        }
+        action.setResult(base);
+        return null;
+    }
+
+    @Transactional
+    public Map<String, Object> batchResolveAll(Integer gameDay) {
+        Map<String, Object> inv = batchResolveInvestigate(gameDay);
+        Map<String, Object> prod = batchResolveProduce(gameDay);
+        int simpleResolved = batchResolveGoLocationAndHide(gameDay);
+        Map<String, Object> transport = batchResolveTransport(gameDay);
+        Map<String, Object> result = new LinkedHashMap<>();
+        int invResolved = inv.get("resolved") != null ? ((Number) inv.get("resolved")).intValue() : 0;
+        int prodResolved = prod.get("resolved") != null ? ((Number) prod.get("resolved")).intValue() : 0;
+        int transportResolved = transport.get("resolved") != null ? ((Number) transport.get("resolved")).intValue() : 0;
+        result.put("success", true);
+        result.put("investigateResolved", invResolved);
+        result.put("produceResolved", prodResolved);
+        result.put("simpleResolved", simpleResolved);
+        result.put("transportResolved", transportResolved);
+        StringBuilder msg = new StringBuilder("已结算调查 ").append(invResolved)
+                .append(" 条、生产 ").append(prodResolved)
+                .append(" 条、前往/隐藏 ").append(simpleResolved)
+                .append(" 条、搬运 ").append(transportResolved).append(" 条");
+        @SuppressWarnings("unchecked")
+        List<String> transportErrors = (List<String>) transport.get("errors");
+        if (transportErrors != null && !transportErrors.isEmpty()) {
+            msg.append("；搬运跳过/失败：").append(String.join("；", transportErrors));
+        }
+        result.put("message", msg.toString());
+        result.put("transportErrors", transport.get("errors"));
+        return result;
+    }
+
+    private int batchResolveGoLocationAndHide(Integer gameDay) {
+        List<PlayerAction> actions = actionRepository.findByGameDayOrderByCreatedAtAsc(gameDay);
+        int resolved = 0;
+        for (PlayerAction action : actions) {
+            if (action.getStatus() != PlayerAction.ActionStatus.pending) {
+                continue;
+            }
+            String type = action.getActionType();
+            if (!"go_location".equals(type) && !"hide".equals(type)) {
+                continue;
+            }
+            if ("hide".equals(type)) {
+                applyHideEffects(action);
+            }
+            action.setStatus(PlayerAction.ActionStatus.feedbacked);
+            action.setFeedbackPublished(false);
+            actionRepository.save(action);
+            resolved++;
+        }
+        return resolved;
+    }
+
+    @Transactional
+    public Map<String, Object> updateActionByDm(Integer actionId, Map<String, Object> body) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        Optional<PlayerAction> optAction = actionRepository.findById(actionId);
+        if (!optAction.isPresent()) {
+            result.put("success", false);
+            result.put("message", "行动不存在");
+            return result;
+        }
+        PlayerAction action = optAction.get();
+        if (body.containsKey("notes")) {
+            action.setNotes(body.get("notes") != null ? body.get("notes").toString() : null);
+        }
+        if (body.containsKey("actionType")) {
+            action.setActionType(body.get("actionType").toString());
+        }
+        if (body.containsKey("targetId")) {
+            action.setTargetId(toInt(body.get("targetId")));
+        }
+        if (body.containsKey("targetName")) {
+            action.setTargetName(body.get("targetName") != null ? body.get("targetName").toString() : null);
+        }
+        if (body.containsKey("npcId")) {
+            action.setNpcId(toInt(body.get("npcId")));
+        }
+        if (body.containsKey("npcName")) {
+            action.setNpcName(body.get("npcName") != null ? body.get("npcName").toString() : null);
+        }
+        if ("transport".equals(action.getActionType())) {
+            List<String> transportErrors = validateTransportSubmission(
+                    action.getPlayerId(), action.getNotes(), action.getTargetId());
+            if (!transportErrors.isEmpty()) {
+                result.put("success", false);
+                result.put("message", String.join("；", transportErrors));
+                return result;
+            }
+        }
+        actionRepository.save(action);
+        result.put("success", true);
+        result.put("message", "行动已更新");
+        result.put("data", toMap(action));
+        return result;
+    }
+
+    private List<String> validateTransportSubmission(Integer playerId, String notes, Integer targetId) {
+        TransportSettlementService.TransportPlan plan =
+                transportSettlementService.parseNotes(notes, targetId);
+        List<String> errors = new ArrayList<>();
+        errors.addAll(transportSettlementService.validatePlanStructure(plan));
+        errors.addAll(transportSettlementService.validateKeys(playerId, plan));
+        return errors;
+    }
+
+    private Integer toInt(Object value) {
+        if (value == null) return null;
+        if (value instanceof Number) return ((Number) value).intValue();
+        try {
+            return Integer.parseInt(value.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     public static String extractDmFeedback(String result) {
@@ -376,15 +581,71 @@ public class ActionService {
         return result.trim();
     }
 
-    private static String attachDmFeedback(String result, String feedback) {
-        String base = stripDmFeedback(result);
-        if (feedback == null || feedback.isEmpty()) {
-            return base;
+    public static boolean isActionFailed(String result) {
+        return result != null && result.contains(ACTION_FAILED_MARKER);
+    }
+
+    private static String stripActionFailed(String result) {
+        if (result == null || result.isEmpty()) {
+            return "";
         }
-        if (base.isEmpty()) {
-            return "【DM反馈】\n" + feedback;
+        String text = result;
+        int idx = text.indexOf(ACTION_FAILED_MARKER);
+        if (idx >= 0) {
+            text = text.substring(0, idx).trim();
+            if (text.endsWith("\n\n")) {
+                text = text.substring(0, text.length() - 2).trim();
+            }
         }
-        return base + DM_FEEDBACK_MARKER + feedback;
+        return text.trim();
+    }
+
+    private static String attachDmFeedbackWithFlags(String base, String feedback, boolean failed) {
+        String cleaned = stripActionFailed(stripDmFeedback(base != null ? base : ""));
+        cleaned = TransportSettlementService.stripPendingBlock(cleaned);
+        StringBuilder sb = new StringBuilder();
+        if (!cleaned.isEmpty()) {
+            sb.append(cleaned);
+        }
+        if (failed) {
+            if (sb.length() > 0) {
+                sb.append("\n\n");
+            }
+            sb.append(ACTION_FAILED_MARKER);
+        }
+        if (feedback != null && !feedback.isEmpty()) {
+            if (sb.length() > 0) {
+                sb.append("\n\n");
+            }
+            sb.append(DM_FEEDBACK_MARKER_INLINE).append("\n").append(feedback);
+        }
+        return sb.toString();
+    }
+
+    private void refundPlayerTransportIfDeducted(PlayerAction action) {
+        if (!"transport".equals(action.getActionType())) {
+            return;
+        }
+        String notes = action.getNotes() != null ? action.getNotes() : "";
+        if (!notes.contains("[player_deducted:1]") || notes.contains("[player_refunded:1]")) {
+            return;
+        }
+        TransportSettlementService.TransportPlan plan =
+                transportSettlementService.parseNotes(notes, action.getTargetId());
+        if (!"player_to_warehouse".equals(plan.mode)) {
+            return;
+        }
+        for (TransportSettlementService.TransportItem item : plan.items) {
+            if (item.requestedQty <= 0) {
+                continue;
+            }
+            addItemToPlayer(action.getPlayerId(), item.itemType, item.itemId, item.requestedQty);
+        }
+        String updatedNotes = notes.replace("[player_deducted:1]", "[player_refunded:1]");
+        if (!updatedNotes.contains("[player_refunded:1]")) {
+            updatedNotes = updatedNotes + (updatedNotes.isEmpty() ? "" : "\n") + "[player_refunded:1]";
+        }
+        action.setNotes(updatedNotes);
     }
 
     private Map<String, Object> toMapForPlayer(PlayerAction action) {
@@ -396,6 +657,11 @@ public class ActionService {
             map.put("resultPending", true);
         } else {
             map.put("resultPending", false);
+            String visible = extractDmFeedback(action.getResult());
+            if (visible.isEmpty()) {
+                visible = stripDmFeedback(action.getResult());
+            }
+            map.put("result", visible);
         }
         return map;
     }
@@ -477,124 +743,104 @@ public class ActionService {
         return result;
     }
 
+    /**
+     * Preview transport settlement on action (mutates result). Returns error message or null on success.
+     */
+    private String applyTransportSettlement(PlayerAction action) {
+        if (!"transport".equals(action.getActionType())) {
+            return "不是搬运行动";
+        }
+        String notes = action.getNotes() != null ? action.getNotes() : "";
+        TransportSettlementService.TransportPlan plan =
+                transportSettlementService.parseNotes(notes, action.getTargetId());
+
+        List<String> errors = new ArrayList<>();
+        errors.addAll(transportSettlementService.validatePlanStructure(plan));
+        errors.addAll(transportSettlementService.validateKeys(action.getPlayerId(), plan));
+        errors.addAll(transportSettlementService.computeTransfer(plan, action.getPlayerId()));
+
+        if (!errors.isEmpty()) {
+            return String.join("；", errors);
+        }
+
+        String log = transportSettlementService.buildResultLog(plan);
+        String payload = transportSettlementService.serializePlan(plan);
+        action.setResult(transportSettlementService.attachPendingPayload(log, payload));
+        return null;
+    }
+
+    private boolean transportAlreadySettled(PlayerAction action) {
+        String existing = action.getResult() != null ? action.getResult() : "";
+        return existing.contains(TransportSettlementService.SETTLEMENT_HEADER)
+                || TransportSettlementService.extractPendingPayload(existing) != null;
+    }
+
+    @Transactional
+    public Map<String, Object> batchResolveTransport(Integer gameDay) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        List<PlayerAction> actions =
+                actionRepository.findByActionTypeAndGameDayOrderByCreatedAtAsc("transport", gameDay);
+        int resolved = 0;
+        List<String> errors = new ArrayList<>();
+        for (PlayerAction action : actions) {
+            if (action.getStatus() != PlayerAction.ActionStatus.pending) {
+                continue;
+            }
+            if (isActionFailed(action.getResult())) {
+                continue;
+            }
+            if (transportAlreadySettled(action)) {
+                continue;
+            }
+            String err = applyTransportSettlement(action);
+            if (err != null) {
+                String label = (action.getPlayerName() != null ? action.getPlayerName() : "玩家")
+                        + " 行动" + action.getActionSlot();
+                errors.add(label + ": " + err);
+                continue;
+            }
+            action.setStatus(PlayerAction.ActionStatus.feedbacked);
+            action.setFeedbackPublished(false);
+            actionRepository.save(action);
+            resolved++;
+        }
+        result.put("success", true);
+        result.put("resolved", resolved);
+        result.put("errors", errors);
+        result.put("message", "已结算 " + resolved + " 条搬运行动");
+        return result;
+    }
+
     @Transactional
     public Map<String, Object> resolveTransport(Integer actionId) {
         Map<String, Object> result = new HashMap<>();
         Optional<PlayerAction> optAction = actionRepository.findById(actionId);
         if (!optAction.isPresent()) {
-            result.put("success", false); result.put("message", "行动不存在");
+            result.put("success", false);
+            result.put("message", "行动不存在");
             return result;
         }
         PlayerAction action = optAction.get();
-        if (!"transport".equals(action.getActionType())) {
-            result.put("success", false); result.put("message", "不是搬运行动");
-            return result;
-        }
-        if (action.getStatus() != PlayerAction.ActionStatus.pending) {
-            result.put("success", false); result.put("message", "该行动已处理");
-            return result;
-        }
-
-        String notes = action.getNotes() != null ? action.getNotes() : "";
-        try {
-            String[] lines = notes.split("\n");
-            String mode = null;
-            String sourceWarehouse = null;
-            String destWarehouse = null;
-            List<Map<String, Object>> items = new ArrayList<>();
-
-            for (String line : lines) {
-                line = line.trim();
-                if (line.startsWith("[mode:")) {
-                    mode = line.substring("[mode:".length(), line.indexOf("]"));
-                } else if (line.startsWith("[source:")) {
-                    sourceWarehouse = line.substring("[source:".length(), line.indexOf("]"));
-                } else if (line.startsWith("[dest:")) {
-                    destWarehouse = line.substring("[dest:".length(), line.indexOf("]"));
-                } else if (line.startsWith("[item:")) {
-                    String itemStr = line.substring("[item:".length(), line.indexOf("]"));
-                    String[] parts = itemStr.split("\\|");
-                    if (parts.length >= 4) {
-                        Map<String, Object> item = new HashMap<>();
-                        item.put("itemType", parts[0]);
-                        item.put("itemId", Integer.parseInt(parts[1]));
-                        item.put("quantity", Integer.parseInt(parts[2]));
-                        item.put("weightPerUnit", Double.parseDouble(parts[3]));
-                        items.add(item);
-                    }
-                }
-            }
-
-            if (mode == null || sourceWarehouse == null || items.isEmpty()) {
-                action.setResult((action.getResult() != null ? action.getResult() : "") + "\n\n【搬运结算失败】搬运数据格式错误");
-                action.setStatus(PlayerAction.ActionStatus.feedbacked);
-                action.setFeedbackPublished(false);
-                actionRepository.save(action);
-                result.put("success", false); result.put("message", "搬运数据格式错误");
-                return result;
-            }
-
-            int maxWeight = "warehouse_to_warehouse".equals(mode) ? 500 : 300;
-            StringBuilder resultLog = new StringBuilder("【搬运结算】\n");
-            int totalMoved = 0;
-
-            String sourceTable = "warehouse_" + sourceWarehouse;
-            if ("warehouse_to_warehouse".equals(mode) && destWarehouse != null) {
-                String destTable = "warehouse_" + destWarehouse;
-                for (Map<String, Object> item : items) {
-                    String itemType = (String) item.get("itemType");
-                    int itemId = (int) item.get("itemId");
-                    int requestedQty = (int) item.get("quantity");
-                    double weightPerUnit = (double) item.get("weightPerUnit");
-
-                    int sourceQty = getWarehouseStock(sourceTable, itemType, itemId);
-                    int maxQtyByWeight = (int) Math.floor((maxWeight - totalMoved) / Math.max(weightPerUnit, 0.1));
-                    int actualQty = Math.min(Math.min(requestedQty, sourceQty), maxQtyByWeight);
-                    if (actualQty <= 0) continue;
-
-                    updateWarehouseStock(sourceTable, itemType, itemId, -actualQty);
-                    updateWarehouseStock(destTable, itemType, itemId, actualQty);
-                    totalMoved += (int)(actualQty * weightPerUnit);
-                    resultLog.append(resolveItemName(itemType, itemId))
-                            .append(": 搬运").append(actualQty).append("单位（")
-                            .append((int)(actualQty * weightPerUnit)).append("千克）\n");
-                }
-            } else if ("warehouse_to_player".equals(mode)) {
-                Integer playerId = action.getPlayerId();
-                for (Map<String, Object> item : items) {
-                    String itemType = (String) item.get("itemType");
-                    int itemId = (int) item.get("itemId");
-                    int requestedQty = (int) item.get("quantity");
-                    double weightPerUnit = (double) item.get("weightPerUnit");
-
-                    int sourceQty = getWarehouseStock(sourceTable, itemType, itemId);
-                    int maxQtyByWeight = (int) Math.floor((maxWeight - totalMoved) / Math.max(weightPerUnit, 0.1));
-                    int actualQty = Math.min(Math.min(requestedQty, sourceQty), maxQtyByWeight);
-                    if (actualQty <= 0) continue;
-
-                    updateWarehouseStock(sourceTable, itemType, itemId, -actualQty);
-                    addItemToPlayer(playerId, itemType, itemId, actualQty);
-                    totalMoved += (int)(actualQty * weightPerUnit);
-                    resultLog.append(resolveItemName(itemType, itemId))
-                            .append(": 搬运").append(actualQty).append("单位到个人背包（")
-                            .append((int)(actualQty * weightPerUnit)).append("千克）\n");
-                }
-            }
-
-            resultLog.append("总计搬运: ").append(totalMoved).append("千克");
-            String existingResult = action.getResult() != null ? action.getResult() : "";
-            action.setResult(existingResult + "\n\n" + resultLog.toString());
-            action.setStatus(PlayerAction.ActionStatus.feedbacked);
-            action.setFeedbackPublished(false);
-            actionRepository.save(action);
-
-            result.put("success", true);
-            result.put("message", "搬运结算完成");
-            result.put("data", toMap(action));
-        } catch (Exception e) {
+        if (transportAlreadySettled(action)) {
             result.put("success", false);
-            result.put("message", "搬运结算失败: " + e.getMessage());
+            result.put("message", "搬运已结算");
+            return result;
         }
+
+        String err = applyTransportSettlement(action);
+        if (err != null) {
+            result.put("success", false);
+            result.put("message", err);
+            return result;
+        }
+
+        action.setStatus(PlayerAction.ActionStatus.feedbacked);
+        action.setFeedbackPublished(false);
+        actionRepository.save(action);
+
+        result.put("success", true);
+        result.put("message", "搬运已结算（发布反馈后生效）");
+        result.put("data", toMap(action));
         return result;
     }
 
@@ -617,6 +863,23 @@ public class ActionService {
             // fall through
         }
         return "未知物品";
+    }
+
+    private String resolveWarehouseName(String warehouseKey) {
+        if (warehouseKey == null || warehouseKey.isEmpty()) return "未知仓库";
+        Optional<WarehouseConfig> opt = warehouseConfigRepository.findByWarehouseKey(warehouseKey);
+        if (opt.isPresent() && opt.get().getWarehouseName() != null && !opt.get().getWarehouseName().isEmpty()) {
+            return opt.get().getWarehouseName();
+        }
+        switch (warehouseKey) {
+            case "general": return "通用仓库";
+            case "fuel": return "燃料仓库";
+            case "armory": return "镇武库";
+            case "dock": return "码头集换站";
+            case "rebel": return "反叛者基地";
+            case "ark": return "方舟仓库";
+            default: return warehouseKey;
+        }
     }
 
     private int getWarehouseStock(String tableName, String itemType, int itemId) {
@@ -764,6 +1027,7 @@ public class ActionService {
         map.put("status", action.getStatus().name());
         map.put("feedbackPublished", Boolean.TRUE.equals(action.getFeedbackPublished()));
         map.put("dmFeedback", extractDmFeedback(action.getResult()));
+        map.put("actionFailed", isActionFailed(action.getResult()));
         map.put("gameDay", action.getGameDay());
         map.put("createdAt", action.getCreatedAt());
         boolean laborer = action.getPlayerId() != null && action.getGameDay() != null
