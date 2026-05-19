@@ -746,3 +746,68 @@ export function shelterTotalBuildValue(logs) {
   return logs.reduce((sum, day) => sum + day.workers.reduce((s, worker) => s + worker.value, 0), 0)
 }
 
+/** 武器威胁值徽章样式（与物资管理页一致） */
+export function getWeaponThreatBadgeClass(level) {
+  const n = Number(level) || 0
+  if (n >= 8) return 'text-red-400 bg-red-500/20'
+  if (n >= 6) return 'text-amber-400 bg-amber-500/20'
+  if (n >= 4) return 'text-yellow-400 bg-yellow-500/20'
+  return 'text-emerald-400 bg-emerald-500/20'
+}
+
+export const PLAYER_NAME_MAX_LENGTH = 50
+export const USERNAME_MAX_LENGTH = 50
+export const PASSWORD_MAX_LENGTH = 100
+
+/** 避难所劳工建造值（与后端 ShelterLaborCalculator 一致） */
+export const SHELTER_LABOR_BASE = 4
+export const SHELTER_LABOR_JOB_BONUS = 1
+export const SHELTER_LABOR_EXPLOIT_BONUS = 3
+
+const SHELTER_PRODUCTION_JOB_NAMES = new Set(['渔民', '农户', '伐木工', '矿工', '猎户'])
+const SHELTER_PRODUCTION_SKILL_KEYWORDS = ['食物生产', '伐木', '挖掘', '炼铁']
+
+export function isShelterProductionJob(jobName, jobSkills = '') {
+  if (jobName && SHELTER_PRODUCTION_JOB_NAMES.has(String(jobName).trim())) return true
+  const s = String(jobSkills || '')
+  return SHELTER_PRODUCTION_SKILL_KEYWORDS.some((kw) => s.includes(kw))
+}
+
+export function calcShelterLaborBuildValue({ productionJob, exploited, escaped }) {
+  if (escaped) return 0
+  let v = SHELTER_LABOR_BASE
+  if (productionJob) v += SHELTER_LABOR_JOB_BONUS
+  if (exploited) v += SHELTER_LABOR_EXPLOIT_BONUS
+  return v
+}
+
+export function shelterLaborTypeLabel(productionJob, exploited) {
+  if (exploited && productionJob) return '职业（压榨）'
+  if (exploited) return '普通（压榨）'
+  if (productionJob) return '职业劳工'
+  return '普通劳工'
+}
+
+export function shelterLaborBuildBreakdown(productionJob, exploited, escaped) {
+  if (escaped) return '逃役（0）'
+  const parts = [`基础${SHELTER_LABOR_BASE}`]
+  if (productionJob) parts.push(`职业+${SHELTER_LABOR_JOB_BONUS}`)
+  if (exploited) parts.push(`压榨+${SHELTER_LABOR_EXPLOIT_BONUS}`)
+  return parts.join(' + ')
+}
+
+export function refreshShelterLaborRow(row) {
+  if (!row) return row
+  const productionJob = row.productionJob ?? isShelterProductionJob(row.jobName, row.jobSkills)
+  row.productionJob = productionJob
+  row.laborType = shelterLaborTypeLabel(productionJob, Boolean(row.exploited))
+  row.buildValueBreakdown = shelterLaborBuildBreakdown(productionJob, Boolean(row.exploited), Boolean(row.escaped))
+  row.buildValue = calcShelterLaborBuildValue({
+    productionJob,
+    exploited: Boolean(row.exploited),
+    escaped: Boolean(row.escaped),
+  })
+  row.computedBuildValue = row.buildValue
+  return row
+}
+

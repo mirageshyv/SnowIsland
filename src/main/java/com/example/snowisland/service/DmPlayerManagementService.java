@@ -14,6 +14,9 @@ import java.util.*;
 public class DmPlayerManagementService {
 
     private static final String DEFAULT_PASSWORD = "test123";
+    private static final int USERNAME_MAX_LENGTH = 50;
+    private static final int PASSWORD_MAX_LENGTH = 100;
+    private static final int PLAYER_NAME_MAX_LENGTH = 50;
 
     @Autowired
     private PlayerRepository playerRepository;
@@ -87,27 +90,54 @@ public class DmPlayerManagementService {
         if (name == null || name.isBlank()) {
             return deny(result, "请输入玩家姓名");
         }
+        name = name.trim();
+        try {
+            validatePlayerName(name);
+        } catch (IllegalArgumentException e) {
+            return deny(result, e.getMessage());
+        }
+
+        String factionStr = stringVal(body.get("faction"));
+        if (factionStr == null || factionStr.isBlank()) {
+            return deny(result, "请选择阵营");
+        }
+
+        Integer jobId = intOrNull(body.get("jobId"));
+        if (jobId == null || !jobRepository.findById(jobId).isPresent()) {
+            return deny(result, "请选择职业");
+        }
+
+        Integer skillId = intOrNull(body.get("skillId"));
+        if (skillId == null || !skillRepository.findById(skillId).isPresent()) {
+            return deny(result, "请选择特性");
+        }
+
+        String loginUsername = stringVal(body.get("loginUsername"));
+        try {
+            validateLoginUsername(loginUsername);
+        } catch (IllegalArgumentException e) {
+            return deny(result, e.getMessage());
+        }
+        loginUsername = loginUsername.trim();
+
+        String loginPassword = stringVal(body.get("loginPassword"));
+        try {
+            validateLoginPassword(loginPassword);
+        } catch (IllegalArgumentException e) {
+            return deny(result, e.getMessage());
+        }
 
         try {
             Player player = new Player();
-            player.setName(name.trim());
+            player.setName(name);
             applyPlayerFieldsFromBody(player, body, true);
+            player.setJobId(jobId);
+            player.setSkillId(skillId);
 
             Player saved = playerRepository.save(player);
 
-            String loginUsername = stringVal(body.get("loginUsername"));
-            if (loginUsername == null || loginUsername.isBlank()) {
-                loginUsername = "player" + saved.getId();
-            } else {
-                loginUsername = loginUsername.trim();
-            }
             if (userRepository.existsByUsername(loginUsername)) {
                 throw new IllegalArgumentException("登录账号已存在: " + loginUsername);
-            }
-
-            String loginPassword = stringVal(body.get("loginPassword"));
-            if (loginPassword == null || loginPassword.isBlank()) {
-                loginPassword = DEFAULT_PASSWORD;
             }
 
             User user = new User();
@@ -117,13 +147,11 @@ public class DmPlayerManagementService {
             user.setPlayerId(saved.getId());
             userRepository.save(user);
 
-            boolean grant = body.get("grantStartingInventory") == null
-                    || Boolean.TRUE.equals(body.get("grantStartingInventory"));
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> customItems = (List<Map<String, Object>>) body.get("startingItems");
             if (customItems != null && !customItems.isEmpty()) {
                 applyInventoryItems(saved.getId(), customItems, "set", userRole);
-            } else if (grant && saved.getJobId() != null) {
+            } else if (saved.getJobId() != null) {
                 applyInventoryItems(saved.getId(), buildStartingItemRows(saved.getJobId()), "set", userRole);
             }
 
@@ -315,6 +343,12 @@ public class DmPlayerManagementService {
         if (body.containsKey("isInjured")) {
             player.setIsInjured(boolVal(body.get("isInjured")));
         }
+        if (body.containsKey("isSeverelyInjured")) {
+            player.setIsSeverelyInjured(boolVal(body.get("isSeverelyInjured")));
+        }
+        if (body.containsKey("isDead")) {
+            player.setIsDead(boolVal(body.get("isDead")));
+        }
     }
 
     private void updateCredentials(Integer playerId, Map<String, Object> body, Map<String, Object> result) {
@@ -360,12 +394,47 @@ public class DmPlayerManagementService {
         row.put("isWeak", Boolean.TRUE.equals(player.getIsWeak()));
         row.put("isOverworked", Boolean.TRUE.equals(player.getIsOverworked()));
         row.put("isInjured", Boolean.TRUE.equals(player.getIsInjured()));
+        row.put("isSeverelyInjured", Boolean.TRUE.equals(player.getIsSeverelyInjured()));
+        row.put("isDead", Boolean.TRUE.equals(player.getIsDead()));
+        row.put("statuses", com.example.snowisland.util.PlayerStatusCatalog.buildStatusList(player));
 
         userRepository.findByPlayerId(player.getId()).ifPresent(user -> {
             row.put("loginUsername", user.getUsername());
             row.put("loginPassword", user.getPassword());
         });
         return row;
+    }
+
+    private static void validatePlayerName(String name) {
+        if (name.length() > PLAYER_NAME_MAX_LENGTH) {
+            throw new IllegalArgumentException("玩家姓名不能超过 " + PLAYER_NAME_MAX_LENGTH + " 个字符");
+        }
+        if (name.contains("\n") || name.contains("\r") || name.contains("\t")) {
+            throw new IllegalArgumentException("玩家姓名不能包含换行或制表符");
+        }
+    }
+
+    private static void validateLoginUsername(String username) {
+        if (username == null || username.isBlank()) {
+            throw new IllegalArgumentException("请填写登录账号");
+        }
+        String trimmed = username.trim();
+        if (trimmed.length() > USERNAME_MAX_LENGTH) {
+            throw new IllegalArgumentException("登录账号不能超过 " + USERNAME_MAX_LENGTH + " 个字符");
+        }
+        if (!trimmed.equals(username) || trimmed.contains(" ") || trimmed.contains("\n")
+                || trimmed.contains("\r") || trimmed.contains("\t")) {
+            throw new IllegalArgumentException("登录账号不能包含首尾或中间空白");
+        }
+    }
+
+    private static void validateLoginPassword(String password) {
+        if (password == null || password.isBlank()) {
+            throw new IllegalArgumentException("请填写登录密码");
+        }
+        if (password.length() > PASSWORD_MAX_LENGTH) {
+            throw new IllegalArgumentException("登录密码不能超过 " + PASSWORD_MAX_LENGTH + " 个字符");
+        }
     }
 
     private static Map<String, Object> deny(Map<String, Object> result, String message) {

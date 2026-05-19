@@ -13,11 +13,12 @@ import java.util.Optional;
 @Repository
 public interface ShelterDailyLaborRepository extends JpaRepository<ShelterDailyLabor, Integer> {
 
-    List<ShelterDailyLabor> findByGameDayOrderByPlayerIdAsc(Integer gameDay);
+    List<ShelterDailyLabor> findByGameDayOrderByWorkerKindAscWorkerIdAsc(Integer gameDay);
 
-    Optional<ShelterDailyLabor> findByGameDayAndPlayerId(Integer gameDay, Integer playerId);
+    Optional<ShelterDailyLabor> findByGameDayAndWorkerKindAndWorkerId(
+            Integer gameDay, String workerKind, Integer workerId);
 
-    List<ShelterDailyLabor> findAllByOrderByGameDayDescPlayerIdAsc();
+    List<ShelterDailyLabor> findAllByOrderByGameDayDescWorkerKindAscWorkerIdAsc();
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM ShelterDailyLabor l WHERE l.gameDay = :gameDay")

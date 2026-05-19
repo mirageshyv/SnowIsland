@@ -12,10 +12,18 @@ import FactionActionFeedbackView from './FactionActionFeedbackView.vue'
 import NightActionSettlementView from './NightActionSettlementView.vue'
 import DmPlayerInventoryView from './DmPlayerInventoryView.vue'
 import DmCombatAssistView from './DmCombatAssistView.vue'
+import GameSettingsView from './GameSettingsView.vue'
 import DmPlayerModalInventory from '../components/DmPlayerModalInventory.vue'
 import { dmPlayerAPI, jobAPI, skillAPI } from '../utils/api.js'
+import {
+  PLAYER_NAME_MAX_LENGTH,
+  USERNAME_MAX_LENGTH,
+  PASSWORD_MAX_LENGTH
+} from '../data/gameData.js'
 
 const FACTIONS = ['统治者', '反叛者', '冒险者', '天灾使者', '平民']
+/** 创建玩家时可选的四个阵营 */
+const CREATE_FACTIONS = ['统治者', '反叛者', '冒险者', '天灾使者']
 
 const router = useRouter()
 const username = localStorage.getItem('username') || ''
@@ -48,10 +56,11 @@ const createForm = reactive({
   skillId: '',
   loginUsername: '',
   loginPassword: 'test123',
-  grantStartingInventory: true,
   isWeak: false,
   isOverworked: false,
-  isInjured: false
+  isInjured: false,
+  isSeverelyInjured: false,
+  isDead: false
 })
 
 const jobNameById = computed(() => {
@@ -89,7 +98,9 @@ function normalizePlayer(raw) {
     loginPassword: raw.loginPassword ?? '',
     isWeak: Boolean(raw.isWeak ?? raw.is_weak),
     isOverworked: Boolean(raw.isOverworked ?? raw.is_overworked),
-    isInjured: Boolean(raw.isInjured ?? raw.is_injured)
+    isInjured: Boolean(raw.isInjured ?? raw.is_injured),
+    isSeverelyInjured: Boolean(raw.isSeverelyInjured ?? raw.is_severely_injured),
+    isDead: Boolean(raw.isDead ?? raw.is_dead)
   }
 }
 
@@ -137,9 +148,11 @@ const getFactionColor = (faction) => {
 
 const getStatusBadges = (player) => {
   const badges = []
-  if (player.isWeak) badges.push({ text: '虚弱', color: 'text-amber-400 bg-amber-500/20' })
-  if (player.isOverworked) badges.push({ text: '过劳', color: 'text-blue-400 bg-blue-500/20' })
+  if (player.isDead) badges.push({ text: '死亡', color: 'text-gray-400 bg-gray-600/30' })
+  if (player.isSeverelyInjured) badges.push({ text: '重伤', color: 'text-orange-400 bg-orange-500/20' })
   if (player.isInjured) badges.push({ text: '受伤', color: 'text-red-400 bg-red-500/20' })
+  if (player.isOverworked) badges.push({ text: '过劳', color: 'text-blue-400 bg-blue-500/20' })
+  if (player.isWeak) badges.push({ text: '虚弱', color: 'text-amber-400 bg-amber-500/20' })
   if (badges.length === 0) badges.push({ text: '健康', color: 'text-emerald-400 bg-emerald-500/20' })
   return badges
 }
@@ -208,7 +221,9 @@ function openEditModal(player) {
     loginPassword: player.loginPassword ?? '',
     isWeak: player.isWeak,
     isOverworked: player.isOverworked,
-    isInjured: player.isInjured
+    isInjured: player.isInjured,
+    isSeverelyInjured: player.isSeverelyInjured,
+    isDead: player.isDead
   }
   showEditModal.value = true
 }
@@ -218,17 +233,48 @@ function closeEditModal() {
   editingPlayer.value = null
 }
 
+function factionButtonClass(faction, selected) {
+  if (!selected) {
+    return 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-gray-300'
+  }
+  return `${getFactionColor(faction)} border-white/20 font-medium`
+}
+
+function validateCreateForm() {
+  const name = createForm.name.trim()
+  if (!name) return '请输入玩家姓名'
+  if (name.length > PLAYER_NAME_MAX_LENGTH) {
+    return `玩家姓名不能超过 ${PLAYER_NAME_MAX_LENGTH} 个字符`
+  }
+  if (!CREATE_FACTIONS.includes(createForm.faction)) return '请选择阵营'
+  if (createForm.jobId === '' || createForm.jobId == null) return '请选择职业'
+  if (createForm.skillId === '' || createForm.skillId == null) return '请选择特性'
+  const username = createForm.loginUsername.trim()
+  if (!username) return '请填写登录账号'
+  if (username.length > USERNAME_MAX_LENGTH) {
+    return `登录账号不能超过 ${USERNAME_MAX_LENGTH} 个字符`
+  }
+  if (/\s/.test(username)) return '登录账号不能包含空白字符'
+  const password = createForm.loginPassword
+  if (!password || !String(password).trim()) return '请填写登录密码'
+  if (password.length > PASSWORD_MAX_LENGTH) {
+    return `登录密码不能超过 ${PASSWORD_MAX_LENGTH} 个字符`
+  }
+  return null
+}
+
 function openCreateModal() {
   createForm.name = ''
-  createForm.faction = '平民'
+  createForm.faction = '统治者'
   createForm.jobId = ''
   createForm.skillId = ''
   createForm.loginUsername = ''
   createForm.loginPassword = 'test123'
-  createForm.grantStartingInventory = true
   createForm.isWeak = false
   createForm.isOverworked = false
   createForm.isInjured = false
+  createForm.isSeverelyInjured = false
+  createForm.isDead = false
   createStartingItems.value = []
   showCreateModal.value = true
 }
@@ -252,6 +298,8 @@ async function saveEditPlayer() {
       isWeak: editingPlayer.value.isWeak,
       isOverworked: editingPlayer.value.isOverworked,
       isInjured: editingPlayer.value.isInjured,
+      isSeverelyInjured: editingPlayer.value.isSeverelyInjured,
+      isDead: editingPlayer.value.isDead,
       loginUsername: editingPlayer.value.loginUsername?.trim() || undefined,
       loginPassword: editingPlayer.value.loginPassword || undefined
     }
@@ -279,28 +327,26 @@ async function saveEditPlayer() {
 }
 
 async function createPlayer() {
-  const name = createForm.name.trim()
-  if (!name) {
-    alert('请输入玩家姓名')
+  const validationError = validateCreateForm()
+  if (validationError) {
+    alert(validationError)
     return
   }
+  const name = createForm.name.trim()
   savingPlayer.value = true
   try {
     const payload = {
       name,
       faction: createForm.faction,
+      jobId: Number(createForm.jobId),
+      skillId: Number(createForm.skillId),
       isWeak: createForm.isWeak,
       isOverworked: createForm.isOverworked,
       isInjured: createForm.isInjured,
-      grantStartingInventory: createForm.grantStartingInventory,
-      loginUsername: createForm.loginUsername.trim() || undefined,
-      loginPassword: createForm.loginPassword || 'test123'
-    }
-    if (createForm.jobId !== '' && createForm.jobId != null) {
-      payload.jobId = Number(createForm.jobId)
-    }
-    if (createForm.skillId !== '' && createForm.skillId != null) {
-      payload.skillId = Number(createForm.skillId)
+      isSeverelyInjured: createForm.isSeverelyInjured,
+      isDead: createForm.isDead,
+      loginUsername: createForm.loginUsername.trim(),
+      loginPassword: createForm.loginPassword
     }
     if (createStartingItems.value.length > 0) {
       payload.startingItems = createStartingItems.value.map((i) => ({
@@ -308,7 +354,6 @@ async function createPlayer() {
         itemId: i.itemId,
         quantity: i.quantity
       }))
-      payload.grantStartingInventory = false
     }
     const result = await dmPlayerAPI.create(payload)
     if (result?.success) {
@@ -708,6 +753,8 @@ onMounted(() => {
                 <label class="flex items-center gap-2"><input v-model="editingPlayer.isWeak" type="checkbox" class="rounded" />虚弱</label>
                 <label class="flex items-center gap-2"><input v-model="editingPlayer.isOverworked" type="checkbox" class="rounded" />过劳</label>
                 <label class="flex items-center gap-2"><input v-model="editingPlayer.isInjured" type="checkbox" class="rounded" />受伤</label>
+                <label class="flex items-center gap-2"><input v-model="editingPlayer.isSeverelyInjured" type="checkbox" class="rounded" />重伤</label>
+                <label class="flex items-center gap-2"><input v-model="editingPlayer.isDead" type="checkbox" class="rounded" />死亡</label>
               </div>
               <p class="text-gray-500 text-xs">修改背包请使用侧栏「玩家背包」。</p>
             </div>
@@ -728,44 +775,85 @@ onMounted(() => {
             <div class="space-y-4">
               <div>
                 <label class="block text-gray-400 text-xs mb-1">姓名</label>
-                <input v-model="createForm.name" type="text" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm" />
+                <input
+                  v-model="createForm.name"
+                  type="text"
+                  :maxlength="PLAYER_NAME_MAX_LENGTH"
+                  class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                />
+                <p class="text-gray-600 text-xs mt-1">最多 {{ PLAYER_NAME_MAX_LENGTH }} 个字符</p>
               </div>
               <div>
-                <label class="block text-gray-400 text-xs mb-1">阵营</label>
-                <select v-model="createForm.faction" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm">
-                  <option v-for="f in FACTIONS" :key="f" :value="f">{{ f }}</option>
-                </select>
+                <label class="block text-gray-400 text-xs mb-2">阵营</label>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    v-for="f in CREATE_FACTIONS"
+                    :key="f"
+                    type="button"
+                    class="px-3 py-2 rounded-lg text-sm border transition-colors"
+                    :class="factionButtonClass(f, createForm.faction === f)"
+                    @click="createForm.faction = f"
+                  >
+                    {{ f }}
+                  </button>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-gray-400 text-xs mb-1">职业</label>
+                  <select
+                    v-model="createForm.jobId"
+                    class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                  >
+                    <option value="" disabled>请选择职业</option>
+                    <option v-for="job in jobs" :key="job.id" :value="job.id">{{ job.name }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-gray-400 text-xs mb-1">特性</label>
+                  <select
+                    v-model="createForm.skillId"
+                    class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                  >
+                    <option value="" disabled>请选择特性</option>
+                    <option
+                      v-for="sk in skillsForFaction(createForm.faction)"
+                      :key="sk.id"
+                      :value="sk.id"
+                    >
+                      {{ sk.name }}
+                    </option>
+                  </select>
+                </div>
               </div>
               <div>
-                <label class="block text-gray-400 text-xs mb-1">职业（可选）</label>
-                <select v-model="createForm.jobId" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm">
-                  <option value="">未分配</option>
-                  <option v-for="job in jobs" :key="job.id" :value="job.id">{{ job.name }}</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-gray-400 text-xs mb-1">特性</label>
-                <select v-model="createForm.skillId" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm">
-                  <option value="">未分配</option>
-                  <option v-for="sk in skillsForFaction(createForm.faction)" :key="sk.id" :value="sk.id">{{ sk.name }}</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-gray-400 text-xs mb-1">登录账号（留空则 player{id}）</label>
-                <input v-model="createForm.loginUsername" type="text" placeholder="可选" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm font-mono" />
+                <label class="block text-gray-400 text-xs mb-1">登录账号</label>
+                <input
+                  v-model="createForm.loginUsername"
+                  type="text"
+                  :maxlength="USERNAME_MAX_LENGTH"
+                  autocomplete="off"
+                  class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm font-mono"
+                />
+                <p class="text-gray-600 text-xs mt-1">最多 {{ USERNAME_MAX_LENGTH }} 个字符，不可含空格</p>
               </div>
               <div>
                 <label class="block text-gray-400 text-xs mb-1">登录密码</label>
-                <input v-model="createForm.loginPassword" type="text" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm font-mono" />
+                <input
+                  v-model="createForm.loginPassword"
+                  type="text"
+                  :maxlength="PASSWORD_MAX_LENGTH"
+                  autocomplete="new-password"
+                  class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm font-mono"
+                />
+                <p class="text-gray-600 text-xs mt-1">最多 {{ PASSWORD_MAX_LENGTH }} 个字符</p>
               </div>
-              <label class="flex items-center gap-2 text-sm text-gray-300 sm:col-span-2">
-                <input v-model="createForm.grantStartingInventory" type="checkbox" class="rounded" />
-                创建时按职业发放初始背包（下方可调整）
-              </label>
               <div class="flex flex-wrap gap-4 text-sm text-gray-300">
                 <label class="flex items-center gap-2"><input v-model="createForm.isWeak" type="checkbox" class="rounded" />虚弱</label>
                 <label class="flex items-center gap-2"><input v-model="createForm.isOverworked" type="checkbox" class="rounded" />过劳</label>
                 <label class="flex items-center gap-2"><input v-model="createForm.isInjured" type="checkbox" class="rounded" />受伤</label>
+                <label class="flex items-center gap-2"><input v-model="createForm.isSeverelyInjured" type="checkbox" class="rounded" />重伤</label>
+                <label class="flex items-center gap-2"><input v-model="createForm.isDead" type="checkbox" class="rounded" />死亡</label>
               </div>
               <DmPlayerModalInventory
                 ref="createInventoryRef"
@@ -841,11 +929,13 @@ onMounted(() => {
         <DmCombatAssistView />
       </div>
 
+      <div v-else-if="activeTab === 'settings'">
+        <GameSettingsView />
+      </div>
+
       <!-- Other Tabs -->
       <div v-else>
-        <h1 class="text-white mb-6 tracking-tight text-2xl">
-          {{ activeTab === 'settings' ? '游戏设置' : '系统日志' }}
-        </h1>
+        <h1 class="text-white mb-6 tracking-tight text-2xl">系统日志</h1>
         <div class="bg-[#0f1419] border border-[#1f2937] rounded-xl p-6">
           <p class="text-gray-500 font-normal">功能开发中...</p>
         </div>

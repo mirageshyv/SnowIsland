@@ -221,20 +221,42 @@ public class WarehouseService {
             default: tableName = "item"; break;
         }
         try {
-            Query query = entityManager.createNativeQuery("SELECT name, unit FROM " + tableName + " WHERE id = ?1");
-            query.setParameter(1, itemId);
-            List<Object[]> results = query.getResultList();
-            if (!results.isEmpty()) {
-                item.put("name", results.get(0)[0]);
-                item.put("unit", results.get(0)[1]);
+            if ("weapon".equals(itemType)) {
+                Query query = entityManager.createNativeQuery(
+                        "SELECT name, unit, remark, threat_level FROM weapon WHERE id = ?1");
+                query.setParameter(1, itemId);
+                List<Object[]> results = query.getResultList();
+                if (!results.isEmpty()) {
+                    Object[] row = results.get(0);
+                    item.put("name", row[0]);
+                    item.put("unit", row[1]);
+                    item.put("description", row[2] != null ? row[2] : "");
+                    item.put("threatLevel", row[3] != null ? ((Number) row[3]).intValue() : 0);
+                } else {
+                    putUnknownItem(item);
+                }
             } else {
-                item.put("name", "未知物品");
-                item.put("unit", "");
+                Query query = entityManager.createNativeQuery(
+                        "SELECT name, unit, remark FROM " + tableName + " WHERE id = ?1");
+                query.setParameter(1, itemId);
+                List<Object[]> results = query.getResultList();
+                if (!results.isEmpty()) {
+                    item.put("name", results.get(0)[0]);
+                    item.put("unit", results.get(0)[1]);
+                    item.put("description", results.get(0)[2] != null ? results.get(0)[2] : "");
+                } else {
+                    putUnknownItem(item);
+                }
             }
         } catch (Exception e) {
-            item.put("name", "未知物品");
-            item.put("unit", "");
+            putUnknownItem(item);
         }
+    }
+
+    private static void putUnknownItem(Map<String, Object> item) {
+        item.put("name", "未知物品");
+        item.put("unit", "");
+        item.put("description", "");
     }
 
     private List<Map<String, Object>> toMapList(List<WarehouseConfig> configs) {

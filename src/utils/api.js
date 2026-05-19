@@ -127,6 +127,10 @@ export const shelterAPI = {
         ...(gameDay != null ? { gameDay } : {})
       })
     }),
+  previewLaborSettlement: (gameDay) => {
+    const q = gameDay != null ? `?gameDay=${encodeURIComponent(gameDay)}` : ''
+    return request(`${API_BASE}/shelter/labor/preview${q}`)
+  },
   verifyLaborDay: (gameDay) =>
     request(`${API_BASE}/shelter/labor/verify`, {
       method: 'POST',
@@ -211,6 +215,28 @@ export const milestoneAPI = {
   toggle: (milestoneId, playerId, userRole) => 
     request(`${API_BASE}/milestones/${milestoneId}/toggle?playerId=${playerId}&userRole=${encodeURIComponent(userRole)}`, {
       method: 'POST'
+    })
+}
+
+export const gameStateAPI = {
+  get: () => request(`${API_BASE}/game-state`),
+  update: (body, userRole) =>
+    request(`${API_BASE}/game-state?userRole=${encodeURIComponent(userRole || '')}`, {
+      method: 'PUT',
+      body: JSON.stringify(body)
+    })
+}
+
+export const playerConsumptionAPI = {
+  getContext: (playerId, gameDay) => {
+    const q = new URLSearchParams({ playerId: String(playerId) })
+    if (gameDay != null) q.set('gameDay', String(gameDay))
+    return request(`${API_BASE}/player-consumption/context?${q}`)
+  },
+  submit: (body) =>
+    request(`${API_BASE}/player-consumption/submit`, {
+      method: 'POST',
+      body: JSON.stringify(body)
     })
 }
 

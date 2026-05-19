@@ -2,12 +2,16 @@ package com.example.snowisland.service;
 
 import com.example.snowisland.entity.GameState;
 import com.example.snowisland.entity.Job;
+import com.example.snowisland.entity.Location;
+import com.example.snowisland.entity.LocationNpc;
 import com.example.snowisland.entity.Player;
 import com.example.snowisland.entity.ShelterDailyLabor;
 import com.example.snowisland.entity.ShelterLaborDay;
 import com.example.snowisland.entity.ShelterStock;
 import com.example.snowisland.repository.GameStateRepository;
 import com.example.snowisland.repository.JobRepository;
+import com.example.snowisland.repository.LocationNpcRepository;
+import com.example.snowisland.repository.LocationRepository;
 import com.example.snowisland.repository.PlayerRepository;
 import com.example.snowisland.repository.ShelterDailyLaborRepository;
 import com.example.snowisland.repository.ShelterLaborDayRepository;
@@ -83,6 +87,12 @@ public class ShelterService {
     @Autowired
     private GameStateRepository gameStateRepository;
 
+    @Autowired
+    private LocationRepository locationRepository;
+
+    @Autowired
+    private LocationNpcRepository npcRepository;
+
     public int getCurrentGameDay() {
         GameState state = gameStateRepository.findFirstByOrderByIdAsc();
         if (state == null || state.getCurrentDay() == null) {
@@ -102,15 +112,27 @@ public class ShelterService {
     }
 
     public List<Integer> getLaborPlayerIdsForDay(int gameDay) {
-        return shelterDailyLaborRepository.findByGameDayOrderByPlayerIdAsc(gameDay).stream()
-                .filter(l -> !Boolean.TRUE.equals(l.getEscaped()))
-                .map(ShelterDailyLabor::getPlayerId)
+        return shelterDailyLaborRepository.findByGameDayOrderByWorkerKindAscWorkerIdAsc(gameDay).stream()
+                .filter(l -> "player".equalsIgnoreCase(l.getWorkerKind()) && !Boolean.TRUE.equals(l.getEscaped()))
+                .map(ShelterDailyLabor::getWorkerId)
                 .collect(Collectors.toList());
     }
 
     public boolean isPlayerLaborerForDay(int playerId, int gameDay) {
-        return shelterDailyLaborRepository.findByGameDayOrderByPlayerIdAsc(gameDay).stream()
-                .anyMatch(l -> playerId == l.getPlayerId() && !Boolean.TRUE.equals(l.getEscaped()));
+        return shelterDailyLaborRepository.findByGameDayOrderByWorkerKindAscWorkerIdAsc(gameDay).stream()
+                .anyMatch(l -> "player".equalsIgnoreCase(l.getWorkerKind())
+                        && playerId == l.getWorkerId()
+                        && !Boolean.TRUE.equals(l.getEscaped()));
+    }
+
+    private Map<String, Object> denyIfDayVerified(int gameDay) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        if (isDayVerified(gameDay)) {
+            out.put("success", false);
+            out.put("message", "第 " + gameDay + " 天已结算，无法再修改劳工名单");
+            return out;
+        }
+        return null;
     }
 
     @Transactional
@@ -144,9 +166,10 @@ public class ShelterService {
                 .collect(Collectors.toMap(Job::getId, Job::getName, (a, b) -> a));
 
         List<Map<String, Object>> dailyLabor = buildLaborRowMaps(
-                shelterDailyLaborRepository.findByGameDayOrderByPlayerIdAsc(gameDay),
+                shelterDailyLaborRepository.findByGameDayOrderByWorkerKindAscWorkerIdAsc(gameDay),
                 playersById,
-                jobNames
+                jobNames,
+                loadNpcsById()
         );
 
         out.put("success", true);
@@ -216,51 +239,50 @@ public class ShelterService {
         if (laborers == null) {
             laborers = Collections.emptyList();
         }
-        int exploitCount = 0;
-        Set<Integer> seen = new HashSet<>();
-        List<Integer> playerIds = new ArrayList<>();
-        Map<Integer, Boolean> exploitedByPlayer = new HashMap<>();
-        for (Map<String, Object> row : laborers) {
-            Integer playerId = toInt(row.get("playerId"));
-            if (playerId == null) {
-                out.put("success", false);
-                out.put("message", "劳工条目缺少 playerId");
-                return out;
-            }
-            if (!seen.add(playerId)) {
-                out.put("success", false);
-                out.put("message", "重复的玩家: " + playerId);
-                return out;
-            }
-            if (!playerRepository.findById(playerId).isPresent()) {
-                out.put("success", false);
-                out.put("message", "玩家不存在: " + playerId);
-                return out;
-            }
-            boolean exploited = toBool(row.get("exploited"));
-            if (exploited) exploitCount++;
-            playerIds.add(playerId);
-            exploitedByPlayer.put(playerId, exploited);
-        }
-        if (exploitCount > 3) {
-            out.put("success", false);
-            out.put("message", "最多压榨3名劳工");
-            return out;
-        }
         if (isDayVerified(gameDay)) {
             out.put("success", false);
             out.put("message", "第 " + gameDay + " 天已结算，无法再修改劳工名单");
             return out;
         }
 
-        mergeLaborRoster(gameDay, playerIds);
-        for (Map.Entry<Integer, Boolean> e : exploitedByPlayer.entrySet()) {
-            shelterDailyLaborRepository.findByGameDayAndPlayerId(gameDay, e.getKey()).ifPresent(labor -> {
-                labor.setExploited(e.getValue());
-                shelterDailyLaborRepository.save(labor);
-            });
+        int exploitCount = 0;
+        Set<String> seenWorkers = new HashSet<>();
+        List<WorkerRef> refs = new ArrayList<>();
+        Map<String, Map<String, Object>> rowByKey = new LinkedHashMap<>();
+        for (Map<String, Object> row : laborers) {
+            WorkerRef ref = WorkerRef.fromRow(row);
+            String err = validateWorker(ref);
+            if (err != null) {
+                out.put("success", false);
+                out.put("message", err);
+                return out;
+            }
+            if (!seenWorkers.add(ref.key())) {
+                out.put("success", false);
+                out.put("message", "重复的劳工: " + ref.key());
+                return out;
+            }
+            boolean exploited = toBool(row.get("exploited"));
+            if (exploited) {
+                exploitCount++;
+            }
+            refs.add(ref);
+            Map<String, Object> patch = new LinkedHashMap<>();
+            patch.put("workerKind", ref.kind);
+            patch.put("workerId", ref.id);
+            patch.put("exploited", exploited);
+            patch.put("escaped", false);
+            rowByKey.put(ref.key(), patch);
         }
+        if (exploitCount > 3) {
+            out.put("success", false);
+            out.put("message", "最多压榨3名劳工");
+            return out;
+        }
+
+        mergeWorkers(gameDay, refs, rowByKey);
         ensureLaborDayRow(gameDay, false);
+        out.put("message", "劳工名单已保存");
         return enrichLaborResponse(out, gameDay);
     }
 
@@ -275,23 +297,24 @@ public class ShelterService {
         if (laborers == null) {
             laborers = Collections.emptyList();
         }
+        if (isDayVerified(gameDay)) {
+            out.put("success", false);
+            out.put("message", "第 " + gameDay + " 天已确认结算，无法再修改劳工名单");
+            return out;
+        }
 
-        Set<Integer> seenPlayerIds = new HashSet<>();
+        Set<String> seenWorkers = new HashSet<>();
         for (Map<String, Object> row : laborers) {
-            Integer playerId = toInt(row.get("playerId"));
-            if (playerId == null) {
+            WorkerRef ref = WorkerRef.fromRow(row);
+            String err = validateWorker(ref);
+            if (err != null) {
                 out.put("success", false);
-                out.put("message", "劳工条目缺少 playerId");
+                out.put("message", err);
                 return out;
             }
-            if (!seenPlayerIds.add(playerId)) {
+            if (!seenWorkers.add(ref.key())) {
                 out.put("success", false);
-                out.put("message", "重复的玩家: " + playerId);
-                return out;
-            }
-            if (!playerRepository.findById(playerId).isPresent()) {
-                out.put("success", false);
-                out.put("message", "玩家不存在: " + playerId);
+                out.put("message", "重复的劳工: " + ref.key());
                 return out;
             }
         }
@@ -303,6 +326,38 @@ public class ShelterService {
         return enrichLaborResponse(out, gameDay);
     }
 
+    /**
+     * DM：结算前预览建造值与将施加的状态（不落库）。
+     */
+    public Map<String, Object> previewLaborSettlement(Integer gameDay) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        if (gameDay == null || gameDay < 1) {
+            out.put("success", false);
+            out.put("message", "无效的游戏天数");
+            return out;
+        }
+        if (isDayVerified(gameDay)) {
+            out.put("success", false);
+            out.put("message", "第 " + gameDay + " 天已结算");
+            return out;
+        }
+        List<ShelterDailyLabor> rows = shelterDailyLaborRepository.findByGameDayOrderByWorkerKindAscWorkerIdAsc(gameDay);
+        if (rows.isEmpty()) {
+            out.put("success", false);
+            out.put("message", "第 " + gameDay + " 天尚无劳工记录");
+            return out;
+        }
+        Map<Integer, Player> playersById = playerRepository.findAll().stream()
+                .collect(Collectors.toMap(Player::getId, p -> p, (a, b) -> a));
+        Map<Integer, Job> jobsById = jobRepository.findAll().stream()
+                .collect(Collectors.toMap(Job::getId, j -> j, (a, b) -> a));
+
+        Map<String, Object> preview = buildSettlementPreview(gameDay, rows, playersById, jobsById, loadNpcsById());
+        out.put("success", true);
+        out.putAll(preview);
+        return out;
+    }
+
     @Transactional
     public Map<String, Object> verifyLaborDay(Integer gameDay) {
         Map<String, Object> out = new LinkedHashMap<>();
@@ -311,11 +366,55 @@ public class ShelterService {
             out.put("message", "无效的游戏天数");
             return out;
         }
-        List<ShelterDailyLabor> rows = shelterDailyLaborRepository.findByGameDayOrderByPlayerIdAsc(gameDay);
+        if (isDayVerified(gameDay)) {
+            out.put("success", false);
+            out.put("message", "第 " + gameDay + " 天已结算");
+            return out;
+        }
+        List<ShelterDailyLabor> rows = shelterDailyLaborRepository.findByGameDayOrderByWorkerKindAscWorkerIdAsc(gameDay);
         if (rows.isEmpty()) {
             out.put("success", false);
             out.put("message", "第 " + gameDay + " 天尚无劳工记录");
             return out;
+        }
+
+        Map<Integer, Player> playersById = playerRepository.findAll().stream()
+                .collect(Collectors.toMap(Player::getId, p -> p, (a, b) -> a));
+        Map<Integer, Job> jobsById = jobRepository.findAll().stream()
+                .collect(Collectors.toMap(Job::getId, j -> j, (a, b) -> a));
+
+        Map<Integer, LocationNpc> npcsById = loadNpcsById();
+        Map<String, Object> preview = buildSettlementPreview(gameDay, rows, playersById, jobsById, npcsById);
+
+        for (ShelterDailyLabor labor : rows) {
+            if (!"player".equalsIgnoreCase(labor.getWorkerKind())) {
+                boolean escaped = Boolean.TRUE.equals(labor.getEscaped());
+                boolean exploited = Boolean.TRUE.equals(labor.getExploited());
+                LocationNpc npc = npcsById.get(labor.getWorkerId());
+                String npcJob = npc != null ? npc.getJob() : null;
+                boolean productionJob = ShelterLaborCalculator.isProductionLaborJobByName(npcJob);
+                int buildValue = ShelterLaborCalculator.calculateBuildValue(productionJob, exploited, escaped);
+                labor.setBuildValue(buildValue);
+                shelterDailyLaborRepository.save(labor);
+                continue;
+            }
+            Player player = playersById.get(labor.getWorkerId());
+            if (player == null) {
+                continue;
+            }
+            boolean escaped = Boolean.TRUE.equals(labor.getEscaped());
+            boolean exploited = Boolean.TRUE.equals(labor.getExploited());
+            int buildValue = ShelterLaborCalculator.calculateBuildValue(player, jobsById, exploited, escaped);
+            labor.setBuildValue(buildValue);
+            shelterDailyLaborRepository.save(labor);
+
+            if (!escaped) {
+                player.setIsOverworked(true);
+                if (exploited) {
+                    player.setIsInjured(true);
+                }
+                playerRepository.save(player);
+            }
         }
 
         ShelterLaborDay day = shelterLaborDayRepository.findById(gameDay).orElseGet(() -> {
@@ -328,7 +427,88 @@ public class ShelterService {
         shelterLaborDayRepository.save(day);
 
         out.put("message", "第 " + gameDay + " 天建造已结算");
+        out.put("settlementPreview", preview);
         return enrichLaborResponse(out, gameDay);
+    }
+
+    private Map<String, Object> buildSettlementPreview(
+            int gameDay,
+            List<ShelterDailyLabor> rows,
+            Map<Integer, Player> playersById,
+            Map<Integer, Job> jobsById,
+            Map<Integer, LocationNpc> npcsById
+    ) {
+        List<Map<String, Object>> workers = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
+        int dayTotal = 0;
+
+        for (ShelterDailyLabor labor : rows) {
+            boolean escaped = Boolean.TRUE.equals(labor.getEscaped());
+            boolean exploited = Boolean.TRUE.equals(labor.getExploited());
+            boolean productionJob;
+            String displayName;
+            String jobNameLabel;
+            boolean isNpc = "npc".equalsIgnoreCase(labor.getWorkerKind());
+            if (isNpc) {
+                LocationNpc npc = npcsById.get(labor.getWorkerId());
+                if (npc == null) {
+                    continue;
+                }
+                jobNameLabel = npc.getJob() != null ? npc.getJob() : "—";
+                productionJob = ShelterLaborCalculator.isProductionLaborJobByName(jobNameLabel);
+                displayName = npc.getName();
+            } else {
+                Player player = playersById.get(labor.getWorkerId());
+                if (player == null) {
+                    continue;
+                }
+                productionJob = ShelterLaborCalculator.isProductionLaborJob(player, jobsById);
+                displayName = player.getName();
+                jobNameLabel = player.getJobId() != null && jobsById.get(player.getJobId()) != null
+                        ? jobsById.get(player.getJobId()).getName() : "—";
+            }
+            int buildValue = ShelterLaborCalculator.calculateBuildValue(productionJob, exploited, escaped);
+            if (!escaped) {
+                dayTotal += buildValue;
+            }
+
+            Map<String, Object> w = new LinkedHashMap<>();
+            w.put("workerKind", labor.getWorkerKind());
+            w.put("workerId", labor.getWorkerId());
+            w.put("playerId", labor.getPlayerId());
+            w.put("name", displayName);
+            w.put("jobName", jobNameLabel);
+            w.put("laborType", ShelterLaborCalculator.laborTypeLabel(productionJob, exploited));
+            w.put("buildValueBreakdown", ShelterLaborCalculator.buildValueBreakdown(productionJob, exploited, escaped));
+            w.put("baseValue", ShelterLaborCalculator.BASE_BUILD_VALUE);
+            w.put("jobBonus", productionJob && !escaped ? ShelterLaborCalculator.PRODUCTION_JOB_BONUS : 0);
+            w.put("exploitBonus", exploited && !escaped ? ShelterLaborCalculator.EXPLOIT_BONUS : 0);
+            w.put("buildValue", buildValue);
+            w.put("productionJob", productionJob);
+            w.put("exploited", exploited);
+            w.put("escaped", escaped);
+            w.put("isNpc", isNpc);
+            w.put("willApplyOverworked", !escaped && !isNpc);
+            w.put("willApplyInjured", !escaped && exploited && !isNpc);
+            Player player = isNpc ? null : playersById.get(labor.getWorkerId());
+            w.put("wasAlreadyOverworked", player != null && Boolean.TRUE.equals(player.getIsOverworked()));
+            w.put("wasAlreadyInjured", player != null && Boolean.TRUE.equals(player.getIsInjured()));
+
+            if (player != null && !escaped && Boolean.TRUE.equals(player.getIsOverworked())) {
+                w.put("overworkDeathWarning", true);
+                warnings.add(displayName + " 此前已有「过劳」标记：请投 1d6，结果为 1 则死亡。");
+            } else {
+                w.put("overworkDeathWarning", false);
+            }
+            workers.add(w);
+        }
+
+        Map<String, Object> preview = new LinkedHashMap<>();
+        preview.put("gameDay", gameDay);
+        preview.put("dayTotal", dayTotal);
+        preview.put("workers", workers);
+        preview.put("warnings", warnings);
+        return preview;
     }
 
     private Map<String, Object> enrichLaborResponse(Map<String, Object> out, int gameDay) {
@@ -343,9 +523,10 @@ public class ShelterService {
         out.put("dayVerified", isDayVerified(gameDay));
         out.put("currentBuildValue", getTotalBuildValue());
         out.put("dailyLabor", buildLaborRowMaps(
-                shelterDailyLaborRepository.findByGameDayOrderByPlayerIdAsc(gameDay),
+                shelterDailyLaborRepository.findByGameDayOrderByWorkerKindAscWorkerIdAsc(gameDay),
                 playersById,
-                jobNames
+                jobNames,
+                loadNpcsById()
         ));
         out.put("buildLogs", buildLogsGroupedByDay(playersById, jobNames));
         out.put("laborDays", buildLaborDayOptions(getCurrentGameDay()));
@@ -356,61 +537,86 @@ public class ShelterService {
      * Upsert roster without delete-all-then-insert (avoids UK violations on repeated saves).
      */
     private void mergeLaborRoster(int gameDay, List<Integer> playerIds) {
-        List<ShelterDailyLabor> existingRows = shelterDailyLaborRepository.findByGameDayOrderByPlayerIdAsc(gameDay);
-        Map<Integer, ShelterDailyLabor> existingByPlayer = existingRows.stream()
-                .collect(Collectors.toMap(ShelterDailyLabor::getPlayerId, l -> l, (a, b) -> a));
-        Set<Integer> targetIds = new LinkedHashSet<>(playerIds);
+        List<WorkerRef> workers = new ArrayList<>();
+        for (Integer playerId : playerIds) {
+            workers.add(new WorkerRef("player", playerId));
+        }
+        mergeWorkers(gameDay, workers, Collections.emptyMap());
+    }
+
+    private void mergeDailyLabor(int gameDay, List<Map<String, Object>> laborers) {
+        List<WorkerRef> refs = new ArrayList<>();
+        Map<String, Map<String, Object>> rowByKey = new LinkedHashMap<>();
+        for (Map<String, Object> row : laborers) {
+            WorkerRef ref = WorkerRef.fromRow(row);
+            refs.add(ref);
+            rowByKey.put(ref.key(), row);
+        }
+        mergeWorkers(gameDay, refs, rowByKey);
+    }
+
+    private void mergeWorkers(int gameDay, List<WorkerRef> targets, Map<String, Map<String, Object>> rowByKey) {
+        List<ShelterDailyLabor> existingRows =
+                shelterDailyLaborRepository.findByGameDayOrderByWorkerKindAscWorkerIdAsc(gameDay);
+        Map<String, ShelterDailyLabor> existingByKey = new LinkedHashMap<>();
+        for (ShelterDailyLabor row : existingRows) {
+            existingByKey.put(WorkerRef.fromLabor(row).key(), row);
+        }
+        Set<String> targetKeys = new LinkedHashSet<>();
+        for (WorkerRef ref : targets) {
+            targetKeys.add(ref.key());
+        }
 
         for (ShelterDailyLabor row : existingRows) {
-            if (!targetIds.contains(row.getPlayerId())) {
+            if (!targetKeys.contains(WorkerRef.fromLabor(row).key())) {
                 shelterDailyLaborRepository.delete(row);
             }
         }
         entityManager.flush();
 
-        for (Integer playerId : targetIds) {
-            ShelterDailyLabor labor = existingByPlayer.get(playerId);
+        Map<Integer, Player> playersById = playerRepository.findAll().stream()
+                .collect(Collectors.toMap(Player::getId, p -> p, (a, b) -> a));
+        Map<Integer, Job> jobsById = jobRepository.findAll().stream()
+                .collect(Collectors.toMap(Job::getId, j -> j, (a, b) -> a));
+
+        for (WorkerRef ref : targets) {
+            ShelterDailyLabor labor = existingByKey.get(ref.key());
             if (labor == null) {
                 labor = new ShelterDailyLabor();
                 labor.setGameDay(gameDay);
-                labor.setPlayerId(playerId);
+                labor.setWorkerKind(ref.kind);
+                labor.setWorkerId(ref.id);
                 labor.setBuildValue(0);
                 labor.setExploited(false);
                 labor.setEscaped(false);
             }
-            shelterDailyLaborRepository.save(labor);
-        }
-    }
-
-    private void mergeDailyLabor(int gameDay, List<Map<String, Object>> laborers) {
-        List<ShelterDailyLabor> existingRows = shelterDailyLaborRepository.findByGameDayOrderByPlayerIdAsc(gameDay);
-        Map<Integer, ShelterDailyLabor> existingByPlayer = existingRows.stream()
-                .collect(Collectors.toMap(ShelterDailyLabor::getPlayerId, l -> l, (a, b) -> a));
-
-        Set<Integer> targetIds = new HashSet<>();
-        for (Map<String, Object> row : laborers) {
-            targetIds.add(toInt(row.get("playerId")));
-        }
-
-        for (ShelterDailyLabor row : existingRows) {
-            if (!targetIds.contains(row.getPlayerId())) {
-                shelterDailyLaborRepository.delete(row);
+            Map<String, Object> row = rowByKey.get(ref.key());
+            if (row != null) {
+                boolean exploited = toBool(row.get("exploited"));
+                boolean escaped = toBool(row.get("escaped"));
+                int buildValue;
+                if ("npc".equalsIgnoreCase(ref.kind)) {
+                    String npcJobName = null;
+                    LocationNpc npc = npcRepository.findById(ref.id).orElse(null);
+                    if (npc != null) {
+                        npcJobName = npc.getJob();
+                    }
+                    boolean productionJob = ShelterLaborCalculator.isProductionLaborJobByName(npcJobName);
+                    buildValue = ShelterLaborCalculator.calculateBuildValue(productionJob, exploited, escaped);
+                } else {
+                    Player player = playersById.get(ref.id);
+                    buildValue = ShelterLaborCalculator.calculateBuildValue(player, jobsById, exploited, escaped);
+                }
+                if (row.containsKey("buildValue")) {
+                    Integer manual = toInt(row.get("buildValue"));
+                    if (manual != null) {
+                        buildValue = manual;
+                    }
+                }
+                labor.setBuildValue(buildValue);
+                labor.setExploited(exploited);
+                labor.setEscaped(escaped);
             }
-        }
-        entityManager.flush();
-
-        for (Map<String, Object> row : laborers) {
-            Integer playerId = toInt(row.get("playerId"));
-            ShelterDailyLabor labor = existingByPlayer.get(playerId);
-            if (labor == null) {
-                labor = new ShelterDailyLabor();
-                labor.setGameDay(gameDay);
-                labor.setPlayerId(playerId);
-            }
-            int buildValue = toInt(row.get("buildValue")) != null ? Math.max(0, toInt(row.get("buildValue"))) : 0;
-            labor.setBuildValue(buildValue);
-            labor.setExploited(toBool(row.get("exploited")));
-            labor.setEscaped(toBool(row.get("escaped")));
             shelterDailyLaborRepository.save(labor);
         }
     }
@@ -432,7 +638,8 @@ public class ShelterService {
         for (int d = 1; d <= Math.max(1, currentGameDay); d++) {
             days.add(d);
         }
-        shelterDailyLaborRepository.findAllByOrderByGameDayDescPlayerIdAsc().forEach(l -> days.add(l.getGameDay()));
+        shelterDailyLaborRepository.findAllByOrderByGameDayDescWorkerKindAscWorkerIdAsc()
+                .forEach(l -> days.add(l.getGameDay()));
         List<Map<String, Object>> options = new ArrayList<>();
         for (Integer day : days) {
             Map<String, Object> m = new LinkedHashMap<>();
@@ -447,26 +654,68 @@ public class ShelterService {
     private List<Map<String, Object>> buildLaborRowMaps(
             List<ShelterDailyLabor> labors,
             Map<Integer, Player> playersById,
-            Map<Integer, String> jobNames
+            Map<Integer, String> jobNames,
+            Map<Integer, LocationNpc> npcsById
     ) {
+        Map<Integer, Job> jobsById = jobRepository.findAll().stream()
+                .collect(Collectors.toMap(Job::getId, j -> j, (a, b) -> a));
         List<Map<String, Object>> result = new ArrayList<>();
         for (ShelterDailyLabor labor : labors) {
-            Player player = playersById.get(labor.getPlayerId());
-            if (player == null) {
-                continue;
+            WorkerRef ref = WorkerRef.fromLabor(labor);
+            boolean exploited = Boolean.TRUE.equals(labor.getExploited());
+            boolean escaped = Boolean.TRUE.equals(labor.getEscaped());
+            boolean productionJob;
+            String name;
+            String jobName;
+            String jobSkills = "";
+            Integer jobId = null;
+
+            if ("npc".equalsIgnoreCase(ref.kind)) {
+                LocationNpc npc = npcsById.get(ref.id);
+                if (npc == null) {
+                    continue;
+                }
+                jobName = npc.getJob() != null ? npc.getJob() : "—";
+                productionJob = ShelterLaborCalculator.isProductionLaborJobByName(jobName);
+                name = npc.getName();
+            } else {
+                Player player = playersById.get(ref.id);
+                if (player == null) {
+                    continue;
+                }
+                productionJob = ShelterLaborCalculator.isProductionLaborJob(player, jobsById);
+                name = player.getName();
+                jobId = player.getJobId();
+                Job job = jobId != null ? jobsById.get(jobId) : null;
+                jobName = jobId != null ? jobNames.getOrDefault(jobId, "—") : "—";
+                jobSkills = job != null ? job.getSkills() : "";
             }
+            int computed = ShelterLaborCalculator.calculateBuildValue(productionJob, exploited, escaped);
+
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("id", labor.getId());
+            row.put("workerKind", ref.kind);
+            row.put("workerId", ref.id);
+            row.put("workerKey", ref.key());
+            row.put("isNpc", "npc".equalsIgnoreCase(ref.kind));
             row.put("playerId", labor.getPlayerId());
-            row.put("name", player.getName());
-            row.put("jobId", player.getJobId());
-            row.put("jobName", player.getJobId() != null ? jobNames.getOrDefault(player.getJobId(), "—") : "—");
-            row.put("buildValue", labor.getBuildValue() != null ? labor.getBuildValue() : 0);
-            row.put("exploited", Boolean.TRUE.equals(labor.getExploited()));
-            row.put("escaped", Boolean.TRUE.equals(labor.getEscaped()));
-            row.put("isWeak", Boolean.TRUE.equals(player.getIsWeak()));
-            row.put("isOverworked", Boolean.TRUE.equals(player.getIsOverworked()));
-            row.put("isInjured", Boolean.TRUE.equals(player.getIsInjured()));
+            row.put("name", name);
+            row.put("jobId", jobId);
+            row.put("jobName", jobName);
+            row.put("jobSkills", jobSkills);
+            row.put("productionJob", productionJob);
+            row.put("laborType", ShelterLaborCalculator.laborTypeLabel(productionJob, exploited));
+            row.put("buildValueBreakdown", ShelterLaborCalculator.buildValueBreakdown(productionJob, exploited, escaped));
+            row.put("computedBuildValue", computed);
+            row.put("buildValue", labor.getBuildValue() != null ? labor.getBuildValue() : computed);
+            row.put("exploited", exploited);
+            row.put("escaped", escaped);
+            if ("player".equalsIgnoreCase(ref.kind)) {
+                Player player = playersById.get(ref.id);
+                row.put("isWeak", Boolean.TRUE.equals(player.getIsWeak()));
+                row.put("isOverworked", Boolean.TRUE.equals(player.getIsOverworked()));
+                row.put("isInjured", Boolean.TRUE.equals(player.getIsInjured()));
+            }
             result.add(row);
         }
         return result;
@@ -477,7 +726,8 @@ public class ShelterService {
             Map<Integer, String> jobNames
     ) {
         Map<Integer, List<ShelterDailyLabor>> byDay = new TreeMap<>(Comparator.reverseOrder());
-        for (ShelterDailyLabor labor : shelterDailyLaborRepository.findAllByOrderByGameDayDescPlayerIdAsc()) {
+        Map<Integer, LocationNpc> npcsById = loadNpcsById();
+        for (ShelterDailyLabor labor : shelterDailyLaborRepository.findAllByOrderByGameDayDescWorkerKindAscWorkerIdAsc()) {
             byDay.computeIfAbsent(labor.getGameDay(), k -> new ArrayList<>()).add(labor);
         }
 
@@ -487,22 +737,41 @@ public class ShelterService {
             int dayTotal = 0;
             List<Map<String, Object>> workers = new ArrayList<>();
             for (ShelterDailyLabor labor : entry.getValue()) {
-                Player player = playersById.get(labor.getPlayerId());
-                if (player == null) {
-                    continue;
+                WorkerRef ref = WorkerRef.fromLabor(labor);
+                String name;
+                String jobName;
+                boolean isProfessional;
+                if ("npc".equalsIgnoreCase(ref.kind)) {
+                    LocationNpc npc = npcsById.get(ref.id);
+                    if (npc == null) {
+                        continue;
+                    }
+                    name = npc.getName();
+                    jobName = npc.getJob() != null ? npc.getJob() : "—";
+                    isProfessional = false;
+                } else {
+                    Player player = playersById.get(ref.id);
+                    if (player == null) {
+                        continue;
+                    }
+                    name = player.getName();
+                    jobName = player.getJobId() != null ? jobNames.getOrDefault(player.getJobId(), "—") : "—";
+                    isProfessional = player.getJobId() != null;
                 }
                 int value = labor.getBuildValue() != null ? labor.getBuildValue() : 0;
                 if (verified) {
                     dayTotal += value;
                 }
                 Map<String, Object> w = new LinkedHashMap<>();
+                w.put("workerKind", ref.kind);
+                w.put("workerId", ref.id);
                 w.put("playerId", labor.getPlayerId());
-                w.put("name", player.getName());
-                w.put("jobName", player.getJobId() != null ? jobNames.getOrDefault(player.getJobId(), "—") : "—");
+                w.put("name", name);
+                w.put("jobName", jobName);
                 if (verified) {
                     w.put("value", value);
                 }
-                w.put("isProfessional", player.getJobId() != null);
+                w.put("isProfessional", isProfessional);
                 w.put("isOppressed", Boolean.TRUE.equals(labor.getExploited()));
                 w.put("escaped", Boolean.TRUE.equals(labor.getEscaped()));
                 workers.add(w);
@@ -522,23 +791,132 @@ public class ShelterService {
 
     private List<Map<String, Object>> buildLaborCandidates(Map<Integer, String> jobNames) {
         List<Map<String, Object>> rows = new ArrayList<>();
+        Map<Integer, String> locationNames = locationRepository.findAll().stream()
+                .collect(Collectors.toMap(Location::getId, Location::getName, (a, b) -> a));
+
         for (Player player : playerRepository.findAll()) {
             if (player.getFaction() == Player.Faction.统治者) {
                 continue;
             }
             Map<String, Object> row = new LinkedHashMap<>();
+            row.put("kind", "player");
+            row.put("workerKind", "player");
             row.put("id", player.getId());
+            row.put("workerId", player.getId());
+            row.put("workerKey", WorkerRef.key("player", player.getId()));
             row.put("name", player.getName());
             row.put("faction", player.getFaction() != null ? player.getFaction().name() : null);
             row.put("jobId", player.getJobId());
+            Job job = player.getJobId() != null ? jobRepository.findById(player.getJobId()).orElse(null) : null;
             row.put("jobName", player.getJobId() != null ? jobNames.getOrDefault(player.getJobId(), "—") : "—");
+            row.put("jobSkills", job != null ? job.getSkills() : "");
+            row.put("productionJob", ShelterLaborCalculator.isProductionLaborJob(player,
+                    job != null ? Collections.singletonMap(job.getId(), job) : Collections.emptyMap()));
             row.put("isWeak", Boolean.TRUE.equals(player.getIsWeak()));
             row.put("isOverworked", Boolean.TRUE.equals(player.getIsOverworked()));
             row.put("isInjured", Boolean.TRUE.equals(player.getIsInjured()));
             rows.add(row);
         }
+
+        for (LocationNpc npc : npcRepository.findAll()) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("kind", "npc");
+            row.put("workerKind", "npc");
+            row.put("id", npc.getId());
+            row.put("workerId", npc.getId());
+            row.put("workerKey", WorkerRef.key("npc", npc.getId()));
+            row.put("name", npc.getName());
+            String npcJob = npc.getJob() != null ? npc.getJob() : "—";
+            row.put("jobName", npcJob);
+            row.put("jobSkills", "");
+            row.put("productionJob", ShelterLaborCalculator.isProductionLaborJobByName(npcJob));
+            String loc = locationNames.getOrDefault(npc.getLocationId(), "未知地点");
+            row.put("locationName", loc);
+            row.put("label", npc.getName() + " · " + loc);
+            rows.add(row);
+        }
+
         rows.sort(Comparator.comparing(m -> String.valueOf(m.get("name"))));
         return rows;
+    }
+
+    private Map<Integer, LocationNpc> loadNpcsById() {
+        return npcRepository.findAll().stream()
+                .collect(Collectors.toMap(LocationNpc::getId, n -> n, (a, b) -> a));
+    }
+
+    private String validateWorker(WorkerRef ref) {
+        if (ref == null || ref.id == null) {
+            return "劳工条目缺少标识";
+        }
+        if ("player".equalsIgnoreCase(ref.kind)) {
+            Optional<Player> player = playerRepository.findById(ref.id);
+            if (!player.isPresent()) {
+                return "玩家不存在: " + ref.id;
+            }
+            if (player.get().getFaction() == Player.Faction.统治者) {
+                return "统治者不能作为劳工";
+            }
+            return null;
+        }
+        if ("npc".equalsIgnoreCase(ref.kind)) {
+            if (!npcRepository.findById(ref.id).isPresent()) {
+                return "NPC不存在: " + ref.id;
+            }
+            return null;
+        }
+        return "无效的劳工类型: " + ref.kind;
+    }
+
+    private static final class WorkerRef {
+        final String kind;
+        final Integer id;
+
+        WorkerRef(String kind, Integer id) {
+            this.kind = kind != null ? kind.toLowerCase(Locale.ROOT) : "player";
+            this.id = id;
+        }
+
+        String key() {
+            return key(kind, id);
+        }
+
+        static String key(String kind, Integer id) {
+            return (kind != null ? kind.toLowerCase(Locale.ROOT) : "player") + ":" + id;
+        }
+
+        static WorkerRef fromRow(Map<String, Object> row) {
+            String kind = row.containsKey("workerKind")
+                    ? String.valueOf(row.get("workerKind")).trim().toLowerCase(Locale.ROOT)
+                    : "player";
+            Integer id = toIntStatic(row.get("workerId"));
+            if (id == null) {
+                id = toIntStatic(row.get("playerId"));
+            }
+            if (kind.isEmpty() || "null".equals(kind)) {
+                kind = "player";
+            }
+            return new WorkerRef(kind, id);
+        }
+
+        static WorkerRef fromLabor(ShelterDailyLabor labor) {
+            String kind = labor.getWorkerKind() != null ? labor.getWorkerKind() : "player";
+            return new WorkerRef(kind, labor.getWorkerId());
+        }
+
+        private static Integer toIntStatic(Object o) {
+            if (o == null || "".equals(o)) {
+                return null;
+            }
+            if (o instanceof Number) {
+                return ((Number) o).intValue();
+            }
+            try {
+                return Integer.parseInt(String.valueOf(o));
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
     }
 
     private static Integer toInt(Object o) {

@@ -8,6 +8,7 @@ import {
   COMBAT_OUTCOMES,
   parseCombatNumber,
   computeSkillBonus,
+  getSkillBonusSuppression,
   fighterTotalPower,
   resolveCombatOutcome,
   createEmptyFighter,
@@ -89,8 +90,15 @@ const defenseSideTotal = computed(() => {
 const powerDiff = computed(() => attackSideTotal.value - defenseSideTotal.value)
 const outcome = computed(() => resolveCombatOutcome(powerDiff.value))
 
-function syncSkillBonus(fighter) {
-  return computeSkillBonus(fighter.jobSkills, fighter.weaponId)
+function combatOptionsForFighter(fighter) {
+  return {
+    meleeDisabled: Boolean(fighter.combatMeleeDisabled),
+    rangedDisabled: Boolean(fighter.combatRangedDisabled),
+  }
+}
+
+function skillBonusSuppression(fighter) {
+  return getSkillBonusSuppression(fighter)
 }
 
 function applyWeaponChange(fighter) {
@@ -104,7 +112,7 @@ function applyWeaponChange(fighter) {
   }
   return {
     weaponThreat,
-    skillBonus: computeSkillBonus(fighter.jobSkills, id),
+    skillBonus: computeSkillBonus(fighter.jobSkills, id, combatOptionsForFighter(fighter)),
   }
 }
 
@@ -195,9 +203,21 @@ async function loadFighterInventory(side, uid) {
       weaponId = ownedWeaponIds[0]
     }
 
+    const combatMeleeDisabled = Boolean(details?.combatMeleeDisabled)
+    const combatRangedDisabled = Boolean(details?.combatRangedDisabled)
+    const statuses = Array.isArray(details?.statuses) ? details.statuses : []
+
     const merged = {
       ...fighter,
       jobSkills,
+      statuses,
+      isDead: Boolean(details?.isDead),
+      isSeverelyInjured: Boolean(details?.isSeverelyInjured),
+      isWeak: Boolean(details?.isWeak),
+      isInjured: Boolean(details?.isInjured),
+      isOverworked: Boolean(details?.isOverworked),
+      combatMeleeDisabled,
+      combatRangedDisabled,
       bodyArmorCount,
       shieldCount,
       ownedWeaponIds,
@@ -208,6 +228,14 @@ async function loadFighterInventory(side, uid) {
     const weaponPatch = applyWeaponChange(merged)
     setFighter(side, uid, {
       jobSkills,
+      statuses,
+      isDead: Boolean(details?.isDead),
+      isSeverelyInjured: Boolean(details?.isSeverelyInjured),
+      isWeak: Boolean(details?.isWeak),
+      isInjured: Boolean(details?.isInjured),
+      isOverworked: Boolean(details?.isOverworked),
+      combatMeleeDisabled,
+      combatRangedDisabled,
       bodyArmorCount,
       shieldCount,
       ownedWeaponIds,
@@ -352,9 +380,17 @@ onMounted(loadStaticData)
                       <span class="cat-stat-label">武</span>
                       <input v-model.number="f.weaponThreat" type="number" class="cat-num-square" />
                     </label>
-                    <label class="cat-stat-cell" title="技能加成">
+                    <label class="cat-stat-cell cat-stat-cell--skill" title="技能加成">
                       <span class="cat-stat-label">技能</span>
-                      <input v-model.number="f.skillBonus" type="number" class="cat-num-square" />
+                      <div class="cat-skill-box">
+                        <input v-model.number="f.skillBonus" type="number" class="cat-num-square" />
+                        <span
+                          v-if="skillBonusSuppression(f)"
+                          class="cat-skill-warn"
+                          :title="skillBonusSuppression(f).tooltip"
+                          aria-label="技能加成被状态阻止"
+                        >!</span>
+                      </div>
                     </label>
                     <div
                       v-for="b in f.bonuses"
@@ -474,9 +510,17 @@ onMounted(loadStaticData)
                       <span class="cat-stat-label">武</span>
                       <input v-model.number="f.weaponThreat" type="number" class="cat-num-square" />
                     </label>
-                    <label class="cat-stat-cell" title="技能加成">
+                    <label class="cat-stat-cell cat-stat-cell--skill" title="技能加成">
                       <span class="cat-stat-label">技能</span>
-                      <input v-model.number="f.skillBonus" type="number" class="cat-num-square" />
+                      <div class="cat-skill-box">
+                        <input v-model.number="f.skillBonus" type="number" class="cat-num-square" />
+                        <span
+                          v-if="skillBonusSuppression(f)"
+                          class="cat-skill-warn"
+                          :title="skillBonusSuppression(f).tooltip"
+                          aria-label="技能加成被状态阻止"
+                        >!</span>
+                      </div>
                     </label>
                     <div
                       v-for="b in f.bonuses"
@@ -799,6 +843,34 @@ onMounted(loadStaticData)
 .cat-bonus-remove:hover {
   color: #f3f4f6;
   background: #4b5563;
+}
+.cat-skill-box {
+  position: relative;
+  display: inline-block;
+}
+.cat-skill-warn {
+  position: absolute;
+  right: -0.2rem;
+  bottom: -0.15rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.8rem;
+  height: 0.8rem;
+  font-size: 0.5625rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #1c1917;
+  background: #fbbf24;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  border-radius: 9999px;
+  cursor: help;
+  pointer-events: auto;
+  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.35);
+}
+.cat-skill-warn:hover {
+  background: #fcd34d;
 }
 .cat-outcome-note {
   color: #6b7280;

@@ -1,6 +1,10 @@
 <script setup>
 import { computed, ref, watch, onMounted } from 'vue'
-import { resolveShelterInventoryRows, getMaterialImageUrlOrDefault } from '../data/gameData.js'
+import {
+  resolveShelterInventoryRows,
+  getMaterialImageUrlOrDefault,
+  refreshShelterLaborRow,
+} from '../data/gameData.js'
 import { shelterAPI } from '../utils/api.js'
 import ShelterSupplyCards from './ShelterSupplyCards.vue'
 
@@ -30,28 +34,51 @@ const buildLogs = ref([])
 const laborDays = ref([])
 const savingLabor = ref(false)
 const verifying = ref(false)
+const showSettlementModal = ref(false)
+const settlementPreview = ref(null)
+const loadingSettlementPreview = ref(false)
 
 const shelterDisplayRows = computed(() => resolveShelterInventoryRows(shelterInventory.value))
-const rosterPlayerIds = computed(() => new Set(dailyLabor.value.map((r) => r.playerId)))
-function defaultLaborRow(playerId) {
-  const p = laborCandidates.value.find((c) => c.id === playerId)
-  return {
-    playerId,
-    name: p?.name ?? `玩家${playerId}`,
-    jobName: p?.jobName ?? '—',
-    buildValue: 0,
-    exploited: false,
-    escaped: false
-  }
+function candidateKey(c) {
+  return c.workerKey || `${c.workerKind || c.kind || 'player'}:${c.workerId ?? c.id}`
 }
 
-function toggleLabor(playerId) {
-  if (!isDm.value && dayVerified.value) return
-  const idx = dailyLabor.value.findIndex((r) => r.playerId === playerId)
+const rosterWorkerKeys = computed(() =>
+  new Set(dailyLabor.value.map((r) => r.workerKey || `player:${r.playerId}`))
+)
+
+function defaultLaborRow(candidate) {
+  const key = candidateKey(candidate)
+  const kind = candidate.workerKind || candidate.kind || 'player'
+  const id = candidate.workerId ?? candidate.id
+  return refreshShelterLaborRow({
+    workerKind: kind,
+    workerId: id,
+    workerKey: key,
+    playerId: kind === 'player' ? id : null,
+    name: candidate.name ?? (kind === 'player' ? `玩家${id}` : `NPC${id}`),
+    jobName: candidate.jobName ?? '—',
+    jobSkills: candidate.jobSkills ?? '',
+    productionJob: candidate.productionJob ?? false,
+    buildValue: 0,
+    exploited: false,
+    escaped: false,
+  })
+}
+
+function onLaborRowFlagsChange(row) {
+  if (row.exploited) onExploitChange(row)
+  refreshShelterLaborRow(row)
+}
+
+function toggleLabor(candidate) {
+  if (dayVerified.value) return
+  const key = candidateKey(candidate)
+  const idx = dailyLabor.value.findIndex((r) => (r.workerKey || `player:${r.playerId}`) === key)
   if (idx >= 0) {
-    dailyLabor.value = dailyLabor.value.filter((r) => r.playerId !== playerId)
+    dailyLabor.value = dailyLabor.value.filter((r) => (r.workerKey || `player:${r.playerId}`) !== key)
   } else {
-    dailyLabor.value = [...dailyLabor.value, defaultLaborRow(playerId)]
+    dailyLabor.value = [...dailyLabor.value, defaultLaborRow(candidate)]
   }
 }
 
@@ -64,8 +91,9 @@ function onExploitChange(row) {
   }
 }
 
-function removeLaborRow(playerId) {
-  dailyLabor.value = dailyLabor.value.filter((r) => r.playerId !== playerId)
+function removeLaborRow(row) {
+  const key = row.workerKey || `player:${row.playerId}`
+  dailyLabor.value = dailyLabor.value.filter((r) => (r.workerKey || `player:${r.playerId}`) !== key)
 }
 
 function applyLaborResult(result) {
@@ -73,19 +101,23 @@ function applyLaborResult(result) {
   currentBuildValue.value = Number(result.currentBuildValue) || 0
   currentGameDay.value = Number(result.currentGameDay) || currentGameDay.value
   dayVerified.value = Boolean(result.dayVerified)
-  dailyLabor.value = Array.isArray(result.dailyLabor) ? result.dailyLabor.map((r) => ({ ...r })) : dailyLabor.value
+  dailyLabor.value = Array.isArray(result.dailyLabor)
+    ? result.dailyLabor.map((r) => refreshShelterLaborRow({ ...r }))
+    : dailyLabor.value
   buildLogs.value = Array.isArray(result.buildLogs) ? result.buildLogs : buildLogs.value
   laborDays.value = Array.isArray(result.laborDays) ? result.laborDays : laborDays.value
   return true
 }
 
-async function saveLaborRoster() {
-  if (savingLabor.value) return
+async function saveLaborRoster({ silent = false } = {}) {
+  if (savingLabor.value) return false
   savingLabor.value = true
   try {
     let result
     if (isDm.value) {
       const laborers = dailyLabor.value.map((r) => ({
+        workerKind: r.workerKind || 'player',
+        workerId: r.workerId ?? r.playerId,
         playerId: r.playerId,
         buildValue: Math.max(0, Math.floor(Number(r.buildValue) || 0)),
         exploited: Boolean(r.exploited),
@@ -97,32 +129,63 @@ async function saveLaborRoster() {
       if (exploitedCount > 3) {
         alert('最多压榨3名劳工')
         savingLabor.value = false
-        return
+        return false
       }
       const laborers = dailyLabor.value.map((r) => ({
+        workerKind: r.workerKind || 'player',
+        workerId: r.workerId ?? r.playerId,
         playerId: r.playerId,
         exploited: Boolean(r.exploited),
       }))
       result = await shelterAPI.setLaborRoster(laborers, currentGameDay.value)
     }
     if (applyLaborResult(result)) {
-      alert(isDm.value ? '劳工名单已保存' : '今日劳工名单已提交')
-    } else {
-      alert(result?.message || '保存失败')
+      if (!silent) alert(isDm.value ? '劳工名单已保存' : '今日劳工名单已提交')
+      return true
     }
+    alert(result?.message || '保存失败')
+    return false
   } catch (e) {
     alert('保存失败: ' + (e.message || '未知错误'))
+    return false
   } finally {
     savingLabor.value = false
   }
 }
 
-async function verifyCurrentDay() {
+async function openSettlementPreview() {
+  if (!isDm.value || loadingSettlementPreview.value || dayVerified.value) return
+  if (!dailyLabor.value.length) {
+    alert('请先选择劳工')
+    return
+  }
+  loadingSettlementPreview.value = true
+  settlementPreview.value = null
+  try {
+    const saved = await saveLaborRoster({ silent: true })
+    if (!saved) return
+    const result = await shelterAPI.previewLaborSettlement(editGameDay.value)
+    if (result?.success) {
+      settlementPreview.value = result
+      showSettlementModal.value = true
+    } else {
+      alert(result?.message || '无法生成结算预览')
+    }
+  } catch (e) {
+    alert('预览失败: ' + (e.message || '未知错误'))
+  } finally {
+    loadingSettlementPreview.value = false
+  }
+}
+
+async function confirmSettlement() {
   if (!isDm.value || verifying.value) return
   verifying.value = true
   try {
     const result = await shelterAPI.verifyLaborDay(editGameDay.value)
     if (applyLaborResult(result)) {
+      showSettlementModal.value = false
+      settlementPreview.value = null
       alert(result?.message || '已结算')
     } else {
       alert(result?.message || '结算失败')
@@ -422,12 +485,14 @@ onMounted(() => {
                   待结算
                 </span>
               </div>
-              <p class="text-gray-500 text-sm mt-2">编辑建造值、压榨、逃役；结算后玩家端建造日志才显示数值</p>
+              <p class="text-gray-500 text-sm mt-2">
+                建造值按规则自动计算（基础4；生产职业+1；压榨+3）。结算时对未逃役劳工施加「过劳」，压榨者另加「受伤」。
+              </p>
             </template>
             <template v-else>
               <h2 class="text-xl text-white font-medium tracking-tight">第 {{ currentGameDay }} 天 · 今日劳工</h2>
               <p class="text-gray-500 text-sm mt-1">
-                选择今日在避难所劳作的玩家；可对已选劳工标记「压榨」（最多3人，建造×2、受伤、无法生产）
+                选择今日在避难所劳作的玩家；可对已选劳工标记「压榨」（最多3人，建造+3、受伤、无法生产）
               </p>
               <p v-if="dayVerified" class="text-amber-400/90 text-xs mt-1">今日名单已由主持人结算，无法再修改</p>
             </template>
@@ -445,10 +510,10 @@ onMounted(() => {
               v-if="!dayVerified"
               type="button"
               class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium disabled:opacity-50 transition-colors"
-              :disabled="verifying || !dailyLabor.length"
-              @click="verifyCurrentDay"
+              :disabled="loadingSettlementPreview || verifying || !dailyLabor.length"
+              @click="openSettlementPreview"
             >
-              {{ verifying ? '结算中…' : '确认结算' }}
+              {{ loadingSettlementPreview ? '计算中…' : '确认结算' }}
             </button>
           </div>
           <button
@@ -463,60 +528,75 @@ onMounted(() => {
         </div>
 
         <div v-if="laborCandidates.length === 0" class="text-gray-500 text-sm py-6 text-center">
-          暂无可选玩家
+          暂无可选劳工
         </div>
-        <div v-else-if="!dayVerified || isDm" class="flex flex-wrap gap-2">
-          <button
-            v-for="p in laborCandidates"
-            :key="p.id"
-            type="button"
-            class="px-3 py-2 rounded-xl border text-sm transition-all text-left disabled:opacity-40"
-            :class="rosterPlayerIds.has(p.id)
-              ? 'border-cyan-500 bg-cyan-500/20 text-cyan-100'
-              : 'border-white/10 bg-black/20 text-gray-300 hover:border-white/25'"
-            :disabled="!isDm && dayVerified"
-            @click="toggleLabor(p.id)"
-          >
-            <span class="font-medium">{{ p.name }}</span>
-            <span class="text-gray-500 text-xs ml-1">{{ p.jobName }}</span>
-          </button>
-        </div>
+        <template v-else-if="!dayVerified">
+          <p class="text-amber-200/80 text-xs mb-2">
+            可将 NPC 编入劳工并计入建造值（与玩家相同规则计算）。NPC 不会获得过劳/受伤等玩家状态；指派 NPC 降低好感度尚未写入代码。
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="p in laborCandidates"
+              :key="candidateKey(p)"
+              type="button"
+              class="px-3 py-2 rounded-xl border text-sm transition-all text-left"
+              :class="rosterWorkerKeys.has(candidateKey(p))
+                ? 'border-cyan-500 bg-cyan-500/20 text-cyan-100'
+                : 'border-white/10 bg-black/20 text-gray-300 hover:border-white/25'"
+              @click="toggleLabor(p)"
+            >
+              <span class="font-medium">{{ p.name }}</span>
+              <span v-if="p.kind === 'npc' || p.workerKind === 'npc'" class="text-purple-400 text-xs ml-1">NPC</span>
+              <span class="text-gray-500 text-xs ml-1">{{ p.jobName }}</span>
+              <span v-if="p.locationName" class="text-gray-600 text-xs block">{{ p.locationName }}</span>
+            </button>
+          </div>
+        </template>
+        <p v-else class="text-gray-500 text-sm">第 {{ editGameDay }} 天已确认结算，劳工名单已锁定。</p>
 
         <!-- DM: full row editor -->
         <div v-if="isDm && dailyLabor.length" class="mt-4 space-y-2">
           <div
             v-for="row in dailyLabor"
-            :key="row.playerId"
+            :key="row.workerKey || row.playerId"
             class="flex flex-wrap items-center gap-3 px-3 py-3 rounded-xl border border-white/10 bg-black/20"
             :class="row.escaped ? 'opacity-60' : ''"
           >
             <div class="min-w-[100px] flex-1">
               <span class="text-white text-sm font-medium">{{ row.name }}</span>
+              <span v-if="row.isNpc || row.workerKind === 'npc'" class="text-purple-400 text-xs ml-1">NPC</span>
               <span class="text-gray-500 text-xs ml-2">{{ row.jobName }}</span>
             </div>
-            <label class="flex items-center gap-1.5 text-xs text-gray-400">
-              建造值
-              <input
-                v-model.number="row.buildValue"
-                type="number"
-                min="0"
-                class="w-16 bg-black/40 border border-white/10 rounded px-2 py-1 text-white text-sm text-right"
-                :disabled="dayVerified"
-              />
-            </label>
+            <div class="text-xs text-gray-400 min-w-[140px]">
+              <span class="text-cyan-300/90 font-medium">{{ row.laborType || '普通劳工' }}</span>
+              <span class="text-white font-semibold tabular-nums ml-2">+{{ row.buildValue ?? 0 }}</span>
+              <p v-if="row.buildValueBreakdown" class="text-gray-600 mt-0.5">{{ row.buildValueBreakdown }}</p>
+            </div>
             <label class="flex items-center gap-1.5 text-xs text-red-300 cursor-pointer">
-              <input v-model="row.exploited" type="checkbox" class="rounded" :disabled="dayVerified" />
+              <input
+                v-model="row.exploited"
+                type="checkbox"
+                class="rounded"
+                :disabled="dayVerified"
+                @change="onLaborRowFlagsChange(row)"
+              />
               压榨
             </label>
             <label class="flex items-center gap-1.5 text-xs text-amber-300 cursor-pointer">
-              <input v-model="row.escaped" type="checkbox" class="rounded" :disabled="dayVerified" />
+              <input
+                v-model="row.escaped"
+                type="checkbox"
+                class="rounded"
+                :disabled="dayVerified"
+                @change="onLaborRowFlagsChange(row)"
+              />
               逃役
             </label>
             <button
               v-if="!dayVerified"
               type="button"
               class="text-gray-500 hover:text-red-400 text-xs ml-auto"
-              @click="removeLaborRow(row.playerId)"
+              @click="removeLaborRow(row)"
             >
               移除
             </button>
@@ -527,12 +607,14 @@ onMounted(() => {
         <div v-else-if="!isDm && dailyLabor.length" class="mt-4 space-y-2">
           <div
             v-for="row in dailyLabor"
-            :key="row.playerId"
+            :key="row.workerKey || row.playerId"
             class="flex flex-wrap items-center gap-3 px-3 py-3 rounded-xl border border-white/10 bg-black/20"
           >
             <div class="min-w-[100px] flex-1">
               <span class="text-white text-sm font-medium">{{ row.name }}</span>
+              <span v-if="row.isNpc || row.workerKind === 'npc'" class="text-purple-400 text-xs ml-1">NPC</span>
               <span class="text-gray-500 text-xs ml-2">{{ row.jobName }}</span>
+              <span v-if="row.laborType" class="text-cyan-300/80 text-xs ml-2">+{{ row.buildValue ?? 0 }}</span>
             </div>
             <label
               class="flex items-center gap-1.5 text-xs text-red-300 cursor-pointer"
@@ -777,5 +859,105 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <Teleport to="body">
+      <div
+        v-if="showSettlementModal && settlementPreview"
+        class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/75"
+        @click.self="showSettlementModal = false"
+      >
+        <div
+          class="bg-[#1a2332] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-xl"
+          role="dialog"
+          aria-labelledby="settlement-title"
+        >
+          <div class="p-5 border-b border-white/10 shrink-0">
+            <h3 id="settlement-title" class="text-white text-lg font-semibold">
+              第 {{ settlementPreview.gameDay }} 天 · 建造结算预览
+            </h3>
+            <p class="text-gray-500 text-sm mt-1">
+              当日合计建造值：<span class="text-cyan-300 font-bold tabular-nums">{{ settlementPreview.dayTotal }}</span>
+            </p>
+          </div>
+
+          <div class="flex-1 overflow-y-auto p-5 space-y-3 min-h-0">
+            <div
+              v-for="w in settlementPreview.workers"
+              :key="w.workerKey || `${w.workerKind || 'player'}:${w.workerId ?? w.playerId}`"
+              class="rounded-xl border border-white/10 bg-black/25 px-4 py-3"
+              :class="w.escaped ? 'opacity-60' : ''"
+            >
+              <div class="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <span class="text-white font-medium">{{ w.name }}</span>
+                  <span v-if="w.isNpc" class="text-purple-400 text-xs ml-1">NPC</span>
+                  <span class="text-gray-500 text-xs ml-2">{{ w.jobName }}</span>
+                </div>
+                <div class="text-right text-sm">
+                  <span class="text-cyan-300">{{ w.laborType }}</span>
+                  <span class="text-white font-bold tabular-nums ml-2">+{{ w.buildValue }}</span>
+                </div>
+              </div>
+              <p class="text-gray-600 text-xs mt-1">{{ w.buildValueBreakdown }}</p>
+              <p v-if="w.isNpc && !w.escaped" class="text-purple-300/90 text-xs mt-2">NPC：仅计入建造值，不施加玩家状态</p>
+              <div v-else-if="!w.escaped" class="flex flex-wrap gap-2 mt-2">
+                <span
+                  v-if="w.willApplyOverworked"
+                  class="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                >
+                  将施加：过劳
+                </span>
+                <span
+                  v-if="w.willApplyInjured"
+                  class="text-xs px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30"
+                >
+                  将施加：受伤
+                </span>
+              </div>
+              <p v-else class="text-amber-400/90 text-xs mt-2">已逃役，不施加状态</p>
+              <p
+                v-if="w.overworkDeathWarning"
+                class="text-red-400/95 text-xs mt-2 leading-relaxed"
+              >
+                该玩家此前已有「过劳」：请投 1d6，结果为 1 则死亡。
+              </p>
+            </div>
+
+            <div
+              v-if="settlementPreview.warnings?.length"
+              class="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 space-y-1"
+            >
+              <p class="text-red-300 text-xs font-medium">主持人注意</p>
+              <p
+                v-for="(msg, i) in settlementPreview.warnings"
+                :key="i"
+                class="text-red-200/90 text-xs leading-relaxed"
+              >
+                {{ msg }}
+              </p>
+            </div>
+          </div>
+
+          <div class="p-5 border-t border-white/10 flex flex-wrap justify-end gap-3 shrink-0">
+            <button
+              type="button"
+              class="px-5 py-2.5 rounded-xl text-gray-300 bg-white/5 hover:bg-white/10 text-sm"
+              :disabled="verifying"
+              @click="showSettlementModal = false"
+            >
+              返回修改
+            </button>
+            <button
+              type="button"
+              class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium disabled:opacity-50"
+              :disabled="verifying"
+              @click="confirmSettlement"
+            >
+              {{ verifying ? '结算中…' : '确认结算' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>

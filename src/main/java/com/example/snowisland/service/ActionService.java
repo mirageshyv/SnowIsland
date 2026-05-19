@@ -25,6 +25,7 @@ public class ActionService {
     @Autowired private ShelterService shelterService;
     @Autowired private WarehouseConfigRepository warehouseConfigRepository;
     @Autowired private TransportSettlementService transportSettlementService;
+    @Autowired private GameStateService gameStateService;
 
     /** Shown to players while status is pending (DM sees full computed result). */
     public static final String PENDING_PLAYER_MESSAGE = "已提交，等待主持人确认。";
@@ -84,6 +85,13 @@ public class ActionService {
             return result;
         }
         Player player = optPlayer.get();
+
+        String editDeny = gameStateService.denyDaytimeSubmit(gameDay);
+        if (editDeny != null) {
+            result.put("success", false);
+            result.put("message", editDeny);
+            return result;
+        }
 
         if (actionRepository.existsByPlayerIdAndGameDayAndActionSlot(playerId, gameDay, actionSlot)) {
             result.put("success", false); result.put("message", "该行动槽位已提交");
@@ -169,6 +177,7 @@ public class ActionService {
         if (laborer) {
             ctx.put("laborerMessage", "你今日被指定为避难所劳工，按规定当天不应提交个人行动；但不管怎么样，想要试试也是可以的。");
         }
+        gameStateService.enrichActionEditMeta(ctx, day);
         return ctx;
     }
 

@@ -11,7 +11,7 @@ import NightActionSubmitView from './NightActionSubmitView.vue'
 import RebelMilestoneView from './RebelMilestoneView.vue'
 import CatastrophePanel from '../components/CatastrophePanel.vue'
 import WarehouseView from './WarehouseView.vue'
-import { tradeAPI, playerAPI, milestoneAPI } from '../utils/api.js'
+import { tradeAPI, playerAPI, milestoneAPI, gameStateAPI, playerConsumptionAPI } from '../utils/api.js'
 import { sumPersonalFoodAndFuel, formatKgForDisplay } from '../utils/playerResources.js'
 import { getMaterialImageUrlOrDefault } from '../data/gameData.js'
 
@@ -29,13 +29,14 @@ const pendingTradesCount = ref(0)
 const loading = ref(false)
 const error = ref(null)
 const playerInfo = ref(null)
+const gameState = ref({ currentDay: 1, currentPhase: 'DAY' })
 const playerItems = ref(null)
 const personalResources = ref(null)
-const isEditing = ref(false)
-const editForm = ref(null)
-const saving = ref(false)
-const saveMessage = ref(null)
 const showStatusPopover = ref(false)
+const consumptionCtx = ref(null)
+const consumptionForm = ref({ foodUnits: 0, woodKg: 0, fuelKg: 0 })
+const consumptionSaving = ref(false)
+const consumptionMessage = ref(null)
 
 /** 仅冒险者可见「方舟建造进度」 */
 const showArkTab = computed(() => playerInfo.value?.faction === '冒险者')
@@ -81,10 +82,11 @@ const fetchPlayerInfo = async () => {
   loading.value = true
   error.value = null
   try {
-    const [infoResult, itemsResult, resourcesResult] = await Promise.all([
+    const [infoResult, itemsResult, resourcesResult, stateResult] = await Promise.all([
       playerAPI.getDetails(playerId),
       playerAPI.getItems(playerId),
-      playerAPI.getResources(playerId)
+      playerAPI.getResources(playerId),
+      gameStateAPI.get().catch(() => null)
     ])
     
     if (infoResult && infoResult.success) {
@@ -100,11 +102,20 @@ const fetchPlayerInfo = async () => {
       playerItems.value = null
     }
 
+    if (stateResult && stateResult.success !== false) {
+      gameState.value = {
+        currentDay: Number(stateResult.currentDay) || 1,
+        currentPhase: stateResult.currentPhase === 'NIGHT' ? 'NIGHT' : 'DAY'
+      }
+    }
+
     if (resourcesResult && resourcesResult.success) {
       personalResources.value = resourcesResult
     } else {
       personalResources.value = null
     }
+
+    await fetchConsumption()
   } catch (err) {
     error.value = '网络请求失败，请稍后重试'
     console.error('Failed to fetch player info:', err)
@@ -113,9 +124,27 @@ const fetchPlayerInfo = async () => {
   }
 }
 
+const fetchGameState = async () => {
+  try {
+    const stateResult = await gameStateAPI.get()
+    if (stateResult && stateResult.success !== false) {
+      gameState.value = {
+        currentDay: Number(stateResult.currentDay) || 1,
+        currentPhase: stateResult.currentPhase === 'NIGHT' ? 'NIGHT' : 'DAY'
+      }
+    }
+  } catch (e) {
+    console.log('Failed to fetch game state:', e.message)
+  }
+}
+
 const startPolling = () => {
   fetchPendingTradesCount()
-  pollTimer = setInterval(fetchPendingTradesCount, 3000)
+  fetchGameState()
+  pollTimer = setInterval(() => {
+    fetchPendingTradesCount()
+    fetchGameState()
+  }, 5000)
 }
 
 const stopPolling = () => {
@@ -130,47 +159,84 @@ const handleTradeTabClick = () => {
   fetchPendingTradesCount()
 }
 
-const getStatusColor = () => {
-  const faction = playerInfo.value?.faction
-  const colors = {
-    '统治者': 'text-amber-400 bg-amber-500/20',
-    '反叛者': 'text-red-400 bg-red-500/20',
-    '冒险者': 'text-emerald-400 bg-emerald-500/20',
-    '天灾使者': 'text-purple-400 bg-purple-500/20',
-    '平民': 'text-gray-400 bg-gray-500/20'
-  }
-  return colors[faction] || colors['平民']
-}
-
 const negativeStatuses = computed(() => {
   const p = playerInfo.value
   if (!p) return []
-
-  /** severity: 1-3（UI 用） */
-  const list = []
-  if (p.isWeak) {
-    list.push({
-      name: '虚弱',
-      severity: 2,
-      description: '体力大幅下降，所有体力相关活动效率降低。需要充足休息和营养补充才能恢复。（占位文案，可由后端返回替换）'
-    })
+  if (Array.isArray(p.statuses) && p.statuses.length) {
+    return p.statuses.map((s) => ({
+      name: s.name,
+      severity: Math.min(3, Math.max(1, Number(s.severity) || 1)),
+      description: s.description
+    }))
   }
-  if (p.isOverworked) {
-    list.push({
-      name: '过劳',
-      severity: 1,
-      description: '长时间高强度工作导致精神疲惫，注意力不集中，工作效率下降。（占位文案，可由后端返回替换）'
-    })
-  }
-  if (p.isInjured) {
-    list.push({
-      name: '受伤',
-      severity: 3,
-      description: '行动受限，部分高强度行动可能失败或效率下降。需要治疗或休养恢复。（占位文案，可由后端返回替换）'
-    })
-  }
-  return list
+  return []
 })
+
+function resetConsumptionForm() {
+  consumptionForm.value = { foodUnits: 0, woodKg: 0, fuelKg: 0 }
+}
+
+async function fetchConsumption() {
+  const day = gameState.value.currentDay ?? 1
+  try {
+    const ctx = await playerConsumptionAPI.getContext(playerId, day)
+    if (ctx?.success) {
+      consumptionCtx.value = ctx
+      resetConsumptionForm()
+    }
+  } catch (e) {
+    console.log('Failed to fetch consumption:', e.message)
+  }
+}
+
+const consumptionNeedsSubmit = computed(() => {
+  const ctx = consumptionCtx.value
+  if (!ctx) return false
+  return !ctx.foodMet || !ctx.fuelMet
+})
+
+async function refreshPersonalInventory() {
+  try {
+    const [itemsResult, resourcesResult] = await Promise.all([
+      playerAPI.getItems(playerId),
+      playerAPI.getResources(playerId)
+    ])
+    if (itemsResult && Array.isArray(itemsResult)) {
+      playerItems.value = itemsResult
+    }
+    if (resourcesResult?.success) {
+      personalResources.value = resourcesResult
+    }
+  } catch (e) {
+    console.log('Failed to refresh inventory:', e.message)
+  }
+}
+
+async function submitConsumption() {
+  consumptionSaving.value = true
+  consumptionMessage.value = null
+  try {
+    const result = await playerConsumptionAPI.submit({
+      playerId,
+      gameDay: gameState.value.currentDay ?? 1,
+      foodUnits: Math.max(0, Math.floor(Number(consumptionForm.value.foodUnits) || 0)),
+      woodKg: Math.max(0, Math.floor(Number(consumptionForm.value.woodKg) || 0)),
+      fuelKg: Math.max(0, Math.floor(Number(consumptionForm.value.fuelKg) || 0))
+    })
+    if (result?.success) {
+      consumptionCtx.value = result
+      resetConsumptionForm()
+      consumptionMessage.value = { type: 'success', text: result.message || '消耗已记录' }
+      await refreshPersonalInventory()
+    } else {
+      consumptionMessage.value = { type: 'error', text: result?.message || '提交失败' }
+    }
+  } catch (e) {
+    consumptionMessage.value = { type: 'error', text: '网络请求失败' }
+  } finally {
+    consumptionSaving.value = false
+  }
+}
 
 const playerResources = computed(() => {
   const api = personalResources.value
@@ -178,17 +244,19 @@ const playerResources = computed(() => {
     return {
       food: formatKgForDisplay(api.foodKg ?? 0),
       fuel: formatKgForDisplay(api.fuelKg ?? 0),
+      wood: formatKgForDisplay(api.woodKg ?? 0),
       fuelLiters: api.fuelLiters ?? 0
     }
   }
   if (!playerItems.value) {
-    return { food: 0, fuel: 0, fuelLiters: 0 }
+    return { food: 0, fuel: 0, wood: 0, fuelLiters: 0 }
   }
   const items = Array.isArray(playerItems.value) ? playerItems.value : []
   const totals = sumPersonalFoodAndFuel(items)
   return {
     food: formatKgForDisplay(totals.food),
     fuel: formatKgForDisplay(totals.fuel),
+    wood: formatKgForDisplay(totals.wood),
     fuelLiters: 0
   }
 })
@@ -206,8 +274,9 @@ const dashboardProfile = computed(() => {
 
   const resources = playerResources.value
 
+  const phaseLabel = gameState.value.currentPhase === 'NIGHT' ? '夜晚' : '白天'
+
   const dummy = {
-    currentDay: 7,
     professionalSkillDescription:
       formatMultiSkillParagraphs(p.jobDescription) ||
       p.jobSkills ||
@@ -222,9 +291,11 @@ const dashboardProfile = computed(() => {
     faction: p.faction || '未设定阵营',
     profession: p.job || '未设定职业',
     negativeStatus: negativeStatuses.value,
-    currentDay: dummy.currentDay,
+    currentDay: gameState.value.currentDay ?? 1,
+    currentPhase: phaseLabel,
     foodQuantity: resources.food,
     fuelQuantity: resources.fuel,
+    woodFuelQuantity: resources.wood,
     professionalSkill: {
       name: p.jobSkills ? `${p.professionSkill || '职业技能'}` : (p.job ? '职业技能' : '职业技能'),
       description: dummy.professionalSkillDescription
@@ -235,46 +306,6 @@ const dashboardProfile = computed(() => {
     }
   }
 })
-
-const startEdit = () => {
-  editForm.value = {
-    name: playerInfo.value?.name || '',
-    isWeak: playerInfo.value?.isWeak || false,
-    isOverworked: playerInfo.value?.isOverworked || false,
-    isInjured: playerInfo.value?.isInjured || false
-  }
-  isEditing.value = true
-  saveMessage.value = null
-}
-
-const cancelEdit = () => {
-  isEditing.value = false
-  editForm.value = null
-  saveMessage.value = null
-}
-
-const saveEdit = async () => {
-  if (!editForm.value) return
-  saving.value = true
-  saveMessage.value = null
-  try {
-    const result = await playerAPI.update(playerId, editForm.value)
-    if (result && result.success) {
-      saveMessage.value = { type: 'success', text: '保存成功！' }
-      await fetchPlayerInfo()
-      isEditing.value = false
-      editForm.value = null
-      setTimeout(() => { saveMessage.value = null }, 3000)
-    } else {
-      saveMessage.value = { type: 'error', text: result?.message || '保存失败' }
-    }
-  } catch (err) {
-    saveMessage.value = { type: 'error', text: '网络请求失败，请稍后重试' }
-    console.error('Failed to save player info:', err)
-  } finally {
-    saving.value = false
-  }
-}
 
 const handleLogout = () => {
   localStorage.removeItem('userRole')
@@ -461,100 +492,9 @@ onUnmounted(() => {
         </div>
 
         <div v-else-if="playerInfo">
-          <div v-if="saveMessage" class="mb-4 max-w-4xl">
-            <div :class="['px-4 py-3 rounded-lg flex items-center gap-3', saveMessage.type === 'success' ? 'bg-green-500/20 border border-green-500/30' : 'bg-red-500/20 border border-red-500/30']">
-              <svg v-if="saveMessage.type === 'success'" class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              <svg v-else class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span :class="saveMessage.type === 'success' ? 'text-green-400' : 'text-red-400'">{{ saveMessage.text }}</span>
-            </div>
-          </div>
+          <div v-if="dashboardProfile" class="min-h-full">
 
-          <div>
-            <template v-if="isEditing">
-              <div class="max-w-4xl bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6 md:p-8">
-                <div class="flex items-center justify-between gap-4 mb-6">
-                  <div>
-                    <h2 class="text-white text-xl font-semibold tracking-tight">编辑资料</h2>
-                    <p class="text-slate-500 text-sm mt-1">修改姓名与状态后保存</p>
-                  </div>
-                  <button
-                    type="button"
-                    class="px-4 py-2 text-sm text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-                    @click="cancelEdit"
-                    :disabled="saving"
-                  >
-                    关闭
-                  </button>
-                </div>
 
-                <div class="space-y-6">
-                <div>
-                  <label class="block text-gray-400 text-sm mb-2">姓名</label>
-                  <input
-                    v-model="editForm.name"
-                    type="text"
-                    class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
-                    placeholder="请输入姓名"
-                  />
-                </div>
-
-                <div>
-                  <label class="block text-gray-400 text-sm mb-3">状态</label>
-                  <div class="space-y-3">
-                    <label class="flex items-center gap-3 cursor-pointer">
-                      <input
-                        v-model="editForm.isWeak"
-                        type="checkbox"
-                        class="w-5 h-5 rounded bg-white/5 border-white/10 text-amber-500 focus:ring-amber-500/50"
-                      />
-                      <span class="text-gray-300">虚弱</span>
-                    </label>
-                    <label class="flex items-center gap-3 cursor-pointer">
-                      <input
-                        v-model="editForm.isOverworked"
-                        type="checkbox"
-                        class="w-5 h-5 rounded bg-white/5 border-white/10 text-blue-500 focus:ring-blue-500/50"
-                      />
-                      <span class="text-gray-300">过劳</span>
-                    </label>
-                    <label class="flex items-center gap-3 cursor-pointer">
-                      <input
-                        v-model="editForm.isInjured"
-                        type="checkbox"
-                        class="w-5 h-5 rounded bg-white/5 border-white/10 text-red-500 focus:ring-red-500/50"
-                      />
-                      <span class="text-gray-300">受伤</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div class="flex gap-3 pt-4">
-                  <button
-                    @click="cancelEdit"
-                    :disabled="saving"
-                    class="px-6 py-3 text-gray-300 bg-white/5 hover:bg-white/10 rounded-xl transition-colors disabled:opacity-50"
-                  >
-                    取消
-                  </button>
-                  <button
-                    @click="saveEdit"
-                    :disabled="saving"
-                    class="px-6 py-3 text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2"
-                  >
-                    <div v-if="saving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    {{ saving ? '保存中...' : '保存' }}
-                  </button>
-                </div>
-              </div>
-              </div>
-            </template>
-
-            <template v-else>
-              <div v-if="dashboardProfile" class="min-h-full">
                 <!-- Header -->
                 <div class="mb-10 relative" style="z-index: 10;">
                   <div class="flex items-end justify-between mb-6 gap-6">
@@ -629,20 +569,11 @@ onUnmounted(() => {
                           </svg>
                           刷新
                         </button>
-                        <button
-                          type="button"
-                          class="px-3 py-1.5 text-xs md:text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2 will-change-transform transform-gpu"
-                          @click="startEdit"
-                        >
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                          编辑
-                        </button>
                       </div>
 
                       <div class="text-slate-500 text-xs md:text-sm mb-1">游戏进度</div>
                       <div class="text-2xl md:text-3xl text-cyan-300 font-bold">第 {{ dashboardProfile.currentDay }} 天</div>
+                      <div v-if="dashboardProfile.currentPhase" class="text-slate-500 text-xs mt-1">{{ dashboardProfile.currentPhase }}</div>
                     </div>
                   </div>
                   <div class="h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-transparent"></div>
@@ -673,32 +604,103 @@ onUnmounted(() => {
                             <div class="text-slate-400 text-xs mb-1">燃料</div>
                             <div class="text-yellow-300 text-2xl font-bold">{{ dashboardProfile.fuelQuantity }}</div>
                             <div class="text-slate-500 text-xs mt-1">千克</div>
+                            <div
+                              v-if="dashboardProfile.woodFuelQuantity > 0"
+                              class="text-amber-400/90 text-xs mt-1 font-medium"
+                            >
+                              + {{ dashboardProfile.woodFuelQuantity }} 千克 木材
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
 
-                    <!-- Profession -->
-                    <div class="relative group">
-                      <div class="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-2xl blur-xl transition-all duration-300 ease-out group-hover:blur-2xl"></div>
-                      <div class="relative bg-slate-900/80 border border-slate-700/50 rounded-2xl p-8 md:p-10 transition-all duration-200 ease-out hover:border-amber-500/50 will-change-transform transform-gpu">
-                        <div class="text-slate-400 text-xs md:text-sm mb-3 tracking-wider">职业</div>
-                        <div class="text-3xl md:text-4xl text-white font-bold">{{ dashboardProfile.profession }}</div>
-                      </div>
-                    </div>
-
-                    <!-- Faction -->
-                    <div class="relative group">
-                      <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-2xl blur-xl transition-all duration-300 ease-out group-hover:blur-2xl"></div>
-                      <div class="relative bg-slate-900/80 border border-slate-700/50 rounded-2xl p-8 md:p-10 transition-all duration-200 ease-out hover:border-blue-500/50 will-change-transform transform-gpu">
-                        <div class="text-slate-400 text-xs md:text-sm mb-3 tracking-wider">所属阵营</div>
-                        <div class="text-3xl md:text-4xl text-white font-bold">{{ dashboardProfile.faction }}</div>
+                        <div v-if="consumptionCtx" class="mt-6 pt-5 border-t border-slate-700/50 space-y-4">
+                          <div class="text-slate-400 text-xs tracking-wider">进食与生活取暖（第 {{ consumptionCtx.gameDay }} 天）</div>
+                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="rounded-xl bg-slate-800/50 p-4 border border-slate-700/40">
+                              <div class="text-slate-400 text-xs mb-2">进食</div>
+                              <div class="text-amber-300 text-lg font-bold tabular-nums">
+                                {{ consumptionCtx.consumedFoodUnits }} / {{ consumptionCtx.requiredFoodUnits }} 单位
+                              </div>
+                              <p v-if="consumptionCtx.foodMet" class="text-emerald-400 text-sm font-medium mt-3">已满足</p>
+                              <template v-else>
+                                <label class="block text-slate-500 text-xs mt-3 mb-1">
+                                  本次提交食物（单位，库存 {{ consumptionCtx.availableFoodUnits }}，还需 {{ consumptionCtx.remainingFoodUnits ?? (consumptionCtx.requiredFoodUnits - consumptionCtx.consumedFoodUnits) }}）
+                                </label>
+                                <input
+                                  v-model.number="consumptionForm.foodUnits"
+                                  type="number"
+                                  min="0"
+                                  :max="consumptionCtx.remainingFoodUnits ?? (consumptionCtx.requiredFoodUnits - consumptionCtx.consumedFoodUnits)"
+                                  step="1"
+                                  class="w-full bg-slate-900/80 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm tabular-nums"
+                                />
+                              </template>
+                            </div>
+                            <div class="rounded-xl bg-slate-800/50 p-4 border border-slate-700/40">
+                              <div class="text-slate-400 text-xs mb-2">生活取暖</div>
+                              <div class="text-yellow-300 text-lg font-bold tabular-nums">
+                                {{ consumptionCtx.consumedFuelKg }} / {{ consumptionCtx.requiredFuelKg }} 千克
+                              </div>
+                              <p v-if="consumptionCtx.fuelMet" class="text-emerald-400 text-sm font-medium mt-3">已满足</p>
+                              <template v-else>
+                                <label class="block text-slate-500 text-xs mt-3 mb-1">
+                                  木材（kg，库存 {{ consumptionCtx.availableWoodKg }}）
+                                </label>
+                                <input
+                                  v-model.number="consumptionForm.woodKg"
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  class="w-full bg-slate-900/80 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm tabular-nums mb-2"
+                                />
+                                <label class="block text-slate-500 text-xs mb-1">
+                                  燃料（kg，库存 {{ consumptionCtx.availableFuelKg }}，取暖还需 {{ consumptionCtx.remainingFuelKg ?? (consumptionCtx.requiredFuelKg - consumptionCtx.consumedFuelKg) }} kg）
+                                </label>
+                                <input
+                                  v-model.number="consumptionForm.fuelKg"
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  class="w-full bg-slate-900/80 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm tabular-nums"
+                                />
+                              </template>
+                            </div>
+                          </div>
+                          <p v-if="!consumptionCtx.requirementsMet" class="text-amber-200/70 text-xs leading-relaxed">
+                            {{ consumptionCtx.weakWarning || '若当日未满足进食与取暖需求，次日将陷入「虚弱」状态。' }}
+                          </p>
+                          <p v-else class="text-emerald-400 text-sm font-medium">当日进食与取暖均已满足。</p>
+                          <div v-if="consumptionNeedsSubmit" class="flex flex-wrap items-center gap-3">
+                            <button
+                              type="button"
+                              class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium disabled:opacity-50"
+                              :disabled="consumptionSaving"
+                              @click="submitConsumption"
+                            >
+                              {{ consumptionSaving ? '提交中…' : '确认消耗' }}
+                            </button>
+                            <span v-if="consumptionMessage" :class="consumptionMessage.type === 'success' ? 'text-emerald-400' : 'text-red-400'" class="text-xs">
+                              {{ consumptionMessage.text }}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   <!-- Right Column -->
                   <div class="col-span-12 lg:col-span-7 space-y-6 md:space-y-8">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div class="bg-slate-900/60 border border-slate-700/50 rounded-xl px-5 py-4">
+                        <div class="text-slate-400 text-xs tracking-wider mb-1">职业</div>
+                        <div class="text-xl md:text-2xl text-white font-bold">{{ dashboardProfile.profession }}</div>
+                      </div>
+                      <div class="bg-slate-900/60 border border-slate-700/50 rounded-xl px-5 py-4">
+                        <div class="text-slate-400 text-xs tracking-wider mb-1">所属阵营</div>
+                        <div class="text-xl md:text-2xl text-white font-bold">{{ dashboardProfile.faction }}</div>
+                      </div>
+                    </div>
+
                     <!-- Professional Skill -->
                     <div class="relative group">
                       <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-blue-500/5 rounded-2xl transition-all duration-300 ease-out group-hover:from-cyan-500/10 group-hover:to-blue-500/10"></div>
@@ -730,8 +732,6 @@ onUnmounted(() => {
                     </div>
                   </div>
                 </div>
-              </div>
-            </template>
           </div>
         </div>
       </div>
