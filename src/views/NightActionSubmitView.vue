@@ -26,7 +26,6 @@ const forms = reactive({
   public_trial: { targetPlayerId: '', note: '' },
   pressure_ruler: { demand: '', note: '' },
   publicity: { message: '', note: '' },
-  ark_build: { actionPoints: 1, note: '' },
   conspiracy: {
     conspiracySubtype: '',
     targetLocationId: '',
@@ -35,6 +34,7 @@ const forms = reactive({
     raidOutcome: '',
     note: '',
   },
+  other: { note: '' },
 })
 
 const playerFaction = computed(() => context.value?.faction || '')
@@ -128,7 +128,6 @@ function resetForm(type) {
     public_trial: { targetPlayerId: '', note: '' },
     pressure_ruler: { demand: '', note: '' },
     publicity: { message: '', note: '' },
-    ark_build: { actionPoints: 1, note: '' },
     conspiracy: {
       conspiracySubtype: '',
       targetLocationId: '',
@@ -137,6 +136,7 @@ function resetForm(type) {
       raidOutcome: '',
       note: '',
     },
+    other: { note: '' },
   }
   if (defaults[type]) Object.assign(forms[type], defaults[type])
 }
@@ -197,8 +197,6 @@ function buildPayload(type) {
       return { demand: f.demand, note: f.note || '' }
     case 'publicity':
       return { message: f.message, note: f.note || '' }
-    case 'ark_build':
-      return { actionPoints: parseInt(f.actionPoints) || 1, note: f.note || '' }
     case 'conspiracy':
       return {
         conspiracySubtype: f.conspiracySubtype,
@@ -208,6 +206,8 @@ function buildPayload(type) {
         raidOutcome: f.raidOutcome || null,
         note: f.note || '',
       }
+    case 'other':
+      return { note: f.note || '' }
     default:
       return {}
   }
@@ -222,6 +222,9 @@ function validateClient(type) {
       if (['use_trait', 'use_skill'].includes(f.actionType) && (!f.notes || f.notes.trim().length < 5)) {
         return '使用特性/技能时请在备注中详细描述'
       }
+      if (f.actionType === 'other' && (!f.notes || f.notes.trim().length < 5)) {
+        return '请详细描述你想执行的具体行动内容'
+      }
       break
     case 'public_trial':
       if (!f.targetPlayerId) return '请选择审判目标'
@@ -232,9 +235,6 @@ function validateClient(type) {
     case 'publicity':
       if (!f.message?.trim()) return '请填写宣传内容'
       break
-    case 'ark_build':
-      if (!f.actionPoints || f.actionPoints < 1) return '请填写行动点'
-      break
     case 'conspiracy':
       if (!f.conspiracySubtype) return '请选择密谋类型'
       if (showConspiracyLocation.value && !f.targetLocationId) return '请选择目标地点'
@@ -243,6 +243,9 @@ function validateClient(type) {
       }
       if (!f.participantIds.length) return '请至少选择一名参与玩家'
       if (showRaidOutcome.value && !f.raidOutcome) return '请选择袭击成功后的意向'
+      break
+    case 'other':
+      if (!f.note || f.note.trim().length < 5) return '请详细描述你想执行的具体行动内容'
       break
     default:
       break
@@ -386,15 +389,21 @@ onMounted(loadContext)
                   <option v-for="n in personalNpcOptions" :key="n.value" :value="n.value">{{ n.label }}</option>
                 </select>
               </div>
+              <div v-if="forms.night_personal_action.actionType === 'other'">
+                <div class="rounded-xl border border-gray-500/20 bg-gray-500/5 px-4 py-3">
+                  <p class="text-gray-300 text-sm">请在下方描述中详细说明你想执行的具体行动内容，由DM判定是否成功及效果</p>
+                </div>
+              </div>
               <div>
                 <label class="block text-gray-500 text-xs mb-2">
                   备注
                   <span
-                    v-if="['use_trait', 'use_skill'].includes(forms.night_personal_action.actionType)"
+                    v-if="['use_trait', 'use_skill', 'other'].includes(forms.night_personal_action.actionType)"
                     class="text-red-400"
                   >（必填）</span>
                 </label>
-                <textarea v-model="forms.night_personal_action.notes" rows="3" :class="textareaClass" />
+                <textarea v-model="forms.night_personal_action.notes" rows="3" :class="textareaClass"
+                  :placeholder="forms.night_personal_action.actionType === 'other' ? '请详细描述你想执行的具体行动内容...' : '在此输入备注说明...'" />
               </div>
             </template>
 
@@ -434,24 +443,18 @@ onMounted(loadContext)
               />
             </template>
 
-            <!-- 建设方舟 -->
-            <template v-else-if="selectedType === 'ark_build'">
-              <div>
-                <label class="block text-gray-500 text-xs mb-2">投入行动点</label>
-                <input
-                  v-model.number="forms.ark_build.actionPoints"
-                  type="number"
-                  min="1"
-                  max="2"
-                  :class="selectClass + ' w-32'"
-                />
+            <!-- 其他 -->
+            <template v-else-if="selectedType === 'other'">
+              <div class="rounded-xl border border-gray-500/20 bg-gray-500/5 px-4 py-3">
+                <p class="text-gray-300 text-sm">请在下方详细描述你想执行的具体行动内容，由DM判定是否成功及效果</p>
               </div>
-              <textarea
-                v-model="forms.ark_build.note"
-                rows="3"
-                :class="textareaClass"
-                placeholder="投入的资源种类与数量（木材/金属/密封材料等）"
-              />
+              <div>
+                <label class="block text-gray-500 text-xs mb-2">
+                  行动描述
+                  <span class="text-red-400">（必填）</span>
+                </label>
+                <textarea v-model="forms.other.note" rows="4" :class="textareaClass" placeholder="请详细描述你想执行的具体行动内容..." />
+              </div>
             </template>
 
             <!-- 密谋 -->

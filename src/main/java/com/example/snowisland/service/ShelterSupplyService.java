@@ -33,7 +33,7 @@ public class ShelterSupplyService {
     }
 
     private void ensureMaterialStock(int materialId, int defaultQty) {
-        if (shelterStockRepository.findByItemTypeAndItemId(ShelterStock.ItemType.material, materialId).isEmpty()) {
+        if (!shelterStockRepository.findByItemTypeAndItemId(ShelterStock.ItemType.material, materialId).isPresent()) {
             ShelterStock row = new ShelterStock();
             row.setItemType(ShelterStock.ItemType.material);
             row.setItemId(materialId);
@@ -46,14 +46,14 @@ public class ShelterSupplyService {
         int q = shelterQty(ItemCatalog.FOOD_MATERIAL_ID);
         Map<String, Object> block = new LinkedHashMap<>();
         block.put("totalKg", q);
-        block.put("items", List.of(itemRow(ItemCatalog.FOOD_MATERIAL_ID, ItemCatalog.FOOD_NAME, q)));
+        block.put("items", Collections.singletonList(itemRow(ItemCatalog.FOOD_MATERIAL_ID, ItemCatalog.FOOD_NAME, q)));
         return block;
     }
 
     public Map<String, Object> buildShelterEnergyReserve() {
         int q = shelterQty(ItemCatalog.FUEL_MATERIAL_ID);
         Map<String, Object> block = new LinkedHashMap<>();
-        block.put("items", List.of(fuelRow(ItemCatalog.FUEL_MATERIAL_ID, ItemCatalog.FUEL_NAME, q)));
+        block.put("items", Collections.singletonList(fuelRow(ItemCatalog.FUEL_MATERIAL_ID, ItemCatalog.FUEL_NAME, q)));
         return block;
     }
 

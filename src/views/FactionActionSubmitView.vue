@@ -40,7 +40,14 @@ const forms = reactive({
   sabotage: { targetLocationId: '', facilityId: '' },
   extra_investigate: { investigateType: 'investigate_player', targetId: '' },
   guard_ark: { guardId: '', useWeaponOrSkill: false },
-  ark_construction: { actionPoints: 1, useSpecialMaterials: false, note: '' },
+  ark_construction: {
+    mode: 'resource',
+    woodKg: 0, metalKg: 0, sealantKg: 0,
+    warehouseWoodKg: 0, warehouseMetalKg: 0, warehouseSealantKg: 0,
+    engineCount: 0, generatorCount: 0, propellerCount: 0, buildSail: false,
+    workType: 'wood',
+    note: '',
+  },
   curse: { weaponId: '', target1: '', target2: '' },
 })
 
@@ -58,8 +65,6 @@ const militiaPlayers = computed(() => context.value?.militiaPlayers || [])
 const governedIds = computed(() => new Set(context.value?.governedLocationIds || []))
 const unlimitedActions = computed(() => !!context.value?.unlimitedActions)
 const hasSubmittedToday = computed(() => !!context.value?.hasSubmittedToday)
-const assignPersonnelUsedToday = computed(() => !!context.value?.assignPersonnelUsedToday)
-const assignGuardUsedToday = computed(() => !!context.value?.assignGuardUsedToday)
 
 const npcOptions = computed(() => {
   const out = []
@@ -92,6 +97,105 @@ const arkProgress = computed(() => {
   return ark.completionPercentage != null ? `${ark.completionPercentage}%` : '—'
 })
 
+const arkLimits = computed(() => context.value?.arkResourceLimits || {
+  playerWoodKg: 0, playerMetalKg: 0, playerSealantKg: 0,
+  warehouseWoodKg: 0, warehouseMetalKg: 0, warehouseSealantKg: 0,
+  playerEngine: 0, playerPropeller: 0, playerGenerator: 0,
+  warehouseEngine: 0, warehousePropeller: 0, warehouseGenerator: 0,
+  dailyWoodLimitKg: 30000, dailyMetalLimitKg: 20000, dailySealantLimitKg: 20,
+})
+
+const arkLimitWarnings = computed(() => {
+  const f = forms.ark_construction
+  const limits = arkLimits.value
+  const warnings = []
+  if (f.mode !== 'resource') return warnings
+
+  const totalWoodKg = (parseFloat(f.woodKg) || 0) + (parseFloat(f.warehouseWoodKg) || 0)
+  const totalMetalKg = (parseFloat(f.metalKg) || 0) + (parseFloat(f.warehouseMetalKg) || 0)
+  const totalSealantKg = (parseInt(f.sealantKg) || 0) + (parseInt(f.warehouseSealantKg) || 0)
+
+  if ((parseFloat(f.woodKg) || 0) > limits.playerWoodKg) {
+    warnings.push('木材个人投入超出库存上限(' + limits.playerWoodKg + 'kg)')
+  }
+  if ((parseFloat(f.warehouseWoodKg) || 0) > limits.warehouseWoodKg) {
+    warnings.push('木材仓库投入超出库存上限(' + limits.warehouseWoodKg + 'kg)')
+  }
+  if ((parseFloat(f.metalKg) || 0) > limits.playerMetalKg) {
+    warnings.push('金属个人投入超出库存上限(' + limits.playerMetalKg + 'kg)')
+  }
+  if ((parseFloat(f.warehouseMetalKg) || 0) > limits.warehouseMetalKg) {
+    warnings.push('金属仓库投入超出库存上限(' + limits.warehouseMetalKg + 'kg)')
+  }
+  if ((parseInt(f.sealantKg) || 0) > limits.playerSealantKg) {
+    warnings.push('密封材料(沥青)个人投入超出库存上限(' + limits.playerSealantKg + 'kg)')
+  }
+  if ((parseInt(f.warehouseSealantKg) || 0) > limits.warehouseSealantKg) {
+    warnings.push('密封材料(沥青)仓库投入超出库存上限(' + limits.warehouseSealantKg + 'kg)')
+  }
+  if (totalWoodKg / 1000 > 30) {
+    warnings.push('木材总投入' + (totalWoodKg / 1000).toFixed(2) + '吨超出单次上限30吨')
+  }
+  if (totalMetalKg / 1000 > 20) {
+    warnings.push('金属总投入' + (totalMetalKg / 1000).toFixed(2) + '吨超出单次上限20吨')
+  }
+  if (totalSealantKg > 20) {
+    warnings.push('密封材料(沥青)总投入' + totalSealantKg + 'kg超出单次上限20kg')
+  }
+
+  const reqEngine = parseInt(f.engineCount) || 0
+  const reqPropeller = parseInt(f.propellerCount) || 0
+  const reqGenerator = parseInt(f.generatorCount) || 0
+  const totalEngine = limits.playerEngine + limits.warehouseEngine
+  const totalPropeller = limits.playerPropeller + limits.warehousePropeller
+  const totalGenerator = limits.playerGenerator + limits.warehouseGenerator
+  if (reqEngine > totalEngine) {
+    warnings.push('发动机数量不足(个人' + limits.playerEngine + '个+仓库' + limits.warehouseEngine + '个，需要' + reqEngine + '个)')
+  }
+  if (reqPropeller > totalPropeller) {
+    warnings.push('螺旋桨数量不足(个人' + limits.playerPropeller + '个+仓库' + limits.warehousePropeller + '个，需要' + reqPropeller + '个)')
+  }
+  if (reqGenerator > totalGenerator) {
+    warnings.push('发电机数量不足(个人' + limits.playerGenerator + '个+仓库' + limits.warehouseGenerator + '个，需要' + reqGenerator + '个)')
+  }
+
+  return warnings
+})
+
+function clampArkInput(field, maxVal) {
+  const f = forms.ark_construction
+  if (f[field] > maxVal) {
+    f[field] = maxVal
+  }
+  if (f[field] < 0) {
+    f[field] = 0
+  }
+}
+
+function onArkPersonalWoodChange() {
+  clampArkInput('woodKg', arkLimits.value.playerWoodKg)
+}
+
+function onArkPersonalMetalChange() {
+  clampArkInput('metalKg', arkLimits.value.playerMetalKg)
+}
+
+function onArkWarehouseWoodChange() {
+  clampArkInput('warehouseWoodKg', arkLimits.value.warehouseWoodKg)
+}
+
+function onArkWarehouseMetalChange() {
+  clampArkInput('warehouseMetalKg', arkLimits.value.warehouseMetalKg)
+}
+
+function onArkPersonalSealantChange() {
+  clampArkInput('sealantKg', arkLimits.value.playerSealantKg)
+}
+
+function onArkWarehouseSealantChange() {
+  clampArkInput('warehouseSealantKg', arkLimits.value.warehouseSealantKg)
+}
+
 const facilitiesForSabotage = computed(() => {
   const locId = parseInt(forms.sabotage.targetLocationId)
   if (!locId) return []
@@ -123,25 +227,14 @@ const canSubmit = computed(() =>
   selectedType.value &&
   currentStatus.value?.btn === 'enabled' &&
   !isGmView.value &&
-  !submitting.value
+  !submitting.value &&
+  !(selectedType.value === 'ark_construction' && arkLimitWarnings.value.length > 0)
 )
-
-function isRulerActionUsedToday(type) {
-  if (type === 'assign_personnel') return assignPersonnelUsedToday.value
-  if (type === 'assign_guard') return assignGuardUsedToday.value
-
-  return false
-}
-
-
 
 function getActionStatus(type) {
   if (!type) return { key: 'none', label: '', btn: 'disabled' }
   if (!unlimitedActions.value && hasSubmittedToday.value) {
     return { key: 'quota', label: '今日已提交', btn: 'disabled' }
-  }
-  if (unlimitedActions.value && isRulerActionUsedToday(type)) {
-    return { key: 'used', label: '今日已使用', btn: 'disabled' }
   }
   if (type === 'extra_labor' && !context.value?.hasProduceToday) {
     return { key: 'blocked', label: '今日未生产', btn: 'disabled' }
@@ -174,7 +267,14 @@ function resetFormFields(type) {
     sabotage: { targetLocationId: '', facilityId: '' },
     extra_investigate: { investigateType: 'investigate_player', targetId: '' },
     guard_ark: { guardId: '', useWeaponOrSkill: false },
-    ark_construction: { actionPoints: 1, useSpecialMaterials: false, note: '' },
+    ark_construction: {
+      mode: 'resource',
+      woodKg: 0, metalKg: 0, sealantKg: 0,
+      warehouseWoodKg: 0, warehouseMetalKg: 0, warehouseSealantKg: 0,
+      engineCount: 0, generatorCount: 0, propellerCount: 0, buildSail: false,
+      workType: 'wood',
+      note: '',
+    },
     curse: { weaponId: '', target1: '', target2: '' },
   }
   if (type && defaults[type]) {
@@ -285,12 +385,25 @@ function buildPayload(type) {
       }
     case 'guard_ark':
       return { guardId: parseInt(f.guardId), useWeaponOrSkill: f.useWeaponOrSkill }
-    case 'ark_construction':
-      return {
-        actionPoints: parseInt(f.actionPoints) || 1,
-        useSpecialMaterials: f.useSpecialMaterials,
-        note: f.note || '',
+    case 'ark_construction': {
+      const f2 = forms.ark_construction
+      const p = { mode: f2.mode, note: f2.note || '' }
+      if (f2.mode === 'resource') {
+        p.woodKg = parseFloat(f2.woodKg) || 0
+        p.metalKg = parseFloat(f2.metalKg) || 0
+        p.sealantKg = parseInt(f2.sealantKg) || 0
+        p.warehouseWoodKg = parseFloat(f2.warehouseWoodKg) || 0
+        p.warehouseMetalKg = parseFloat(f2.warehouseMetalKg) || 0
+        p.warehouseSealantKg = parseInt(f2.warehouseSealantKg) || 0
+        p.engineCount = parseInt(f2.engineCount) || 0
+        p.generatorCount = parseInt(f2.generatorCount) || 0
+        p.propellerCount = parseInt(f2.propellerCount) || 0
+        p.buildSail = f2.buildSail
+      } else if (f2.mode === 'work') {
+        p.workType = f2.workType
       }
+      return p
+    }
     case 'curse':
       return {
         weaponId: parseInt(f.weaponId),
@@ -329,9 +442,20 @@ function validateClient(type) {
     case 'guard_ark':
       if (!f.guardId) return '请选择看守人员'
       break
-    case 'ark_construction':
-      if (!f.actionPoints || f.actionPoints < 1) return '请填写消耗行动点'
+    case 'ark_construction': {
+      const f2 = forms.ark_construction
+      if (f2.mode === 'resource') {
+        const hasRes = (parseFloat(f2.woodKg) > 0 || parseFloat(f2.metalKg) > 0 || parseInt(f2.sealantKg) > 0
+          || parseFloat(f2.warehouseWoodKg) > 0 || parseFloat(f2.warehouseMetalKg) > 0 || parseInt(f2.warehouseSealantKg) > 0)
+        const hasComp = (parseInt(f2.engineCount) > 0 || parseInt(f2.generatorCount) > 0 || parseInt(f2.propellerCount) > 0 || f2.buildSail)
+        if (!hasRes && !hasComp) return '请至少投入一种资源或组件'
+      } else if (f2.mode === 'work') {
+        if (!f2.workType) return '请选择工作量推进类型'
+      } else {
+        return '请选择投入模式'
+      }
       break
+    }
     case 'curse':
       if (!f.weaponId || !f.target1) return '请选择武器与目标'
       break
@@ -672,14 +796,91 @@ onMounted(async () => {
               <!-- 方舟建设 -->
               <template v-else-if="selectedType === 'ark_construction'">
                 <p class="text-cyan-300 text-sm mb-2">当前方舟进度：{{ arkProgress }}</p>
-                <div>
-                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">消耗行动点</label>
-                  <input v-model.number="forms.ark_construction.actionPoints" type="number" min="1" max="2" :class="selectClass + ' w-32'" />
+                <div class="flex gap-2 mb-3">
+                  <button type="button" class="flex-1 py-2 rounded-lg text-sm font-medium border transition-colors"
+                    :class="forms.ark_construction.mode === 'resource' ? 'bg-cyan-600/30 border-cyan-500/50 text-cyan-200' : 'bg-white/5 border-white/10 text-gray-400'"
+                    @click="forms.ark_construction.mode = 'resource'">资源投入</button>
+                  <button type="button" class="flex-1 py-2 rounded-lg text-sm font-medium border transition-colors"
+                    :class="forms.ark_construction.mode === 'work' ? 'bg-cyan-600/30 border-cyan-500/50 text-cyan-200' : 'bg-white/5 border-white/10 text-gray-400'"
+                    @click="forms.ark_construction.mode = 'work'">工作量推进</button>
                 </div>
-                <label class="flex items-center gap-2 text-gray-400 text-sm">
-                  <input v-model="forms.ark_construction.useSpecialMaterials" type="checkbox" class="rounded" />
-                  使用特殊材料
-                </label>
+
+                <template v-if="forms.ark_construction.mode === 'resource'">
+                  <p class="text-amber-300/90 text-xs mb-3">单次投入上限：木材30吨、金属制品20吨、密封材料(沥青)20kg。发动机/发电机/螺旋桨/船帆无上限。资源可同时来源于个人物资和方舟仓库。</p>
+                  <div class="rounded-xl border border-white/10 bg-black/20 p-3 space-y-3">
+                    <p class="text-gray-400 text-xs font-medium">个人物资投入（kg）</p>
+                    <div class="grid grid-cols-3 gap-2">
+                      <div>
+                        <label class="block text-gray-500 text-xs mb-1">木材(kg) <span class="text-gray-600">上限{{ arkLimits.playerWoodKg }}</span></label>
+                        <input v-model.number="forms.ark_construction.woodKg" type="number" min="0" :max="arkLimits.playerWoodKg" step="100" :class="selectClass" @change="onArkPersonalWoodChange" />
+                      </div>
+                      <div>
+                        <label class="block text-gray-500 text-xs mb-1">金属(kg) <span class="text-gray-600">上限{{ arkLimits.playerMetalKg }}</span></label>
+                        <input v-model.number="forms.ark_construction.metalKg" type="number" min="0" :max="arkLimits.playerMetalKg" step="100" :class="selectClass" @change="onArkPersonalMetalChange" />
+                      </div>
+                      <div>
+                        <label class="block text-gray-500 text-xs mb-1">密封材料/沥青(kg) <span class="text-gray-600">上限{{ arkLimits.playerSealantKg }}</span></label>
+                        <input v-model.number="forms.ark_construction.sealantKg" type="number" min="0" :max="arkLimits.playerSealantKg" step="1" :class="selectClass" @change="onArkPersonalSealantChange" />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="rounded-xl border border-white/10 bg-black/20 p-3 space-y-3">
+                    <p class="text-gray-400 text-xs font-medium">方舟仓库投入（kg）</p>
+                    <div class="grid grid-cols-3 gap-2">
+                      <div>
+                        <label class="block text-gray-500 text-xs mb-1">木材(kg) <span class="text-gray-600">上限{{ arkLimits.warehouseWoodKg }}</span></label>
+                        <input v-model.number="forms.ark_construction.warehouseWoodKg" type="number" min="0" :max="arkLimits.warehouseWoodKg" step="100" :class="selectClass" @change="onArkWarehouseWoodChange" />
+                      </div>
+                      <div>
+                        <label class="block text-gray-500 text-xs mb-1">金属(kg) <span class="text-gray-600">上限{{ arkLimits.warehouseMetalKg }}</span></label>
+                        <input v-model.number="forms.ark_construction.warehouseMetalKg" type="number" min="0" :max="arkLimits.warehouseMetalKg" step="100" :class="selectClass" @change="onArkWarehouseMetalChange" />
+                      </div>
+                      <div>
+                        <label class="block text-gray-500 text-xs mb-1">密封材料/沥青(kg) <span class="text-gray-600">上限{{ arkLimits.warehouseSealantKg }}</span></label>
+                        <input v-model.number="forms.ark_construction.warehouseSealantKg" type="number" min="0" :max="arkLimits.warehouseSealantKg" step="1" :class="selectClass" @change="onArkWarehouseSealantChange" />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-3 py-2 text-xs text-gray-300 space-y-0.5">
+                    <p>木材合计：{{ ((forms.ark_construction.woodKg || 0) + (forms.ark_construction.warehouseWoodKg || 0)).toFixed(0) }}kg = {{ (((forms.ark_construction.woodKg || 0) + (forms.ark_construction.warehouseWoodKg || 0)) / 1000).toFixed(2) }}吨 <span class="text-gray-500">/ 上限30吨</span></p>
+                    <p>金属合计：{{ ((forms.ark_construction.metalKg || 0) + (forms.ark_construction.warehouseMetalKg || 0)).toFixed(0) }}kg = {{ (((forms.ark_construction.metalKg || 0) + (forms.ark_construction.warehouseMetalKg || 0)) / 1000).toFixed(2) }}吨 <span class="text-gray-500">/ 上限20吨</span></p>
+                    <p>密封材料(沥青)合计：{{ (forms.ark_construction.sealantKg || 0) + (forms.ark_construction.warehouseSealantKg || 0) }}kg <span class="text-gray-500">/ 上限20kg</span></p>
+                  </div>
+                  <div class="rounded-xl border border-white/10 bg-black/20 p-3 space-y-3">
+                    <p class="text-gray-400 text-xs font-medium">组件投入</p>
+                    <div class="grid grid-cols-3 gap-2">
+                      <div>
+                        <label class="block text-gray-500 text-xs mb-1">发动机 <span class="text-gray-600">个人{{ arkLimits.playerEngine }}+仓库{{ arkLimits.warehouseEngine }}</span></label>
+                        <input v-model.number="forms.ark_construction.engineCount" type="number" min="0" :max="arkLimits.playerEngine + arkLimits.warehouseEngine" :class="selectClass" />
+                      </div>
+                      <div>
+                        <label class="block text-gray-500 text-xs mb-1">发电机 <span class="text-gray-600">个人{{ arkLimits.playerGenerator }}+仓库{{ arkLimits.warehouseGenerator }}</span></label>
+                        <input v-model.number="forms.ark_construction.generatorCount" type="number" min="0" :max="arkLimits.playerGenerator + arkLimits.warehouseGenerator" :class="selectClass" />
+                      </div>
+                      <div>
+                        <label class="block text-gray-500 text-xs mb-1">螺旋桨 <span class="text-gray-600">个人{{ arkLimits.playerPropeller }}+仓库{{ arkLimits.warehousePropeller }}</span></label>
+                        <input v-model.number="forms.ark_construction.propellerCount" type="number" min="0" :max="arkLimits.playerPropeller + arkLimits.warehousePropeller" :class="selectClass" />
+                      </div>
+                    </div>
+                    <label class="flex items-center gap-2 text-gray-400 text-sm">
+                      <input v-model="forms.ark_construction.buildSail" type="checkbox" class="rounded" />
+                      建造船帆
+                    </label>
+                  </div>
+                </template>
+
+                <template v-if="forms.ark_construction.mode === 'work'">
+                  <p class="text-amber-300/90 text-xs mb-3">材料不足时，可消耗1个行动点通过工作量推进方舟进度（无需投入资源）。</p>
+                  <div>
+                    <label class="block text-gray-500 text-xs mb-2 ml-0.5">推进类型</label>
+                    <select v-model="forms.ark_construction.workType" :class="selectClass">
+                      <option value="wood">5吨木材当量</option>
+                      <option value="metal">5吨金属当量</option>
+                      <option value="sealant">5kg密封材料(沥青)当量</option>
+                    </select>
+                  </div>
+                </template>
+
                 <textarea v-model="forms.ark_construction.note" rows="2" :class="textareaClass" placeholder="备注（可选）" />
               </template>
 
@@ -726,6 +927,15 @@ onMounted(async () => {
             :class="['px-5 py-2.5 rounded-xl text-sm font-medium', submitMessage.type === 'success' ? 'bg-green-500/20 border border-green-500/30 text-green-400' : 'bg-red-500/20 border border-red-500/30 text-red-400']"
           >
             {{ submitMessage.text }}
+          </div>
+        </div>
+
+        <div v-if="arkLimitWarnings.length" class="flex justify-center mb-4">
+          <div class="max-w-3xl w-full bg-red-500/15 border border-red-500/30 rounded-xl px-5 py-3">
+            <p class="text-red-400 text-sm font-medium mb-1">投入超限，无法提交</p>
+            <ul class="text-red-300 text-xs space-y-1">
+              <li v-for="(msg, idx) in arkLimitWarnings" :key="idx">{{ msg }}</li>
+            </ul>
           </div>
         </div>
 

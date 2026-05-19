@@ -50,7 +50,7 @@ const createForm = reactive({
   grantStartingInventory: true,
   isWeak: false,
   isOverworked: false,
-  isInjured: false
+  isInjured: 0
 })
 
 const jobNameById = computed(() => {
@@ -88,7 +88,7 @@ function normalizePlayer(raw) {
     loginPassword: raw.loginPassword ?? '',
     isWeak: Boolean(raw.isWeak ?? raw.is_weak),
     isOverworked: Boolean(raw.isOverworked ?? raw.is_overworked),
-    isInjured: Boolean(raw.isInjured ?? raw.is_injured)
+    isInjured: raw.isInjured ?? raw.is_injured ?? 0
   }
 }
 
@@ -138,7 +138,9 @@ const getStatusBadges = (player) => {
   const badges = []
   if (player.isWeak) badges.push({ text: '虚弱', color: 'text-amber-400 bg-amber-500/20' })
   if (player.isOverworked) badges.push({ text: '过劳', color: 'text-blue-400 bg-blue-500/20' })
-  if (player.isInjured) badges.push({ text: '受伤', color: 'text-red-400 bg-red-500/20' })
+  if (player.isInjured === 3) badges.push({ text: '死亡', color: 'text-gray-400 bg-gray-600/30' })
+  else if (player.isInjured === 2) badges.push({ text: '重伤', color: 'text-red-300 bg-red-600/30' })
+  else if (player.isInjured === 1) badges.push({ text: '受伤', color: 'text-red-400 bg-red-500/20' })
   if (badges.length === 0) badges.push({ text: '健康', color: 'text-emerald-400 bg-emerald-500/20' })
   return badges
 }
@@ -207,7 +209,7 @@ function openEditModal(player) {
     loginPassword: player.loginPassword ?? '',
     isWeak: player.isWeak,
     isOverworked: player.isOverworked,
-    isInjured: player.isInjured
+    isInjured: player.isInjured ?? 0
   }
   showEditModal.value = true
 }
@@ -227,7 +229,7 @@ function openCreateModal() {
   createForm.grantStartingInventory = true
   createForm.isWeak = false
   createForm.isOverworked = false
-  createForm.isInjured = false
+  createForm.isInjured = 0
   createStartingItems.value = []
   showCreateModal.value = true
 }
@@ -698,7 +700,15 @@ onMounted(() => {
               <div class="flex flex-wrap gap-4 text-sm text-gray-300">
                 <label class="flex items-center gap-2"><input v-model="editingPlayer.isWeak" type="checkbox" class="rounded" />虚弱</label>
                 <label class="flex items-center gap-2"><input v-model="editingPlayer.isOverworked" type="checkbox" class="rounded" />过劳</label>
-                <label class="flex items-center gap-2"><input v-model="editingPlayer.isInjured" type="checkbox" class="rounded" />受伤</label>
+                <label class="flex items-center gap-2">
+                  <span class="text-gray-300">身体状态</span>
+                  <select v-model.number="editingPlayer.isInjured" class="bg-black/30 border border-white/10 rounded px-2 py-1 text-white text-sm">
+                    <option :value="0">未受伤</option>
+                    <option :value="1">受伤</option>
+                    <option :value="2">重伤</option>
+                    <option :value="3">死亡</option>
+                  </select>
+                </label>
               </div>
               <p class="text-gray-500 text-xs">修改背包请使用侧栏「玩家背包」。</p>
             </div>
@@ -756,7 +766,15 @@ onMounted(() => {
               <div class="flex flex-wrap gap-4 text-sm text-gray-300">
                 <label class="flex items-center gap-2"><input v-model="createForm.isWeak" type="checkbox" class="rounded" />虚弱</label>
                 <label class="flex items-center gap-2"><input v-model="createForm.isOverworked" type="checkbox" class="rounded" />过劳</label>
-                <label class="flex items-center gap-2"><input v-model="createForm.isInjured" type="checkbox" class="rounded" />受伤</label>
+                <label class="flex items-center gap-2">
+                  <span class="text-gray-300">身体状态</span>
+                  <select v-model.number="createForm.isInjured" class="bg-black/30 border border-white/10 rounded px-2 py-1 text-white text-sm">
+                    <option :value="0">未受伤</option>
+                    <option :value="1">受伤</option>
+                    <option :value="2">重伤</option>
+                    <option :value="3">死亡</option>
+                  </select>
+                </label>
               </div>
               <DmPlayerModalInventory
                 ref="createInventoryRef"

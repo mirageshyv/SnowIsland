@@ -407,8 +407,8 @@ function cardSelectionClass(card) {
 const fetchProgress = async () => {
   try {
     const response = await catastropheAPI.getProgress()
-    progress.value = response.progress
-    progressInput.value = response.progress
+    progress.value = Number(response?.progress) || 0
+    progressInput.value = progress.value
   } catch (error) {
     console.error('获取进度失败:', error)
   }
@@ -417,8 +417,11 @@ const fetchProgress = async () => {
 const fetchSelectableCards = async () => {
   try {
     const response = await catastropheAPI.getSelectableCards()
-    selectableCards.value = response.cards
-    const confirmedCard = response.cards.find(c => c.isSelected)
+    const cards = Array.isArray(response?.cards) 
+      ? response.cards.filter((c) => c != null && c.selectedId != null && c.name != null) 
+      : []
+    selectableCards.value = cards
+    const confirmedCard = cards.find(c => Boolean(c.isSelected))
     selectedCardId.value = confirmedCard?.selectedId || null
     if (!confirmedCard) {
       isConfirming.value = false
@@ -431,7 +434,13 @@ const fetchSelectableCards = async () => {
 const fetchGameState = async () => {
   try {
     const response = await catastropheAPI.getGameState()
-    gameState.value = response
+    gameState.value = {
+      currentDay: response?.currentDay ?? 1,
+      currentPhase: response?.currentPhase ?? 'DAY',
+      isGameOver: Boolean(response?.isGameOver),
+      catastropheTriggered: Boolean(response?.catastropheTriggered),
+      extraCardDue: Boolean(response?.extraCardDue),
+    }
   } catch (error) {
     console.error('获取游戏状态失败:', error)
   }
@@ -463,8 +472,8 @@ const drawCards = async () => {
   try {
     const response = await catastropheAPI.drawCards(userRole)
     if (response.success) {
-      drawnCards.value = response.cards
-      currentDrawRound.value = response.drawRound
+      drawnCards.value = Array.isArray(response.cards) ? response.cards.filter((c) => c != null) : []
+      currentDrawRound.value = response.drawRound || 0
     } else {
       alert(response.message)
     }
@@ -560,11 +569,11 @@ onMounted(async () => {
   if (props.isDm) {
     tasks.push(
       catastropheAPI.getDrawnCards().then((response) => {
-        if (response.success && response.cards.length > 0) {
-          drawnCards.value = response.cards
-          currentDrawRound.value = response.drawRound
+        if (response?.success && Array.isArray(response.cards) && response.cards.length > 0) {
+          drawnCards.value = response.cards.filter((c) => c != null)
+          currentDrawRound.value = response.drawRound || 0
         }
-      }),
+      }).catch(() => {}),
     )
   }
   await Promise.all(tasks)

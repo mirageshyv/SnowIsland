@@ -14,11 +14,11 @@ public class ArkConstruction {
     @Column(name = "id")
     private Integer id = SINGLETON_ID;
 
-    @Column(name = "current_wood", nullable = false)
-    private Integer currentWood = 0;
+    @Column(name = "current_wood", nullable = false, precision = 10, scale = 2)
+    private Double currentWood = 0.0;
 
-    @Column(name = "current_metal", nullable = false)
-    private Integer currentMetal = 0;
+    @Column(name = "current_metal", nullable = false, precision = 10, scale = 2)
+    private Double currentMetal = 0.0;
 
     @Column(name = "current_sealant", nullable = false)
     private Integer currentSealant = 0;
@@ -67,19 +67,19 @@ public class ArkConstruction {
         this.id = id;
     }
 
-    public Integer getCurrentWood() {
+    public Double getCurrentWood() {
         return currentWood;
     }
 
-    public void setCurrentWood(Integer currentWood) {
+    public void setCurrentWood(Double currentWood) {
         this.currentWood = currentWood;
     }
 
-    public Integer getCurrentMetal() {
+    public Double getCurrentMetal() {
         return currentMetal;
     }
 
-    public void setCurrentMetal(Integer currentMetal) {
+    public void setCurrentMetal(Double currentMetal) {
         this.currentMetal = currentMetal;
     }
 

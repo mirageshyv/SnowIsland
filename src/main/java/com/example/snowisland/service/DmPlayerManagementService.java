@@ -84,7 +84,7 @@ public class DmPlayerManagementService {
         }
 
         String name = stringVal(body.get("name"));
-        if (name == null || name.isBlank()) {
+        if (name == null || name.trim().isEmpty()) {
             return deny(result, "请输入玩家姓名");
         }
 
@@ -96,7 +96,7 @@ public class DmPlayerManagementService {
             Player saved = playerRepository.save(player);
 
             String loginUsername = stringVal(body.get("loginUsername"));
-            if (loginUsername == null || loginUsername.isBlank()) {
+            if (loginUsername == null || loginUsername.trim().isEmpty()) {
                 loginUsername = "player" + saved.getId();
             } else {
                 loginUsername = loginUsername.trim();
@@ -106,7 +106,7 @@ public class DmPlayerManagementService {
             }
 
             String loginPassword = stringVal(body.get("loginPassword"));
-            if (loginPassword == null || loginPassword.isBlank()) {
+            if (loginPassword == null || loginPassword.trim().isEmpty()) {
                 loginPassword = DEFAULT_PASSWORD;
             }
 
@@ -154,7 +154,7 @@ public class DmPlayerManagementService {
         try {
             if (body.containsKey("name")) {
                 String name = stringVal(body.get("name"));
-                if (name != null && !name.isBlank()) {
+                if (name != null && !name.trim().isEmpty()) {
                     existing.setName(name.trim());
                 }
             }
@@ -294,7 +294,7 @@ public class DmPlayerManagementService {
     private void applyPlayerFieldsFromBody(Player player, Map<String, Object> body, boolean isCreate) {
         if (body.containsKey("faction") || isCreate) {
             String factionStr = stringVal(body.get("faction"));
-            if (factionStr != null && !factionStr.isBlank()) {
+            if (factionStr != null && !factionStr.trim().isEmpty()) {
                 player.setFaction(Faction.valueOf(factionStr.trim()));
             } else if (isCreate && player.getFaction() == null) {
                 player.setFaction(Faction.平民);
@@ -313,7 +313,8 @@ public class DmPlayerManagementService {
             player.setIsOverworked(boolVal(body.get("isOverworked")));
         }
         if (body.containsKey("isInjured")) {
-            player.setIsInjured(boolVal(body.get("isInjured")));
+            Integer val = intOrNull(body.get("isInjured"));
+            player.setIsInjured(val != null ? val : 0);
         }
     }
 
@@ -329,7 +330,7 @@ public class DmPlayerManagementService {
 
         if (body.containsKey("loginUsername")) {
             String username = stringVal(body.get("loginUsername"));
-            if (username != null && !username.isBlank()) {
+            if (username != null && !username.trim().isEmpty()) {
                 username = username.trim();
                 if (!username.equals(user.getUsername()) && userRepository.existsByUsername(username)) {
                     result.put("success", false);
@@ -341,7 +342,7 @@ public class DmPlayerManagementService {
         }
         if (body.containsKey("loginPassword")) {
             String password = stringVal(body.get("loginPassword"));
-            if (password != null && !password.isBlank()) {
+            if (password != null && !password.trim().isEmpty()) {
                 user.setPassword(password);
             }
         }
@@ -359,7 +360,7 @@ public class DmPlayerManagementService {
         row.put("skillName", player.getSkillId() != null ? skillNames.getOrDefault(player.getSkillId(), "—") : "—");
         row.put("isWeak", Boolean.TRUE.equals(player.getIsWeak()));
         row.put("isOverworked", Boolean.TRUE.equals(player.getIsOverworked()));
-        row.put("isInjured", Boolean.TRUE.equals(player.getIsInjured()));
+        row.put("isInjured", player.getIsInjured() != null ? player.getIsInjured() : 0);
 
         userRepository.findByPlayerId(player.getId()).ifPresent(user -> {
             row.put("loginUsername", user.getUsername());

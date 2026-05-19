@@ -140,6 +140,8 @@ public class ActionService {
                 action.setNotes(notes);
                 autoResult = "【搬运】个人背包已扣除，等待主持人确认入仓";
             }
+        } else if ("other".equals(actionType)) {
+            autoResult = "等待DM反馈";
         }
 
         if (targetId != null && "go_location".equals(actionType)) {
@@ -1005,6 +1007,7 @@ public class ActionService {
             case "use_skill": return "使用职业技能";
             case "transport": return "搬运";
             case "hide": return "隐藏";
+            case "other": return "其他";
             default: return type;
         }
     }

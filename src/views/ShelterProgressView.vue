@@ -32,14 +32,18 @@ const savingLabor = ref(false)
 const verifying = ref(false)
 
 const shelterDisplayRows = computed(() => resolveShelterInventoryRows(shelterInventory.value))
-const rosterPlayerIds = computed(() => new Set(dailyLabor.value.map((r) => r.playerId)))
+const rosterPlayerIds = computed(() => new Set((dailyLabor.value || []).filter((r) => r?.playerId != null).map((r) => r.playerId)))
 function defaultLaborRow(playerId) {
   const p = laborCandidates.value.find((c) => c.id === playerId)
+  const isProfessional = Boolean(p?.isProfessional)
+  const baseBuildValue = Number(p?.baseBuildValue) || (isProfessional ? 5 : 4)
   return {
     playerId,
     name: p?.name ?? `玩家${playerId}`,
     jobName: p?.jobName ?? '—',
-    buildValue: 0,
+    isProfessional,
+    baseBuildValue,
+    buildValue: baseBuildValue,
     exploited: false,
     escaped: false
   }
@@ -56,16 +60,37 @@ function toggleLabor(playerId) {
 }
 
 function onExploitChange(row) {
-  if (!row.exploited) return
-  const count = dailyLabor.value.filter((r) => r.exploited).length
-  if (count > 3) {
-    row.exploited = false
-    alert('最多压榨3名劳工')
+  if (row.escaped) return
+  if (row.exploited) {
+    const count = dailyLabor.value.filter((r) => r.exploited).length
+    if (count > 3) {
+      row.exploited = false
+      alert('最多压榨3名劳工')
+      return
+    }
   }
+  recalcBuildValue(row)
+}
+
+function recalcBuildValue(row) {
+  if (row.escaped) {
+    row.buildValue = 0
+    return
+  }
+  const base = Number(row.baseBuildValue) || (row.isProfessional ? 5 : 4)
+  row.buildValue = base + (row.exploited ? 3 : 0)
 }
 
 function removeLaborRow(playerId) {
   dailyLabor.value = dailyLabor.value.filter((r) => r.playerId !== playerId)
+}
+
+function onEscapedChange(row) {
+  if (row.escaped) {
+    row.buildValue = 0
+  } else {
+    recalcBuildValue(row)
+  }
 }
 
 function applyLaborResult(result) {
@@ -73,9 +98,17 @@ function applyLaborResult(result) {
   currentBuildValue.value = Number(result.currentBuildValue) || 0
   currentGameDay.value = Number(result.currentGameDay) || currentGameDay.value
   dayVerified.value = Boolean(result.dayVerified)
-  dailyLabor.value = Array.isArray(result.dailyLabor) ? result.dailyLabor.map((r) => ({ ...r })) : dailyLabor.value
-  buildLogs.value = Array.isArray(result.buildLogs) ? result.buildLogs : buildLogs.value
-  laborDays.value = Array.isArray(result.laborDays) ? result.laborDays : laborDays.value
+  dailyLabor.value = Array.isArray(result.dailyLabor) 
+    ? result.dailyLabor.filter((r) => r != null && r.playerId != null).map((r) => ({ ...r })) 
+    : dailyLabor.value
+  buildLogs.value = Array.isArray(result.buildLogs) 
+    ? result.buildLogs.filter((l) => l != null && l.day != null && Array.isArray(l.workers))
+      .map((log) => ({
+        ...log,
+        workers: log.workers.filter((w) => w != null && w.playerId != null && w.name != null)
+      }))
+    : buildLogs.value
+  laborDays.value = Array.isArray(result.laborDays) ? result.laborDays.filter((d) => d != null) : laborDays.value
   return true
 }
 
@@ -87,7 +120,6 @@ async function saveLaborRoster() {
     if (isDm.value) {
       const laborers = dailyLabor.value.map((r) => ({
         playerId: r.playerId,
-        buildValue: Math.max(0, Math.floor(Number(r.buildValue) || 0)),
         exploited: Boolean(r.exploited),
         escaped: Boolean(r.escaped)
       }))
@@ -262,7 +294,7 @@ async function confirmAddShelterStock() {
 }
 
 function shelterCategoryLabel(c) {
-  return { prop: '道具', weapon: '武器', material: '建材' }[c] || '未知'
+  return { prop: '道具', weapon: '武器', ammo: '弹药', material: '建材' }[c] || '未知'
 }
 
 function fail(message) {
@@ -322,10 +354,10 @@ async function loadShelterFromApi() {
       editGameDay.value = Number(data.gameDay) || editGameDay.value
     }
     dayVerified.value = Boolean(data.dayVerified)
-    laborCandidates.value = Array.isArray(data.laborCandidates) ? data.laborCandidates : []
-    dailyLabor.value = Array.isArray(data.dailyLabor) ? data.dailyLabor.map((r) => ({ ...r })) : []
-    buildLogs.value = Array.isArray(data.buildLogs) ? data.buildLogs : []
-    laborDays.value = Array.isArray(data.laborDays) ? data.laborDays : []
+    laborCandidates.value = Array.isArray(data.laborCandidates) ? data.laborCandidates.filter((c) => c != null) : []
+    dailyLabor.value = Array.isArray(data.dailyLabor) ? data.dailyLabor.filter((r) => r != null).map((r) => ({ ...r })) : []
+    buildLogs.value = Array.isArray(data.buildLogs) ? data.buildLogs.filter((l) => l != null) : []
+    laborDays.value = Array.isArray(data.laborDays) ? data.laborDays.filter((d) => d != null) : []
   } catch (err) {
     console.error('加载避难所数据失败:', err)
     fail('网络错误，无法加载避难所数据')
@@ -422,12 +454,12 @@ onMounted(() => {
                   待结算
                 </span>
               </div>
-              <p class="text-gray-500 text-sm mt-2">编辑建造值、压榨、逃役；结算后玩家端建造日志才显示数值</p>
+              <p class="text-gray-500 text-sm mt-2">职业劳工基础值5，普通劳工基础值4；压榨+3；逃役归零；结算后玩家端建造日志才显示数值</p>
             </template>
             <template v-else>
               <h2 class="text-xl text-white font-medium tracking-tight">第 {{ currentGameDay }} 天 · 今日劳工</h2>
               <p class="text-gray-500 text-sm mt-1">
-                选择今日在避难所劳作的玩家；可对已选劳工标记「压榨」（最多3人，建造×2、受伤、无法生产）
+                选择今日在避难所劳作的玩家；职业劳工基础值5，普通劳工基础值4；可标记「压榨」（最多3人，+3建造值、受伤、无法生产）
               </p>
               <p v-if="dayVerified" class="text-amber-400/90 text-xs mt-1">今日名单已由主持人结算，无法再修改</p>
             </template>
@@ -479,6 +511,11 @@ onMounted(() => {
           >
             <span class="font-medium">{{ p.name }}</span>
             <span class="text-gray-500 text-xs ml-1">{{ p.jobName }}</span>
+            <span
+              v-if="p.isProfessional"
+              class="ml-1 px-1.5 py-0.5 rounded text-[10px] bg-blue-500/20 text-blue-400 border border-blue-500/30"
+            >职业</span>
+            <span class="text-gray-600 text-xs ml-1">({{ p.baseBuildValue || (p.isProfessional ? 5 : 4) }})</span>
           </button>
         </div>
 
@@ -493,23 +530,21 @@ onMounted(() => {
             <div class="min-w-[100px] flex-1">
               <span class="text-white text-sm font-medium">{{ row.name }}</span>
               <span class="text-gray-500 text-xs ml-2">{{ row.jobName }}</span>
+              <span
+                v-if="row.isProfessional"
+                class="ml-1 px-1.5 py-0.5 rounded text-[10px] bg-blue-500/20 text-blue-400 border border-blue-500/30"
+              >职业</span>
             </div>
-            <label class="flex items-center gap-1.5 text-xs text-gray-400">
-              建造值
-              <input
-                v-model.number="row.buildValue"
-                type="number"
-                min="0"
-                class="w-16 bg-black/40 border border-white/10 rounded px-2 py-1 text-white text-sm text-right"
-                :disabled="dayVerified"
-              />
-            </label>
+            <span class="text-emerald-400 font-semibold text-sm tabular-nums">
+              {{ row.escaped ? 0 : (row.baseBuildValue || (row.isProfessional ? 5 : 4)) + (row.exploited ? 3 : 0) }}
+              <span class="text-gray-500 text-xs font-normal">建造值</span>
+            </span>
             <label class="flex items-center gap-1.5 text-xs text-red-300 cursor-pointer">
-              <input v-model="row.exploited" type="checkbox" class="rounded" :disabled="dayVerified" />
+              <input v-model="row.exploited" type="checkbox" class="rounded" :disabled="dayVerified" @change="onExploitChange(row)" />
               压榨
             </label>
             <label class="flex items-center gap-1.5 text-xs text-amber-300 cursor-pointer">
-              <input v-model="row.escaped" type="checkbox" class="rounded" :disabled="dayVerified" />
+              <input v-model="row.escaped" type="checkbox" class="rounded" :disabled="dayVerified" @change="onEscapedChange(row)" />
               逃役
             </label>
             <button
@@ -533,7 +568,15 @@ onMounted(() => {
             <div class="min-w-[100px] flex-1">
               <span class="text-white text-sm font-medium">{{ row.name }}</span>
               <span class="text-gray-500 text-xs ml-2">{{ row.jobName }}</span>
+              <span
+                v-if="row.isProfessional"
+                class="ml-1 px-1.5 py-0.5 rounded text-[10px] bg-blue-500/20 text-blue-400 border border-blue-500/30"
+              >职业</span>
             </div>
+            <span class="text-emerald-400 font-semibold text-sm tabular-nums">
+              {{ row.escaped ? 0 : (row.baseBuildValue || (row.isProfessional ? 5 : 4)) + (row.exploited ? 3 : 0) }}
+              <span class="text-gray-500 text-xs font-normal">建造值</span>
+            </span>
             <label
               class="flex items-center gap-1.5 text-xs text-red-300 cursor-pointer"
               :class="dayVerified ? 'opacity-50 pointer-events-none' : ''"
@@ -668,14 +711,14 @@ onMounted(() => {
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div
-                v-for="(worker, wi) in log.workers"
+                v-for="(worker, wi) in (log.workers || [])"
                 :key="`${log.day}-${worker.playerId ?? worker.name}-${wi}`"
                 class="flex items-center justify-between px-4 py-2 rounded-xl border border-white/10 bg-black/20"
                 :class="isDm && worker.escaped ? 'opacity-60' : ''"
               >
                 <div class="flex items-center gap-2 flex-wrap min-w-0">
                   <span class="text-cyan-400 font-medium text-sm shrink-0">{{ worker.name }}</span>
-                  <span v-if="worker.jobName" class="text-gray-500 text-xs shrink-0">{{ worker.jobName }}</span>
+                  <span v-if="isDm && worker.jobName" class="text-gray-500 text-xs shrink-0">{{ worker.jobName }}</span>
                   <span v-if="log.verified && worker.isProfessional" class="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded shrink-0">
                     职业
                   </span>
@@ -687,7 +730,7 @@ onMounted(() => {
                   </span>
                 </div>
                 <span
-                  v-if="log.verified"
+                  v-if="isDm && log.verified"
                   class="text-emerald-400 font-semibold text-sm tabular-nums shrink-0"
                 >
                   +{{ worker.value }}

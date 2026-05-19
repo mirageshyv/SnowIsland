@@ -21,8 +21,8 @@ public class ArkController {
 
     @PostMapping("/invest")
     public Map<String, Object> investResources(
-            @RequestParam(required = false, defaultValue = "0") Integer wood,
-            @RequestParam(required = false, defaultValue = "0") Integer metal,
+            @RequestParam(required = false, defaultValue = "0") Double wood,
+            @RequestParam(required = false, defaultValue = "0") Double metal,
             @RequestParam(required = false, defaultValue = "0") Integer sealant
     ) {
         return arkService.investResources(wood, metal, sealant);

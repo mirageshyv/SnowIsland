@@ -478,6 +478,7 @@ const ACTION_TYPE_LABELS = {
   use_skill: '使用职业技能',
   transport: '搬运',
   hide: '隐藏',
+  other: '其他',
 }
 
 export function actionTypeLabel(action) {
@@ -682,7 +683,9 @@ export const SHELTER_DAILY_LOGS = [
 // 旧格式: { id: 'wood', quantity: 45 }
 // 新格式: { itemType: 'material', itemId: 2, quantity: 45 }
 export function resolveShelterInventoryRows(items) {
+  if (!Array.isArray(items)) return []
   return items
+    .filter((row) => row != null)
     .map((row) => {
       if (row.name) {
         const key = row.itemType != null && row.itemId != null
@@ -743,6 +746,7 @@ export function resolveShelterInventoryRows(items) {
 
 // 计算避难所总建造值
 export function shelterTotalBuildValue(logs) {
-  return logs.reduce((sum, day) => sum + day.workers.reduce((s, worker) => s + worker.value, 0), 0)
+  if (!Array.isArray(logs)) return 0
+  return logs.reduce((sum, day) => sum + (Array.isArray(day?.workers) ? day.workers.reduce((s, worker) => s + (worker?.value || 0), 0) : 0), 0)
 }
 

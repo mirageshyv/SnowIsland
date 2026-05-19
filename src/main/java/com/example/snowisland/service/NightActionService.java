@@ -20,13 +20,13 @@ public class NightActionService {
 
     static {
         NIGHT_ACTION_TYPES.put("统治者", new LinkedHashSet<>(Arrays.asList(
-                "night_personal_action", "public_trial")));
+                "night_personal_action", "public_trial", "other")));
         NIGHT_ACTION_TYPES.put("反叛者", new LinkedHashSet<>(Arrays.asList(
-                "pressure_ruler", "conspiracy")));
+                "pressure_ruler", "conspiracy", "other")));
         NIGHT_ACTION_TYPES.put("冒险者", new LinkedHashSet<>(Arrays.asList(
-                "pressure_ruler", "publicity", "ark_build", "conspiracy")));
+                "pressure_ruler", "publicity", "conspiracy", "other")));
         NIGHT_ACTION_TYPES.put("天灾使者", new LinkedHashSet<>(Arrays.asList(
-                "conspiracy")));
+                "conspiracy", "other")));
     }
 
     private static final Map<String, Set<String>> CONSPIRACY_SUBTYPES = new LinkedHashMap<>();
@@ -171,6 +171,10 @@ public class NightActionService {
                     String notes = str(payload.get("notes"));
                     if (notes == null || notes.trim().length() < 5) return "使用特性/技能时请在备注中详细描述";
                 }
+                if ("other".equals(at)) {
+                    String notes = str(payload.get("notes"));
+                    if (notes == null || notes.trim().length() < 5) return "请详细描述你想执行的具体行动内容";
+                }
                 return null;
             }
             case "public_trial":
@@ -182,11 +186,6 @@ public class NightActionService {
             case "publicity": {
                 String msg = str(payload.get("message"));
                 if (msg == null || msg.trim().length() < 3) return "请填写宣传内容";
-                return null;
-            }
-            case "ark_build": {
-                Integer points = toInt(payload.get("actionPoints"));
-                if (points == null || points < 1) return "请填写至少1点行动点";
                 return null;
             }
             case "conspiracy": {
@@ -204,6 +203,11 @@ public class NightActionService {
                 if ("raid_location".equals(sub) && str(payload.get("raidOutcome")) == null) {
                     return "请选择袭击成功后的意向（破坏/搜刮）";
                 }
+                return null;
+            }
+            case "other": {
+                String note = str(payload.get("note"));
+                if (note == null || note.trim().length() < 5) return "请详细描述你想执行的具体行动内容";
                 return null;
             }
             default:
@@ -238,9 +242,6 @@ public class NightActionService {
                 break;
             case "publicity":
                 sb.append("宣传内容：").append(truncate(str(payload.get("message")), 120)).append("\n");
-                break;
-            case "ark_build":
-                sb.append("投入行动点：").append(toInt(payload.get("actionPoints"))).append("\n");
                 break;
             case "conspiracy":
                 sb.append("密谋类型：").append(labelConspiracySubtype(str(payload.get("conspiracySubtype")))).append("\n");
@@ -303,8 +304,8 @@ public class NightActionService {
             case "public_trial": return "公开审判";
             case "pressure_ruler": return "向统治者施压";
             case "publicity": return "公开宣传";
-            case "ark_build": return "建设方舟";
             case "conspiracy": return "进行密谋";
+            case "other": return "其他";
             default: return type;
         }
     }
@@ -318,6 +319,7 @@ public class NightActionService {
             case "use_trait": return "使用特性";
             case "use_skill": return "使用职业技能";
             case "hide": return "隐藏";
+            case "other": return "其他";
             default: return key;
         }
     }

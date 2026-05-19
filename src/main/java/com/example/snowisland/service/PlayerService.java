@@ -243,7 +243,7 @@ public class PlayerService {
             result.put("name", player.getName());
             result.put("isWeak", player.getIsWeak());
             result.put("isOverworked", player.getIsOverworked());
-            result.put("isInjured", player.getIsInjured());
+            result.put("isInjured", player.getIsInjured() != null ? player.getIsInjured() : 0);
             result.put("faction", player.getFaction() != null ? player.getFaction().name() : null);
             result.put("jobId", player.getJobId());
             result.put("skillId", player.getSkillId());

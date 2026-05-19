@@ -315,8 +315,8 @@ const loadMaterials = async () => {
   loading.value = true
   try {
     const [itemsResult, resourcesResult] = await Promise.all([
-      playerAPI.getItems(playerId),
-      playerAPI.getResources(playerId)
+      playerAPI.getItems(playerId).catch(() => null),
+      playerAPI.getResources(playerId).catch(() => null)
     ])
     if (Array.isArray(itemsResult)) {
       rawMaterials.value = itemsResult

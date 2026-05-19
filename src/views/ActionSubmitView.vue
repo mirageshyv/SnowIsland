@@ -51,6 +51,7 @@ const actionTypeOptions = computed(() => {
     { value: 'use_skill', label: '使用职业技能' },
     { value: 'hide', label: '隐藏' },
     { value: 'transport', label: '搬运' },
+    { value: 'other', label: '其他' },
   ]
   if (productionInfo.value && productionInfo.value.canProduce) {
     options.splice(3, 0, { value: 'produce', label: '生产' })
@@ -66,6 +67,7 @@ const actionHelpEntries = [
   { title: '生产', body: '根据职业技能生产对应资源。需要DM结算后物资才会发放到背包中。' },
   { title: '搬运', body: '在仓库与个人背包间转移物资。须持有相关仓库钥匙。个人→仓库在提交时即从背包扣除，入仓在主持人发布后生效。仓库→仓库上限500kg，其余上限300kg。' },
   { title: '隐藏', body: '隐藏自己：第二天不会被调查，也无法被私聊，无法成为统治者与密谋的行动目标。' },
+  { title: '其他', body: '尝试执行系统未预先规划的行动。必须在描述中详细说明你想执行的具体行动内容，由DM判定是否成功及效果。' },
 ]
 
 function getTargetOptions(actionType) {
@@ -266,6 +268,10 @@ function validateAction(slot) {
     alert(`行动${slot === 1 ? '一' : '二'}：请在备注中详细描述所使用的技能/特性及效果`)
     return false
   }
+  if (ad.type === 'other' && (!ad.notes || ad.notes.trim().length < 5)) {
+    alert(`行动${slot === 1 ? '一' : '二'}：请详细描述你想执行的具体行动内容`)
+    return false
+  }
   if (ad.type === 'transport') {
     if (!transportMode[slot]) { alert(`行动${slot === 1 ? '一' : '二'}：请选择搬运模式`); return false }
     const mode = transportMode[slot]
@@ -401,7 +407,7 @@ function displayActionResult(action) {
               </select>
             </div>
 
-            <div v-if="actionData[s].type && actionData[s].type !== 'hide' && actionData[s].type !== 'produce' && actionData[s].type !== 'use_trait' && actionData[s].type !== 'use_skill' && actionData[s].type !== 'transport'">
+            <div v-if="actionData[s].type && actionData[s].type !== 'hide' && actionData[s].type !== 'produce' && actionData[s].type !== 'use_trait' && actionData[s].type !== 'use_skill' && actionData[s].type !== 'transport' && actionData[s].type !== 'other'">
               <label class="block text-gray-500 text-xs mb-2 ml-0.5">选择目标</label>
               <select v-model="actionData[s].target"
                 class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50">
@@ -441,6 +447,12 @@ function displayActionResult(action) {
             <div v-if="actionData[s].type === 'hide'">
               <div class="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
                 <p class="text-amber-300 text-sm">隐藏自己，明天将无法被调查、私聊或成为统治者与密谋的行动目标</p>
+              </div>
+            </div>
+
+            <div v-if="actionData[s].type === 'other'">
+              <div class="rounded-xl border border-gray-500/20 bg-gray-500/5 px-4 py-3">
+                <p class="text-gray-300 text-sm">请在下方描述中详细说明你想执行的具体行动内容，由DM判定是否成功及效果</p>
               </div>
             </div>
 
@@ -517,10 +529,10 @@ function displayActionResult(action) {
             <div v-if="actionData[s].type !== 'transport'">
               <label class="block text-gray-500 text-xs mb-2 ml-0.5">
                 备注说明
-                <span v-if="actionData[s].type === 'use_trait' || actionData[s].type === 'use_skill'" class="text-red-400">（必填）</span>
+                <span v-if="actionData[s].type === 'use_trait' || actionData[s].type === 'use_skill' || actionData[s].type === 'other'" class="text-red-400">（必填）</span>
               </label>
               <textarea v-model="actionData[s].notes" rows="3"
-                :placeholder="actionData[s].type === 'use_trait' ? '请详细描述你使用的特性名称及具体效果...' : actionData[s].type === 'use_skill' ? '请详细描述你使用的职业技能及具体效果...' : '在此输入备注说明...'"
+                :placeholder="actionData[s].type === 'use_trait' ? '请详细描述你使用的特性名称及具体效果...' : actionData[s].type === 'use_skill' ? '请详细描述你使用的职业技能及具体效果...' : actionData[s].type === 'other' ? '请详细描述你想执行的具体行动内容...' : '在此输入备注说明...'"
                 class="w-full resize-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-200 text-sm placeholder:text-gray-600 focus:outline-none focus:border-blue-500/50" />
             </div>
 
@@ -557,7 +569,7 @@ function displayActionResult(action) {
               <div class="flex items-center gap-2">
                 <span class="text-white text-sm font-medium">行动{{ action.actionSlot }}</span>
                 <span class="text-xs px-2 py-0.5 rounded-full"
-                  :class="{'bg-green-500/20 text-green-400': action.actionType === 'go_location', 'bg-yellow-500/20 text-yellow-400': action.actionType === 'investigate_player', 'bg-blue-500/20 text-blue-400': action.actionType === 'produce', 'bg-orange-500/20 text-orange-400': action.actionType === 'use_trait', 'bg-violet-500/20 text-violet-400': action.actionType === 'use_skill', 'bg-teal-500/20 text-teal-400': action.actionType === 'transport', 'bg-purple-500/20 text-purple-400': action.actionType === 'hide'}">
+                  :class="{'bg-green-500/20 text-green-400': action.actionType === 'go_location', 'bg-yellow-500/20 text-yellow-400': action.actionType === 'investigate_player', 'bg-blue-500/20 text-blue-400': action.actionType === 'produce', 'bg-orange-500/20 text-orange-400': action.actionType === 'use_trait', 'bg-violet-500/20 text-violet-400': action.actionType === 'use_skill', 'bg-teal-500/20 text-teal-400': action.actionType === 'transport', 'bg-purple-500/20 text-purple-400': action.actionType === 'hide', 'bg-gray-500/20 text-gray-400': action.actionType === 'other'}">
                   {{ action.actionTypeLabel }}
                 </span>
                 <span v-if="action.targetName" class="text-gray-400 text-xs">→ {{ action.targetName }}</span>

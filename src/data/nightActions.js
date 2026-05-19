@@ -11,6 +11,7 @@ export const NIGHT_PERSONAL_ACTION_TYPES = [
   { value: 'use_trait', label: '使用特性' },
   { value: 'use_skill', label: '使用职业技能' },
   { value: 'hide', label: '隐藏' },
+  { value: 'other', label: '其他' },
 ]
 
 export const PRESSURE_DEMAND_OPTIONS = [
@@ -53,7 +54,6 @@ export const PAYLOAD_FIELD_LABELS = {
   targetLocationId: '目标地点',
   participantIds: '参与玩家',
   raidOutcome: '成功后选择',
-  actionPoints: '投入行动点',
   note: '说明',
 }
 
@@ -70,6 +70,11 @@ export const NIGHT_ACTION_DEFS = {
       title: '公开审判',
       description: '在夜间于集市对一名玩家召开公开审判。每日一次。',
     },
+    {
+      type: 'other',
+      title: '其他',
+      description: '执行未列出的特殊行动，由主持人判定是否成功及效果。每日一次。',
+    },
   ],
   '反叛者': [
     {
@@ -81,6 +86,11 @@ export const NIGHT_ACTION_DEFS = {
       type: 'conspiracy',
       title: '进行密谋',
       description: '与其他玩家秘密组织行动：袭击地点、暗杀统治者或解救被关押人员。夜间由主持人结算成功率与防御值。',
+    },
+    {
+      type: 'other',
+      title: '其他',
+      description: '执行未列出的特殊行动，由主持人判定是否成功及效果。每日一次。',
     },
   ],
   '冒险者': [
@@ -94,15 +104,16 @@ export const NIGHT_ACTION_DEFS = {
       title: '公开宣传',
       description: '在公屏发布方舟计划相关宣传，争取人员与资源支持。',
     },
-    {
-      type: 'ark_build',
-      title: '建设方舟',
-      description: '夜晚投入行动点与资源推进方舟建造（具体数量由主持人结算）。',
-    },
+
     {
       type: 'conspiracy',
       title: '进行密谋',
       description: '组织秘密袭击地点；结算规则与反叛者袭击类似。',
+    },
+    {
+      type: 'other',
+      title: '其他',
+      description: '执行未列出的特殊行动，由主持人判定是否成功及效果。每日一次。',
     },
   ],
   '天灾使者': [
@@ -110,6 +121,11 @@ export const NIGHT_ACTION_DEFS = {
       type: 'conspiracy',
       title: '进行密谋',
       description: '袭击地点、制造恐怖或暗杀目标；夜间由主持人结算。',
+    },
+    {
+      type: 'other',
+      title: '其他',
+      description: '执行未列出的特殊行动，由主持人判定是否成功及效果。每日一次。',
     },
   ],
 }

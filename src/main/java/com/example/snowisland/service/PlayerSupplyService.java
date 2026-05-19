@@ -29,14 +29,14 @@ public class PlayerSupplyService {
         int q = getMaterialQuantity(playerId, ItemCatalog.FOOD_MATERIAL_ID);
         Map<String, Object> block = new LinkedHashMap<>();
         block.put("totalKg", q);
-        block.put("items", List.of(row(ItemCatalog.FOOD_MATERIAL_ID, ItemCatalog.FOOD_NAME, ItemCatalog.FOOD_UNIT, q)));
+        block.put("items", Collections.singletonList(row(ItemCatalog.FOOD_MATERIAL_ID, ItemCatalog.FOOD_NAME, ItemCatalog.FOOD_UNIT, q)));
         return block;
     }
 
     public Map<String, Object> buildPlayerEnergyReserve(int playerId) {
         int q = getMaterialQuantity(playerId, ItemCatalog.FUEL_MATERIAL_ID);
         Map<String, Object> block = new LinkedHashMap<>();
-        block.put("items", List.of(row(ItemCatalog.FUEL_MATERIAL_ID, ItemCatalog.FUEL_NAME, ItemCatalog.FUEL_UNIT, q)));
+        block.put("items", Collections.singletonList(row(ItemCatalog.FUEL_MATERIAL_ID, ItemCatalog.FUEL_NAME, ItemCatalog.FUEL_UNIT, q)));
         return block;
     }
 

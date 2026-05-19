@@ -82,6 +82,7 @@ public class FactionActionService {
         ctx.put("hasProduceToday", hasProduceToday);
         ctx.put("highThreatWeapons", getHighThreatWeapons(playerId));
         ctx.put("arkStatus", arkService.getStatus());
+        ctx.put("arkResourceLimits", arkService.getPlayerResourceLimits(playerId));
         ctx.put("allowedActionTypes", FACTION_ACTION_TYPES.getOrDefault(faction, Collections.emptySet()));
         ctx.put("militiaPlayers", getPlayersByJobs(GUARD_JOBS));
         ctx.put("allPlayers", getPlayerSummaries());
@@ -124,10 +125,6 @@ public class FactionActionService {
                 result.put("message", "今日已提交阵营行动，每天仅可执行一次");
                 return result;
             }
-        } else if (todayActions.stream().anyMatch(a -> actionType.equals(a.getActionType()))) {
-            result.put("success", false);
-            result.put("message", "今日已使用过「" + getActionTypeLabel(actionType) + "」");
-            return result;
         }
 
         String validationError = validateAction(actionType, payload, playerId, gameDay, faction, todayActions);
@@ -214,8 +211,30 @@ public class FactionActionService {
                 return null;
             }
             case "ark_construction": {
-                Integer points = toInt(payload.get("actionPoints"));
-                if (points == null || points < 1) return "请填写至少1点行动点";
+                String mode = str(payload.get("mode"));
+                if ("resource".equals(mode)) {
+                    Double woodKg = toDouble(payload.get("woodKg"));
+                    Double metalKg = toDouble(payload.get("metalKg"));
+                    Integer sealantKg = toInt(payload.get("sealantKg"));
+                    Double warehouseWoodKg = toDouble(payload.get("warehouseWoodKg"));
+                    Double warehouseMetalKg = toDouble(payload.get("warehouseMetalKg"));
+                    Integer warehouseSealantKg = toInt(payload.get("warehouseSealantKg"));
+                    double totalWoodKg = (woodKg != null ? woodKg : 0) + (warehouseWoodKg != null ? warehouseWoodKg : 0);
+                    double totalMetalKg = (metalKg != null ? metalKg : 0) + (warehouseMetalKg != null ? warehouseMetalKg : 0);
+                    int totalSealantKg = (sealantKg != null ? sealantKg : 0) + (warehouseSealantKg != null ? warehouseSealantKg : 0);
+                    boolean hasResource = totalWoodKg > 0 || totalMetalKg > 0 || totalSealantKg > 0;
+                    Integer engines = toInt(payload.get("engineCount"));
+                    Integer generators = toInt(payload.get("generatorCount"));
+                    Integer propellers = toInt(payload.get("propellerCount"));
+                    Boolean sail = Boolean.TRUE.equals(payload.get("buildSail"));
+                    boolean hasComponent = (engines != null && engines > 0) || (generators != null && generators > 0) || (propellers != null && propellers > 0) || sail;
+                    if (!hasResource && !hasComponent) return "请至少投入一种资源或组件";
+                } else if ("work".equals(mode)) {
+                    String workType = str(payload.get("workType"));
+                    if (workType == null || workType.isEmpty()) return "请选择工作量推进类型";
+                } else {
+                    return "请选择投入模式";
+                }
                 return null;
             }
             case "curse": {
@@ -313,15 +332,40 @@ public class FactionActionService {
             case "ark_construction": {
                 Map<String, Object> ark = arkService.getStatus();
                 Object pct = ark.get("completionPercentage");
-                int points = toInt(payload.get("actionPoints")) != null ? toInt(payload.get("actionPoints")) : 1;
-                boolean special = Boolean.TRUE.equals(payload.get("useSpecialMaterials"));
-                String note = str(payload.get("note"));
+                String mode = str(payload.get("mode"));
                 StringBuilder sb = new StringBuilder();
                 sb.append("✓ 已提交【方舟建设】\n\n");
                 sb.append("提交者：").append(player.getName()).append("\n");
-                sb.append("消耗行动点：").append(points).append("\n");
-                sb.append("使用特殊材料：").append(special ? "是" : "否").append("\n");
+                if ("resource".equals(mode)) {
+                    sb.append("投入模式：资源投入\n");
+                    Double woodKg = toDouble(payload.get("woodKg"));
+                    Double metalKg = toDouble(payload.get("metalKg"));
+                    Integer sealantKg = toInt(payload.get("sealantKg"));
+                    Double whWoodKg = toDouble(payload.get("warehouseWoodKg"));
+                    Double whMetalKg = toDouble(payload.get("warehouseMetalKg"));
+                    Integer whSealantKg = toInt(payload.get("warehouseSealantKg"));
+                    double totalWoodKg = (woodKg != null ? woodKg : 0) + (whWoodKg != null ? whWoodKg : 0);
+                    double totalMetalKg = (metalKg != null ? metalKg : 0) + (whMetalKg != null ? whMetalKg : 0);
+                    int totalSealantKg = (sealantKg != null ? sealantKg : 0) + (whSealantKg != null ? whSealantKg : 0);
+                    if (totalWoodKg > 0) sb.append("  木材：").append((int) totalWoodKg).append("kg（").append(round2Str(totalWoodKg / 1000.0)).append("吨）\n");
+                    if (totalMetalKg > 0) sb.append("  金属制品：").append((int) totalMetalKg).append("kg（").append(round2Str(totalMetalKg / 1000.0)).append("吨）\n");
+                    if (totalSealantKg > 0) sb.append("  密封材料：").append(totalSealantKg).append("kg\n");
+                    Integer engines = toInt(payload.get("engineCount"));
+                    Integer generators = toInt(payload.get("generatorCount"));
+                    Integer propellers = toInt(payload.get("propellerCount"));
+                    Boolean sail = Boolean.TRUE.equals(payload.get("buildSail"));
+                    if (engines != null && engines > 0) sb.append("  发动机：").append(engines).append("台\n");
+                    if (generators != null && generators > 0) sb.append("  发电机：").append(generators).append("台\n");
+                    if (propellers != null && propellers > 0) sb.append("  螺旋桨：").append(propellers).append("个\n");
+                    if (Boolean.TRUE.equals(sail)) sb.append("  船帆：建造\n");
+                } else if ("work".equals(mode)) {
+                    String workType = str(payload.get("workType"));
+                    sb.append("投入模式：工作量推进\n");
+                    String workLabel = "wood".equals(workType) ? "5吨木材当量" : "metal".equals(workType) ? "5吨金属当量" : "5kg密封材料当量";
+                    sb.append("推进内容：").append(workLabel).append("\n");
+                }
                 sb.append("当前方舟进度：").append(pct != null ? pct : "?").append("%\n");
+                String note = str(payload.get("note"));
                 if (note != null && !note.trim().isEmpty()) sb.append("备注：").append(note.trim()).append("\n");
                 sb.append("\n等待主持人确认。");
                 return sb.toString();
@@ -372,7 +416,36 @@ public class FactionActionService {
     }
 
     private void applySideEffects(FactionAction action, Map<String, Object> payload, Integer gameDay) {
-        // 无自动副作用；由主持人裁定
+        if ("ark_construction".equals(action.getActionType()) && payload != null) {
+            String mode = str(payload.get("mode"));
+            if ("resource".equals(mode)) {
+                arkService.investFromFactionAction(
+                        action.getPlayerId(),
+                        toDouble(payload.get("woodKg")),
+                        toDouble(payload.get("metalKg")),
+                        toInt(payload.get("sealantKg")),
+                        toDouble(payload.get("warehouseWoodKg")),
+                        toDouble(payload.get("warehouseMetalKg")),
+                        toInt(payload.get("warehouseSealantKg")),
+                        toInt(payload.get("engineCount")),
+                        toInt(payload.get("generatorCount")),
+                        toInt(payload.get("propellerCount")),
+                        Boolean.TRUE.equals(payload.get("buildSail")),
+                        null,
+                        str(payload.get("note")),
+                        gameDay
+                );
+            } else if ("work".equals(mode)) {
+                arkService.investFromFactionAction(
+                        action.getPlayerId(),
+                        null, null, null, null, null, null,
+                        null, null, null, null,
+                        str(payload.get("workType")),
+                        str(payload.get("note")),
+                        gameDay
+                );
+            }
+        }
     }
 
     public List<Map<String, Object>> getPlayerHistory(Integer playerId, Integer gameDay) {
@@ -519,7 +592,7 @@ public class FactionActionService {
             m.put("name", p.getName());
             m.put("faction", p.getFaction() != null ? p.getFaction().name() : null);
             m.put("isOverworked", Boolean.TRUE.equals(p.getIsOverworked()));
-            m.put("isInjured", Boolean.TRUE.equals(p.getIsInjured()));
+            m.put("isInjured", p.getIsInjured() != null ? p.getIsInjured() : 0);
             return m;
         }).collect(Collectors.toList());
     }
@@ -703,6 +776,16 @@ public class FactionActionService {
         if (v == null) return null;
         if (v instanceof Number) return ((Number) v).intValue();
         try { return Integer.parseInt(v.toString()); } catch (NumberFormatException e) { return null; }
+    }
+
+    private Double toDouble(Object v) {
+        if (v == null) return null;
+        if (v instanceof Number) return ((Number) v).doubleValue();
+        try { return Double.parseDouble(v.toString()); } catch (NumberFormatException e) { return null; }
+    }
+
+    private String round2Str(double val) {
+        return String.format("%.2f", val);
     }
 
     private String str(Object v) {

@@ -267,15 +267,18 @@ public class CatastropheService {
             SelectedCatastrophe selected = new SelectedCatastrophe();
             selected.setDeckId(dc.getDeckId());
             selected.setIsActive(true);
-            selectedRepository.save(selected);
+            selected = selectedRepository.save(selected);
 
             Map<String, Object> cardInfo = new HashMap<>();
+            cardInfo.put("selectedId", selected.getId());
             cardInfo.put("deckId", dc.getDeckId());
             cardInfo.put("cardId", card != null ? card.getId() : null);
             cardInfo.put("cardNumber", card != null ? card.getCardNumber() : null);
             cardInfo.put("name", card != null ? card.getName() : "未知卡牌");
             cardInfo.put("description", card != null ? card.getDescription() : "");
             cardInfo.put("position", dc.getPosition());
+            cardInfo.put("isSelected", false);
+            cardInfo.put("playerId", null);
             confirmedCards.add(cardInfo);
         }
 

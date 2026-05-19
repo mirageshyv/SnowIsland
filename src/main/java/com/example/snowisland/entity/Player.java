@@ -20,7 +20,7 @@ public class Player {
     private Boolean isOverworked = false;
 
     @Column(name = "is_injured")
-    private Boolean isInjured = false;
+    private Integer isInjured = 0;
 
     @Column(name = "job_id")
     private Integer jobId;
@@ -65,8 +65,8 @@ public class Player {
     public Boolean getIsOverworked() { return isOverworked; }
     public void setIsOverworked(Boolean isOverworked) { this.isOverworked = isOverworked; }
 
-    public Boolean getIsInjured() { return isInjured; }
-    public void setIsInjured(Boolean isInjured) { this.isInjured = isInjured; }
+    public Integer getIsInjured() { return isInjured; }
+    public void setIsInjured(Integer isInjured) { this.isInjured = isInjured; }
 
     public Integer getJobId() { return jobId; }
     public void setJobId(Integer jobId) { this.jobId = jobId; }

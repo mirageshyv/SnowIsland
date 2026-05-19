@@ -25,6 +25,14 @@ import java.util.stream.Collectors;
 @Service
 public class ShelterService {
 
+    private static final Set<String> PROFESSIONAL_JOB_NAMES = new HashSet<>(Arrays.asList(
+            "农户", "伐木工", "矿工", "铁匠", "手工艺人", "工匠"
+    ));
+
+    private static final int NORMAL_BASE_VALUE = 4;
+    private static final int PROFESSIONAL_BASE_VALUE = 5;
+    private static final int OPPRESSION_BONUS = 3;
+
     private static final Object[][] DEFAULT_STOCK = {
             {ShelterStock.ItemType.material, 2, 45},
             {ShelterStock.ItemType.material, 7, 32},
@@ -318,6 +326,27 @@ public class ShelterService {
             return out;
         }
 
+        for (ShelterDailyLabor labor : rows) {
+            if (Boolean.TRUE.equals(labor.getEscaped())) {
+                continue;
+            }
+            Player player = playerRepository.findById(labor.getPlayerId()).orElse(null);
+            if (player == null) {
+                continue;
+            }
+            if (Boolean.TRUE.equals(player.getIsOverworked())) {
+                int currentInjured = player.getIsInjured() != null ? player.getIsInjured() : 0;
+                player.setIsInjured(currentInjured + 1);
+            } else {
+                player.setIsOverworked(true);
+            }
+            if (Boolean.TRUE.equals(labor.getExploited())) {
+                int currentInjured = player.getIsInjured() != null ? player.getIsInjured() : 0;
+                player.setIsInjured(currentInjured + 1);
+            }
+            playerRepository.save(player);
+        }
+
         ShelterLaborDay day = shelterLaborDayRepository.findById(gameDay).orElseGet(() -> {
             ShelterLaborDay d = new ShelterLaborDay();
             d.setGameDay(gameDay);
@@ -407,10 +436,15 @@ public class ShelterService {
                 labor.setGameDay(gameDay);
                 labor.setPlayerId(playerId);
             }
-            int buildValue = toInt(row.get("buildValue")) != null ? Math.max(0, toInt(row.get("buildValue"))) : 0;
+            boolean escaped = toBool(row.get("escaped"));
+            boolean exploited = toBool(row.get("exploited"));
+            Player laborPlayer = playerRepository.findById(playerId).orElse(null);
+            boolean isProfessional = isProfessionalLaborer(laborPlayer, jobRepository.findAll().stream()
+                    .collect(Collectors.toMap(Job::getId, Job::getName, (a, b) -> a)));
+            int buildValue = calcBuildValue(isProfessional, exploited, escaped);
             labor.setBuildValue(buildValue);
-            labor.setExploited(toBool(row.get("exploited")));
-            labor.setEscaped(toBool(row.get("escaped")));
+            labor.setExploited(exploited);
+            labor.setEscaped(escaped);
             shelterDailyLaborRepository.save(labor);
         }
     }
@@ -461,12 +495,17 @@ public class ShelterService {
             row.put("name", player.getName());
             row.put("jobId", player.getJobId());
             row.put("jobName", player.getJobId() != null ? jobNames.getOrDefault(player.getJobId(), "—") : "—");
+            boolean isProfessional = isProfessionalLaborer(player, jobNames);
+            boolean exploited = Boolean.TRUE.equals(labor.getExploited());
+            boolean escaped = Boolean.TRUE.equals(labor.getEscaped());
+            row.put("isProfessional", isProfessional);
+            row.put("baseBuildValue", calcBuildValue(isProfessional, false, false));
             row.put("buildValue", labor.getBuildValue() != null ? labor.getBuildValue() : 0);
-            row.put("exploited", Boolean.TRUE.equals(labor.getExploited()));
-            row.put("escaped", Boolean.TRUE.equals(labor.getEscaped()));
+            row.put("exploited", exploited);
+            row.put("escaped", escaped);
             row.put("isWeak", Boolean.TRUE.equals(player.getIsWeak()));
             row.put("isOverworked", Boolean.TRUE.equals(player.getIsOverworked()));
-            row.put("isInjured", Boolean.TRUE.equals(player.getIsInjured()));
+            row.put("isInjured", player.getIsInjured() != null ? player.getIsInjured() : 0);
             result.add(row);
         }
         return result;
@@ -502,7 +541,7 @@ public class ShelterService {
                 if (verified) {
                     w.put("value", value);
                 }
-                w.put("isProfessional", player.getJobId() != null);
+                w.put("isProfessional", isProfessionalLaborer(player, jobNames));
                 w.put("isOppressed", Boolean.TRUE.equals(labor.getExploited()));
                 w.put("escaped", Boolean.TRUE.equals(labor.getEscaped()));
                 workers.add(w);
@@ -526,19 +565,35 @@ public class ShelterService {
             if (player.getFaction() == Player.Faction.统治者) {
                 continue;
             }
+            boolean isProfessional = isProfessionalLaborer(player, jobNames);
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("id", player.getId());
             row.put("name", player.getName());
             row.put("faction", player.getFaction() != null ? player.getFaction().name() : null);
             row.put("jobId", player.getJobId());
             row.put("jobName", player.getJobId() != null ? jobNames.getOrDefault(player.getJobId(), "—") : "—");
+            row.put("isProfessional", isProfessional);
+            row.put("baseBuildValue", calcBuildValue(isProfessional, false, false));
             row.put("isWeak", Boolean.TRUE.equals(player.getIsWeak()));
             row.put("isOverworked", Boolean.TRUE.equals(player.getIsOverworked()));
-            row.put("isInjured", Boolean.TRUE.equals(player.getIsInjured()));
+            row.put("isInjured", player.getIsInjured() != null ? player.getIsInjured() : 0);
             rows.add(row);
         }
         rows.sort(Comparator.comparing(m -> String.valueOf(m.get("name"))));
         return rows;
+    }
+
+    private boolean isProfessionalLaborer(Player player, Map<Integer, String> jobNames) {
+        if (player == null || player.getJobId() == null) return false;
+        String jobName = jobNames.getOrDefault(player.getJobId(), "");
+        return PROFESSIONAL_JOB_NAMES.contains(jobName);
+    }
+
+    private int calcBuildValue(boolean isProfessional, boolean exploited, boolean escaped) {
+        if (escaped) return 0;
+        int base = isProfessional ? PROFESSIONAL_BASE_VALUE : NORMAL_BASE_VALUE;
+        if (exploited) base += OPPRESSION_BONUS;
+        return base;
     }
 
     private static Integer toInt(Object o) {
@@ -634,7 +689,7 @@ public class ShelterService {
     @Transactional
     public Map<String, Object> upsertShelterStock(String itemType, Integer itemId, Integer quantity) {
         Map<String, Object> out = new LinkedHashMap<>();
-        if (itemType == null || itemType.isBlank() || itemId == null) {
+        if (itemType == null || itemType.trim().isEmpty() || itemId == null) {
             out.put("success", false);
             out.put("message", "参数不完整");
             return out;
@@ -675,7 +730,7 @@ public class ShelterService {
     @Transactional
     public Map<String, Object> removeShelterStock(String itemType, Integer itemId) {
         Map<String, Object> out = new LinkedHashMap<>();
-        if (itemType == null || itemType.isBlank() || itemId == null) {
+        if (itemType == null || itemType.trim().isEmpty() || itemId == null) {
             out.put("success", false);
             out.put("message", "参数不完整");
             return out;

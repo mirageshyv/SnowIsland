@@ -11,7 +11,7 @@ import NightActionSubmitView from './NightActionSubmitView.vue'
 import RebelMilestoneView from './RebelMilestoneView.vue'
 import CatastrophePanel from '../components/CatastrophePanel.vue'
 import WarehouseView from './WarehouseView.vue'
-import { tradeAPI, playerAPI, milestoneAPI } from '../utils/api.js'
+import { tradeAPI, playerAPI, milestoneAPI, catastropheAPI } from '../utils/api.js'
 import { sumPersonalFoodAndFuel, formatKgForDisplay } from '../utils/playerResources.js'
 import { getMaterialImageUrlOrDefault } from '../data/gameData.js'
 
@@ -36,6 +36,7 @@ const editForm = ref(null)
 const saving = ref(false)
 const saveMessage = ref(null)
 const showStatusPopover = ref(false)
+const gameDay = ref(1)
 
 /** 仅冒险者可见「方舟建造进度」 */
 const showArkTab = computed(() => playerInfo.value?.faction === '冒险者')
@@ -81,10 +82,11 @@ const fetchPlayerInfo = async () => {
   loading.value = true
   error.value = null
   try {
-    const [infoResult, itemsResult, resourcesResult] = await Promise.all([
+    const [infoResult, itemsResult, resourcesResult, gameStateResult] = await Promise.all([
       playerAPI.getDetails(playerId),
       playerAPI.getItems(playerId),
-      playerAPI.getResources(playerId)
+      playerAPI.getResources(playerId),
+      catastropheAPI.getGameState()
     ])
     
     if (infoResult && infoResult.success) {
@@ -104,6 +106,10 @@ const fetchPlayerInfo = async () => {
       personalResources.value = resourcesResult
     } else {
       personalResources.value = null
+    }
+
+    if (gameStateResult?.currentDay) {
+      gameDay.value = gameStateResult.currentDay
     }
   } catch (err) {
     error.value = '网络请求失败，请稍后重试'
@@ -152,21 +158,33 @@ const negativeStatuses = computed(() => {
     list.push({
       name: '虚弱',
       severity: 2,
-      description: '体力大幅下降，所有体力相关活动效率降低。需要充足休息和营养补充才能恢复。（占位文案，可由后端返回替换）'
+      description: '你的血肉在低语，诉说着某种迟缓的终结。生产的仪式已非你所能负担，更不必说与阴影中的敌手角力。（无法生产，格斗射击技能无效，可喝酒消除）'
     })
   }
   if (p.isOverworked) {
     list.push({
       name: '过劳',
       severity: 1,
-      description: '长时间高强度工作导致精神疲惫，注意力不集中，工作效率下降。（占位文案，可由后端返回替换）'
+      description: '骨骼在重复的磨损中发出暗哑的呻吟。你知晓那矿洞深处,那该死的避难所,不可再踏足。否则，另一种结局会比夜幕更先降临。（无法执行生产行动，调查玩家和隐匿。在当天夜晚行动和第二天进行需要行动点的生产行动时，投1d6骰子，判定为1则死亡，可使用5瓶朗姆酒消除过劳）'
     })
   }
-  if (p.isInjured) {
+  if (p.isInjured === 3) {
+    list.push({
+      name: '死亡',
+      severity: 5,
+      description: '天灾的舌锋舔舐过这具躯壳。所有的门扉都已阖上，再无应答。（你死了）'
+    })
+  } else if (p.isInjured === 2) {
+    list.push({
+      name: '重伤',
+      severity: 4,
+      description: '你的沙漏已近枯竭。你不知今夜是否便是最后一页。某个披着白袍的影或许能挽留你——又或许，还有另一个……更幽暗的。（无法行动，每夜阶段结束时若不进行急救，则死亡，急救消耗5医疗资源，可将重伤转为受伤）'
+    })
+  } else if (p.isInjured === 1) {
     list.push({
       name: '受伤',
       severity: 3,
-      description: '行动受限，部分高强度行动可能失败或效率下降。需要治疗或休养恢复。（占位文案，可由后端返回替换）'
+      description: '一道伤痕。它尚未决心吞噬你的命数——至少此刻，它还在犹豫。（你已经受伤了，再次受伤会恶化，无法生产，格斗技能无效）'
     })
   }
   return list
@@ -207,7 +225,7 @@ const dashboardProfile = computed(() => {
   const resources = playerResources.value
 
   const dummy = {
-    currentDay: 7,
+    currentDay: gameDay.value,
     professionalSkillDescription:
       formatMultiSkillParagraphs(p.jobDescription) ||
       p.jobSkills ||
@@ -241,7 +259,7 @@ const startEdit = () => {
     name: playerInfo.value?.name || '',
     isWeak: playerInfo.value?.isWeak || false,
     isOverworked: playerInfo.value?.isOverworked || false,
-    isInjured: playerInfo.value?.isInjured || false
+    isInjured: playerInfo.value?.isInjured ?? 0
   }
   isEditing.value = true
   saveMessage.value = null
@@ -521,14 +539,18 @@ onUnmounted(() => {
                       />
                       <span class="text-gray-300">过劳</span>
                     </label>
-                    <label class="flex items-center gap-3 cursor-pointer">
-                      <input
-                        v-model="editForm.isInjured"
-                        type="checkbox"
-                        class="w-5 h-5 rounded bg-white/5 border-white/10 text-red-500 focus:ring-red-500/50"
-                      />
-                      <span class="text-gray-300">受伤</span>
-                    </label>
+                    <div class="flex items-center gap-3">
+                      <span class="text-gray-300">身体状态</span>
+                      <select
+                        v-model.number="editForm.isInjured"
+                        class="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500/50"
+                      >
+                        <option :value="0">未受伤</option>
+                        <option :value="1">受伤</option>
+                        <option :value="2">重伤</option>
+                        <option :value="3">死亡</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -614,6 +636,39 @@ onUnmounted(() => {
                             </div>
                           </Transition>
                         </div>
+
+                        <div v-else class="relative inline-block">
+                          <button
+                            type="button"
+                            class="px-3 py-1.5 bg-emerald-900/40 border border-emerald-700/50 rounded-lg cursor-pointer transition-all duration-200 hover:bg-emerald-900/60"
+                            @mouseenter="showStatusPopover = true"
+                            @mouseleave="showStatusPopover = false"
+                            @focus="showStatusPopover = true"
+                            @blur="showStatusPopover = false"
+                          >
+                            <span class="text-emerald-300 text-xs md:text-sm">
+                              状态：健康
+                            </span>
+                          </button>
+
+                          <Transition name="fade-pop">
+                            <div
+                              v-show="showStatusPopover"
+                              class="absolute top-full left-0 mt-2 w-[22rem] md:w-96 bg-slate-900/95 border border-emerald-700/50 rounded-xl p-4 shadow-2xl will-change-transform transform-gpu"
+                              style="z-index: 9999;"
+                              @mouseenter="showStatusPopover = true"
+                              @mouseleave="showStatusPopover = false"
+                            >
+                              <h3 class="text-white font-semibold mb-3">状态详情</h3>
+                              <div class="bg-slate-800/60 rounded-lg p-3 border border-emerald-900/30">
+                                <div class="flex items-center justify-between mb-2">
+                                  <span class="text-emerald-300 font-medium">健康</span>
+                                </div>
+                                <p class="text-slate-300 text-sm leading-relaxed">健康？不，这只是"尚未被选定"。就像祭坛上那只还未被指尖指向的羔羊，它的平静不值得羡慕。心跳均匀如无人敲击的钟——这种状态不会长久，但它此刻真实得可疑（无负面效果）。</p>
+                              </div>
+                            </div>
+                          </Transition>
+                        </div>
                       </div>
                     </div>
 
@@ -642,7 +697,11 @@ onUnmounted(() => {
                       </div>
 
                       <div class="text-slate-500 text-xs md:text-sm mb-1">游戏进度</div>
-                      <div class="text-2xl md:text-3xl text-cyan-300 font-bold">第 {{ dashboardProfile.currentDay }} 天</div>
+                      <div class="flex items-baseline gap-1">
+                        <span class="text-sm text-cyan-400/70 font-medium">第</span>
+                        <span class="text-3xl md:text-4xl text-cyan-300 font-black tracking-tight">{{ dashboardProfile.currentDay }}</span>
+                        <span class="text-sm text-cyan-400/70 font-medium">天</span>
+                      </div>
                     </div>
                   </div>
                   <div class="h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-transparent"></div>
