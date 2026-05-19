@@ -1,6 +1,7 @@
 package com.example.snowisland.service;
 
 import com.example.snowisland.entity.Player;
+import com.example.snowisland.util.PlayerStatusCatalog;
 import com.example.snowisland.entity.PlayerItem;
 import com.example.snowisland.entity.User;
 import com.example.snowisland.entity.Job;
@@ -43,6 +44,8 @@ public class PlayerService {
 
     private Map<String, Map<Integer, String>> itemNames = new HashMap<>();
     private Map<String, Map<Integer, String>> itemUnits = new HashMap<>();
+    private Map<String, Map<Integer, String>> itemRemarks = new HashMap<>();
+    private Map<Integer, Integer> weaponThreatLevels = new HashMap<>();
 
     public PlayerService() {
         initItemData();
@@ -58,14 +61,19 @@ public class PlayerService {
         itemUnits.put("weapon", new HashMap<>());
         itemUnits.put("ammo", new HashMap<>());
         itemUnits.put("material", new HashMap<>());
+
+        itemRemarks.put("item", new HashMap<>());
+        itemRemarks.put("weapon", new HashMap<>());
+        itemRemarks.put("ammo", new HashMap<>());
+        itemRemarks.put("material", new HashMap<>());
     }
 
     public void loadItemNames() {
         List<Object[]> items = entityManager.createNativeQuery(
-            "SELECT 'item' as type, id, name, unit FROM item " +
-            "UNION ALL SELECT 'weapon', id, name, unit FROM weapon " +
-            "UNION ALL SELECT 'ammo', id, name, unit FROM ammo " +
-            "UNION ALL SELECT 'material', id, name, unit FROM material"
+            "SELECT 'item' as type, id, name, unit, remark FROM item " +
+            "UNION ALL SELECT 'weapon', id, name, unit, remark FROM weapon " +
+            "UNION ALL SELECT 'ammo', id, name, unit, remark FROM ammo " +
+            "UNION ALL SELECT 'material', id, name, unit, remark FROM material"
         ).getResultList();
 
         for (Object[] row : items) {
@@ -73,8 +81,19 @@ public class PlayerService {
             Integer id = ((Number) row[1]).intValue();
             String name = (String) row[2];
             String unit = (String) row[3];
+            String remark = row[4] != null ? String.valueOf(row[4]) : "";
             itemNames.get(type).put(id, name);
             itemUnits.get(type).put(id, unit);
+            itemRemarks.get(type).put(id, remark);
+        }
+
+        weaponThreatLevels.clear();
+        @SuppressWarnings("unchecked")
+        List<Object[]> weapons = entityManager.createNativeQuery(
+                "SELECT id, threat_level FROM weapon"
+        ).getResultList();
+        for (Object[] row : weapons) {
+            weaponThreatLevels.put(((Number) row[0]).intValue(), ((Number) row[1]).intValue());
         }
     }
 
@@ -93,6 +112,10 @@ public class PlayerService {
             String name = itemNames.get(type).getOrDefault(itemId, "未知物品");
             item.put("name", name);
             item.put("unit", itemUnits.get(type).getOrDefault(itemId, "个"));
+            item.put("remark", itemRemarks.get(type).getOrDefault(itemId, ""));
+            if ("weapon".equals(type)) {
+                item.put("threatLevel", weaponThreatLevels.getOrDefault(itemId, 0));
+            }
             result.add(item);
         }
 
@@ -244,6 +267,10 @@ public class PlayerService {
             result.put("isWeak", player.getIsWeak());
             result.put("isOverworked", player.getIsOverworked());
             result.put("isInjured", player.getIsInjured() != null ? player.getIsInjured() : 0);
+            result.put("isSeverelyInjured", player.getIsSeverelyInjured());
+            result.put("isDead", player.getIsDead());
+            result.put("statuses", PlayerStatusCatalog.buildStatusList(player));
+            result.putAll(PlayerStatusCatalog.combatFlags(player));
             result.put("faction", player.getFaction() != null ? player.getFaction().name() : null);
             result.put("jobId", player.getJobId());
             result.put("skillId", player.getSkillId());
@@ -296,6 +323,7 @@ public class PlayerService {
         Map<String, Object> stock = playerSupplyService.getPersonalResourceTotals(playerId);
         result.put("foodKg", stock.getOrDefault("foodKg", 0));
         result.put("fuelKg", stock.getOrDefault("fuelKg", 0));
+        result.put("woodKg", stock.getOrDefault("woodKg", 0));
         result.put("fuelLiters", stock.getOrDefault("fuelLiters", 0));
         result.put("foodSupply", playerSupplyService.buildPlayerFoodSupply(playerId));
         result.put("energyReserve", playerSupplyService.buildPlayerEnergyReserve(playerId));

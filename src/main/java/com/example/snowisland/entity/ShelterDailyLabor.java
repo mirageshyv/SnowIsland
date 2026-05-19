@@ -14,8 +14,11 @@ public class ShelterDailyLabor {
     @Column(name = "game_day", nullable = false)
     private Integer gameDay;
 
-    @Column(name = "player_id", nullable = false)
-    private Integer playerId;
+    @Column(name = "worker_kind", nullable = false, length = 10)
+    private String workerKind = "player";
+
+    @Column(name = "worker_id", nullable = false)
+    private Integer workerId;
 
     @Column(name = "build_value", nullable = false)
     private Integer buildValue = 0;
@@ -50,12 +53,30 @@ public class ShelterDailyLabor {
         this.gameDay = gameDay;
     }
 
+    public String getWorkerKind() {
+        return workerKind;
+    }
+
+    public void setWorkerKind(String workerKind) {
+        this.workerKind = workerKind;
+    }
+
+    public Integer getWorkerId() {
+        return workerId;
+    }
+
+    public void setWorkerId(Integer workerId) {
+        this.workerId = workerId;
+    }
+
+    /** @deprecated use workerId with workerKind */
     public Integer getPlayerId() {
-        return playerId;
+        return "player".equalsIgnoreCase(workerKind) ? workerId : null;
     }
 
     public void setPlayerId(Integer playerId) {
-        this.playerId = playerId;
+        this.workerKind = "player";
+        this.workerId = playerId;
     }
 
     public Integer getBuildValue() {

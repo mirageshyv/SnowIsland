@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
-/** Food (material #5) and fuel (material #8) in {@code player_items}. */
+/** Food (material #5), wood (#2), and fuel (#8) in {@code player_items}. */
 @Service
 public class PlayerSupplyService {
 
@@ -21,6 +21,7 @@ public class PlayerSupplyService {
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("foodKg", getMaterialQuantity(playerId, ItemCatalog.FOOD_MATERIAL_ID));
         out.put("fuelKg", getMaterialQuantity(playerId, ItemCatalog.FUEL_MATERIAL_ID));
+        out.put("woodKg", getMaterialQuantity(playerId, ItemCatalog.WOOD_MATERIAL_ID));
         out.put("fuelLiters", 0);
         return out;
     }
@@ -34,9 +35,13 @@ public class PlayerSupplyService {
     }
 
     public Map<String, Object> buildPlayerEnergyReserve(int playerId) {
-        int q = getMaterialQuantity(playerId, ItemCatalog.FUEL_MATERIAL_ID);
+        int fuelQ = getMaterialQuantity(playerId, ItemCatalog.FUEL_MATERIAL_ID);
+        int woodQ = getMaterialQuantity(playerId, ItemCatalog.WOOD_MATERIAL_ID);
         Map<String, Object> block = new LinkedHashMap<>();
-        block.put("items", Collections.singletonList(row(ItemCatalog.FUEL_MATERIAL_ID, ItemCatalog.FUEL_NAME, ItemCatalog.FUEL_UNIT, q)));
+        block.put("woodKg", woodQ);
+        block.put("items", List.of(
+                row(ItemCatalog.FUEL_MATERIAL_ID, ItemCatalog.FUEL_NAME, ItemCatalog.FUEL_UNIT, fuelQ),
+                row(ItemCatalog.WOOD_MATERIAL_ID, ItemCatalog.WOOD_NAME, ItemCatalog.WOOD_UNIT, woodQ)));
         return block;
     }
 

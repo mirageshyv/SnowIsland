@@ -2,9 +2,23 @@
 import { ref, computed, onMounted, watch, reactive } from 'vue'
 import { actionAPI, playerAPI, locationAPI, warehouseAPI } from '@/utils/api.js'
 import { formatPlayerActionResult, sanitizeNonNegativeInt } from '@/data/gameData.js'
+import { useGameDayScope } from '@/composables/useGameDayScope.js'
+import { parseTransportNotes, applyTransportQuantities } from '@/utils/actionFormHydration.js'
 
 const playerId = localStorage.getItem('playerId') || ''
-const gameDay = ref(1)
+const {
+  currentGameDay,
+  currentPhase,
+  viewGameDay: gameDay,
+  dayOptions,
+  phaseLabel,
+  daytimeEditable,
+  viewOnlyDaytimeReason,
+  loadGameState,
+  syncFromContext,
+} = useGameDayScope()
+
+const isHydrating = ref(false)
 
 const actionData = reactive({
   1: { type: '', target: '', npc: '', notes: '', result: '' },
@@ -24,6 +38,24 @@ const submitContext = ref({ isShelterLaborer: false, laborerMessage: '' })
 const PENDING_RESULT_TEXT = '已提交，等待主持人确认。'
 
 const isShelterLaborer = computed(() => Boolean(submitContext.value?.isShelterLaborer))
+
+const submittedSlotSet = computed(
+  () => new Set((submittedActions.value || []).map((a) => a.actionSlot).filter(Boolean))
+)
+
+function isSlotSubmitted(slot) {
+  return submittedSlotSet.value.has(slot)
+}
+
+function isSlotEditable(slot) {
+  return daytimeEditable.value && !isSlotSubmitted(slot)
+}
+
+const canSubmitAny = computed(
+  () =>
+    daytimeEditable.value &&
+    [1, 2].some((s) => actionData[s].type && !isSlotSubmitted(s))
+)
 
 const warehouses = ref([])
 const warehouseStock = ref([])
@@ -93,10 +125,26 @@ const warehouseOptions = computed(() => {
     .map((w) => ({ value: w.warehouseKey, label: w.warehouseName }))
 })
 
-watch(() => actionData[1].type, (nv) => { actionData[1].target = ''; actionData[1].npc = ''; transportMode[1] = ''; transportSource[1] = ''; transportDest[1] = ''; transportItems[1] = [] })
-watch(() => actionData[2].type, (nv) => { actionData[2].target = ''; actionData[2].npc = ''; transportMode[2] = ''; transportSource[2] = ''; transportDest[2] = ''; transportItems[2] = [] })
-watch(() => actionData[1].target, () => { actionData[1].npc = '' })
-watch(() => actionData[2].target, () => { actionData[2].npc = '' })
+watch(() => actionData[1].type, () => {
+  if (isHydrating.value) return
+  actionData[1].target = ''
+  actionData[1].npc = ''
+  transportMode[1] = ''
+  transportSource[1] = ''
+  transportDest[1] = ''
+  transportItems[1] = []
+})
+watch(() => actionData[2].type, () => {
+  if (isHydrating.value) return
+  actionData[2].target = ''
+  actionData[2].npc = ''
+  transportMode[2] = ''
+  transportSource[2] = ''
+  transportDest[2] = ''
+  transportItems[2] = []
+})
+watch(() => actionData[1].target, () => { if (!isHydrating.value) actionData[1].npc = '' })
+watch(() => actionData[2].target, () => { if (!isHydrating.value) actionData[2].npc = '' })
 
 watch(() => transportMode[1], () => onTransportModeChange(1))
 watch(() => transportMode[2], () => onTransportModeChange(2))
@@ -239,6 +287,7 @@ async function loadSubmitContext() {
     if (isNaN(pid)) return
     const ctx = await actionAPI.getSubmitContext(pid, gameDay.value)
     submitContext.value = ctx || { isShelterLaborer: false }
+    syncFromContext(ctx)
   } catch (e) {
     console.error('加载行动上下文失败:', e)
     submitContext.value = { isShelterLaborer: false }
@@ -250,10 +299,58 @@ async function loadSubmittedActions() {
     if (actionAPI && playerId) {
       const result = await actionAPI.getPlayerActions(playerId, gameDay.value)
       submittedActions.value = Array.isArray(result) ? result : []
+      await hydrateFromSubmitted()
     }
   } catch (e) {
     console.error('加载已提交行动失败:', e)
     submittedActions.value = []
+  }
+}
+
+function resetActionSlots() {
+  for (const s of [1, 2]) {
+    actionData[s].type = ''
+    actionData[s].target = ''
+    actionData[s].npc = ''
+    actionData[s].notes = ''
+    actionData[s].result = ''
+    transportMode[s] = ''
+    transportSource[s] = ''
+    transportDest[s] = ''
+    transportItems[s] = []
+  }
+}
+
+async function hydrateFromSubmitted() {
+  isHydrating.value = true
+  resetActionSlots()
+  const actions = submittedActions.value || []
+  try {
+    for (const action of actions) {
+      const slot = action.actionSlot
+      if (slot !== 1 && slot !== 2) continue
+      const ad = actionData[slot]
+      ad.type = action.actionType || ''
+      ad.target = action.targetId != null ? String(action.targetId) : ''
+      ad.npc = action.npcId != null ? String(action.npcId) : ''
+      ad.result = displayActionResult(action)
+      if (action.actionType === 'transport') {
+        const parsed = parseTransportNotes(action.notes)
+        transportMode[slot] = parsed.mode
+        transportSource[slot] = parsed.source
+        transportDest[slot] = parsed.dest
+        if (parsed.mode === 'player_to_warehouse') {
+          await loadPlayerInventory(slot)
+        } else if (parsed.source) {
+          await loadWarehouseStock(parsed.source, slot)
+        }
+        applyTransportQuantities(transportItems[slot], parsed.items)
+      } else if (!['produce', 'hide'].includes(action.actionType)) {
+        ad.notes = action.notes || ''
+      }
+    }
+  } finally {
+    isHydrating.value = false
   }
 }
 
@@ -294,6 +391,10 @@ function validateAction(slot) {
 }
 
 async function submitActions() {
+  if (!daytimeEditable.value) {
+    alert(viewOnlyDaytimeReason.value || '当前不可提交')
+    return
+  }
   if (!actionData[1].type && !actionData[2].type) { alert('请至少选择一个行动'); return }
   if (!validateAction(1) || !validateAction(2)) return
 
@@ -306,7 +407,7 @@ async function submitActions() {
     let anySuccess = false
     for (const s of [1, 2]) {
       const ad = actionData[s]
-      if (!ad.type) continue
+      if (!ad.type || isSlotSubmitted(s)) continue
       let notes = ad.notes || ''
       if (ad.type === 'transport') {
         notes = buildTransportNotes(s)
@@ -349,6 +450,7 @@ watch(gameDay, async () => {
 })
 
 onMounted(async () => {
+  await loadGameState()
   await Promise.all([loadData(), loadPlayerData(), loadWarehouses(), loadSubmitContext()])
   await loadSubmittedActions()
 })
@@ -367,13 +469,25 @@ function displayActionResult(action) {
         <h1 class="text-white text-2xl md:text-3xl font-semibold tracking-tight mb-2">个人行动提交</h1>
         <p class="text-gray-500 text-sm">选择你的两个个人行动并提交</p>
         <div class="mt-3 flex items-center justify-center gap-2">
-          <label class="text-gray-400 text-sm">当前天数：</label>
-          <select v-model="gameDay" class="bg-black/30 border border-white/10 rounded-lg px-3 py-1 text-sm text-gray-200 focus:outline-none">
-            <option :value="1">第1天</option>
-            <option :value="2">第2天</option>
-            <option :value="3">第3天</option>
+          <label class="text-gray-400 text-sm">查看天数：</label>
+          <select
+            v-model.number="gameDay"
+            class="bg-black/30 border border-white/10 rounded-lg px-3 py-1 text-sm text-gray-200 focus:outline-none"
+          >
+            <option v-for="d in dayOptions" :key="d" :value="d">第 {{ d }} 天</option>
           </select>
+          <span class="text-gray-600 text-xs">
+            游戏第 {{ currentGameDay }} 天 · {{ phaseLabel }}
+            <template v-if="gameDay === currentGameDay">（当前）</template>
+          </span>
         </div>
+      </div>
+
+      <div
+        v-if="viewOnlyDaytimeReason"
+        class="mb-6 rounded-2xl border border-slate-500/40 bg-slate-500/10 px-5 py-3 text-center text-slate-300 text-sm"
+      >
+        {{ viewOnlyDaytimeReason }}
       </div>
 
       <div
@@ -400,8 +514,11 @@ function displayActionResult(action) {
                 <label class="text-gray-500 text-xs">选择行动</label>
                 <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-white/5 text-gray-400 hover:text-white hover:border-blue-500/40 hover:bg-blue-500/10 transition-colors text-xs font-semibold" @click="showActionHelpModal = true">?</button>
               </div>
-              <select v-model="actionData[s].type"
-                class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50">
+              <select
+                v-model="actionData[s].type"
+                :disabled="!isSlotEditable(s)"
+                class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
                 <option value="">请选择行动</option>
                 <option v-for="opt in actionTypeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
               </select>
@@ -409,8 +526,11 @@ function displayActionResult(action) {
 
             <div v-if="actionData[s].type && actionData[s].type !== 'hide' && actionData[s].type !== 'produce' && actionData[s].type !== 'use_trait' && actionData[s].type !== 'use_skill' && actionData[s].type !== 'transport' && actionData[s].type !== 'other'">
               <label class="block text-gray-500 text-xs mb-2 ml-0.5">选择目标</label>
-              <select v-model="actionData[s].target"
-                class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50">
+              <select
+                v-model="actionData[s].target"
+                :disabled="!isSlotEditable(s)"
+                class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
                 <option value="">请选择目标</option>
                 <option v-for="t in getTargetOptions(actionData[s].type)" :key="t.value" :value="t.value">{{ t.label }}</option>
               </select>
@@ -418,8 +538,11 @@ function displayActionResult(action) {
 
             <div v-if="actionData[s].type === 'go_location' && actionData[s].target && getNpcOptions(actionData[s].target).length > 0">
               <label class="block text-gray-500 text-xs mb-2 ml-0.5">互动NPC（可选）</label>
-              <select v-model="actionData[s].npc"
-                class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50">
+              <select
+                v-model="actionData[s].npc"
+                :disabled="!isSlotEditable(s)"
+                class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
                 <option value="">不互动</option>
                 <option v-for="n in getNpcOptions(actionData[s].target)" :key="n.value" :value="n.value">{{ n.label }}</option>
               </select>
@@ -459,8 +582,11 @@ function displayActionResult(action) {
             <div v-if="actionData[s].type === 'transport'" class="space-y-3">
               <div>
                 <label class="block text-gray-500 text-xs mb-2 ml-0.5">搬运模式</label>
-                <select v-model="transportMode[s]"
-                  class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50">
+                <select
+                  v-model="transportMode[s]"
+                  :disabled="!isSlotEditable(s)"
+                  class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
                   <option value="">请选择模式</option>
                   <option value="warehouse_to_warehouse">仓库 → 仓库（上限500kg）</option>
                   <option value="warehouse_to_player">仓库 → 个人（上限300kg）</option>
@@ -531,9 +657,13 @@ function displayActionResult(action) {
                 备注说明
                 <span v-if="actionData[s].type === 'use_trait' || actionData[s].type === 'use_skill' || actionData[s].type === 'other'" class="text-red-400">（必填）</span>
               </label>
-              <textarea v-model="actionData[s].notes" rows="3"
+              <textarea
+                v-model="actionData[s].notes"
+                rows="3"
+                :disabled="!isSlotEditable(s)"
                 :placeholder="actionData[s].type === 'use_trait' ? '请详细描述你使用的特性名称及具体效果...' : actionData[s].type === 'use_skill' ? '请详细描述你使用的职业技能及具体效果...' : actionData[s].type === 'other' ? '请详细描述你想执行的具体行动内容...' : '在此输入备注说明...'"
-                class="w-full resize-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-200 text-sm placeholder:text-gray-600 focus:outline-none focus:border-blue-500/50" />
+                class="w-full resize-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-200 text-sm placeholder:text-gray-600 focus:outline-none focus:border-blue-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
+              />
             </div>
 
             <div>
@@ -553,9 +683,12 @@ function displayActionResult(action) {
       </div>
 
       <div class="flex justify-center pb-4">
-        <button type="button" :disabled="submitting"
+        <button
+          type="button"
+          :disabled="submitting || !canSubmitAny"
           class="min-w-[200px] bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-600 text-white px-8 py-3 rounded-xl text-sm font-medium shadow-lg shadow-blue-500/30 transition-all"
-          @click="submitActions">
+          @click="submitActions"
+        >
           {{ submitting ? '提交中...' : '提交行动' }}
         </button>
       </div>

@@ -42,6 +42,7 @@ public class FactionActionService {
     @Autowired private ArkService arkService;
     @Autowired private ShelterService shelterService;
     @Autowired private EntityManager entityManager;
+    @Autowired private GameStateService gameStateService;
 
     public Map<String, Object> getContext(Integer playerId, Integer gameDay) {
         Map<String, Object> ctx = new HashMap<>();
@@ -88,6 +89,7 @@ public class FactionActionService {
         ctx.put("allPlayers", getPlayerSummaries());
         ctx.put("laborCandidates", getLaborCandidates(gameDay));
         ctx.put("history", todayActions.stream().map(this::toMap).collect(Collectors.toList()));
+        gameStateService.enrichActionEditMeta(ctx, gameDay);
 
         return ctx;
     }
@@ -95,6 +97,12 @@ public class FactionActionService {
     @Transactional
     public Map<String, Object> submitAction(Integer playerId, String actionType, Map<String, Object> payload, Integer gameDay) {
         Map<String, Object> result = new HashMap<>();
+        String editDeny = gameStateService.denyDaytimeSubmit(gameDay);
+        if (editDeny != null) {
+            result.put("success", false);
+            result.put("message", editDeny);
+            return result;
+        }
         Optional<Player> optPlayer = playerRepository.findById(playerId);
         if (!optPlayer.isPresent()) {
             result.put("success", false);
