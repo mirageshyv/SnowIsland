@@ -44,6 +44,7 @@ public class NightActionService {
     @Autowired private LocationRepository locationRepository;
     @Autowired private LocationNpcRepository npcRepository;
     @Autowired private PlayerActionRepository playerActionRepository;
+    @Autowired private GameStateService gameStateService;
 
     public Map<String, Object> getContext(Integer playerId, Integer gameDay) {
         Map<String, Object> ctx = new HashMap<>();
@@ -84,12 +85,19 @@ public class NightActionService {
         ctx.put("allowedActionTypes", NIGHT_ACTION_TYPES.getOrDefault(faction, Collections.emptySet()));
         ctx.put("conspiracySubtypes", CONSPIRACY_SUBTYPES.getOrDefault(faction, Collections.emptySet()));
         ctx.put("history", todayActions.stream().map(this::toMap).collect(Collectors.toList()));
+        gameStateService.enrichActionEditMeta(ctx, gameDay);
         return ctx;
     }
 
     @Transactional
     public Map<String, Object> submitAction(Integer playerId, String actionType, Map<String, Object> payload, Integer gameDay) {
         Map<String, Object> result = new HashMap<>();
+        String editDeny = gameStateService.denyNightSubmit(gameDay);
+        if (editDeny != null) {
+            result.put("success", false);
+            result.put("message", editDeny);
+            return result;
+        }
         Optional<Player> optPlayer = playerRepository.findById(playerId);
         if (!optPlayer.isPresent()) {
             result.put("success", false);

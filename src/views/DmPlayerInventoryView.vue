@@ -1,7 +1,12 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { playerAPI, dmPlayerAPI } from '../utils/api.js'
-import { getMaterialImageUrlOrDefault, getTypeTabImage, preloadMaterialImages } from '../data/gameData.js'
+import {
+  getMaterialImageUrlOrDefault,
+  getTypeTabImage,
+  preloadMaterialImages,
+  getWeaponThreatBadgeClass
+} from '../data/gameData.js'
 
 const props = defineProps({
   initialPlayerId: { type: Number, default: null }
@@ -11,7 +16,7 @@ const players = ref([])
 const selectedPlayerId = ref(null)
 const inventoryItems = ref([])
 const catalogItems = ref([])
-const summary = ref({ foodKg: 0, fuelKg: 0, fuelLiters: 0 })
+const summary = ref({ foodKg: 0, fuelKg: 0, woodKg: 0, fuelLiters: 0 })
 const playerName = ref('')
 const loadingPlayers = ref(true)
 const loadingInventory = ref(false)
@@ -130,6 +135,7 @@ async function loadInventory() {
       summary.value = {
         foodKg: result.foodKg ?? 0,
         fuelKg: result.fuelKg ?? 0,
+        woodKg: result.woodKg ?? 0,
         fuelLiters: result.fuelLiters ?? 0
       }
     } else {
@@ -274,8 +280,9 @@ defineExpose({ openPlayer: (id) => { selectedPlayerId.value = id } })
       v-if="selectedPlayerId && !loadingInventory"
       class="mb-4 flex flex-wrap gap-4 text-sm text-gray-400"
     >
-      <span>{{ playerName }} — 食物合计 <span class="text-amber-300">{{ summary.foodKg }}</span> kg</span>
-      <span>固体燃料 <span class="text-yellow-300">{{ summary.fuelKg }}</span> kg</span>
+      <span>{{ playerName }} — 食物合计 <span class="text-amber-300">{{ summary.foodKg }}</span> 千克</span>
+      <span>固体燃料 <span class="text-yellow-300">{{ summary.fuelKg }}</span> 千克</span>
+      <span v-if="summary.woodKg > 0">+ <span class="text-amber-300">{{ summary.woodKg }}</span> 千克 木材</span>
       <span v-if="summary.fuelLiters > 0">油料 <span class="text-yellow-300">{{ summary.fuelLiters }}</span> L</span>
     </div>
 
@@ -368,8 +375,21 @@ defineExpose({ openPlayer: (id) => { selectedPlayerId.value = id } })
               <img :src="selectedRow.imageUrl" :alt="selectedRow.name" class="w-24 h-24 object-contain" />
             </div>
             <h3 class="text-xl text-white font-medium text-center mb-1">{{ selectedRow.name }}</h3>
-            <p class="text-center text-gray-500 text-xs mb-3">
+            <p class="text-center text-gray-500 text-xs mb-2">
               {{ typeLabels[selectedRow.itemType] }} · ID {{ selectedRow.itemId }}
+            </p>
+            <p
+              v-if="selectedRow.itemType === 'weapon' && selectedRow.threatLevel != null"
+              class="text-center mb-3"
+            >
+              <span
+                :class="[
+                  'text-xs px-2 py-1 rounded-full font-medium',
+                  getWeaponThreatBadgeClass(selectedRow.threatLevel)
+                ]"
+              >
+                威胁值 {{ selectedRow.threatLevel }}
+              </span>
             </p>
 
             <template
@@ -446,6 +466,12 @@ defineExpose({ openPlayer: (id) => { selectedPlayerId.value = id } })
               >
                 移除（数量归零）
               </button>
+              <p
+                v-if="selectedRow.description"
+                class="text-gray-400 text-sm leading-relaxed text-left flex-1 overflow-y-auto max-h-48 border-t border-white/5 pt-3"
+              >
+                {{ selectedRow.description }}
+              </p>
             </template>
           </template>
           <div v-else class="flex-1 flex items-center justify-center text-gray-600 text-sm text-center">

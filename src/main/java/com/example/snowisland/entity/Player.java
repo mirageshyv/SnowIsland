@@ -22,6 +22,12 @@ public class Player {
     @Column(name = "is_injured")
     private Integer isInjured = 0;
 
+    @Column(name = "is_severely_injured")
+    private Boolean isSeverelyInjured = false;
+
+    @Column(name = "is_dead")
+    private Boolean isDead = false;
+
     @Column(name = "job_id")
     private Integer jobId;
 
@@ -67,6 +73,12 @@ public class Player {
 
     public Integer getIsInjured() { return isInjured; }
     public void setIsInjured(Integer isInjured) { this.isInjured = isInjured; }
+
+    public Boolean getIsSeverelyInjured() { return isSeverelyInjured; }
+    public void setIsSeverelyInjured(Boolean isSeverelyInjured) { this.isSeverelyInjured = isSeverelyInjured; }
+
+    public Boolean getIsDead() { return isDead; }
+    public void setIsDead(Boolean isDead) { this.isDead = isDead; }
 
     public Integer getJobId() { return jobId; }
     public void setJobId(Integer jobId) { this.jobId = jobId; }

@@ -33,6 +33,9 @@ public class CatastropheService {
     @Autowired
     private PlayerRepository playerRepository;
 
+    @Autowired
+    private PlayerConsumptionService playerConsumptionService;
+
     public Map<String, Object> getProgress() {
         CatastropheProgress progress = progressRepository.findFirstByOrderByIdAsc();
         if (progress == null) {
@@ -104,6 +107,8 @@ public class CatastropheService {
         progress.setProgress(newProgress);
         progress.setLastUpdatedAt(LocalDateTime.now());
         progress = progressRepository.save(progress);
+
+        playerConsumptionService.applyMissedConsumptionPenalties(currentDay);
 
         gameState.setCurrentDay(currentDay + 1);
         gameState = gameStateRepository.save(gameState);

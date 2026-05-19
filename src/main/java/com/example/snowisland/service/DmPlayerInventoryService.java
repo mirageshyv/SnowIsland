@@ -69,6 +69,10 @@ public class DmPlayerInventoryService {
             item.put("name", row.get("name"));
             item.put("unit", row.get("unit"));
             item.put("quantity", row.get("quantity"));
+            item.put("description", row.get("remark"));
+            if ("weapon".equals(type) && row.get("threatLevel") != null) {
+                item.put("threatLevel", row.get("threatLevel"));
+            }
             rows.add(item);
         }
 
@@ -80,6 +84,7 @@ public class DmPlayerInventoryService {
         Map<String, Object> resources = playerSupplyService.getPersonalResourceTotals(playerId);
         result.put("foodKg", resources.get("foodKg"));
         result.put("fuelKg", resources.get("fuelKg"));
+        result.put("woodKg", resources.get("woodKg"));
         result.put("fuelLiters", resources.get("fuelLiters"));
         return result;
     }

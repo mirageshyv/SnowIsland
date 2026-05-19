@@ -347,7 +347,7 @@ const transformItem = (type, item) => {
     name: itemNamesMap[type]?.[itemId] || '未知物品',
     unit: itemUnitsMap[type]?.[itemId] || '个',
     quantity: item.quantity,
-    remark: itemRemarksMap[type]?.[itemId] || '',
+    remark: (item.remark && String(item.remark).trim()) || itemRemarksMap[type]?.[itemId] || '',
     icon: itemIconMap[type]?.[itemId] || '📦',
     imageUrl: getMaterialImageUrlOrDefault(type, itemId),
     threat_level: type === 'weapon' ? weaponThreatMap[itemId] : undefined,
@@ -477,7 +477,7 @@ onUnmounted(() => {
     <!-- 页面标题 -->
     <div class="mb-6">
       <h1 class="text-white mb-1 tracking-tight text-2xl">物资管理</h1>
-      <p class="text-gray-500 text-sm">Materials & Equipment Management</p>
+      <p class="text-gray-500 text-sm">物资与装备管理</p>
     </div>
 
     <!-- 筛选控制区域 -->
@@ -551,7 +551,7 @@ onUnmounted(() => {
         </div>
         <div>
           <h2 class="text-white text-lg font-medium">食物与燃料</h2>
-          <p class="text-gray-500 text-xs">Food & Fuel (by type)</p>
+          <p class="text-gray-500 text-xs">按类型统计</p>
         </div>
       </div>
       <p v-if="!loading && !resourcesLoaded" class="text-amber-500/90 text-sm mb-3">
@@ -575,7 +575,7 @@ onUnmounted(() => {
           </div>
           <div>
             <h2 class="text-white text-lg font-medium">道具</h2>
-            <p class="text-gray-500 text-xs">Items & Equipment</p>
+            <p class="text-gray-500 text-xs">道具与装备</p>
           </div>
           <div class="ml-auto text-sm text-gray-400">
             共 {{ filteredData.item.length }} 件
@@ -607,12 +607,11 @@ onUnmounted(() => {
                   <span class="text-xs text-gray-400 bg-white/5 px-2 py-1 rounded-full">{{ item.unit }}</span>
                 </div>
                 
-                <p class="text-gray-400 text-sm mb-3 line-clamp-2">{{ item.remark }}</p>
-                
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 mb-3">
                   <span class="text-xs text-gray-500">数量</span>
                   <span class="text-lg font-semibold text-blue-400">{{ item.quantity }}</span>
                 </div>
+                <p v-if="item.remark" class="text-gray-400 text-xs leading-relaxed line-clamp-4">{{ item.remark }}</p>
               </div>
             </div>
           </div>
@@ -627,7 +626,7 @@ onUnmounted(() => {
           </div>
           <div>
             <h2 class="text-white text-lg font-medium">武器</h2>
-            <p class="text-gray-500 text-xs">Weapons</p>
+            <p class="text-gray-500 text-xs">武器与弹药</p>
           </div>
           <div class="ml-auto text-sm text-gray-400">
             共 {{ filteredData.weapon.length }} 件
@@ -659,9 +658,7 @@ onUnmounted(() => {
                   <span class="text-xs text-gray-400 bg-white/5 px-2 py-1 rounded-full">{{ weapon.unit }}</span>
                 </div>
                 
-                <p class="text-gray-400 text-sm mb-3 line-clamp-2">{{ weapon.remark }}</p>
-                
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between mb-3">
                   <div class="flex items-center gap-2">
                     <span class="text-xs text-gray-500">数量</span>
                     <span class="text-lg font-semibold text-red-400">{{ weapon.quantity }}</span>
@@ -670,6 +667,7 @@ onUnmounted(() => {
                     威胁 {{ weapon.threat_level }}
                   </span>
                 </div>
+                <p v-if="weapon.remark" class="text-gray-400 text-xs leading-relaxed line-clamp-4">{{ weapon.remark }}</p>
               </div>
             </div>
           </div>
@@ -684,7 +682,7 @@ onUnmounted(() => {
           </div>
           <div>
             <h2 class="text-white text-lg font-medium">子弹</h2>
-            <p class="text-gray-500 text-xs">Ammunition</p>
+            <p class="text-gray-500 text-xs">弹药</p>
           </div>
           <div class="ml-auto text-sm text-gray-400">
             共 {{ filteredData.ammo.length }} 种
@@ -716,17 +714,15 @@ onUnmounted(() => {
                   <span class="text-xs text-gray-400 bg-white/5 px-2 py-1 rounded-full">{{ ammo.unit }}</span>
                 </div>
                 
-                <p class="text-gray-400 text-sm mb-2 line-clamp-2">{{ ammo.remark }}</p>
-                
                 <div class="flex items-center gap-2 mb-2">
-                  <span class="text-xs text-gray-500">适用</span>
-                  <span class="text-xs text-amber-400 bg-amber-500/10 px-2 py-1 rounded">{{ ammo.weapon_name }}</span>
-                </div>
-                
-                <div class="flex items-center gap-2">
                   <span class="text-xs text-gray-500">数量</span>
                   <span class="text-lg font-semibold text-amber-400">{{ ammo.quantity }}</span>
                 </div>
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="text-xs text-gray-500">适用</span>
+                  <span class="text-xs text-amber-400 bg-amber-500/10 px-2 py-1 rounded">{{ ammo.weapon_name }}</span>
+                </div>
+                <p v-if="ammo.remark" class="text-gray-400 text-xs leading-relaxed line-clamp-4">{{ ammo.remark }}</p>
               </div>
             </div>
           </div>
@@ -773,12 +769,11 @@ onUnmounted(() => {
                   <span class="text-xs text-gray-400 bg-white/5 px-2 py-1 rounded-full">{{ material.unit }}</span>
                 </div>
                 
-                <p class="text-gray-400 text-sm mb-3 line-clamp-2">{{ material.remark }}</p>
-                
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 mb-3">
                   <span class="text-xs text-gray-500">数量</span>
                   <span class="text-lg font-semibold text-emerald-400">{{ material.quantity }}</span>
                 </div>
+                <p v-if="material.remark" class="text-gray-400 text-xs leading-relaxed line-clamp-4">{{ material.remark }}</p>
               </div>
             </div>
           </div>

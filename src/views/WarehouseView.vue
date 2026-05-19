@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { warehouseAPI, dmPlayerAPI } from '@/utils/api.js';
-import { getMaterialImageUrlOrDefault, getTypeTabImage, preloadMaterialImages } from '@/data/gameData.js';
+import { getMaterialImageUrlOrDefault, getTypeTabImage, preloadMaterialImages, getWeaponThreatBadgeClass } from '@/data/gameData.js';
 
 const userRole = (localStorage.getItem('userRole') || '').toLowerCase();
 const playerId = localStorage.getItem('playerId') || '';
@@ -370,8 +370,18 @@ onMounted(() => {
                 </div>
               </template>
               <template v-else>
-                <p class="text-cyan-400 text-center text-sm mb-3 tabular-nums">
+                <p class="text-cyan-400 text-center text-sm mb-2 tabular-nums">
                   数量：{{ selectedRow.quantity }} {{ selectedRow.unit }}
+                </p>
+                <p
+                  v-if="selectedRow.itemType === 'weapon' && selectedRow.threatLevel != null"
+                  class="text-center mb-3"
+                >
+                  <span
+                    :class="['text-xs px-2 py-1 rounded-full font-medium', getWeaponThreatBadgeClass(selectedRow.threatLevel)]"
+                  >
+                    威胁值 {{ selectedRow.threatLevel }}
+                  </span>
                 </p>
                 <button
                   v-if="isDm"
@@ -382,11 +392,12 @@ onMounted(() => {
                 </button>
               </template>
 
-              <div class="border-t border-white/5 pt-3 mt-auto">
-                <p class="text-gray-500 text-xs leading-relaxed">
-                  {{ selectedRow.name }} — {{ typeLabels[selectedRow.itemType] }}类物资，存储于{{ currentWarehouseName }}。
-                </p>
-              </div>
+              <p
+                v-if="selectedRow.description"
+                class="text-gray-400 text-sm leading-relaxed text-left overflow-y-auto max-h-48 border-t border-white/5 pt-3 mt-3"
+              >
+                {{ selectedRow.description }}
+              </p>
             </template>
             <div v-else class="flex items-center justify-center flex-1 text-gray-600 text-sm text-center">
               点击左侧物品查看详情

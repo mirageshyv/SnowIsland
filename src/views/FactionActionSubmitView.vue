@@ -1,6 +1,8 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { factionActionAPI, locationAPI, playerAPI } from '@/utils/api.js'
+import { useGameDayScope } from '@/composables/useGameDayScope.js'
+import { applyFactionPayload } from '@/utils/actionFormHydration.js'
 import {
   FACTION_LABELS,
   FACTION_ACTION_DEFS,
@@ -14,7 +16,18 @@ const playerId = parseInt(localStorage.getItem('playerId') || '0')
 const userRole = (localStorage.getItem('userRole') || '').toLowerCase()
 const isGmView = computed(() => userRole === 'dm')
 
-const gameDay = ref(1)
+const {
+  currentGameDay,
+  phaseLabel,
+  viewGameDay: gameDay,
+  dayOptions,
+  daytimeEditable,
+  viewOnlyDaytimeReason,
+  loadGameState,
+  syncFromContext,
+} = useGameDayScope()
+
+const isHydrating = ref(false)
 const viewFaction = ref('')
 const context = ref(null)
 const locations = ref([])
@@ -222,14 +235,24 @@ const actionTypeOptions = computed(() =>
 const currentStatus = computed(() =>
   selectedType.value ? getActionStatus(selectedType.value) : null
 )
-
-const canSubmit = computed(() =>
-  selectedType.value &&
-  currentStatus.value?.btn === 'enabled' &&
-  !isGmView.value &&
-  !submitting.value &&
-  !(selectedType.value === 'ark_construction' && arkLimitWarnings.value.length > 0)
+const canSubmit = computed(
+  () =>
+    daytimeEditable.value &&
+    selectedType.value &&
+    currentStatus.value?.btn === 'enabled' &&
+    !isGmView.value &&
+    !submitting.value &&
+    !(selectedType.value === 'ark_construction' && arkLimitWarnings.value.length > 0)
 )
+
+const formReadOnly = computed(() => !daytimeEditable.value || isGmView.value)
+
+function isRulerActionUsedToday(type) {
+  if (type === 'assign_personnel') return assignPersonnelUsedToday.value
+  if (type === 'assign_guard') return assignGuardUsedToday.value
+
+  return false
+}
 
 function getActionStatus(type) {
   if (!type) return { key: 'none', label: '', btn: 'disabled' }
@@ -283,8 +306,9 @@ function resetFormFields(type) {
 }
 
 watch(selectedType, (type, prev) => {
+  if (isHydrating.value) return
   if (prev) resetFormFields(prev)
-  actionResult.value = ''
+  if (!isHydrating.value) actionResult.value = ''
 })
 
 watch(() => forms.sabotage.targetLocationId, () => {
@@ -308,6 +332,8 @@ async function loadContext() {
     }
     const ctx = await factionActionAPI.getContext(pid, gameDay.value)
     context.value = ctx
+    syncFromContext(ctx)
+    hydrateFactionFromHistory()
     if (!isGmView.value && ctx?.faction) {
       viewFaction.value = ctx.faction
     } else if (isGmView.value && !viewFaction.value) {
@@ -327,6 +353,30 @@ async function loadContext() {
   }
 }
 
+function hydrateFactionFromHistory() {
+  const history = context.value?.history
+  if (!history?.length) {
+    if (!isHydrating.value) {
+      selectedType.value = ''
+      actionResult.value = ''
+    }
+    return
+  }
+  isHydrating.value = true
+  try {
+    const entry = history[0]
+    const type = entry.actionType
+    if (type) {
+      resetFormFields(type)
+      applyFactionPayload(type, entry.payload || {}, forms)
+      selectedType.value = type
+      actionResult.value = entry.result || ''
+    }
+  } finally {
+    isHydrating.value = false
+  }
+}
+
 async function loadLocations() {
   try {
     const res = await locationAPI.getAll()
@@ -337,8 +387,10 @@ async function loadLocations() {
 }
 
 watch(gameDay, () => {
-  selectedType.value = ''
-  actionResult.value = ''
+  if (!isHydrating.value) {
+    selectedType.value = ''
+    actionResult.value = ''
+  }
   loadContext()
 })
 
@@ -466,6 +518,10 @@ function validateClient(type) {
 }
 
 async function submitAction() {
+  if (!daytimeEditable.value) {
+    alert(viewOnlyDaytimeReason.value || '当前不可提交')
+    return
+  }
   if (!selectedType.value) {
     alert('请选择阵营行动')
     return
@@ -490,7 +546,6 @@ async function submitAction() {
     if (res?.success) {
       actionResult.value = res.data?.result || '已提交'
       submitMessage.value = { type: 'success', text: '阵营行动提交成功' }
-      selectedType.value = ''
       await loadContext()
     } else {
       actionResult.value = '提交失败：' + (res?.message || '未知错误')
@@ -525,6 +580,7 @@ const selectClass = 'w-full appearance-none bg-white/5 border border-white/10 ro
 const textareaClass = 'w-full resize-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-200 text-sm placeholder:text-gray-600 focus:outline-none focus:border-blue-500/50'
 
 onMounted(async () => {
+  await loadGameState()
   await loadLocations()
   await loadContext()
 })
@@ -537,16 +593,25 @@ onMounted(async () => {
         <h1 class="text-white text-2xl md:text-3xl font-semibold tracking-tight mb-2">阵营行动</h1>
         <p class="text-gray-500 text-sm">选择阵营行动并提交</p>
         <div class="mt-3 flex items-center justify-center gap-2">
-          <label class="text-gray-400 text-sm">当前天数：</label>
+          <label class="text-gray-400 text-sm">查看天数：</label>
           <select
             v-model.number="gameDay"
             class="bg-black/30 border border-white/10 rounded-lg px-3 py-1 text-sm text-gray-200 focus:outline-none"
           >
-            <option :value="1">第1天</option>
-            <option :value="2">第2天</option>
-            <option :value="3">第3天</option>
+            <option v-for="d in dayOptions" :key="d" :value="d">第 {{ d }} 天</option>
           </select>
+          <span class="text-gray-600 text-xs">
+            游戏第 {{ currentGameDay }} 天 · {{ phaseLabel }}
+            <template v-if="gameDay === currentGameDay">（当前）</template>
+          </span>
         </div>
+      </div>
+
+      <div
+        v-if="viewOnlyDaytimeReason && !isGmView"
+        class="mb-6 max-w-3xl mx-auto rounded-2xl border border-slate-500/40 bg-slate-500/10 px-5 py-3 text-center text-slate-300 text-sm"
+      >
+        {{ viewOnlyDaytimeReason }}
       </div>
 
       <div v-if="isGmView" class="mb-6 flex flex-wrap justify-center gap-2">
@@ -575,7 +640,7 @@ onMounted(async () => {
         <div class="max-w-3xl mx-auto mb-10">
           <div class="relative bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-6 overflow-hidden">
             <div class="absolute top-0 right-0 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl" />
-            <div class="relative space-y-4">
+            <fieldset class="relative space-y-4 border-0 p-0 m-0 min-w-0" :disabled="formReadOnly">
               <div class="flex items-center gap-3">
                 <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white/10 border border-white/10 text-gray-300 text-sm font-medium">⚔</span>
                 <h2 class="text-white text-lg tracking-tight">阵营行动提交</h2>
@@ -602,7 +667,7 @@ onMounted(async () => {
                     @click="showActionHelpModal = true"
                   >?</button>
                 </div>
-                <select v-model="selectedType" :class="selectClass" :disabled="isGmView">
+                <select v-model="selectedType" :class="selectClass" :disabled="formReadOnly">
                   <option value="">请选择行动</option>
                   <option
                     v-for="opt in actionTypeOptions"
@@ -918,7 +983,7 @@ onMounted(async () => {
                   {{ actionResult || '结果将在此显示' }}
                 </div>
               </div>
-            </div>
+            </fieldset>
           </div>
         </div>
 

@@ -53,15 +53,74 @@ export function parseCombatNumber(val) {
   return Number.isFinite(n) ? n : 0
 }
 
-export function computeSkillBonus(jobSkillsText, weaponId) {
-  const skills = String(jobSkillsText || '')
+export function parseJobSkills(jobSkillsText) {
+  return String(jobSkillsText || '')
     .split(/[,，、]/)
     .map((s) => s.trim())
     .filter(Boolean)
-  const hasMeleeSkill = skills.some((s) => s === '格斗' || s === '斗殴')
-  const hasRangedSkill = skills.some((s) => s === '射击')
-  if (hasMeleeSkill && isMeleeWeapon(weaponId)) return 1
-  if (hasRangedSkill && isRangedWeapon(weaponId)) return 1
+}
+
+export function hasMeleeCombatSkill(skills) {
+  return skills.some((s) => s === '格斗' || s === '斗殴')
+}
+
+export function hasRangedCombatSkill(skills) {
+  return skills.some((s) => s === '射击')
+}
+
+const MELEE_BLOCKING_STATUS_KEYS = new Set(['dead', 'severely_injured', 'weak', 'injured'])
+const RANGED_BLOCKING_STATUS_KEYS = new Set(['dead', 'severely_injured', 'weak'])
+
+function blockingStatusNamesForCombat(fighter, kind) {
+  const keySet = kind === 'melee' ? MELEE_BLOCKING_STATUS_KEYS : RANGED_BLOCKING_STATUS_KEYS
+  const fromList = (fighter.statuses || [])
+    .filter((s) => keySet.has(s.key))
+    .map((s) => s.name)
+    .filter(Boolean)
+  if (fromList.length) return fromList
+  const names = []
+  if (fighter.isDead) names.push('死亡')
+  if (fighter.isSeverelyInjured) names.push('重伤')
+  if (fighter.isWeak) names.push('虚弱')
+  if (kind === 'melee' && fighter.isInjured) names.push('受伤')
+  return names
+}
+
+/** When skill bonus would apply but status blocks it — for combat assist UI warning */
+export function getSkillBonusSuppression(fighter) {
+  if (!fighter) return null
+  const skills = parseJobSkills(fighter.jobSkills)
+  const weaponId = fighter.weaponId
+  const meleeWould = hasMeleeCombatSkill(skills) && isMeleeWeapon(weaponId)
+  const rangedWould = hasRangedCombatSkill(skills) && isRangedWeapon(weaponId)
+  if (!meleeWould && !rangedWould) return null
+
+  const meleeDisabled = Boolean(fighter.combatMeleeDisabled ?? fighter.meleeDisabled)
+  const rangedDisabled = Boolean(fighter.combatRangedDisabled ?? fighter.rangedDisabled)
+
+  const lines = []
+  if (meleeWould && meleeDisabled) {
+    const names = blockingStatusNamesForCombat(fighter, 'melee')
+    if (names.length) {
+      lines.push(`${names.join('、')}状态使你无法获得格斗技能战力加成`)
+    }
+  }
+  if (rangedWould && rangedDisabled) {
+    const names = blockingStatusNamesForCombat(fighter, 'ranged')
+    if (names.length) {
+      lines.push(`${names.join('、')}状态使你无法获得射击技能战力加成`)
+    }
+  }
+  if (!lines.length) return null
+  return { tooltip: lines.join('；') }
+}
+
+export function computeSkillBonus(jobSkillsText, weaponId, options = {}) {
+  const meleeDisabled = Boolean(options.meleeDisabled ?? options.combatMeleeDisabled)
+  const rangedDisabled = Boolean(options.rangedDisabled ?? options.combatRangedDisabled)
+  const skills = parseJobSkills(jobSkillsText)
+  if (hasMeleeCombatSkill(skills) && isMeleeWeapon(weaponId) && !meleeDisabled) return 1
+  if (hasRangedCombatSkill(skills) && isRangedWeapon(weaponId) && !rangedDisabled) return 1
   return 0
 }
 

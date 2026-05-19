@@ -29,21 +29,28 @@ export function sumPlayerMaterialsKg(items, materialIds) {
   return total
 }
 
+/** Material id for 木材 (burnable as fuel). */
+export const WOOD_MATERIAL_ID = 2
+export const FUEL_MATERIAL_ID = 8
+
 /**
- * Fallback when `/resources` is unavailable — sums `food` / `energy` stock rows from getItems.
+ * Fallback when `/resources` is unavailable — sums food / fuel / wood from getItems.
  * @param {Array} items — from `playerAPI.getItems`
- * @returns {{ food: number, fuel: number }}
+ * @returns {{ food: number, fuel: number, wood: number }}
  */
 export function sumPersonalFoodAndFuel(items) {
-  if (!Array.isArray(items)) return { food: 0, fuel: 0 }
+  if (!Array.isArray(items)) return { food: 0, fuel: 0, wood: 0 }
   let food = 0
   let fuel = 0
+  let wood = 0
   for (const item of items) {
     const q = quantityToKg(item.quantity, item.unit)
-    if (item.type === 'material' && item.id === 5) food += q
-    if (item.type === 'material' && item.id === 8) fuel += q
+    const id = Number(item.id)
+    if (item.type === 'material' && id === 5) food += q
+    if (item.type === 'material' && id === FUEL_MATERIAL_ID) fuel += q
+    if (item.type === 'material' && id === WOOD_MATERIAL_ID) wood += q
   }
-  return { food, fuel }
+  return { food, fuel, wood }
 }
 
 /**

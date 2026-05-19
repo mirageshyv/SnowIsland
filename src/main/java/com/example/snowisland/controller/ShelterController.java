@@ -77,6 +77,15 @@ public class ShelterController {
         return shelterService.removeShelterStock(itemType, itemId);
     }
 
+    /** DM：结算前预览建造值与状态效果 */
+    @GetMapping("/labor/preview")
+    public Map<String, Object> previewLaborSettlement(@RequestParam(required = false) Integer gameDay) {
+        if (gameDay == null) {
+            gameDay = shelterService.getCurrentGameDay();
+        }
+        return shelterService.previewLaborSettlement(gameDay);
+    }
+
     /** DM：结算指定日建造日志 */
     @PostMapping("/labor/verify")
     public Map<String, Object> verifyLaborDay(@RequestBody Map<String, Object> body) {

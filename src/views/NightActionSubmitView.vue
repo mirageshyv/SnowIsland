@@ -1,6 +1,8 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { nightActionAPI, locationAPI, actionAPI } from '@/utils/api.js'
+import { useGameDayScope } from '@/composables/useGameDayScope.js'
+import { applyNightPayload } from '@/utils/actionFormHydration.js'
 import {
   FACTION_LABELS,
   NIGHT_ACTION_DEFS,
@@ -11,7 +13,18 @@ import {
 } from '@/data/nightActions.js'
 
 const playerId = parseInt(localStorage.getItem('playerId') || '0')
-const gameDay = ref(1)
+const {
+  currentGameDay,
+  phaseLabel,
+  viewGameDay: gameDay,
+  dayOptions,
+  nightEditable,
+  viewOnlyNightReason,
+  loadGameState,
+  syncFromContext,
+} = useGameDayScope()
+
+const isHydrating = ref(false)
 const context = ref(null)
 const locations = ref([])
 const productionInfo = ref(null)
@@ -100,8 +113,14 @@ const currentStatus = computed(() => {
 })
 
 const canSubmit = computed(
-  () => selectedType.value && currentStatus.value?.btn === 'enabled' && !submitting.value
+  () =>
+    nightEditable.value &&
+    selectedType.value &&
+    currentStatus.value?.btn === 'enabled' &&
+    !submitting.value
 )
+
+const formReadOnly = computed(() => !nightEditable.value)
 
 const showConspiracyLocation = computed(() => {
   const sub = forms.conspiracy.conspiracySubtype
@@ -142,8 +161,9 @@ function resetForm(type) {
 }
 
 watch(selectedType, (type, prev) => {
+  if (isHydrating.value) return
   if (prev) resetForm(prev)
-  actionResult.value = ''
+  if (!isHydrating.value) actionResult.value = ''
 })
 
 watch(() => forms.night_personal_action.actionType, () => {
@@ -166,8 +186,10 @@ async function loadContext() {
       actionAPI.getProductionInfo(playerId),
     ])
     context.value = ctx
+    syncFromContext(ctx)
     locations.value = Array.isArray(locs) ? locs : []
     productionInfo.value = prod
+    hydrateNightFromHistory()
   } catch (e) {
     console.error(e)
   } finally {
@@ -175,9 +197,35 @@ async function loadContext() {
   }
 }
 
+function hydrateNightFromHistory() {
+  const history = context.value?.history
+  if (!history?.length) {
+    if (!isHydrating.value) {
+      selectedType.value = ''
+      actionResult.value = ''
+    }
+    return
+  }
+  isHydrating.value = true
+  try {
+    const entry = history[0]
+    const type = entry.actionType
+    if (type) {
+      resetForm(type)
+      applyNightPayload(type, entry.payload || {}, forms)
+      selectedType.value = type
+      actionResult.value = entry.result || ''
+    }
+  } finally {
+    isHydrating.value = false
+  }
+}
+
 watch(gameDay, () => {
-  selectedType.value = ''
-  actionResult.value = ''
+  if (!isHydrating.value) {
+    selectedType.value = ''
+    actionResult.value = ''
+  }
   loadContext()
 })
 
@@ -254,6 +302,10 @@ function validateClient(type) {
 }
 
 async function submitAction() {
+  if (!nightEditable.value) {
+    alert(viewOnlyNightReason.value || '当前不可提交')
+    return
+  }
   if (!selectedType.value) {
     alert('请选择夜晚行动')
     return
@@ -277,7 +329,6 @@ async function submitAction() {
     if (res?.success) {
       actionResult.value = res.data?.result || '已提交'
       submitMessage.value = { type: 'success', text: '夜晚行动提交成功' }
-      selectedType.value = ''
       await loadContext()
     } else {
       submitMessage.value = { type: 'error', text: res?.message || '提交失败' }
@@ -295,7 +346,10 @@ const selectClass =
 const textareaClass =
   'w-full resize-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-200 text-sm placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/50'
 
-onMounted(loadContext)
+onMounted(async () => {
+  await loadGameState()
+  await loadContext()
+})
 </script>
 
 <template>
@@ -305,16 +359,25 @@ onMounted(loadContext)
         <h1 class="text-white text-2xl md:text-3xl font-semibold tracking-tight mb-2">夜晚行动</h1>
         <p class="text-gray-500 text-sm">根据阵营选择夜间行动并提交，由主持人在夜晚阶段结算</p>
         <div class="mt-3 flex items-center justify-center gap-2">
-          <label class="text-gray-400 text-sm">当前天数：</label>
+          <label class="text-gray-400 text-sm">查看天数：</label>
           <select
             v-model.number="gameDay"
             class="bg-black/30 border border-white/10 rounded-lg px-3 py-1 text-sm text-gray-200"
           >
-            <option :value="1">第1天</option>
-            <option :value="2">第2天</option>
-            <option :value="3">第3天</option>
+            <option v-for="d in dayOptions" :key="d" :value="d">第 {{ d }} 天</option>
           </select>
+          <span class="text-gray-600 text-xs">
+            游戏第 {{ currentGameDay }} 天 · {{ phaseLabel }}
+            <template v-if="gameDay === currentGameDay">（当前）</template>
+          </span>
         </div>
+      </div>
+
+      <div
+        v-if="viewOnlyNightReason"
+        class="mb-6 max-w-3xl mx-auto rounded-2xl border border-slate-500/40 bg-slate-500/10 px-5 py-3 text-center text-slate-300 text-sm"
+      >
+        {{ viewOnlyNightReason }}
       </div>
 
       <div v-if="loading" class="flex justify-center py-20">
@@ -329,7 +392,7 @@ onMounted(loadContext)
         <div
           class="relative bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-6 mb-8"
         >
-          <div class="space-y-4">
+          <fieldset class="space-y-4 border-0 p-0 m-0 min-w-0" :disabled="formReadOnly">
             <div class="flex items-center gap-3">
               <span
                 class="inline-flex w-9 h-9 items-center justify-center rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-sm"
@@ -524,7 +587,7 @@ onMounted(loadContext)
                 {{ actionResult || '结果将在此显示' }}
               </div>
             </div>
-          </div>
+          </fieldset>
         </div>
 
         <div v-if="submitMessage" class="flex justify-center mb-4">
