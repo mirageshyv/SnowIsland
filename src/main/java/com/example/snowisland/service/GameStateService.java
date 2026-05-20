@@ -24,6 +24,11 @@ public class GameStateService {
         return toMap(state, true);
     }
 
+    public int getCurrentDay() {
+        GameState state = ensureState();
+        return state.getCurrentDay() != null ? state.getCurrentDay() : 1;
+    }
+
     /** Edit rules for action submit UIs viewing {@code viewDay}. */
     public Map<String, Object> actionEditMeta(Integer viewDay) {
         GameState state = ensureState();

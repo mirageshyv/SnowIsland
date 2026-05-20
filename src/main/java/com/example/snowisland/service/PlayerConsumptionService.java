@@ -23,6 +23,8 @@ public class PlayerConsumptionService {
 
   public static final int DEFAULT_FOOD_UNITS = 2;
   public static final int DEFAULT_FUEL_KG = 15;
+  public static final int WOOD_HEAT_PER_KG = 1;
+  public static final int FUEL_HEAT_PER_KG = 15;
 
   @Autowired private PlayerDailyConsumptionRepository consumptionRepository;
   @Autowired private GameDaySettingsRepository gameDaySettingsRepository;
@@ -160,7 +162,7 @@ public class PlayerConsumptionService {
     int newFood = row.getConsumedFoodUnits() + addFood;
     int newWoodTotal = row.getFuelFromWoodKg() + addWood;
     int newFuelTotal = row.getFuelFromFuelKg() + addFuel;
-    int newHeating = newWoodTotal + newFuelTotal;
+    int newHeating = newWoodTotal * WOOD_HEAT_PER_KG + newFuelTotal * FUEL_HEAT_PER_KG;
 
     if (newFood > row.getRequiredFoodUnits()) {
       out.put("success", false);
@@ -171,7 +173,7 @@ public class PlayerConsumptionService {
     if (newHeating > row.getRequiredFuelKg()) {
       out.put("success", false);
       out.put("message", "取暖累计将超过当日需求（还需 "
-              + Math.max(0, row.getRequiredFuelKg() - row.getConsumedFuelKg()) + " 千克）");
+              + Math.max(0, row.getRequiredFuelKg() - row.getConsumedFuelKg()) + " 热值）");
       return out;
     }
 

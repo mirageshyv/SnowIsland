@@ -42,6 +42,12 @@ public class DmPlayerManagementService {
     @Autowired
     private PlayerItemRepository playerItemRepository;
 
+    @Autowired
+    private GameStateService gameStateService;
+
+    @Autowired
+    private PlayerDailyConsumptionRepository playerDailyConsumptionRepository;
+
     public Map<String, Object> listPlayersForDm(String userRole) {
         Map<String, Object> result = new LinkedHashMap<>();
         if (!isDm(userRole)) {
@@ -57,9 +63,15 @@ public class DmPlayerManagementService {
             skillNames.put(skill.getId(), skill.getName());
         }
 
+        int currentGameDay = gameStateService.getCurrentDay();
+        Map<Integer, Boolean> consumptionStatus = new HashMap<>();
+        for (PlayerDailyConsumption c : playerDailyConsumptionRepository.findByGameDay(currentGameDay)) {
+            consumptionStatus.put(c.getPlayerId(), Boolean.TRUE.equals(c.getSubmitted()));
+        }
+
         List<Map<String, Object>> rows = new ArrayList<>();
         for (Player player : playerRepository.findAll()) {
-            rows.add(toDmPlayerRow(player, jobNames, skillNames));
+            rows.add(toDmPlayerRow(player, jobNames, skillNames, consumptionStatus));
         }
         result.put("success", true);
         result.put("players", rows);
@@ -98,7 +110,7 @@ public class DmPlayerManagementService {
         }
 
         String factionStr = stringVal(body.get("faction"));
-        if (factionStr == null || factionStr.isBlank()) {
+        if (factionStr == null || factionStr.trim().isEmpty()) {
             return deny(result, "请选择阵营");
         }
 
@@ -383,7 +395,7 @@ public class DmPlayerManagementService {
         userRepository.save(user);
     }
 
-    private Map<String, Object> toDmPlayerRow(Player player, Map<Integer, String> jobNames, Map<Integer, String> skillNames) {
+    private Map<String, Object> toDmPlayerRow(Player player, Map<Integer, String> jobNames, Map<Integer, String> skillNames, Map<Integer, Boolean> consumptionStatus) {
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("id", player.getId());
         row.put("name", player.getName());
@@ -398,6 +410,7 @@ public class DmPlayerManagementService {
         row.put("isSeverelyInjured", Boolean.TRUE.equals(player.getIsSeverelyInjured()));
         row.put("isDead", Boolean.TRUE.equals(player.getIsDead()));
         row.put("statuses", com.example.snowisland.util.PlayerStatusCatalog.buildStatusList(player));
+        row.put("dailyConsumptionMet", consumptionStatus.getOrDefault(player.getId(), false));
 
         userRepository.findByPlayerId(player.getId()).ifPresent(user -> {
             row.put("loginUsername", user.getUsername());
@@ -416,7 +429,7 @@ public class DmPlayerManagementService {
     }
 
     private static void validateLoginUsername(String username) {
-        if (username == null || username.isBlank()) {
+        if (username == null || username.trim().isEmpty()) {
             throw new IllegalArgumentException("请填写登录账号");
         }
         String trimmed = username.trim();
@@ -430,7 +443,7 @@ public class DmPlayerManagementService {
     }
 
     private static void validateLoginPassword(String password) {
-        if (password == null || password.isBlank()) {
+        if (password == null || password.trim().isEmpty()) {
             throw new IllegalArgumentException("请填写登录密码");
         }
         if (password.length() > PASSWORD_MAX_LENGTH) {

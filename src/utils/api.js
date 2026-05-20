@@ -72,6 +72,7 @@ export const authAPI = {
 
 export const playerAPI = {
   getAll: () => request(`${API_BASE}/players`),
+  getForTrade: () => request(`${API_BASE}/players/for-trade`),
   get: (id) => request(`${API_BASE}/players/${id}`),
   getDetails: (id) => request(`${API_BASE}/players/${id}/details`),
   getItems: (id) => request(`${API_BASE}/players/${id}/items`),
@@ -382,6 +383,36 @@ export const factionActionAPI = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ feedback }),
+    }),
+}
+
+export const quickInteractionAPI = {
+  getContext: (playerId, gameDay) =>
+    request(`${API_BASE}/quick-interactions/context/${playerId}${gameDay ? '?gameDay=' + gameDay : ''}`),
+  submit: (data) =>
+    request(`${API_BASE}/quick-interactions/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
+  getAll: (params = {}) => {
+    const qs = Object.entries(params)
+      .filter(([, v]) => v != null && v !== '')
+      .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+      .join('&')
+    return request(`${API_BASE}/quick-interactions/all${qs ? '?' + qs : ''}`)
+  },
+  reply: (interactionId, reply) =>
+    request(`${API_BASE}/quick-interactions/${interactionId}/reply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-User-Role': localStorage.getItem('userRole') || '' },
+      body: JSON.stringify({ reply }),
+    }),
+  updateStatus: (interactionId, status) =>
+    request(`${API_BASE}/quick-interactions/${interactionId}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-User-Role': localStorage.getItem('userRole') || '' },
+      body: JSON.stringify({ status }),
     }),
 }
 

@@ -5,9 +5,10 @@ export const FACTION_LABELS = {
   '反叛者': { key: 'rebel', label: '反叛者', color: 'text-purple-400 border-purple-500/30 bg-purple-500/10' },
   '冒险者': { key: 'adventurer', label: '冒险者', color: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10' },
   '天灾使者': { key: 'scourge', label: '天灾使者', color: 'text-amber-400 border-amber-500/30 bg-amber-500/10' },
+  '平民': { key: 'civilian', label: '平民', color: 'text-gray-400 border-gray-500/30 bg-gray-500/10' },
 }
 
-export const GM_FACTION_TABS = ['统治者', '反叛者', '冒险者', '天灾使者']
+export const GM_FACTION_TABS = ['统治者', '反叛者', '冒险者', '天灾使者', '平民']
 
 export const ASSIGNED_FREE_ACTIONS = [
   { value: 'investigate_location', label: '调查地点' },

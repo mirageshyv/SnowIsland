@@ -377,20 +377,24 @@ public class ActionService {
         for (PlayerAction action : actions) {
             if (action.getStatus() == PlayerAction.ActionStatus.feedbacked) {
                 if (!Boolean.TRUE.equals(action.getFeedbackPublished())) {
-                    boolean failed = isActionFailed(action.getResult());
-                    if (!failed && "transport".equals(action.getActionType())) {
-                        String execError = applyPendingTransportOnPublish(action);
-                        if (execError != null) {
-                            errors.add(action.getPlayerName() + "（行动" + action.getActionSlot() + "）：" + execError);
-                            continue;
+                    try {
+                        boolean failed = isActionFailed(action.getResult());
+                        if (!failed && "transport".equals(action.getActionType())) {
+                            String execError = applyPendingTransportOnPublish(action);
+                            if (execError != null) {
+                                errors.add(action.getPlayerName() + "（行动" + action.getActionSlot() + "）：" + execError);
+                                continue;
+                            }
                         }
+                        if (!failed && "hide".equals(action.getActionType())) {
+                            applyHideEffects(action);
+                        }
+                        action.setFeedbackPublished(true);
+                        actionRepository.save(action);
+                        published++;
+                    } catch (Exception e) {
+                        errors.add(action.getPlayerName() + "（行动" + action.getActionSlot() + "）处理异常：" + e.getMessage());
                     }
-                    if (!failed && "hide".equals(action.getActionType())) {
-                        applyHideEffects(action);
-                    }
-                    action.setFeedbackPublished(true);
-                    actionRepository.save(action);
-                    published++;
                 }
             } else {
                 pending++;

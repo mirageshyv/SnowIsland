@@ -1,7 +1,7 @@
 /*
 Navicat MySQL Data Transfer
 
-Source Server         : course_system
+Source Server         : cc
 Source Server Version : 50717
 Source Host           : localhost:3306
 Source Database       : snowisland
@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50717
 File Encoding         : 65001
 
-Date: 2026-05-19 23:11:26
+Date: 2026-05-20 16:02:13
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -108,7 +108,7 @@ CREATE TABLE `ark_construction` (
 -- ----------------------------
 -- Records of ark_construction
 -- ----------------------------
-INSERT INTO `ark_construction` VALUES ('1', '80', '71', '90', '1', '1', '1', '41', '68.25', '0', '2026-05-13 22:06:35', '2026-05-19 21:56:34');
+INSERT INTO `ark_construction` VALUES ('1', '280', '100', '100', '3', '2', '1', '56', '100.00', '1', '2026-05-13 22:06:35', '2026-05-20 14:28:45');
 
 -- ----------------------------
 -- Table structure for ark_construction_log
@@ -353,7 +353,7 @@ CREATE TABLE `catastrophe_progress` (
 -- ----------------------------
 -- Records of catastrophe_progress
 -- ----------------------------
-INSERT INTO `catastrophe_progress` VALUES ('1', '0', '2026-05-19 22:07:23', '2026-05-14 11:53:11', '2026-05-19 22:07:23');
+INSERT INTO `catastrophe_progress` VALUES ('1', '33', '2026-05-20 10:23:00', '2026-05-14 11:53:11', '2026-05-20 10:23:00');
 
 -- ----------------------------
 -- Table structure for drawn_cards
@@ -403,12 +403,25 @@ CREATE TABLE `faction_action` (
 -- ----------------------------
 -- Records of faction_action
 -- ----------------------------
-INSERT INTO `faction_action` VALUES ('1', '2', '莉莉丝', '反叛者', 'secret_contact', '{\"targetPlayerId\":1,\"message\":\"我是你爸爸\",\"anonymous\":true}', '✓ 已提交【暗中联络】\n\n收件人：阿尔伯特\n匿名发送：是\n信息摘要：我是你爸爸\n\n仅主持人与目标可见。等待主持人确认。\n\n【DM反馈】\nok', 'feedbacked', '1', 'day', '2026-05-18 22:57:22', '2026-05-18 22:57:51');
-INSERT INTO `faction_action` VALUES ('5', '1', '阿尔伯特', '统治者', 'assign_personnel', '{\"targetId\":1,\"targetKind\":\"npc\",\"assignedActions\":[{\"action\":\"guard\",\"targetLocationId\":1}],\"note\":\"\"}', '✓ 已提交【安排人员】\n\n目标：克拉拉·南丁格尔\n须提交的自由行动（共1项）：\n  1. 看守（警察局）\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。\n\n【DM反馈】\n1', 'feedbacked', '1', 'day', '2026-05-19 11:58:33', '2026-05-19 12:07:57');
-INSERT INTO `faction_action` VALUES ('6', '1', '阿尔伯特', '统治者', 'assign_guard', '{\"actorId\":3,\"targetLocationId\":11,\"assignedAction\":\"assassinate\",\"armed\":true}', '✓ 已提交【安排看守】\n\n看守人员：罗宾\n看守地点：酒吧\n须提交的夜晚行动：暗杀\n消耗对方夜晚行动点：是\n计入武器：是\n基础防御：+3\n武器威胁加成：+2\n总防御值：5\n\n对方须提交与上述一致的夜晚行动。等待主持人确认。\n\n【DM反馈】\n1', 'feedbacked', '1', 'day', '2026-05-19 12:00:08', '2026-05-19 12:08:01');
-INSERT INTO `faction_action` VALUES ('7', '1', '阿尔伯特', '统治者', 'assign_personnel', '{\"targetId\":6,\"targetKind\":\"player\",\"assignedActions\":[{\"action\":\"investigate_location\",\"targetLocationId\":9}],\"note\":\"\"}', '✓ 已提交【安排人员】\n\n目标：测试\n须提交的自由行动（共1项）：\n  1. 调查地点（旅店）\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。\n\n【DM反馈】\n1', 'feedbacked', '1', 'day', '2026-05-19 12:07:38', '2026-05-19 12:08:04');
-INSERT INTO `faction_action` VALUES ('11', '2', '莉莉丝', '反叛者', 'sabotage', '{\"targetLocationId\":12,\"facilityId\":10}', '✓ 已提交【破坏】\n\n目标地点：面包店\n目标设施：烘焙炉\n\n等待主持人确认。\n\n【DM反馈】\n已经破坏', 'feedbacked', '2', 'day', '2026-05-19 21:21:21', '2026-05-19 21:23:23');
-INSERT INTO `faction_action` VALUES ('12', '3', '罗宾', '冒险者', 'ark_construction', '{\"mode\":\"resource\",\"note\":\"\",\"woodKg\":0,\"metalKg\":1000,\"sealantKg\":0,\"warehouseWoodKg\":0,\"warehouseMetalKg\":0,\"warehouseSealantKg\":0,\"engineCount\":0,\"generatorCount\":0,\"propellerCount\":0,\"buildSail\":false}', '✓ 已提交【方舟建设】\n\n提交者：罗宾\n投入模式：资源投入\n  金属制品：1000kg（1.00吨）\n当前方舟进度：68.00%\n\n等待主持人确认。', 'pending', '1', 'day', '2026-05-19 21:56:34', '2026-05-19 21:56:34');
+
+-- ----------------------------
+-- Table structure for game_day_settings
+-- ----------------------------
+DROP TABLE IF EXISTS `game_day_settings`;
+CREATE TABLE `game_day_settings` (
+  `game_day` int(11) NOT NULL COMMENT '游戏天数',
+  `required_food_units` int(11) NOT NULL DEFAULT '2' COMMENT '每人每日所需食物（单位）',
+  `required_fuel_kg` int(11) NOT NULL DEFAULT '15' COMMENT '每人每日取暖燃料（千克，木材或燃料）',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`game_day`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='每日全局消耗需求（DM在游戏设置中配置）';
+
+-- ----------------------------
+-- Records of game_day_settings
+-- ----------------------------
+INSERT INTO `game_day_settings` VALUES ('1', '2', '15', '2026-05-14 11:53:12');
+INSERT INTO `game_day_settings` VALUES ('2', '2', '15', '2026-05-20 10:23:13');
+INSERT INTO `game_day_settings` VALUES ('3', '2', '15', '2026-05-20 14:14:41');
 
 -- ----------------------------
 -- Table structure for game_state
@@ -430,24 +443,7 @@ CREATE TABLE `game_state` (
 -- ----------------------------
 -- Records of game_state
 -- ----------------------------
-INSERT INTO `game_state` VALUES ('1', '1', 'DAY', '0', '0', '0', '2026-05-14 11:53:12', '2026-05-19 23:02:04');
-
--- ----------------------------
--- Table structure for game_day_settings
--- ----------------------------
-DROP TABLE IF EXISTS `game_day_settings`;
-CREATE TABLE `game_day_settings` (
-  `game_day` int(11) NOT NULL COMMENT '游戏天数',
-  `required_food_units` int(11) NOT NULL DEFAULT '2' COMMENT '每人每日所需食物（单位）',
-  `required_fuel_kg` int(11) NOT NULL DEFAULT '15' COMMENT '每人每日取暖燃料（千克，木材或燃料）',
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`game_day`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='每日全局消耗需求（DM在游戏设置中配置）';
-
--- ----------------------------
--- Records of game_day_settings
--- ----------------------------
-INSERT INTO `game_day_settings` VALUES ('1', '2', '15', '2026-05-14 11:53:12');
+INSERT INTO `game_state` VALUES ('1', '1', 'DAY', '0', '0', '0', '2026-05-14 11:53:12', '2026-05-20 15:00:03');
 
 -- ----------------------------
 -- Table structure for item
@@ -923,8 +919,8 @@ CREATE TABLE `location_npc` (
 -- ----------------------------
 INSERT INTO `location_npc` VALUES ('1', '克拉拉·南丁格尔', '渔民', '女', '一位家中贫困的普通渔民，只希望镇上保持平静。', '7', '忽视', '忽视', '喜好', '厌恶', '2026-05-14 20:44:38', '2026-05-14 20:44:38');
 INSERT INTO `location_npc` VALUES ('2', '杰克·塔克', '水手', '男', '曾在商船当水手，船沉后困在岛上，做梦都想再上一次船。', '7', '忽视', '厌恶', '喜好', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38');
-INSERT INTO `location_npc` VALUES ('3', '鲍勃·塔克', '装卸工', '男', '一名一直在港口讨生活的搬运工。', '7', '喜好', '厌恶', '忽视', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38');
-INSERT INTO `location_npc` VALUES ('4', '托马斯·伍德', '伐木工', '男', '沉默寡言的伐木工，靠砍树和做木工为生，只求安稳度日。', '15', '喜好', '厌恶', '忽视', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38');
+INSERT INTO `location_npc` VALUES ('3', '鲍勃·塔克', '装卸工', '男', '一名一直在港口讨生活的搬运工。', '7', '喜好', '厌恶', '忽视', '忽视', '2026-05-14 20:44:38', '2026-05-20 09:44:33');
+INSERT INTO `location_npc` VALUES ('4', '托马斯·伍德', '伐木工', '男', '沉默寡言的伐木工，靠砍树和做木工为生，只求安稳度日。', '15', '喜好', '厌恶', '忽视', '忽视', '2026-05-14 20:44:38', '2026-05-20 09:44:29');
 INSERT INTO `location_npc` VALUES ('5', '卡尔·铁锤', '矿工', '男', '脾气火爆的矿场工人，谁给好处就帮谁。', '18', '喜好', '厌恶', '忽视', '厌恶', '2026-05-14 20:44:38', '2026-05-14 20:44:38');
 INSERT INTO `location_npc` VALUES ('6', '维克多·斯通', '矿工', '男', '体格强壮的矿工，相信权力才是活下去的依靠。', '18', '喜好', '厌恶', '忽视', '厌恶', '2026-05-14 20:44:38', '2026-05-14 20:44:38');
 INSERT INTO `location_npc` VALUES ('7', '塞缪尔·格雷', '农户', '男', '善良而质朴的普通农户，乐于帮助他人。', '10', '厌恶', '忽视', '喜好', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38');
@@ -1034,12 +1030,12 @@ CREATE TABLE `night_action` (
   KEY `idx_faction_day` (`faction`,`game_day`),
   KEY `idx_action_type` (`action_type`),
   KEY `idx_status` (`status`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COMMENT='夜晚行动表';
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT='夜晚行动表';
 
 -- ----------------------------
 -- Records of night_action
 -- ----------------------------
-INSERT INTO `night_action` VALUES ('1', '3', '罗宾', '冒险者', 'publicity', '{\"message\":\"更多的物资！\",\"note\":\"\"}', '✓ 已提交【公开宣传】\n\n提交者：罗宾\n宣传内容：更多的物资！\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n成功获得物资', 'feedbacked', '1', '2026-05-19 22:03:04', '2026-05-19 22:03:36');
+INSERT INTO `night_action` VALUES ('2', '5', '艾米丽', '平民', 'other', '{\"note\":\"测试s\'s\'s\'s\'ssssss\"}', '✓ 已提交【其他】\n\n提交者：艾米丽\n备注：测试s\'s\'s\'s\'ssssss\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n完成正确反馈', 'feedbacked', '1', '2026-05-20 15:17:46', '2026-05-20 15:20:28');
 
 -- ----------------------------
 -- Table structure for player
@@ -1068,39 +1064,12 @@ CREATE TABLE `player` (
 -- ----------------------------
 -- Records of player
 -- ----------------------------
-INSERT INTO `player` VALUES ('1', '阿尔伯特', '0', '0', '0', '0', '0', '1', '1', '统治者', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
-INSERT INTO `player` VALUES ('2', '莉莉丝', '0', '1', '0', '0', '0', '2', '2', '反叛者', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
-INSERT INTO `player` VALUES ('3', '罗宾', '1', '0', '0', '0', '0', '3', '3', '冒险者', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
-INSERT INTO `player` VALUES ('4', '亚瑟', '0', '0', '1', '0', '0', '4', '4', '天灾使者', '2026-04-26 22:13:35', '2026-05-14 11:15:19');
-INSERT INTO `player` VALUES ('5', '艾米丽', '0', '0', '0', '0', '0', '5', '5', '平民', '2026-04-26 22:13:35', '2026-04-26 22:13:35');
-INSERT INTO `player` VALUES ('6', '测试', '0', '0', '0', '0', '0', '2', '2', '平民', '2026-04-29 01:14:41', '2026-04-29 01:14:41');
-
--- ----------------------------
--- Table structure for player_daily_consumption
--- ----------------------------
-DROP TABLE IF EXISTS `player_daily_consumption`;
-CREATE TABLE `player_daily_consumption` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `player_id` int(11) NOT NULL,
-  `game_day` int(11) NOT NULL,
-  `required_food_units` int(11) NOT NULL DEFAULT '2',
-  `required_fuel_kg` int(11) NOT NULL DEFAULT '15',
-  `consumed_food_units` int(11) NOT NULL DEFAULT '0',
-  `consumed_fuel_kg` int(11) NOT NULL DEFAULT '0',
-  `fuel_from_wood_kg` int(11) NOT NULL DEFAULT '0',
-  `fuel_from_fuel_kg` int(11) NOT NULL DEFAULT '0',
-  `submitted` tinyint(1) NOT NULL DEFAULT '0',
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_player_day` (`player_id`,`game_day`),
-  KEY `idx_game_day` (`game_day`),
-  CONSTRAINT `player_daily_consumption_ibfk_1` FOREIGN KEY (`player_id`) REFERENCES `player` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='玩家每日进食与取暖消耗记录';
-
--- ----------------------------
--- Records of player_daily_consumption
--- ----------------------------
+INSERT INTO `player` VALUES ('1', '阿尔伯特', '1', '0', '0', '0', '0', '1', '1', '统治者', '2026-04-26 22:13:35', '2026-05-20 10:23:00');
+INSERT INTO `player` VALUES ('2', '莉莉丝', '1', '1', '1', '0', '0', '2', '2', '反叛者', '2026-04-26 22:13:35', '2026-05-20 10:23:00');
+INSERT INTO `player` VALUES ('3', '罗宾', '1', '1', '0', '0', '0', '3', '3', '冒险者', '2026-04-26 22:13:35', '2026-05-20 08:11:23');
+INSERT INTO `player` VALUES ('4', '亚瑟', '1', '0', '1', '0', '0', '4', '4', '天灾使者', '2026-04-26 22:13:35', '2026-05-20 10:23:00');
+INSERT INTO `player` VALUES ('5', '艾米丽', '0', '1', '0', '0', '0', '8', '5', '平民', '2026-04-26 22:13:35', '2026-05-20 09:46:38');
+INSERT INTO `player` VALUES ('6', '测试', '1', '1', '2', '0', '0', '2', '2', '平民', '2026-04-29 01:14:41', '2026-05-20 10:23:00');
 
 -- ----------------------------
 -- Table structure for player_action
@@ -1130,23 +1099,42 @@ CREATE TABLE `player_action` (
   KEY `idx_status` (`status`),
   KEY `idx_game_day` (`game_day`),
   KEY `idx_player_day` (`player_id`,`game_day`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COMMENT='玩家行动表';
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COMMENT='玩家行动表';
 
 -- ----------------------------
 -- Records of player_action
 -- ----------------------------
-INSERT INTO `player_action` VALUES ('1', '2', '莉莉丝', '反叛者', '1', 'investigate_player', '3', '罗宾', null, null, '盯梢罗宾在集市的动向', '【调查结果】罗宾的自由行动：\n行动1：前往地点 → 集市\n行动2：生产\n', 'feedbacked', '1', '1', '2026-05-16 09:10:00', '2026-05-18 22:47:56');
-INSERT INTO `player_action` VALUES ('2', '2', '莉莉丝', '反叛者', '2', 'go_location', '16', '墓地', null, null, '', '【地点信息】墓地\n区域：海岛\n防御值：5\n\n【DM反馈】\n【地点信息】墓地\n区域：海岛\n防御值：5', 'feedbacked', '1', '1', '2026-05-16 09:11:00', '2026-05-18 22:47:56');
-INSERT INTO `player_action` VALUES ('3', '3', '罗宾', '冒险者', '1', 'go_location', '10', '集市', null, null, '', '【地点信息】集市\n区域：小镇\n防御值：0', 'feedbacked', '1', '1', '2026-05-16 09:20:00', '2026-05-18 22:47:56');
-INSERT INTO `player_action` VALUES ('4', '3', '罗宾', '冒险者', '2', 'produce', null, null, null, null, '在码头渔船处捕鱼', '等待DM反馈\n\n【DM反馈】\n123', 'feedbacked', '1', '1', '2026-05-16 09:21:00', '2026-05-18 22:47:56');
-INSERT INTO `player_action` VALUES ('5', '4', '亚瑟', '天灾使者', '1', 'use_trait', null, null, null, null, '使用特性：瘟疫传播，对码头区域施加轻度污染，持续3天', '等待DM反馈\n\n【DM反馈】\n123', 'feedbacked', '1', '1', '2026-05-16 09:30:00', '2026-05-18 22:47:56');
-INSERT INTO `player_action` VALUES ('6', '4', '亚瑟', '天灾使者', '2', 'transport', null, null, null, null, '[mode:warehouse_to_player]\n[source:general]\n[item:material|2|5|1]\n[item:material|7|3|1]', '等待DM反馈\n\n【DM反馈】\n123', 'feedbacked', '0', '1', '2026-05-16 09:31:00', '2026-05-18 22:47:51');
-INSERT INTO `player_action` VALUES ('7', '5', '艾米丽', '平民', '1', 'investigate_player', '3', '罗宾', null, null, '打听罗宾是否去过集市', '【调查结果】罗宾的自由行动：\n行动1：前往地点 → 集市\n行动2：生产\n', 'feedbacked', '1', '1', '2026-05-16 09:40:00', '2026-05-18 22:47:56');
-INSERT INTO `player_action` VALUES ('8', '5', '艾米丽', '平民', '2', 'use_skill', null, null, null, null, '使用职业技能：急救包扎，为受伤的NPC处理伤口', '等待DM反馈\n\n【DM反馈】\n123', 'feedbacked', '1', '1', '2026-05-16 09:41:00', '2026-05-18 22:47:56');
-INSERT INTO `player_action` VALUES ('9', '6', '测试', '平民', '1', 'use_skill', null, null, null, null, '测试账号：使用职业技能示例', '等待DM反馈\n\n【DM反馈】\n123', 'feedbacked', '1', '1', '2026-05-16 09:50:00', '2026-05-18 22:47:56');
-INSERT INTO `player_action` VALUES ('10', '1', '阿尔伯特', '统治者', '1', 'go_location', '1', '警察局', null, null, '', '【地点信息】警察局\n区域：小镇\n描述：一座木铁混合结构的平房，瓦楞铁皮屋顶，外墙刷着褪色的白漆。门廊上挂着一盏摇曳的煤油灯，屋内有一张办公桌、一个档案柜和一间狭小的临时牢房。墙上贴着殖民地政府的告示和几张泛黄的通缉令。\n防御值：5\n\n【设施】\n• 燃料仓：一个巨大的铁皮储油罐，旁边是几排油桶。这里是全镇的能源命脉，由警察局派员看守。铁门上挂着大锁，周围拉着铁丝网。\n• 发电机：警察局配备的发电机组', 'feedbacked', '0', '2', '2026-05-18 22:38:12', '2026-05-18 22:38:12');
-INSERT INTO `player_action` VALUES ('11', '1', '阿尔伯特', '统治者', '2', 'hide', null, null, null, null, '', '【隐藏】您将进入隐藏状态，明天将无法被调查、私聊或成为统治者与密谋的行动目标', 'pending', '0', '2', '2026-05-18 22:38:12', '2026-05-18 22:38:12');
-INSERT INTO `player_action` VALUES ('12', '1', '阿尔伯特', '统治者', '1', 'other', null, null, null, null, '我想尝试翻越围墙到禁区探索', '等待DM反馈', 'feedbacked', '0', '3', '2026-05-19 11:05:09', '2026-05-19 11:05:09');
+INSERT INTO `player_action` VALUES ('15', '5', '艾米丽', '平民', '1', 'produce', null, null, null, null, '', '【生产】使用牲畜设施，获得食物15kg\n等待DM结算后物资将发放到您的背包中\n\n【生产结算】已获得石料 15kg', 'feedbacked', '1', '1', '2026-05-20 15:17:10', '2026-05-20 15:19:51');
+INSERT INTO `player_action` VALUES ('16', '5', '艾米丽', '平民', '2', 'produce', null, null, null, null, '', '【生产】使用牲畜设施，获得食物15kg\n等待DM结算后物资将发放到您的背包中\n\n【生产结算】已获得石料 15kg', 'feedbacked', '1', '1', '2026-05-20 15:17:10', '2026-05-20 15:19:51');
+
+-- ----------------------------
+-- Table structure for player_daily_consumption
+-- ----------------------------
+DROP TABLE IF EXISTS `player_daily_consumption`;
+CREATE TABLE `player_daily_consumption` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `player_id` int(11) NOT NULL,
+  `game_day` int(11) NOT NULL,
+  `required_food_units` int(11) NOT NULL DEFAULT '2',
+  `required_fuel_kg` int(11) NOT NULL DEFAULT '15',
+  `consumed_food_units` int(11) NOT NULL DEFAULT '0',
+  `consumed_fuel_kg` int(11) NOT NULL DEFAULT '0',
+  `fuel_from_wood_kg` int(11) NOT NULL DEFAULT '0',
+  `fuel_from_fuel_kg` int(11) NOT NULL DEFAULT '0',
+  `submitted` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_player_day` (`player_id`,`game_day`),
+  KEY `idx_game_day` (`game_day`),
+  CONSTRAINT `player_daily_consumption_ibfk_1` FOREIGN KEY (`player_id`) REFERENCES `player` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT='玩家每日进食与取暖消耗记录';
+
+-- ----------------------------
+-- Records of player_daily_consumption
+-- ----------------------------
+INSERT INTO `player_daily_consumption` VALUES ('1', '5', '1', '2', '15', '2', '15', '15', '0', '1', '2026-05-20 10:22:02', '2026-05-20 10:22:02');
+INSERT INTO `player_daily_consumption` VALUES ('2', '1', '1', '2', '15', '2', '15', '0', '1', '1', '2026-05-20 11:42:22', '2026-05-20 11:42:22');
 
 -- ----------------------------
 -- Table structure for player_items
@@ -1164,7 +1152,7 @@ CREATE TABLE `player_items` (
   KEY `idx_player_type_item` (`player_id`,`item_type`,`item_id`),
   KEY `idx_player_type` (`player_id`,`item_type`),
   CONSTRAINT `player_items_ibfk_1` FOREIGN KEY (`player_id`) REFERENCES `player` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=55 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=58 DEFAULT CHARSET=utf8mb4;
 
 -- ----------------------------
 -- Records of player_items
@@ -1205,10 +1193,10 @@ INSERT INTO `player_items` VALUES ('34', '5', 'weapon', '10', '1', '2026-04-27 1
 INSERT INTO `player_items` VALUES ('35', '5', 'material', '10', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('36', '5', 'material', '11', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `player_items` VALUES ('37', '5', 'material', '12', '1', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
-INSERT INTO `player_items` VALUES ('38', '1', 'material', '5', '7', '2026-05-01 10:54:53', '2026-05-05 21:17:17');
+INSERT INTO `player_items` VALUES ('38', '1', 'material', '5', '4', '2026-05-01 10:54:53', '2026-05-20 15:19:14');
 INSERT INTO `player_items` VALUES ('39', '4', 'item', '24', '1', '2026-05-14 21:53:29', '2026-05-14 21:53:29');
 INSERT INTO `player_items` VALUES ('40', '4', 'item', '23', '1', '2026-05-14 21:54:25', '2026-05-14 21:54:25');
-INSERT INTO `player_items` VALUES ('41', '1', 'material', '8', '10', '2026-05-15 11:03:26', '2026-05-15 11:03:26');
+INSERT INTO `player_items` VALUES ('41', '1', 'material', '8', '10', '2026-05-15 11:03:26', '2026-05-20 15:19:14');
 INSERT INTO `player_items` VALUES ('42', '4', 'material', '2', '5', '2026-05-15 12:33:01', '2026-05-15 12:33:01');
 INSERT INTO `player_items` VALUES ('43', '1', 'item', '19', '1', '2026-05-16 10:00:00', '2026-05-16 10:00:00');
 INSERT INTO `player_items` VALUES ('44', '1', 'item', '20', '1', '2026-05-16 10:00:00', '2026-05-16 10:00:00');
@@ -1218,6 +1206,8 @@ INSERT INTO `player_items` VALUES ('47', '1', 'item', '23', '1', '2026-05-16 10:
 INSERT INTO `player_items` VALUES ('48', '1', 'item', '24', '1', '2026-05-16 10:00:00', '2026-05-16 10:00:00');
 INSERT INTO `player_items` VALUES ('49', '3', 'item', '24', '1', '2026-05-19 15:10:58', '2026-05-19 15:11:25');
 INSERT INTO `player_items` VALUES ('54', '3', 'material', '1', '9000', '2026-05-19 15:20:22', '2026-05-19 21:56:33');
+INSERT INTO `player_items` VALUES ('56', '5', 'material', '5', '34', '2026-05-20 10:21:28', '2026-05-20 15:19:35');
+INSERT INTO `player_items` VALUES ('57', '5', 'material', '8', '14', '2026-05-20 10:21:42', '2026-05-20 15:18:53');
 
 -- ----------------------------
 -- Table structure for player_stealth
@@ -1238,6 +1228,75 @@ CREATE TABLE `player_stealth` (
 -- ----------------------------
 -- Records of player_stealth
 -- ----------------------------
+
+-- ----------------------------
+-- Table structure for quick_interaction
+-- ----------------------------
+DROP TABLE IF EXISTS `quick_interaction`;
+CREATE TABLE `quick_interaction` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `content` text NOT NULL,
+  `created_at` datetime(6) DEFAULT NULL,
+  `dm_reply` text,
+  `faction` varchar(20) NOT NULL,
+  `game_day` int(11) NOT NULL,
+  `interaction_type` varchar(30) NOT NULL,
+  `player_id` int(11) NOT NULL,
+  `player_name` varchar(50) DEFAULT NULL,
+  `replied_at` datetime(6) DEFAULT NULL,
+  `status` varchar(20) NOT NULL,
+  `updated_at` datetime(6) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+-- Records of quick_interaction
+-- ----------------------------
+INSERT INTO `quick_interaction` VALUES ('1', 'dm请问测试测试', '2026-05-20 15:17:58.643000', '1', '平民', '1', 'ask_dm', '5', '艾米丽', '2026-05-20 15:23:43.156000', 'replied', '2026-05-20 15:23:43.156000');
+
+-- ----------------------------
+-- Table structure for rule_book
+-- ----------------------------
+DROP TABLE IF EXISTS `rule_book`;
+CREATE TABLE `rule_book` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `content` text,
+  `created_at` datetime(6) DEFAULT NULL,
+  `order_num` int(11) NOT NULL,
+  `section` varchar(50) NOT NULL,
+  `title` varchar(100) NOT NULL,
+  `updated_at` datetime(6) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+-- Records of rule_book
+-- ----------------------------
+INSERT INTO `rule_book` VALUES ('1', '海岛生存游戏的核心目标是在严酷的环境中生存下去，并通过完成各种任务和行动来推进游戏进程。玩家需要管理自己的资源、满足每日需求，并与其他玩家互动。', null, '1', 'general', '游戏目标', null);
+INSERT INTO `rule_book` VALUES ('2', '每位玩家每天需要消耗一定数量的食物和燃料来维持生存。食物不足将导致虚弱状态，燃料不足将无法取暖，同样会导致虚弱。', null, '2', 'general', '每日需求', null);
+INSERT INTO `rule_book` VALUES ('3', '每位玩家每天有一定的行动点数，可以用来执行各种行动。行动类型包括调查、生产、交易、移动等。', null, '3', 'general', '行动系统', null);
+INSERT INTO `rule_book` VALUES ('4', '夜晚是危险的时刻，玩家可以选择执行夜晚行动，但也可能遭遇意外事件。夜晚行动需要谨慎选择。', null, '4', 'general', '夜晚行动', null);
+INSERT INTO `rule_book` VALUES ('5', '当玩家未能满足当日需求时，次日将陷入虚弱状态。虚弱状态会影响行动效果和成功率。', null, '5', 'general', '虚弱状态', null);
+INSERT INTO `rule_book` VALUES ('6', '统治者拥有最高的权威，可以管理避难所、安排劳工，并对反叛者实施制裁。统治者的决策影响整个海岛的命运。', null, '1', 'ruler', '阵营特性', null);
+INSERT INTO `rule_book` VALUES ('7', '统治者可以选择NPC作为劳工参与避难所建设。劳工的效率取决于其职业和状态。', null, '2', 'ruler', '劳工管理', null);
+INSERT INTO `rule_book` VALUES ('8', '统治者可以对反叛者实施制裁，包括限制行动、没收物资等。但过度制裁可能引起民愤。', null, '3', 'ruler', '制裁权力', null);
+INSERT INTO `rule_book` VALUES ('9', '统治者负责避难所的建设和物资分配。合理分配资源是统治者的核心职责。', null, '4', 'ruler', '避难所管理', null);
+INSERT INTO `rule_book` VALUES ('10', '反叛者致力于推翻统治者的统治，建立新的秩序。反叛者需要秘密组织活动，避免被统治者察觉。', null, '1', 'rebel', '阵营特性', null);
+INSERT INTO `rule_book` VALUES ('11', '反叛者可以执行秘密行动，包括破坏、暗杀、窃取情报等。成功的秘密行动可以削弱统治者的权威。', null, '2', 'rebel', '秘密行动', null);
+INSERT INTO `rule_book` VALUES ('12', '反叛者拥有自己的地下网络，可以共享资源、传递消息。网络的发展壮大是反叛成功的关键。', null, '3', 'rebel', '地下网络', null);
+INSERT INTO `rule_book` VALUES ('13', '反叛者需要完成一系列里程碑来提升影响力。每个里程碑都会解锁新的能力和资源。', null, '4', 'rebel', '里程碑', null);
+INSERT INTO `rule_book` VALUES ('14', '冒险者是勇敢的探索者，探索未知、寻找宝藏是他们的天性。冒险者可以前往危险区域获取稀有资源。', null, '1', 'adventurer', '阵营特性', null);
+INSERT INTO `rule_book` VALUES ('15', '冒险者的终极目标是建造一艘方舟，带领幸存者逃离海岛。方舟需要大量资源和时间来建造。', null, '2', 'adventurer', '方舟建设', null);
+INSERT INTO `rule_book` VALUES ('16', '冒险者可以探索海岛的各个角落，发现隐藏的资源和秘密。探索有风险，但回报丰厚。', null, '3', 'adventurer', '探索行动', null);
+INSERT INTO `rule_book` VALUES ('17', '冒险者拥有独特的生存技能，可以在恶劣环境中生存，并找到其他玩家无法获取的资源。', null, '4', 'adventurer', '特殊能力', null);
+INSERT INTO `rule_book` VALUES ('18', '天灾使者是神秘的存在，他们掌握着天灾的力量，可以召唤灾难、散播恐惧。', null, '1', 'scourge', '阵营特性', null);
+INSERT INTO `rule_book` VALUES ('19', '天灾使者可以触发天灾卡牌，给海岛带来各种灾难。灾难可以削弱其他玩家的生存能力。', null, '2', 'scourge', '天灾卡牌', null);
+INSERT INTO `rule_book` VALUES ('20', '天灾使者的存在本身就是一种威慑。其他玩家对天灾使者既恐惧又敬畏。', null, '3', 'scourge', '恐惧散播', null);
+INSERT INTO `rule_book` VALUES ('21', '天灾使者可以执行黑暗仪式来增强自己的力量，但仪式需要付出代价。', null, '4', 'scourge', '黑暗仪式', null);
+INSERT INTO `rule_book` VALUES ('22', '平民是海岛的普通居民，他们没有特殊能力，但也不受阵营冲突的直接影响。平民需要在各方势力之间求生存。', null, '1', 'civilian', '阵营特性', null);
+INSERT INTO `rule_book` VALUES ('23', '平民可以选择支持不同的阵营，获得相应的保护和资源。明智的选择是平民生存的关键。', null, '2', 'civilian', '灵活性', null);
+INSERT INTO `rule_book` VALUES ('24', '平民的优势在于不引人注目。保持低调可以避免成为冲突的目标。', null, '3', 'civilian', '低调生存', null);
+INSERT INTO `rule_book` VALUES ('25', '平民可以执行一些秘密行动来影响游戏进程，但需要谨慎行事。', null, '4', 'civilian', '秘密行动', null);
 
 -- ----------------------------
 -- Table structure for selected_catastrophe
@@ -1261,6 +1320,47 @@ CREATE TABLE `selected_catastrophe` (
 -- ----------------------------
 -- Records of selected_catastrophe
 -- ----------------------------
+
+-- ----------------------------
+-- Table structure for shelter_daily_labor
+-- ----------------------------
+DROP TABLE IF EXISTS `shelter_daily_labor`;
+CREATE TABLE `shelter_daily_labor` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `game_day` int(11) NOT NULL COMMENT '游戏天数',
+  `worker_kind` varchar(10) NOT NULL DEFAULT 'player' COMMENT 'player|npc',
+  `worker_id` int(11) NOT NULL COMMENT '玩家ID或NPC ID',
+  `build_value` int(11) NOT NULL DEFAULT '0' COMMENT '当日贡献建造值',
+  `is_exploited` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否压榨（建造值翻倍等由主持人裁定）',
+  `is_escaped` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否逃役（不计入劳工）',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_shelter_labor_day_worker` (`game_day`,`worker_kind`,`worker_id`),
+  KEY `idx_game_day` (`game_day`)
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COMMENT='避难所每日劳工名单（总建造值=SUM(build_value)，含玩家与NPC）';
+
+-- ----------------------------
+-- Records of shelter_daily_labor
+-- ----------------------------
+INSERT INTO `shelter_daily_labor` VALUES ('13', '1', 'npc', '4', '0', '1', '1', '2026-05-20 09:42:32');
+INSERT INTO `shelter_daily_labor` VALUES ('14', '1', 'npc', '3', '4', '0', '0', '2026-05-20 09:42:32');
+
+-- ----------------------------
+-- Table structure for shelter_labor_day
+-- ----------------------------
+DROP TABLE IF EXISTS `shelter_labor_day`;
+CREATE TABLE `shelter_labor_day` (
+  `game_day` int(11) NOT NULL COMMENT '游戏天数',
+  `verified` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'DM是否已结算确认',
+  `verified_at` datetime DEFAULT NULL,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`game_day`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='避难所每日劳工结算状态';
+
+-- ----------------------------
+-- Records of shelter_labor_day
+-- ----------------------------
+INSERT INTO `shelter_labor_day` VALUES ('1', '1', '2026-05-20 09:43:20', '2026-05-20 09:43:20');
 
 -- ----------------------------
 -- Table structure for shelter_progress
@@ -1328,55 +1428,8 @@ INSERT INTO `shelter_stock` VALUES ('55', 'weapon', '6', '1', '2026-05-13 18:52:
 INSERT INTO `shelter_stock` VALUES ('56', 'weapon', '7', '1', '2026-05-13 18:52:32.227988', '2026-05-13 18:52:32.227988');
 INSERT INTO `shelter_stock` VALUES ('57', 'weapon', '8', '2', '2026-05-13 18:52:32.227988', '2026-05-13 18:52:32.227988');
 INSERT INTO `shelter_stock` VALUES ('58', 'weapon', '9', '1', '2026-05-13 18:52:32.227988', '2026-05-13 18:52:32.227988');
-INSERT INTO `shelter_stock` VALUES ('59', 'material', '5', '127', '2026-05-16 12:00:00', '2026-05-16 12:00:00');
-INSERT INTO `shelter_stock` VALUES ('60', 'material', '8', '40', '2026-05-16 12:00:00', '2026-05-16 12:00:00');
-
--- ----------------------------
--- Table structure for shelter_daily_labor
--- ----------------------------
-DROP TABLE IF EXISTS `shelter_daily_labor`;
-CREATE TABLE `shelter_daily_labor` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `game_day` int(11) NOT NULL COMMENT '游戏天数',
-  `worker_kind` varchar(10) NOT NULL DEFAULT 'player' COMMENT 'player|npc',
-  `worker_id` int(11) NOT NULL COMMENT '玩家ID或NPC ID',
-  `build_value` int(11) NOT NULL DEFAULT '0' COMMENT '当日贡献建造值',
-  `is_exploited` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否压榨（建造值翻倍等由主持人裁定）',
-  `is_escaped` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否逃役（不计入劳工）',
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_shelter_labor_day_worker` (`game_day`,`worker_kind`,`worker_id`),
-  KEY `idx_game_day` (`game_day`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='避难所每日劳工名单（总建造值=SUM(build_value)，含玩家与NPC）';
-
--- ----------------------------
--- Records of shelter_daily_labor
--- ----------------------------
-INSERT INTO `shelter_daily_labor` VALUES ('1', '1', 'player', '3', '7', '1', '0', '2026-05-19 12:09:47');
-INSERT INTO `shelter_daily_labor` VALUES ('2', '1', 'player', '5', '4', '0', '0', '2026-05-19 12:09:47');
-INSERT INTO `shelter_daily_labor` VALUES ('3', '2', 'player', '2', '0', '0', '1', '2026-05-19 12:56:09');
-INSERT INTO `shelter_daily_labor` VALUES ('4', '2', 'player', '6', '7', '1', '0', '2026-05-19 12:56:09');
-INSERT INTO `shelter_daily_labor` VALUES ('5', '2', 'player', '3', '4', '0', '0', '2026-05-19 12:56:09');
-INSERT INTO `shelter_daily_labor` VALUES ('6', '2', 'player', '5', '4', '0', '0', '2026-05-19 12:56:09');
-
--- ----------------------------
--- Table structure for shelter_labor_day
--- ----------------------------
-DROP TABLE IF EXISTS `shelter_labor_day`;
-CREATE TABLE `shelter_labor_day` (
-  `game_day` int(11) NOT NULL COMMENT '游戏天数',
-  `verified` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'DM是否已结算确认',
-  `verified_at` datetime DEFAULT NULL,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`game_day`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='避难所每日劳工结算状态';
-
--- ----------------------------
--- Records of shelter_labor_day
--- ----------------------------
-INSERT INTO `shelter_labor_day` VALUES ('1', '1', '2026-05-19 12:11:00', '2026-05-19 12:11:00');
-INSERT INTO `shelter_labor_day` VALUES ('2', '1', '2026-05-19 15:08:33', '2026-05-19 15:08:33');
-
+INSERT INTO `shelter_stock` VALUES ('59', 'material', '5', '127', '2026-05-16 12:00:00.000000', '2026-05-16 12:00:00.000000');
+INSERT INTO `shelter_stock` VALUES ('60', 'material', '8', '40', '2026-05-16 12:00:00.000000', '2026-05-16 12:00:00.000000');
 INSERT INTO `shelter_stock` VALUES ('61', 'material', '1', '0', '2026-05-19 16:27:57.000000', '2026-05-19 16:27:57.000000');
 INSERT INTO `shelter_stock` VALUES ('62', 'material', '6', '1', '2026-05-19 16:27:57.000000', '2026-05-19 16:27:57.000000');
 
@@ -1477,7 +1530,7 @@ CREATE TABLE `trade` (
   KEY `idx_from_to_status` (`from_player_id`,`to_player_id`,`status`),
   CONSTRAINT `trade_ibfk_1` FOREIGN KEY (`from_player_id`) REFERENCES `player` (`id`),
   CONSTRAINT `trade_ibfk_2` FOREIGN KEY (`to_player_id`) REFERENCES `player` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COMMENT='交易主表';
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COMMENT='交易主表';
 
 -- ----------------------------
 -- Records of trade
@@ -1494,6 +1547,7 @@ INSERT INTO `trade` VALUES ('9', '2', '1', 'completed', '??????', '2026-05-02 17
 INSERT INTO `trade` VALUES ('10', '2', '1', 'completed', '??????', '2026-05-02 17:46:24', '2026-05-02 18:31:01');
 INSERT INTO `trade` VALUES ('11', '1', '2', 'completed', '测试性质', '2026-05-05 21:16:29', '2026-05-05 21:17:54');
 INSERT INTO `trade` VALUES ('12', '1', '2', 'completed', '测试', '2026-05-05 21:17:33', '2026-05-05 21:17:55');
+INSERT INTO `trade` VALUES ('13', '5', '1', 'completed', '测试', '2026-05-20 15:18:53', '2026-05-20 15:19:14');
 
 -- ----------------------------
 -- Table structure for trade_items
@@ -1514,7 +1568,7 @@ CREATE TABLE `trade_items` (
   KEY `idx_trade_id` (`trade_id`),
   KEY `idx_item` (`item_type`,`item_id`),
   CONSTRAINT `trade_items_ibfk_1` FOREIGN KEY (`trade_id`) REFERENCES `trade` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COMMENT='交易物品明细表';
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COMMENT='交易物品明细表';
 
 -- ----------------------------
 -- Records of trade_items
@@ -1537,6 +1591,8 @@ INSERT INTO `trade_items` VALUES ('15', '9', 'material', '5', '3', 'give', '2026
 INSERT INTO `trade_items` VALUES ('16', '10', 'material', '5', '3', 'give', '2026-05-02 17:46:24', null, null, null);
 INSERT INTO `trade_items` VALUES ('17', '11', 'material', '5', '1', 'give', '2026-05-05 21:16:29', null, null, null);
 INSERT INTO `trade_items` VALUES ('18', '12', 'material', '5', '1', 'give', '2026-05-05 21:17:33', null, null, null);
+INSERT INTO `trade_items` VALUES ('19', '13', 'material', '8', '1', 'give', '2026-05-20 15:18:53', '燃料', 'kg', null);
+INSERT INTO `trade_items` VALUES ('20', '13', 'material', '5', '1', 'take', '2026-05-20 15:18:53', '食物', 'kg', null);
 
 -- ----------------------------
 -- Table structure for user

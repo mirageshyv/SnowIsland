@@ -419,7 +419,11 @@ const closeDetailModal = () => {
 const loadPlayers = async () => {
   const result = await playerAPI.getAll()
   if (Array.isArray(result)) {
-    players.value = result
+    players.value = result.map(p => ({
+      id: p.id,
+      name: p.name,
+      jobName: p.jobName || null
+    }))
   }
 }
 
@@ -580,7 +584,7 @@ defineExpose({
               <label class="block text-gray-300 text-sm mb-2">选择交易对象</label>
               <select v-model="selectedTargetPlayer" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-200 focus:outline-none focus:border-blue-500/50">
                 <option value="">请选择玩家...</option>
-                <option v-for="player in otherPlayers" :key="player.id" :value="player.id">{{ player.name }} ({{ player.faction }})</option>
+                <option v-for="player in otherPlayers" :key="player.id" :value="player.id">{{ player.name }}（{{ player.jobName || '—' }}）</option>
               </select>
             </div>
 

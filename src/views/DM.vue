@@ -10,11 +10,13 @@ import WarehouseView from './WarehouseView.vue'
 import ActionFeedbackView from './ActionFeedbackView.vue'
 import FactionActionFeedbackView from './FactionActionFeedbackView.vue'
 import NightActionSettlementView from './NightActionSettlementView.vue'
+import QuickInteractionFeedbackView from './QuickInteractionFeedbackView.vue'
 import DmPlayerInventoryView from './DmPlayerInventoryView.vue'
 import DmCombatAssistView from './DmCombatAssistView.vue'
 import GameSettingsView from './GameSettingsView.vue'
 import DmPlayerModalInventory from '../components/DmPlayerModalInventory.vue'
-import { dmPlayerAPI, jobAPI, skillAPI } from '../utils/api.js'
+import SnowEffect from '../components/SnowEffect.vue'
+import { dmPlayerAPI, jobAPI, skillAPI, gameStateAPI } from '../utils/api.js'
 import {
   PLAYER_NAME_MAX_LENGTH,
   USERNAME_MAX_LENGTH,
@@ -39,11 +41,19 @@ const savingPlayer = ref(false)
 const showPasswordIds = ref(new Set())
 const createStartingItems = ref([])
 const createInventoryRef = ref(null)
+const gameState = ref({ currentDay: 1 })
 
 const filterForm = reactive({
   name: '',
   job: '',
   faction: ''
+})
+
+const snowIntensity = computed(() => {
+  const day = gameState.value?.currentDay || 1
+  if (day <= 1) return 'light'
+  if (day <= 2) return 'medium'
+  return 'heavy'
 })
 
 const showEditModal = ref(false)
@@ -167,7 +177,15 @@ async function loadPlayers() {
   playersLoading.value = true
   playersError.value = ''
   try {
-    const result = await dmPlayerAPI.list()
+    const [result, stateResult] = await Promise.all([
+      dmPlayerAPI.list(),
+      gameStateAPI.get().catch(() => null)
+    ])
+    
+    if (stateResult) {
+      gameState.value = { currentDay: stateResult.currentDay || 1 }
+    }
+    
     if (!result?.success) {
       playerList.value = []
       playersError.value = result?.message || '无法加载玩家列表（请确认后端已启动）'
@@ -396,8 +414,9 @@ onMounted(() => {
   <!-- h-screen + overflow-hidden：侧栏固定；仅右侧 main 纵向滚动 -->
   <div class="flex h-screen max-h-[100dvh] overflow-hidden bg-[#0a0e1a]">
     <!-- Sidebar -->
-    <aside class="flex h-full w-64 shrink-0 flex-col border-r border-[#1f2937] bg-[#0f1419]">
-      <div class="shrink-0 border-b border-[#1f2937] p-6">
+    <aside class="flex h-full w-64 shrink-0 flex-col border-r border-slate-700/50 relative overflow-hidden" style="background: linear-gradient(to right, rgba(5, 10, 20, 0.95) 0%, rgba(15, 25, 40, 0.92) 50%, rgba(25, 40, 60, 0.88) 100%);">
+      <SnowEffect :intensity="snowIntensity" />
+      <div class="shrink-0 border-b border-slate-700/50 p-6 relative z-10">
         <h2 class="text-white tracking-tight text-lg">DM管理中心</h2>
       </div>
 
@@ -441,6 +460,14 @@ onMounted(() => {
           @click="activeTab = 'nightActionSettlement'"
         >
           夜晚行动结算
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'quickInteractionFeedback' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'quickInteractionFeedback'"
+        >
+          快速交互反馈
         </button>
         <button
           type="button"
@@ -531,9 +558,12 @@ onMounted(() => {
     </aside>
 
     <!-- Main Content -->
-    <main class="min-h-0 min-w-0 flex-1 overflow-y-auto p-8">
+    <main class="min-h-0 min-w-0 flex-1 overflow-y-auto relative" style="background-image: url('/src/assets/交互页面背景.png'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+      <div class="absolute inset-0 bg-slate-950/10"></div>
+      
+      <div class="relative z-10 p-8 min-h-full">
       <!-- Players Tab -->
-      <div v-if="activeTab === 'players'" class="max-w-7xl">
+      <div v-if="activeTab === 'players'" class="max-w-7xl rounded-xl p-6" style="background: rgba(15, 20, 35, 0.9);">
         <div class="mb-6 flex items-center justify-between">
           <div>
             <h1 class="text-white mb-1 tracking-tight text-2xl">玩家管理</h1>
@@ -632,6 +662,7 @@ onMounted(() => {
                   <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">特性</th>
                   <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">阵营</th>
                   <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">状态</th>
+                  <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">当日需求</th>
                   <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">操作</th>
                 </tr>
               </thead>
@@ -668,6 +699,18 @@ onMounted(() => {
                         {{ badge.text }}
                       </span>
                     </div>
+                  </td>
+                  <td class="px-4 py-4">
+                    <span
+                      v-if="player.dailyConsumptionMet"
+                      class="text-green-400 text-sm font-bold"
+                      title="已满足当日进食与取暖需求"
+                    >✓</span>
+                    <span
+                      v-else
+                      class="text-red-400 text-sm font-bold"
+                      title="未满足当日进食与取暖需求"
+                    >✗</span>
                   </td>
                   <td class="px-4 py-4">
                     <div class="flex gap-2">
@@ -874,26 +917,26 @@ onMounted(() => {
         </div>
       </div>
 
-      <div v-else-if="activeTab === 'inventories'">
+      <div v-else-if="activeTab === 'inventories'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <DmPlayerInventoryView
           ref="inventoryViewRef"
           :initial-player-id="inventoryInitialPlayerId"
         />
       </div>
 
-      <div v-else-if="activeTab === 'ark'">
+      <div v-else-if="activeTab === 'ark'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <ArkProgressView embedded />
       </div>
 
-      <div v-else-if="activeTab === 'shelter'">
+      <div v-else-if="activeTab === 'shelter'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <ShelterProgressView mode="dm" />
       </div>
 
-      <div v-else-if="activeTab === 'trades'">
+      <div v-else-if="activeTab === 'trades'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <DmTradesOverview />
       </div>
 
-      <div v-else-if="activeTab === 'milestones'">
+      <div v-else-if="activeTab === 'milestones'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <div class="mb-6">
           <h1 class="text-white mb-1 tracking-tight text-2xl">里程碑管理</h1>
           <p class="text-gray-500 text-sm">管理反抗者阵营的里程碑进度</p>
@@ -901,11 +944,11 @@ onMounted(() => {
         <RebelMilestoneView embedded :show-header="false" />
       </div>
 
-      <div v-else-if="activeTab === 'catastrophe'">
+      <div v-else-if="activeTab === 'catastrophe'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <CatastrophePanel :is-dm="true" embedded />
       </div>
 
-      <div v-else-if="activeTab === 'warehouse'">
+      <div v-else-if="activeTab === 'warehouse'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <div class="mb-6">
           <h1 class="text-white mb-1 tracking-tight text-2xl">仓库管理</h1>
           <p class="text-gray-500 text-sm">管理所有仓库的物资库存</p>
@@ -913,7 +956,7 @@ onMounted(() => {
         <WarehouseView />
       </div>
 
-      <div v-else-if="activeTab === 'actionFeedback'">
+      <div v-else-if="activeTab === 'actionFeedback'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <div class="mb-6">
           <h1 class="text-white mb-1 tracking-tight text-2xl">行动反馈</h1>
           <p class="text-gray-500 text-sm">查看玩家提交的行动并给予反馈</p>
@@ -921,28 +964,33 @@ onMounted(() => {
         <ActionFeedbackView />
       </div>
 
-      <div v-else-if="activeTab === 'factionActionFeedback'">
+      <div v-else-if="activeTab === 'factionActionFeedback'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <FactionActionFeedbackView />
       </div>
 
-      <div v-else-if="activeTab === 'nightActionSettlement'">
+      <div v-else-if="activeTab === 'nightActionSettlement'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <NightActionSettlementView />
       </div>
 
-      <div v-else-if="activeTab === 'combatAssist'">
+      <div v-else-if="activeTab === 'quickInteractionFeedback'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+        <QuickInteractionFeedbackView />
+      </div>
+
+      <div v-else-if="activeTab === 'combatAssist'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <DmCombatAssistView />
       </div>
 
-      <div v-else-if="activeTab === 'settings'">
+      <div v-else-if="activeTab === 'settings'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <GameSettingsView />
       </div>
 
       <!-- Other Tabs -->
-      <div v-else>
+      <div v-else style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <h1 class="text-white mb-6 tracking-tight text-2xl">系统日志</h1>
         <div class="bg-[#0f1419] border border-[#1f2937] rounded-xl p-6">
           <p class="text-gray-500 font-normal">功能开发中...</p>
         </div>
+      </div>
       </div>
     </main>
   </div>

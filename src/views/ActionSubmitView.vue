@@ -125,6 +125,15 @@ const warehouseOptions = computed(() => {
     .map((w) => ({ value: w.warehouseKey, label: w.warehouseName }))
 })
 
+const isRuler = computed(() => {
+  const faction = (localStorage.getItem('playerFaction') || '').toLowerCase()
+  return faction === '统治者'
+})
+
+const shelterOption = computed(() => {
+  return warehouses.value.find((w) => w.isShelter)
+})
+
 watch(() => actionData[1].type, () => {
   if (isHydrating.value) return
   actionData[1].target = ''
@@ -149,10 +158,10 @@ watch(() => actionData[2].target, () => { if (!isHydrating.value) actionData[2].
 watch(() => transportMode[1], () => onTransportModeChange(1))
 watch(() => transportMode[2], () => onTransportModeChange(2))
 watch(() => transportSource[1], (nv) => {
-  if (nv && ['warehouse_to_warehouse', 'warehouse_to_player'].includes(transportMode[1])) loadWarehouseStock(nv, 1)
+  if (nv && ['warehouse_to_warehouse', 'warehouse_to_player', 'warehouse_to_shelter'].includes(transportMode[1])) loadWarehouseStock(nv, 1)
 })
 watch(() => transportSource[2], (nv) => {
-  if (nv && ['warehouse_to_warehouse', 'warehouse_to_player'].includes(transportMode[2])) loadWarehouseStock(nv, 2)
+  if (nv && ['warehouse_to_warehouse', 'warehouse_to_player', 'warehouse_to_shelter'].includes(transportMode[2])) loadWarehouseStock(nv, 2)
 })
 
 function onTransportModeChange(slot) {
@@ -160,8 +169,10 @@ function onTransportModeChange(slot) {
   transportDest[slot] = ''
   transportItems[slot] = []
   const mode = transportMode[slot]
-  if (mode === 'player_to_warehouse') {
+  if (mode === 'player_to_warehouse' || mode === 'player_to_shelter') {
     loadPlayerInventory(slot)
+  } else if (mode === 'shelter_to_warehouse' || mode === 'shelter_to_player') {
+    loadWarehouseStock('shelter', slot)
   }
 }
 
@@ -218,7 +229,8 @@ function getTransportTotalWeight(slot) {
 }
 
 function getTransportMaxWeight(slot) {
-  return transportMode[slot] === 'warehouse_to_warehouse' ? 500 : 300
+  const mode = transportMode[slot]
+  return (mode === 'warehouse_to_warehouse' || mode === 'warehouse_to_shelter' || mode === 'shelter_to_warehouse') ? 500 : 300
 }
 
 function onTransportQuantityInput(item) {
@@ -230,11 +242,17 @@ function buildTransportNotes(slot) {
   const lines = []
   const mode = transportMode[slot] || ''
   lines.push(`[mode:${mode}]`)
-  if (['warehouse_to_warehouse', 'warehouse_to_player'].includes(mode) && transportSource[slot]) {
+  if (['warehouse_to_warehouse', 'warehouse_to_player', 'warehouse_to_shelter'].includes(mode) && transportSource[slot]) {
     lines.push(`[source:${transportSource[slot]}]`)
   }
-  if (['warehouse_to_warehouse', 'player_to_warehouse'].includes(mode) && transportDest[slot]) {
+  if (['shelter_to_warehouse', 'shelter_to_player'].includes(mode)) {
+    lines.push(`[source:shelter]`)
+  }
+  if (['warehouse_to_warehouse', 'player_to_warehouse', 'shelter_to_warehouse'].includes(mode) && transportDest[slot]) {
     lines.push(`[dest:${transportDest[slot]}]`)
+  }
+  if (['warehouse_to_shelter', 'player_to_shelter', 'shelter_to_player'].includes(mode)) {
+    lines.push(`[dest:shelter]`)
   }
   const items = transportItems[slot]
   if (Array.isArray(items)) {
@@ -339,8 +357,10 @@ async function hydrateFromSubmitted() {
         transportMode[slot] = parsed.mode
         transportSource[slot] = parsed.source
         transportDest[slot] = parsed.dest
-        if (parsed.mode === 'player_to_warehouse') {
+        if (parsed.mode === 'player_to_warehouse' || parsed.mode === 'player_to_shelter') {
           await loadPlayerInventory(slot)
+        } else if (parsed.mode === 'shelter_to_warehouse' || parsed.mode === 'shelter_to_player') {
+          await loadWarehouseStock('shelter', slot)
         } else if (parsed.source) {
           await loadWarehouseStock(parsed.source, slot)
         }
@@ -372,10 +392,10 @@ function validateAction(slot) {
   if (ad.type === 'transport') {
     if (!transportMode[slot]) { alert(`行动${slot === 1 ? '一' : '二'}：请选择搬运模式`); return false }
     const mode = transportMode[slot]
-    if (['warehouse_to_warehouse', 'warehouse_to_player'].includes(mode) && !transportSource[slot]) {
+    if (['warehouse_to_warehouse', 'warehouse_to_player', 'warehouse_to_shelter'].includes(mode) && !transportSource[slot]) {
       alert(`行动${slot === 1 ? '一' : '二'}：请选择源仓库`); return false
     }
-    if (mode === 'warehouse_to_warehouse' && !transportDest[slot]) {
+    if (['warehouse_to_warehouse', 'shelter_to_warehouse'].includes(mode) && !transportDest[slot]) {
       alert(`行动${slot === 1 ? '一' : '二'}：请选择目标仓库`); return false
     }
     if (mode === 'player_to_warehouse' && !transportDest[slot]) {
@@ -463,78 +483,77 @@ function displayActionResult(action) {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#0a0e1a] py-8 px-4 md:px-8">
-    <div class="max-w-6xl mx-auto">
-      <div class="text-center mb-10">
-        <h1 class="text-white text-2xl md:text-3xl font-semibold tracking-tight mb-2">个人行动提交</h1>
-        <p class="text-gray-500 text-sm">选择你的两个个人行动并提交</p>
-        <div class="mt-3 flex items-center justify-center gap-2">
-          <label class="text-gray-400 text-sm">查看天数：</label>
-          <select
-            v-model.number="gameDay"
-            class="bg-black/30 border border-white/10 rounded-lg px-3 py-1 text-sm text-gray-200 focus:outline-none"
-          >
-            <option v-for="d in dayOptions" :key="d" :value="d">第 {{ d }} 天</option>
-          </select>
-          <span class="text-gray-600 text-xs">
-            游戏第 {{ currentGameDay }} 天 · {{ phaseLabel }}
-            <template v-if="gameDay === currentGameDay">（当前）</template>
-          </span>
-        </div>
+  <div>
+    <div class="text-center mb-10">
+      <h1 class="text-white text-2xl md:text-3xl font-semibold tracking-tight mb-2">个人行动提交</h1>
+      <p class="text-gray-500 text-sm">选择你的两个个人行动并提交</p>
+      <div class="mt-3 flex items-center justify-center gap-2">
+        <label class="text-gray-400 text-sm">查看天数：</label>
+        <select
+          v-model.number="gameDay"
+          class="bg-black/30 border border-white/10 rounded-lg px-3 py-1 text-sm text-gray-200 focus:outline-none"
+        >
+          <option v-for="d in dayOptions" :key="d" :value="d">第 {{ d }} 天</option>
+        </select>
+        <span class="text-gray-600 text-xs">
+          游戏第 {{ currentGameDay }} 天 · {{ phaseLabel }}
+          <template v-if="gameDay === currentGameDay">（当前）</template>
+        </span>
       </div>
+    </div>
 
-      <div
-        v-if="viewOnlyDaytimeReason"
-        class="mb-6 rounded-2xl border border-slate-500/40 bg-slate-500/10 px-5 py-3 text-center text-slate-300 text-sm"
-      >
-        {{ viewOnlyDaytimeReason }}
-      </div>
+    <div
+      v-if="viewOnlyDaytimeReason"
+      class="mb-6 rounded-2xl border border-slate-500/40 bg-slate-500/10 px-5 py-3 text-center text-slate-300 text-sm"
+    >
+      {{ viewOnlyDaytimeReason }}
+    </div>
 
-      <div
-        v-if="isShelterLaborer"
-        class="mb-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-5 py-4 text-center"
-      >
-        <p class="text-amber-200 text-sm font-medium">
-          {{ submitContext.laborerMessage || '你今日被指定为避难所劳工，按规定当天不应提交个人行动；但不管怎么样，想要试试也是可以的。' }}
-        </p>
-      </div>
+    <div
+      v-if="isShelterLaborer"
+      class="mb-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-5 py-4 text-center"
+    >
+      <p class="text-amber-200 text-sm font-medium">
+        {{ submitContext.laborerMessage || '你今日被指定为避难所劳工，按规定当天不应提交个人行动；但不管怎么样，想要试试也是可以的。' }}
+      </p>
+    </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-10">
-        <div v-for="s in [1, 2]" :key="s"
-          class="relative bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-6 overflow-hidden">
-          <div class="absolute top-0 right-0 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl" />
-          <div class="relative space-y-4">
-            <div class="flex items-center gap-3">
-              <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white/10 border border-white/10 text-gray-300 text-sm font-medium">{{ s }}</span>
-              <h2 class="text-white text-lg tracking-tight">行动{{ s === 1 ? '一' : '二' }}</h2>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-10">
+      <div v-for="s in [1, 2]" :key="s"
+        class="relative bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-6 overflow-hidden">
+        <div class="absolute top-0 right-0 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl" />
+        <div class="relative space-y-4">
+          <div class="flex items-center gap-3">
+            <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white/10 border border-white/10 text-gray-300 text-sm font-medium">{{ s }}</span>
+            <h2 class="text-white text-lg tracking-tight">行动{{ s === 1 ? '一' : '二' }}</h2>
+          </div>
+
+          <div>
+            <div class="flex items-center gap-2 mb-2 ml-0.5">
+              <label class="text-gray-500 text-xs">选择行动</label>
+              <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-white/5 text-gray-400 hover:text-white hover:border-blue-500/40 hover:bg-blue-500/10 transition-colors text-xs font-semibold" @click="showActionHelpModal = true">?</button>
             </div>
+            <select
+              v-model="actionData[s].type"
+              :disabled="!isSlotEditable(s)"
+              class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <option value="">请选择行动</option>
+              <option v-for="opt in actionTypeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+            </select>
+          </div>
 
-            <div>
-              <div class="flex items-center gap-2 mb-2 ml-0.5">
-                <label class="text-gray-500 text-xs">选择行动</label>
-                <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-white/5 text-gray-400 hover:text-white hover:border-blue-500/40 hover:bg-blue-500/10 transition-colors text-xs font-semibold" @click="showActionHelpModal = true">?</button>
-              </div>
-              <select
-                v-model="actionData[s].type"
-                :disabled="!isSlotEditable(s)"
-                class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <option value="">请选择行动</option>
-                <option v-for="opt in actionTypeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-              </select>
-            </div>
-
-            <div v-if="actionData[s].type && actionData[s].type !== 'hide' && actionData[s].type !== 'produce' && actionData[s].type !== 'use_trait' && actionData[s].type !== 'use_skill' && actionData[s].type !== 'transport' && actionData[s].type !== 'other'">
-              <label class="block text-gray-500 text-xs mb-2 ml-0.5">选择目标</label>
-              <select
-                v-model="actionData[s].target"
-                :disabled="!isSlotEditable(s)"
-                class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <option value="">请选择目标</option>
-                <option v-for="t in getTargetOptions(actionData[s].type)" :key="t.value" :value="t.value">{{ t.label }}</option>
-              </select>
-            </div>
+          <div v-if="actionData[s].type && actionData[s].type !== 'hide' && actionData[s].type !== 'produce' && actionData[s].type !== 'use_trait' && actionData[s].type !== 'use_skill' && actionData[s].type !== 'transport' && actionData[s].type !== 'other'">
+            <label class="block text-gray-500 text-xs mb-2 ml-0.5">选择目标</label>
+            <select
+              v-model="actionData[s].target"
+              :disabled="!isSlotEditable(s)"
+              class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <option value="">请选择目标</option>
+              <option v-for="t in getTargetOptions(actionData[s].type)" :key="t.value" :value="t.value">{{ t.label }}</option>
+            </select>
+          </div>
 
             <div v-if="actionData[s].type === 'go_location' && actionData[s].target && getNpcOptions(actionData[s].target).length > 0">
               <label class="block text-gray-500 text-xs mb-2 ml-0.5">互动NPC（可选）</label>
@@ -591,6 +610,10 @@ function displayActionResult(action) {
                   <option value="warehouse_to_warehouse">仓库 → 仓库（上限500kg）</option>
                   <option value="warehouse_to_player">仓库 → 个人（上限300kg）</option>
                   <option value="player_to_warehouse">个人 → 仓库（上限300kg，提交时扣除背包）</option>
+                  <option value="warehouse_to_shelter">仓库 → 避难所（上限500kg）</option>
+                  <option v-if="isRuler" value="shelter_to_warehouse">避难所 → 仓库（上限500kg，仅统治者）</option>
+                  <option v-if="isRuler" value="shelter_to_player">避难所 → 个人（上限300kg，仅统治者）</option>
+                  <option value="player_to_shelter">个人 → 避难所（上限300kg，提交时扣除背包）</option>
                 </select>
               </div>
               <div v-if="['warehouse_to_warehouse', 'warehouse_to_player'].includes(transportMode[s])" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -611,6 +634,42 @@ function displayActionResult(action) {
                   </select>
                 </div>
               </div>
+              <div v-if="transportMode[s] === 'warehouse_to_shelter'" class="space-y-3">
+                <div>
+                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">源仓库（需持有钥匙）</label>
+                  <select v-model="transportSource[s]"
+                    class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50">
+                    <option value="">选择仓库</option>
+                    <option v-for="w in warehouseOptions.filter(o => o.value !== 'shelter')" :key="w.value" :value="w.value">{{ w.label }}</option>
+                  </select>
+                </div>
+                <div class="rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-4 py-3">
+                  <p class="text-cyan-300 text-sm">目标：避难所仓库（所有玩家均可投入物资）</p>
+                </div>
+              </div>
+              <div v-if="transportMode[s] === 'shelter_to_warehouse'" class="space-y-3">
+                <div class="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+                  <p class="text-amber-300 text-sm">源：避难所仓库（仅统治者可搬出物资）</p>
+                </div>
+                <div>
+                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">目标仓库（需持有钥匙）</label>
+                  <select v-model="transportDest[s]"
+                    class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50">
+                    <option value="">选择仓库</option>
+                    <option v-for="w in warehouseOptions.filter(o => o.value !== 'shelter')" :key="w.value" :value="w.value">{{ w.label }}</option>
+                  </select>
+                </div>
+              </div>
+              <div v-if="transportMode[s] === 'shelter_to_player'" class="space-y-3">
+                <div class="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+                  <p class="text-amber-300 text-sm">源：避难所仓库 → 个人背包（仅统治者可搬出物资）</p>
+                </div>
+              </div>
+              <div v-if="transportMode[s] === 'player_to_shelter'" class="space-y-3">
+                <div class="rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-4 py-3">
+                  <p class="text-cyan-300 text-sm">目标：避难所仓库（所有玩家均可投入物资，提交时扣除背包）</p>
+                </div>
+              </div>
               <div v-if="transportMode[s] === 'player_to_warehouse'">
                 <label class="block text-gray-500 text-xs mb-2 ml-0.5">目标仓库（需持有钥匙）</label>
                 <select v-model="transportDest[s]"
@@ -621,7 +680,11 @@ function displayActionResult(action) {
               </div>
               <div v-if="transportMode[s] && (
                 (['warehouse_to_warehouse', 'warehouse_to_player'].includes(transportMode[s]) && transportSource[s]) ||
-                transportMode[s] === 'player_to_warehouse'
+                (transportMode[s] === 'warehouse_to_shelter' && transportSource[s]) ||
+                (transportMode[s] === 'shelter_to_warehouse') ||
+                (transportMode[s] === 'shelter_to_player') ||
+                transportMode[s] === 'player_to_warehouse' ||
+                transportMode[s] === 'player_to_shelter'
               ) && Array.isArray(transportItems[s]) && transportItems[s].length > 0">
                 <div class="flex items-center justify-between mb-2">
                   <label class="text-gray-500 text-xs">选择搬运物资</label>
@@ -741,6 +804,5 @@ function displayActionResult(action) {
           </div>
         </div>
       </Teleport>
-    </div>
   </div>
 </template>

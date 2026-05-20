@@ -123,7 +123,31 @@ public class PlayerService {
     }
 
     public List<Player> getAllPlayers() {
-        return playerRepository.findAll();
+        List<Player> players = playerRepository.findAll();
+        for (Player player : players) {
+            if (player.getJobId() != null) {
+                jobRepository.findById(player.getJobId()).ifPresent(job -> player.setJobName(job.getName()));
+            }
+        }
+        return players;
+    }
+
+    public List<Map<String, Object>> getPlayersForTrade() {
+        List<Player> players = playerRepository.findAll();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Player player : players) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", player.getId());
+            map.put("name", player.getName());
+            if (player.getJobId() != null) {
+                jobRepository.findById(player.getJobId()).ifPresent(job -> map.put("jobName", job.getName()));
+            }
+            if (!map.containsKey("jobName")) {
+                map.put("jobName", null);
+            }
+            result.add(map);
+        }
+        return result;
     }
 
     public Player getPlayerById(Integer id) {

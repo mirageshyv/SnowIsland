@@ -1,5 +1,6 @@
 package com.example.snowisland.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
@@ -30,6 +31,10 @@ public class Player {
 
     @Column(name = "job_id")
     private Integer jobId;
+
+    @Transient
+    @JsonProperty
+    private String jobName;
 
     @Column(name = "skill_id")
     private Integer skillId;
@@ -82,6 +87,9 @@ public class Player {
 
     public Integer getJobId() { return jobId; }
     public void setJobId(Integer jobId) { this.jobId = jobId; }
+
+    public String getJobName() { return jobName; }
+    public void setJobName(String jobName) { this.jobName = jobName; }
 
     public Integer getSkillId() { return skillId; }
     public void setSkillId(Integer skillId) { this.skillId = skillId; }

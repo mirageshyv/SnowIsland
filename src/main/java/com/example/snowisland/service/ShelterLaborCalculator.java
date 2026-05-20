@@ -26,7 +26,7 @@ public final class ShelterLaborCalculator {
     }
 
     public static boolean isProductionLaborJobByName(String jobName) {
-        if (jobName == null || jobName.isBlank()) {
+        if (jobName == null || jobName.trim().isEmpty()) {
             return false;
         }
         return PRODUCTION_JOB_NAMES.contains(jobName.trim());

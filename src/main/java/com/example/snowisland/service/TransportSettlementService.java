@@ -1,6 +1,10 @@
 package com.example.snowisland.service;
 
+import com.example.snowisland.entity.Player;
+import com.example.snowisland.entity.ShelterStock;
 import com.example.snowisland.entity.WarehouseConfig;
+import com.example.snowisland.repository.PlayerRepository;
+import com.example.snowisland.repository.ShelterStockRepository;
 import com.example.snowisland.repository.WarehouseConfigRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,10 +21,13 @@ public class TransportSettlementService {
 
     public static final String PENDING_MARKER = "\n\n【搬运待发布】\n";
     public static final String SETTLEMENT_HEADER = "【搬运结算】";
+    public static final String SHELTER_KEY = "shelter";
 
     @Autowired private EntityManager entityManager;
     @Autowired private WarehouseConfigRepository warehouseConfigRepository;
     @Autowired private WarehouseService warehouseService;
+    @Autowired private ShelterStockRepository shelterStockRepository;
+    @Autowired private PlayerRepository playerRepository;
 
     public static class TransportItem {
         public String itemType;
@@ -45,29 +52,33 @@ public class TransportSettlementService {
         if (notes == null) return plan;
         for (String line : notes.split("\n")) {
             line = line.trim();
+            int closeIdx = line.indexOf(']');
+            if (closeIdx < 0) continue;
             if (line.startsWith("[mode:")) {
-                plan.mode = line.substring(6, line.indexOf(']'));
+                plan.mode = line.substring(6, closeIdx);
             } else if (line.startsWith("[source:")) {
-                plan.sourceWarehouse = line.substring(8, line.indexOf(']'));
+                plan.sourceWarehouse = line.substring(8, closeIdx);
             } else if (line.startsWith("[dest:")) {
-                plan.destWarehouse = line.substring(6, line.indexOf(']'));
+                plan.destWarehouse = line.substring(6, closeIdx);
             } else if (line.startsWith("[target:")) {
                 try {
-                    plan.targetPlayerId = Integer.parseInt(line.substring(8, line.indexOf(']')));
+                    plan.targetPlayerId = Integer.parseInt(line.substring(8, closeIdx));
                 } catch (NumberFormatException ignored) { }
             } else if (line.startsWith("[player_deducted:")) {
                 plan.playerDeducted = line.contains("1");
             } else if (line.startsWith("[item:")) {
-                String itemStr = line.substring(6, line.indexOf(']'));
+                String itemStr = line.substring(6, closeIdx);
                 String[] parts = itemStr.split("\\|");
                 if (parts.length >= 4) {
-                    TransportItem item = new TransportItem();
-                    item.itemType = parts[0];
-                    item.itemId = Integer.parseInt(parts[1]);
-                    item.requestedQty = Integer.parseInt(parts[2]);
-                    item.weightPerUnit = Double.parseDouble(parts[3]);
-                    item.actualQty = 0;
-                    plan.items.add(item);
+                    try {
+                        TransportItem item = new TransportItem();
+                        item.itemType = parts[0];
+                        item.itemId = Integer.parseInt(parts[1]);
+                        item.requestedQty = Integer.parseInt(parts[2]);
+                        item.weightPerUnit = Double.parseDouble(parts[3]);
+                        item.actualQty = 0;
+                        plan.items.add(item);
+                    } catch (NumberFormatException ignored) { }
                 }
             }
         }
@@ -97,10 +108,33 @@ public class TransportSettlementService {
             case "player_to_warehouse":
                 requireKey(playerId, plan.destWarehouse, "目标仓库", errors);
                 break;
+            case "warehouse_to_shelter":
+                requireKey(playerId, plan.sourceWarehouse, "源仓库", errors);
+                break;
+            case "shelter_to_warehouse":
+                requireRuler(playerId, "从避难所搬出物资", errors);
+                requireKey(playerId, plan.destWarehouse, "目标仓库", errors);
+                break;
+            case "shelter_to_player":
+                requireRuler(playerId, "从避难所搬出物资", errors);
+                break;
+            case "player_to_shelter":
+                break;
             default:
                 errors.add("未知的搬运模式: " + plan.mode);
         }
         return errors;
+    }
+
+    private void requireRuler(Integer playerId, String action, List<String> errors) {
+        if (playerId == null) {
+            errors.add(action + "需要统治者权限");
+            return;
+        }
+        Player player = playerRepository.findById(playerId).orElse(null);
+        if (player == null || player.getFaction() != Player.Faction.统治者) {
+            errors.add(action + "需要统治者权限");
+        }
     }
 
     private void requireKey(Integer playerId, String warehouseKey, String label, List<String> errors) {
@@ -134,6 +168,16 @@ public class TransportSettlementService {
             case "player_to_warehouse":
                 if (plan.destWarehouse == null) errors.add("个人→仓库需要选择目标仓库");
                 break;
+            case "warehouse_to_shelter":
+                if (plan.sourceWarehouse == null) errors.add("仓库→避难所需要选择源仓库");
+                break;
+            case "shelter_to_warehouse":
+                if (plan.destWarehouse == null) errors.add("避难所→仓库需要选择目标仓库");
+                break;
+            case "shelter_to_player":
+                break;
+            case "player_to_shelter":
+                break;
             default:
                 errors.add("未知的搬运模式");
         }
@@ -146,7 +190,9 @@ public class TransportSettlementService {
         errors.addAll(validatePlanStructure(plan));
         if (!errors.isEmpty()) return errors;
 
-        int maxWeight = "warehouse_to_warehouse".equals(plan.mode) ? 500 : 300;
+        int maxWeight = ("warehouse_to_warehouse".equals(plan.mode)
+                || "warehouse_to_shelter".equals(plan.mode)
+                || "shelter_to_warehouse".equals(plan.mode)) ? 500 : 300;
         int totalMoved = 0;
 
         for (TransportItem item : plan.items) {
@@ -185,11 +231,26 @@ public class TransportSettlementService {
         switch (plan.mode) {
             case "warehouse_to_warehouse":
             case "warehouse_to_player":
+            case "warehouse_to_shelter":
                 return getWarehouseStock("warehouse_" + plan.sourceWarehouse, itemType, itemId);
+            case "shelter_to_warehouse":
+            case "shelter_to_player":
+                return getShelterStock(itemType, itemId);
             case "player_to_warehouse":
+            case "player_to_shelter":
                 return getPlayerItemQuantity(actingPlayerId, itemType, itemId);
             default:
                 return 0;
+        }
+    }
+
+    private int getShelterStock(String itemType, int itemId) {
+        try {
+            ShelterStock.ItemType type = ShelterStock.ItemType.valueOf(itemType.toLowerCase(Locale.ROOT));
+            Optional<ShelterStock> opt = shelterStockRepository.findByItemTypeAndItemId(type, itemId);
+            return opt.map(ShelterStock::getQuantity).orElse(0);
+        } catch (Exception ignored) {
+            return 0;
         }
     }
 
@@ -218,12 +279,28 @@ public class TransportSettlementService {
                 case "player_to_warehouse":
                     sb.append(name).append("：从个人搬入仓库").append(item.actualQty).append("单位（").append(kg).append("千克）\n");
                     break;
+                case "warehouse_to_shelter":
+                    sb.append(name).append("：从仓库搬入避难所").append(item.actualQty).append("单位（").append(kg).append("千克）\n");
+                    break;
+                case "shelter_to_warehouse":
+                    sb.append(name).append("：从避难所搬入仓库").append(item.actualQty).append("单位（").append(kg).append("千克）\n");
+                    break;
+                case "shelter_to_player":
+                    sb.append(name).append("：从避难所搬入个人背包").append(item.actualQty).append("单位（").append(kg).append("千克）\n");
+                    break;
+                case "player_to_shelter":
+                    sb.append(name).append("：从个人投入避难所").append(item.actualQty).append("单位（").append(kg).append("千克）\n");
+                    break;
                 default:
                     break;
             }
         }
         sb.append("总计搬运：").append(totalKg).append("千克");
-        if ("player_to_warehouse".equals(plan.mode) && plan.playerDeducted) {
+        boolean needsDeferred = "player_to_warehouse".equals(plan.mode) && plan.playerDeducted;
+        boolean needsDeferredShelter = "player_to_shelter".equals(plan.mode) && plan.playerDeducted;
+        if (needsDeferred) {
+            sb.append("\n（个人背包已扣除，入仓将在发布反馈后生效）");
+        } else if (needsDeferredShelter) {
             sb.append("\n（个人背包已扣除，入仓将在发布反馈后生效）");
         } else {
             sb.append("\n（库存变更将在发布反馈后生效）");
@@ -231,10 +308,10 @@ public class TransportSettlementService {
         return sb.toString();
     }
 
-    /** 个人→仓库：提交行动时从玩家背包扣除（须在事务内调用）。 */
+    /** 个人→仓库/避难所：提交行动时从玩家背包扣除（须在事务内调用）。 */
     public String deductPlayerItemsForSubmit(TransportPlan plan, Integer playerId) {
-        if (!"player_to_warehouse".equals(plan.mode)) {
-            return "仅个人→仓库可在提交时扣除背包";
+        if (!"player_to_warehouse".equals(plan.mode) && !"player_to_shelter".equals(plan.mode)) {
+            return "仅个人→仓库/避难所可在提交时扣除背包";
         }
         List<String> errors = computeTransfer(plan, playerId);
         if (!errors.isEmpty()) {
@@ -322,9 +399,15 @@ public class TransportSettlementService {
 
     /** Apply inventory changes; returns error message or null on success. */
     public String executePlan(TransportPlan plan, Integer actingPlayerId) {
-        List<String> errors = computeTransfer(plan, actingPlayerId);
-        if (!errors.isEmpty()) {
-            return String.join("；", errors);
+        boolean needsCompute = plan.items.stream().allMatch(i -> i.actualQty <= 0);
+        if (needsCompute) {
+            List<String> errors = computeTransfer(plan, actingPlayerId);
+            if (!errors.isEmpty()) {
+                return String.join("；", errors);
+            }
+        }
+        if (plan.items.stream().noneMatch(i -> i.actualQty > 0)) {
+            return "没有可执行的搬运物资";
         }
         try {
             switch (plan.mode) {
@@ -341,12 +424,94 @@ public class TransportSettlementService {
                         executePlayerToWarehouse(plan, actingPlayerId);
                     }
                     break;
+                case "warehouse_to_shelter":
+                    executeWarehouseToShelter(plan);
+                    break;
+                case "shelter_to_warehouse":
+                    executeShelterToWarehouse(plan);
+                    break;
+                case "shelter_to_player":
+                    executeShelterToPlayer(plan, actingPlayerId);
+                    break;
+                case "player_to_shelter":
+                    if (plan.playerDeducted) {
+                        executePlayerToShelterInboundOnly(plan);
+                    } else {
+                        executePlayerToShelter(plan, actingPlayerId);
+                    }
+                    break;
                 default:
                     return "未知的搬运模式";
             }
             return null;
         } catch (Exception e) {
             return "搬运执行失败: " + e.getMessage();
+        }
+    }
+
+    private void executeWarehouseToShelter(TransportPlan plan) {
+        String sourceTable = "warehouse_" + plan.sourceWarehouse;
+        for (TransportItem item : plan.items) {
+            if (item.actualQty <= 0) continue;
+            updateWarehouseStock(sourceTable, item.itemType, item.itemId, -item.actualQty);
+            updateShelterStock(item.itemType, item.itemId, item.actualQty);
+        }
+    }
+
+    private void executeShelterToWarehouse(TransportPlan plan) {
+        String destTable = "warehouse_" + plan.destWarehouse;
+        for (TransportItem item : plan.items) {
+            if (item.actualQty <= 0) continue;
+            updateShelterStock(item.itemType, item.itemId, -item.actualQty);
+            updateWarehouseStock(destTable, item.itemType, item.itemId, item.actualQty);
+        }
+    }
+
+    private void executeShelterToPlayer(TransportPlan plan, Integer playerId) {
+        for (TransportItem item : plan.items) {
+            if (item.actualQty <= 0) continue;
+            updateShelterStock(item.itemType, item.itemId, -item.actualQty);
+            addItemToPlayer(playerId, item.itemType, item.itemId, item.actualQty);
+        }
+    }
+
+    private void executePlayerToShelter(TransportPlan plan, Integer playerId) {
+        for (TransportItem item : plan.items) {
+            if (item.actualQty <= 0) continue;
+            removeItemFromPlayer(playerId, item.itemType, item.itemId, item.actualQty);
+            updateShelterStock(item.itemType, item.itemId, item.actualQty);
+        }
+    }
+
+    private void executePlayerToShelterInboundOnly(TransportPlan plan) {
+        for (TransportItem item : plan.items) {
+            if (item.actualQty <= 0) continue;
+            updateShelterStock(item.itemType, item.itemId, item.actualQty);
+        }
+    }
+
+    private void updateShelterStock(String itemType, int itemId, int delta) {
+        try {
+            ShelterStock.ItemType type = ShelterStock.ItemType.valueOf(itemType.toLowerCase(Locale.ROOT));
+            Optional<ShelterStock> opt = shelterStockRepository.findByItemTypeAndItemId(type, itemId);
+            if (opt.isPresent()) {
+                ShelterStock stock = opt.get();
+                int newQty = stock.getQuantity() + delta;
+                if (newQty <= 0) {
+                    shelterStockRepository.delete(stock);
+                } else {
+                    stock.setQuantity(newQty);
+                    shelterStockRepository.save(stock);
+                }
+            } else if (delta > 0) {
+                ShelterStock stock = new ShelterStock();
+                stock.setItemType(type);
+                stock.setItemId(itemId);
+                stock.setQuantity(delta);
+                shelterStockRepository.save(stock);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("更新避难所库存失败: " + e.getMessage());
         }
     }
 
@@ -391,12 +556,17 @@ public class TransportSettlementService {
             case "warehouse_to_warehouse": return "仓库→仓库";
             case "warehouse_to_player": return "仓库→个人";
             case "player_to_warehouse": return "个人→仓库";
+            case "warehouse_to_shelter": return "仓库→避难所";
+            case "shelter_to_warehouse": return "避难所→仓库";
+            case "shelter_to_player": return "避难所→个人";
+            case "player_to_shelter": return "个人→避难所";
             default: return mode;
         }
     }
 
     public String resolveWarehouseName(String warehouseKey) {
         if (warehouseKey == null || warehouseKey.isEmpty()) return "未知仓库";
+        if (SHELTER_KEY.equals(warehouseKey)) return "避难所仓库";
         Optional<WarehouseConfig> opt = warehouseConfigRepository.findByWarehouseKey(warehouseKey);
         if (opt.isPresent() && opt.get().getWarehouseName() != null && !opt.get().getWarehouseName().isEmpty()) {
             return opt.get().getWarehouseName();

@@ -20,6 +20,11 @@ public class PlayerController {
         return playerService.getAllPlayers();
     }
 
+    @GetMapping("/for-trade")
+    public List<Map<String, Object>> getPlayersForTrade() {
+        return playerService.getPlayersForTrade();
+    }
+
     @GetMapping("/{id}")
     public Player getPlayerById(@PathVariable Integer id) {
         return playerService.getPlayerById(id);

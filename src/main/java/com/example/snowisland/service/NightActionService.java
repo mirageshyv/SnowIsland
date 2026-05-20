@@ -27,6 +27,8 @@ public class NightActionService {
                 "pressure_ruler", "publicity", "conspiracy", "other")));
         NIGHT_ACTION_TYPES.put("天灾使者", new LinkedHashSet<>(Arrays.asList(
                 "conspiracy", "other")));
+        NIGHT_ACTION_TYPES.put("平民", new LinkedHashSet<>(Arrays.asList(
+                "conspiracy", "other")));
     }
 
     private static final Map<String, Set<String>> CONSPIRACY_SUBTYPES = new LinkedHashMap<>();
@@ -37,6 +39,8 @@ public class NightActionService {
         CONSPIRACY_SUBTYPES.put("冒险者", new LinkedHashSet<>(Collections.singletonList("raid_location")));
         CONSPIRACY_SUBTYPES.put("天灾使者", new LinkedHashSet<>(Arrays.asList(
                 "raid_location", "spread_terror", "assassinate_target")));
+        CONSPIRACY_SUBTYPES.put("平民", new LinkedHashSet<>(Arrays.asList(
+                "raid_location", "assassinate_target")));
     }
 
     @Autowired private NightActionRepository nightActionRepository;
@@ -56,9 +60,9 @@ public class NightActionService {
         }
         Player player = opt.get();
         String faction = player.getFaction() != null ? player.getFaction().name() : null;
-        if (faction == null || "平民".equals(faction)) {
+        if (faction == null) {
             ctx.put("success", false);
-            ctx.put("message", "平民无法提交夜晚行动");
+            ctx.put("message", "无法确定阵营");
             ctx.put("faction", faction);
             return ctx;
         }
@@ -106,9 +110,9 @@ public class NightActionService {
         }
         Player player = optPlayer.get();
         String faction = player.getFaction() != null ? player.getFaction().name() : null;
-        if (faction == null || "平民".equals(faction)) {
+        if (faction == null) {
             result.put("success", false);
-            result.put("message", "平民无法提交夜晚行动");
+            result.put("message", "无法确定阵营");
             return result;
         }
 

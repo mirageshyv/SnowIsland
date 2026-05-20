@@ -283,8 +283,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#0a0e1a] py-6 px-4 md:px-8 pb-28">
-    <div class="max-w-5xl mx-auto">
+  <div>
       <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
         <div>
           <h1 class="text-white text-2xl font-semibold tracking-tight">行动反馈</h1>
@@ -549,6 +548,5 @@ onMounted(async () => {
           </button>
         </div>
       </div>
-    </div>
   </div>
 </template>

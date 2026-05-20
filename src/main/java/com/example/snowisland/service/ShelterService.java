@@ -37,6 +37,23 @@ public class ShelterService {
     private static final int PROFESSIONAL_BASE_VALUE = 5;
     private static final int OPPRESSION_BONUS = 3;
 
+    /** 好感度等级：厌恶 < 忽视 < 喜好 */
+    private static LocationNpc.Attitude downgradeAttitude(LocationNpc.Attitude current) {
+        switch (current) {
+            case 喜好: return LocationNpc.Attitude.忽视;
+            case 忽视: return LocationNpc.Attitude.厌恶;
+            default: return current;
+        }
+    }
+
+    private static LocationNpc.Attitude upgradeAttitude(LocationNpc.Attitude current) {
+        switch (current) {
+            case 厌恶: return LocationNpc.Attitude.忽视;
+            case 忽视: return LocationNpc.Attitude.喜好;
+            default: return current;
+        }
+    }
+
     private static final Object[][] DEFAULT_STOCK = {
             {ShelterStock.ItemType.material, 2, 45},
             {ShelterStock.ItemType.material, 7, 32},
@@ -257,6 +274,7 @@ public class ShelterService {
         Set<String> seenWorkers = new HashSet<>();
         List<WorkerRef> refs = new ArrayList<>();
         Map<String, Map<String, Object>> rowByKey = new LinkedHashMap<>();
+        Map<Integer, LocationNpc> npcsById = loadNpcsById();
         for (Map<String, Object> row : laborers) {
             WorkerRef ref = WorkerRef.fromRow(row);
             String err = validateWorker(ref);
@@ -274,12 +292,22 @@ public class ShelterService {
             if (exploited) {
                 exploitCount++;
             }
+
+            // 厌恶状态NPC自动标记逃役
+            boolean escaped = toBool(row.get("escaped"));
+            if ("npc".equalsIgnoreCase(ref.kind) && !escaped) {
+                LocationNpc npc = npcsById.get(ref.id);
+                if (npc != null && npc.getAttitudeRuler() == LocationNpc.Attitude.厌恶) {
+                    escaped = true;
+                }
+            }
+
             refs.add(ref);
             Map<String, Object> patch = new LinkedHashMap<>();
             patch.put("workerKind", ref.kind);
             patch.put("workerId", ref.id);
             patch.put("exploited", exploited);
-            patch.put("escaped", false);
+            patch.put("escaped", escaped);
             rowByKey.put(ref.key(), patch);
         }
         if (exploitCount > 3) {
@@ -312,6 +340,7 @@ public class ShelterService {
         }
 
         Set<String> seenWorkers = new HashSet<>();
+        Map<Integer, LocationNpc> npcsById = loadNpcsById();
         for (Map<String, Object> row : laborers) {
             WorkerRef ref = WorkerRef.fromRow(row);
             String err = validateWorker(ref);
@@ -324,6 +353,16 @@ public class ShelterService {
                 out.put("success", false);
                 out.put("message", "重复的劳工: " + ref.key());
                 return out;
+            }
+            // 厌恶状态NPC自动标记逃役
+            if ("npc".equalsIgnoreCase(ref.kind)) {
+                boolean escaped = toBool(row.get("escaped"));
+                if (!escaped) {
+                    LocationNpc npc = npcsById.get(ref.id);
+                    if (npc != null && npc.getAttitudeRuler() == LocationNpc.Attitude.厌恶) {
+                        row.put("escaped", true);
+                    }
+                }
             }
         }
 
@@ -404,6 +443,20 @@ public class ShelterService {
                 int buildValue = ShelterLaborCalculator.calculateBuildValue(productionJob, exploited, escaped);
                 labor.setBuildValue(buildValue);
                 shelterDailyLaborRepository.save(labor);
+
+                // NPC劳工好感度变更
+                if (npc != null && !escaped) {
+                    if (exploited) {
+                        // 直接压榨：统治者好感度设为厌恶，反叛者好感度设为喜好
+                        npc.setAttitudeRuler(LocationNpc.Attitude.厌恶);
+                        npc.setAttitudeRebel(LocationNpc.Attitude.喜好);
+                    } else {
+                        // 普通劳工选择：统治者好感度降一级，反叛者好感度升一级
+                        npc.setAttitudeRuler(downgradeAttitude(npc.getAttitudeRuler()));
+                        npc.setAttitudeRebel(upgradeAttitude(npc.getAttitudeRebel()));
+                    }
+                    npcRepository.save(npc);
+                }
                 continue;
             }
             Player player = playersById.get(labor.getWorkerId());
@@ -859,6 +912,9 @@ public class ShelterService {
             String loc = locationNames.getOrDefault(npc.getLocationId(), "未知地点");
             row.put("locationName", loc);
             row.put("label", npc.getName() + " · " + loc);
+            row.put("attitudeRuler", npc.getAttitudeRuler() != null ? npc.getAttitudeRuler().name() : "忽视");
+            row.put("attitudeRebel", npc.getAttitudeRebel() != null ? npc.getAttitudeRebel().name() : "忽视");
+            row.put("hatesRuler", npc.getAttitudeRuler() == LocationNpc.Attitude.厌恶);
             rows.add(row);
         }
 

@@ -87,6 +87,24 @@ const router = createRouter({
       meta: { requiresAuth: true, role: 'dm' }
     },
     {
+      path: '/quick-interaction',
+      name: 'QuickInteraction',
+      component: () => import('../views/QuickInteractionView.vue'),
+      meta: { requiresAuth: true, role: 'player' }
+    },
+    {
+      path: '/quick-interaction-feedback',
+      name: 'QuickInteractionFeedback',
+      component: () => import('../views/QuickInteractionFeedbackView.vue'),
+      meta: { requiresAuth: true, role: 'dm' }
+    },
+    {
+      path: '/rule-book',
+      name: 'RuleBook',
+      component: () => import('../views/RuleBookView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/player/materials',
       name: 'PlayerMaterials',
       component: () => import('../views/PlayerMaterials.vue'),

@@ -75,8 +75,7 @@ onMounted(() => fetchActions())
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#0a0e1a] py-8 px-4 md:px-8">
-    <div class="max-w-6xl mx-auto">
+  <div>
       <div class="text-center mb-8">
         <h1 class="text-white text-2xl md:text-3xl font-semibold tracking-tight mb-2">阵营行动反馈</h1>
         <p class="text-gray-500 text-sm">查看玩家提交的阵营行动并给予反馈</p>
@@ -167,7 +166,6 @@ onMounted(() => fetchActions())
       <div v-if="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-xl text-sm text-white" :class="toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'">
         {{ toast.text }}
       </div>
-    </div>
   </div>
 </template>
 

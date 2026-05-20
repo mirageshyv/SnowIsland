@@ -206,7 +206,7 @@ async function confirmAdd() {
 }
 
 const warehouseIcons = {
-  general: '📦', fuel: '⛽', armory: '⚔️', dock: '⚓', rebel: '🏴', ark: '🚢'
+  general: '📦', fuel: '⛽', armory: '⚔️', dock: '⚓', rebel: '🏴', ark: '🚢', shelter: '🏠'
 };
 
 onMounted(() => {

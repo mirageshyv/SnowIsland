@@ -39,7 +39,7 @@ public class PlayerSupplyService {
         int woodQ = getMaterialQuantity(playerId, ItemCatalog.WOOD_MATERIAL_ID);
         Map<String, Object> block = new LinkedHashMap<>();
         block.put("woodKg", woodQ);
-        block.put("items", List.of(
+        block.put("items", Arrays.asList(
                 row(ItemCatalog.FUEL_MATERIAL_ID, ItemCatalog.FUEL_NAME, ItemCatalog.FUEL_UNIT, fuelQ),
                 row(ItemCatalog.WOOD_MATERIAL_ID, ItemCatalog.WOOD_NAME, ItemCatalog.WOOD_UNIT, woodQ)));
         return block;

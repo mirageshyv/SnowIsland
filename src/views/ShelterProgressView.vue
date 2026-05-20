@@ -44,13 +44,14 @@ function candidateKey(c) {
 }
 
 const rosterWorkerKeys = computed(() =>
-  new Set(dailyLabor.value.map((r) => r.workerKey || `player:${r.playerId}`))
+  new Set(dailyLabor.value.map((r) => r.workerKey || `${r.workerKind || 'player'}:${r.workerId ?? r.playerId}`))
 )
 
 function defaultLaborRow(candidate) {
   const key = candidateKey(candidate)
   const kind = candidate.workerKind || candidate.kind || 'player'
   const id = candidate.workerId ?? candidate.id
+  const hatesRuler = kind === 'npc' && candidate.hatesRuler
   return refreshShelterLaborRow({
     workerKind: kind,
     workerId: id,
@@ -62,7 +63,10 @@ function defaultLaborRow(candidate) {
     productionJob: candidate.productionJob ?? false,
     buildValue: 0,
     exploited: false,
-    escaped: false,
+    escaped: hatesRuler,
+    attitudeRuler: candidate.attitudeRuler || null,
+    attitudeRebel: candidate.attitudeRebel || null,
+    hatesRuler: hatesRuler,
   })
 }
 
@@ -102,7 +106,13 @@ function applyLaborResult(result) {
   currentGameDay.value = Number(result.currentGameDay) || currentGameDay.value
   dayVerified.value = Boolean(result.dayVerified)
   dailyLabor.value = Array.isArray(result.dailyLabor)
-    ? result.dailyLabor.map((r) => refreshShelterLaborRow({ ...r }))
+    ? result.dailyLabor.map((r) => {
+        const row = refreshShelterLaborRow({ ...r })
+        if (!row.workerKey) {
+          row.workerKey = `${row.workerKind || 'player'}:${row.workerId ?? row.playerId}`
+        }
+        return row
+      })
     : dailyLabor.value
   buildLogs.value = Array.isArray(result.buildLogs) ? result.buildLogs : buildLogs.value
   laborDays.value = Array.isArray(result.laborDays) ? result.laborDays : laborDays.value
@@ -558,7 +568,7 @@ onMounted(() => {
         <div v-if="isDm && dailyLabor.length" class="mt-4 space-y-2">
           <div
             v-for="row in dailyLabor"
-            :key="row.workerKey || row.playerId"
+            :key="row.workerKey || `${row.workerKind || 'player'}:${row.workerId ?? row.playerId}`"
             class="flex flex-wrap items-center gap-3 px-3 py-3 rounded-xl border border-white/10 bg-black/20"
             :class="row.escaped ? 'opacity-60' : ''"
           >
@@ -566,6 +576,12 @@ onMounted(() => {
               <span class="text-white text-sm font-medium">{{ row.name }}</span>
               <span v-if="row.isNpc || row.workerKind === 'npc'" class="text-purple-400 text-xs ml-1">NPC</span>
               <span class="text-gray-500 text-xs ml-2">{{ row.jobName }}</span>
+              <template v-if="(row.isNpc || row.workerKind === 'npc') && row.attitudeRuler">
+                <span class="text-xs ml-2"
+                  :class="row.attitudeRuler === '喜好' ? 'text-green-400' : row.attitudeRuler === '厌恶' ? 'text-red-400' : 'text-gray-500'">
+                  统治者:{{ row.attitudeRuler }}
+                </span>
+              </template>
             </div>
             <div class="text-xs text-gray-400 min-w-[140px]">
               <span class="text-cyan-300/90 font-medium">{{ row.laborType || '普通劳工' }}</span>
@@ -607,14 +623,20 @@ onMounted(() => {
         <div v-else-if="!isDm && dailyLabor.length" class="mt-4 space-y-2">
           <div
             v-for="row in dailyLabor"
-            :key="row.workerKey || row.playerId"
+            :key="row.workerKey || `${row.workerKind || 'player'}:${row.workerId ?? row.playerId}`"
             class="flex flex-wrap items-center gap-3 px-3 py-3 rounded-xl border border-white/10 bg-black/20"
           >
             <div class="min-w-[100px] flex-1">
               <span class="text-white text-sm font-medium">{{ row.name }}</span>
               <span v-if="row.isNpc || row.workerKind === 'npc'" class="text-purple-400 text-xs ml-1">NPC</span>
               <span class="text-gray-500 text-xs ml-2">{{ row.jobName }}</span>
-              <span v-if="row.laborType" class="text-cyan-300/80 text-xs ml-2">+{{ row.buildValue ?? 0 }}</span>
+              <template v-if="(row.isNpc || row.workerKind === 'npc') && row.attitudeRuler">
+                <span class="text-xs ml-2"
+                  :class="row.attitudeRuler === '喜好' ? 'text-green-400' : row.attitudeRuler === '厌恶' ? 'text-red-400' : 'text-gray-500'">
+                  统治者:{{ row.attitudeRuler }}
+                </span>
+              </template>
+              <span v-if="row.hatesRuler" class="text-xs text-red-400 ml-2">（厌恶统治者，自动逃役）</span>
             </div>
             <label
               class="flex items-center gap-1.5 text-xs text-red-300 cursor-pointer"
@@ -769,7 +791,7 @@ onMounted(() => {
                   </span>
                 </div>
                 <span
-                  v-if="log.verified"
+                  v-if="log.verified && isDm"
                   class="text-emerald-400 font-semibold text-sm tabular-nums shrink-0"
                 >
                   +{{ worker.value }}

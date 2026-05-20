@@ -75,8 +75,7 @@ onMounted(() => fetchActions())
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#0a0e1a] py-8 px-4 md:px-8">
-    <div class="max-w-6xl mx-auto">
+  <div>
       <div class="text-center mb-8">
         <h1 class="text-white text-2xl md:text-3xl font-semibold tracking-tight mb-2">夜晚行动结算</h1>
         <p class="text-gray-500 text-sm">查看各阵营夜晚行动并填写结算结果（成功率、防御值、成败等）</p>
@@ -193,7 +192,6 @@ onMounted(() => fetchActions())
       >
         {{ toast.text }}
       </div>
-    </div>
   </div>
 </template>
 

@@ -1,6 +1,10 @@
 package com.example.snowisland.service;
 
+import com.example.snowisland.entity.Player;
+import com.example.snowisland.entity.ShelterStock;
 import com.example.snowisland.entity.WarehouseConfig;
+import com.example.snowisland.repository.PlayerRepository;
+import com.example.snowisland.repository.ShelterStockRepository;
 import com.example.snowisland.repository.WarehouseConfigRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +21,8 @@ public class WarehouseService {
 
     private static final Logger logger = LoggerFactory.getLogger(WarehouseService.class);
 
+    public static final String SHELTER_KEY = "shelter";
+
     private static final Set<String> VALID_TABLES = new HashSet<>(Arrays.asList(
             "warehouse_general", "warehouse_fuel", "warehouse_armory",
             "warehouse_dock", "warehouse_rebel", "warehouse_ark"
@@ -32,8 +38,27 @@ public class WarehouseService {
     @Autowired
     private EntityManager entityManager;
 
+    @Autowired
+    private ShelterStockRepository shelterStockRepository;
+
+    @Autowired
+    private PlayerRepository playerRepository;
+
     public List<Map<String, Object>> getAllWarehouses() {
-        return toMapList(configRepository.findAllByOrderBySortOrderAsc());
+        List<Map<String, Object>> result = toMapList(configRepository.findAllByOrderBySortOrderAsc());
+        Map<String, Object> shelterMap = new LinkedHashMap<>();
+        shelterMap.put("id", -1);
+        shelterMap.put("warehouseKey", SHELTER_KEY);
+        shelterMap.put("warehouseName", "避难所仓库");
+        shelterMap.put("tableName", "shelter_stock");
+        shelterMap.put("keyItemId", null);
+        shelterMap.put("icon", "home");
+        shelterMap.put("sortOrder", 99);
+        shelterMap.put("accessible", true);
+        shelterMap.put("isShelter", true);
+        shelterMap.put("canTakeOut", true);
+        result.add(shelterMap);
+        return result;
     }
 
     public List<Map<String, Object>> getAccessibleWarehouses(Integer playerId) {
@@ -45,12 +70,32 @@ public class WarehouseService {
             map.put("accessible", hasKey);
             result.add(map);
         }
+        // 避难所仓库：所有玩家可搬入，仅统治者可搬出
+        if (playerId != null) {
+            Player player = playerRepository.findById(playerId).orElse(null);
+            boolean isRuler = player != null && player.getFaction() == Player.Faction.统治者;
+            Map<String, Object> shelterMap = new LinkedHashMap<>();
+            shelterMap.put("id", -1);
+            shelterMap.put("warehouseKey", SHELTER_KEY);
+            shelterMap.put("warehouseName", "避难所仓库");
+            shelterMap.put("tableName", "shelter_stock");
+            shelterMap.put("keyItemId", null);
+            shelterMap.put("icon", "home");
+            shelterMap.put("sortOrder", 99);
+            shelterMap.put("accessible", true);
+            shelterMap.put("isShelter", true);
+            shelterMap.put("canTakeOut", isRuler);
+            result.add(shelterMap);
+        }
         return result;
     }
 
     public boolean playerHasWarehouseKey(Integer playerId, String warehouseKey) {
         if (playerId == null || warehouseKey == null || warehouseKey.isEmpty()) {
             return false;
+        }
+        if (SHELTER_KEY.equals(warehouseKey)) {
+            return true;
         }
         Optional<WarehouseConfig> optionalConfig = configRepository.findByWarehouseKey(warehouseKey);
         if (!optionalConfig.isPresent()) {
@@ -80,6 +125,29 @@ public class WarehouseService {
 
     public Map<String, Object> getWarehouseStock(String warehouseKey, Integer playerId, String userRole) {
         Map<String, Object> result = new HashMap<>();
+
+        // 避难所仓库特殊处理
+        if (SHELTER_KEY.equals(warehouseKey)) {
+            if (!"dm".equalsIgnoreCase(userRole)) {
+                Player player = playerRepository.findById(playerId).orElse(null);
+                if (player == null) {
+                    result.put("success", false);
+                    result.put("message", "玩家不存在");
+                    return result;
+                }
+            }
+            List<Map<String, Object>> stockList = queryShelterStock();
+            for (Map<String, Object> item : stockList) {
+                enrichItemInfo(item);
+            }
+            result.put("success", true);
+            result.put("warehouseKey", SHELTER_KEY);
+            result.put("warehouseName", "避难所仓库");
+            result.put("icon", "home");
+            result.put("isShelter", true);
+            result.put("items", stockList);
+            return result;
+        }
 
         Optional<WarehouseConfig> optionalConfig = configRepository.findByWarehouseKey(warehouseKey);
         if (!optionalConfig.isPresent()) {
@@ -135,6 +203,33 @@ public class WarehouseService {
         if (!VALID_ITEM_TYPES.contains(itemType)) {
             result.put("success", false);
             result.put("message", "无效的物品类型");
+            return result;
+        }
+
+        // 避难所仓库特殊处理
+        if (SHELTER_KEY.equals(warehouseKey)) {
+            try {
+                ShelterStock.ItemType type = ShelterStock.ItemType.valueOf(itemType);
+                Optional<ShelterStock> opt = shelterStockRepository.findByItemTypeAndItemId(type, itemId);
+                if (quantity <= 0) {
+                    opt.ifPresent(shelterStockRepository::delete);
+                } else if (opt.isPresent()) {
+                    opt.get().setQuantity(quantity);
+                    shelterStockRepository.save(opt.get());
+                } else {
+                    ShelterStock stock = new ShelterStock();
+                    stock.setItemType(type);
+                    stock.setItemId(itemId);
+                    stock.setQuantity(quantity);
+                    shelterStockRepository.save(stock);
+                }
+                result.put("success", true);
+                result.put("message", "避难所库存更新成功");
+            } catch (Exception e) {
+                logger.error("Error updating shelter stock", e);
+                result.put("success", false);
+                result.put("message", "避难所库存更新失败: " + e.getMessage());
+            }
             return result;
         }
 
@@ -205,6 +300,20 @@ public class WarehouseService {
             map.put("itemType", row[1]);
             map.put("itemId", row[2]);
             map.put("quantity", ((Number) row[3]).intValue());
+            result.add(map);
+        }
+        return result;
+    }
+
+    private List<Map<String, Object>> queryShelterStock() {
+        List<ShelterStock> stocks = shelterStockRepository.findAllByOrderByItemTypeAscItemIdAsc();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (ShelterStock stock : stocks) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("id", stock.getId());
+            map.put("itemType", stock.getItemType().name());
+            map.put("itemId", stock.getItemId());
+            map.put("quantity", stock.getQuantity());
             result.add(map);
         }
         return result;

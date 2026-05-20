@@ -8,9 +8,12 @@ import ShelterProgressView from './ShelterProgressView.vue'
 import ActionSubmitView from './ActionSubmitView.vue'
 import FactionActionSubmitView from './FactionActionSubmitView.vue'
 import NightActionSubmitView from './NightActionSubmitView.vue'
+import QuickInteractionView from './QuickInteractionView.vue'
+import RuleBookView from './RuleBookView.vue'
 import RebelMilestoneView from './RebelMilestoneView.vue'
 import CatastrophePanel from '../components/CatastrophePanel.vue'
 import WarehouseView from './WarehouseView.vue'
+import SnowEffect from '../components/SnowEffect.vue'
 import { tradeAPI, playerAPI, milestoneAPI, gameStateAPI, playerConsumptionAPI } from '../utils/api.js'
 import { sumPersonalFoodAndFuel, formatKgForDisplay } from '../utils/playerResources.js'
 import { getMaterialImageUrlOrDefault } from '../data/gameData.js'
@@ -51,7 +54,19 @@ const showFactionActionsTab = computed(() => {
   const f = playerInfo.value?.faction
   return f && f !== '平民'
 })
-const showNightActionsTab = showFactionActionsTab
+/** Night actions — available to all factions including civilians */
+const showNightActionsTab = computed(() => {
+  const f = playerInfo.value?.faction
+  return !!f
+})
+
+/** 降雪强度：根据游戏天数决定 */
+const snowIntensity = computed(() => {
+  const day = gameState.value?.currentDay || 1
+  if (day <= 1) return 'light'
+  if (day <= 2) return 'medium'
+  return 'heavy'
+})
 
 watch([showArkTab, showShelterTab, showMilestoneTab, showCatastropheTab, showFactionActionsTab, activeTab], () => {
   if (activeTab.value === 'ark' && !showArkTab.value) activeTab.value = 'info'
@@ -369,8 +384,9 @@ onUnmounted(() => {
 <template>
   <!-- h-screen + overflow-hidden：侧栏固定；仅右侧 main 纵向滚动 -->
   <div class="flex h-screen max-h-[100dvh] overflow-hidden bg-[#0a0e1a]">
-    <aside class="flex h-full w-64 shrink-0 flex-col border-r border-[#1f2937] bg-[#0f1419]">
-      <div class="shrink-0 border-b border-[#1f2937] p-6">
+    <aside class="flex h-full w-64 shrink-0 flex-col border-r border-slate-700/50 relative overflow-hidden" style="background: linear-gradient(to right, rgba(5, 10, 20, 0.95) 0%, rgba(15, 25, 40, 0.92) 50%, rgba(25, 40, 60, 0.88) 100%);">
+      <SnowEffect :intensity="snowIntensity" />
+      <div class="shrink-0 border-b border-slate-700/50 p-6 relative z-10">
         <h2 class="text-white tracking-tight text-lg">玩家中心</h2>
       </div>
 
@@ -408,6 +424,22 @@ onUnmounted(() => {
           @click="activeTab = 'nightActions'"
         >
           夜晚行动提交
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'quickInteraction' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'quickInteraction'"
+        >
+          快速交互
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
+          :class="activeTab === 'ruleBook' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+          @click="activeTab = 'ruleBook'"
+        >
+          规则书
         </button>
         <button
           type="button"
@@ -498,10 +530,14 @@ onUnmounted(() => {
       </div>
     </aside>
 
-    <main class="min-h-0 min-w-0 flex-1 overflow-y-auto p-8">
+    <main class="min-h-0 min-w-0 flex-1 overflow-y-auto relative" style="background-image: url('/src/assets/交互页面背景.png'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+      <div class="absolute inset-0 bg-slate-950/10"></div>
+      
+      <div class="relative z-10 p-8 min-h-full">
       <div
         v-if="activeTab === 'info'"
-        class="-m-8 min-h-full bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8"
+        class="-m-8 min-h-full p-8"
+        style="background: rgba(15, 20, 35, 0.9);"
       >
 
         <div v-if="loading" class="flex items-center justify-center py-20">
@@ -671,12 +707,6 @@ onUnmounted(() => {
                             <div class="text-slate-400 text-xs mb-1">燃料</div>
                             <div class="text-yellow-300 text-2xl font-bold">{{ dashboardProfile.fuelQuantity }}</div>
                             <div class="text-slate-500 text-xs mt-1">千克</div>
-                            <div
-                              v-if="dashboardProfile.woodFuelQuantity > 0"
-                              class="text-amber-400/90 text-xs mt-1 font-medium"
-                            >
-                              + {{ dashboardProfile.woodFuelQuantity }} 千克 木材
-                            </div>
                           </div>
                         </div>
 
@@ -706,12 +736,12 @@ onUnmounted(() => {
                             <div class="rounded-xl bg-slate-800/50 p-4 border border-slate-700/40">
                               <div class="text-slate-400 text-xs mb-2">生活取暖</div>
                               <div class="text-yellow-300 text-lg font-bold tabular-nums">
-                                {{ consumptionCtx.consumedFuelKg }} / {{ consumptionCtx.requiredFuelKg }} 千克
+                                {{ consumptionCtx.consumedFuelKg }} / {{ consumptionCtx.requiredFuelKg }} 热值
                               </div>
                               <p v-if="consumptionCtx.fuelMet" class="text-emerald-400 text-sm font-medium mt-3">已满足</p>
                               <template v-else>
                                 <label class="block text-slate-500 text-xs mt-3 mb-1">
-                                  木材（kg，库存 {{ consumptionCtx.availableWoodKg }}）
+                                  木材（kg，库存 {{ consumptionCtx.availableWoodKg }}，木材1kg：1热值）
                                 </label>
                                 <input
                                   v-model.number="consumptionForm.woodKg"
@@ -721,7 +751,7 @@ onUnmounted(() => {
                                   class="w-full bg-slate-900/80 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm tabular-nums mb-2"
                                 />
                                 <label class="block text-slate-500 text-xs mb-1">
-                                  燃料（kg，库存 {{ consumptionCtx.availableFuelKg }}，取暖还需 {{ consumptionCtx.remainingFuelKg ?? (consumptionCtx.requiredFuelKg - consumptionCtx.consumedFuelKg) }} kg）
+                                  燃料（kg，库存 {{ consumptionCtx.availableFuelKg }}，燃料1kg：15热值，取暖还需 {{ consumptionCtx.remainingFuelKg ?? (consumptionCtx.requiredFuelKg - consumptionCtx.consumedFuelKg) }} 热值）
                                 </label>
                                 <input
                                   v-model.number="consumptionForm.fuelKg"
@@ -803,39 +833,47 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div v-else-if="activeTab === 'materials'">
+      <div v-else-if="activeTab === 'materials'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <MaterialsPanel />
       </div>
 
-      <div v-else-if="activeTab === 'actions'">
+      <div v-else-if="activeTab === 'actions'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <ActionSubmitView embedded />
       </div>
 
-      <div v-else-if="activeTab === 'factionActions' && showFactionActionsTab">
+      <div v-else-if="activeTab === 'factionActions' && showFactionActionsTab" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <FactionActionSubmitView />
       </div>
 
-      <div v-else-if="activeTab === 'nightActions' && showNightActionsTab">
+      <div v-else-if="activeTab === 'nightActions' && showNightActionsTab" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <NightActionSubmitView />
       </div>
 
-      <div v-else-if="activeTab === 'ark' && showArkTab">
+      <div v-else-if="activeTab === 'quickInteraction'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+        <QuickInteractionView />
+      </div>
+
+      <div v-else-if="activeTab === 'ruleBook'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+        <RuleBookView />
+      </div>
+
+      <div v-else-if="activeTab === 'ark' && showArkTab" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <ArkProgressView embedded />
       </div>
 
-      <div v-else-if="activeTab === 'shelter' && showShelterTab">
+      <div v-else-if="activeTab === 'shelter' && showShelterTab" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <ShelterProgressView mode="ruler" />
       </div>
 
-      <div v-else-if="activeTab === 'milestone' && showMilestoneTab">
+      <div v-else-if="activeTab === 'milestone' && showMilestoneTab" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <RebelMilestoneView embedded />
       </div>
 
-      <div v-else-if="activeTab === 'catastrophe' && showCatastropheTab">
+      <div v-else-if="activeTab === 'catastrophe' && showCatastropheTab" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <CatastrophePanel :is-dm="false" embedded />
       </div>
 
-      <div v-else-if="activeTab === 'warehouse'">
+      <div v-else-if="activeTab === 'warehouse'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <div class="mb-6">
           <h1 class="text-white mb-1 tracking-tight text-2xl">仓库管理</h1>
           <p class="text-gray-500 text-sm">查看和管理您有权限访问的仓库</p>
@@ -843,8 +881,9 @@ onUnmounted(() => {
         <WarehouseView />
       </div>
 
-      <div v-else-if="activeTab === 'trade'">
+      <div v-else-if="activeTab === 'trade'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <TradePanel ref="tradePanelRef" />
+      </div>
       </div>
     </main>
   </div>

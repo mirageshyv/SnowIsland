@@ -35,6 +35,10 @@ export const CONSPIRACY_SUBTYPES = {
     { value: 'spread_terror', label: '制造恐怖' },
     { value: 'assassinate_target', label: '暗杀目标' },
   ],
+  '平民': [
+    { value: 'raid_location', label: '袭击地点' },
+    { value: 'assassinate_target', label: '暗杀目标' },
+  ],
 }
 
 export const RAID_OUTCOME_OPTIONS = [
@@ -121,6 +125,18 @@ export const NIGHT_ACTION_DEFS = {
       type: 'conspiracy',
       title: '进行密谋',
       description: '袭击地点、制造恐怖或暗杀目标；夜间由主持人结算。',
+    },
+    {
+      type: 'other',
+      title: '其他',
+      description: '执行未列出的特殊行动，由主持人判定是否成功及效果。每日一次。',
+    },
+  ],
+  '平民': [
+    {
+      type: 'conspiracy',
+      title: '进行密谋',
+      description: '袭击地点或制造恐怖；夜间由主持人结算。',
     },
     {
       type: 'other',

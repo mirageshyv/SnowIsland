@@ -247,6 +247,10 @@ const TRANSPORT_MODE_LABELS = {
   warehouse_to_warehouse: '仓库→仓库（上限500千克）',
   warehouse_to_player: '仓库→个人（上限300千克）',
   player_to_warehouse: '个人→仓库（上限300千克）',
+  warehouse_to_shelter: '仓库→避难所（上限500千克）',
+  shelter_to_warehouse: '避难所→仓库（上限500千克，仅统治者）',
+  shelter_to_player: '避难所→个人（上限300千克，仅统治者）',
+  player_to_shelter: '个人→避难所（上限300千克）',
 }
 
 const STRUCTURED_NOTE_LINE = /^\[(mode|source|dest|item|target|player_deducted):/
@@ -295,6 +299,7 @@ export function parseTransportNotes(notes) {
 
 function warehouseLabel(key, warehouseNameByKey = {}) {
   if (!key) return ''
+  if (key === 'shelter') return '避难所仓库'
   return warehouseNameByKey[key] || WAREHOUSE_LABELS[key] || key
 }
 

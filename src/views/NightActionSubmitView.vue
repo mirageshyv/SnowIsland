@@ -353,8 +353,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#0a0e1a] py-8 px-4 md:px-8">
-    <div class="max-w-3xl mx-auto">
+  <div>
       <div class="text-center mb-10">
         <h1 class="text-white text-2xl md:text-3xl font-semibold tracking-tight mb-2">夜晚行动</h1>
         <p class="text-gray-500 text-sm">根据阵营选择夜间行动并提交，由主持人在夜晚阶段结算</p>
@@ -635,6 +634,5 @@ onMounted(async () => {
           </div>
         </div>
       </template>
-    </div>
   </div>
 </template>

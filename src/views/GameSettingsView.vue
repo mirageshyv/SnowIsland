@@ -200,7 +200,7 @@ onMounted(load)
             <p class="text-gray-600 text-xs mt-1">默认 2 单位；玩家可在个人信息页选择食物提交。</p>
           </div>
           <div>
-            <label class="block text-gray-400 text-xs mb-2">当日每人取暖需求（千克）</label>
+            <label class="block text-gray-400 text-xs mb-2">当日每人取暖需求（单位）</label>
             <input
               v-model.number="form.requiredFuelKg"
               type="number"
@@ -209,7 +209,7 @@ onMounted(load)
               step="1"
               class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white tabular-nums focus:outline-none focus:border-cyan-500/50"
             />
-            <p class="text-gray-600 text-xs mt-1">默认 15 kg；可用木材或燃料（按千克计）。</p>
+            <p class="text-gray-600 text-xs mt-1">默认15热值；木材1kg：1热值，燃料1kg：15热值</p>
           </div>
         </div>
 
