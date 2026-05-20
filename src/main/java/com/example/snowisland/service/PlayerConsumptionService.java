@@ -14,6 +14,7 @@ import com.example.snowisland.util.PlayerStatusCatalog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.util.*;
 
@@ -116,7 +117,7 @@ public class PlayerConsumptionService {
     return out;
   }
 
-  @Transactional
+  @Transactional(rollbackFor = Exception.class)
   public Map<String, Object> submitConsumption(Integer playerId, Integer gameDay, Map<String, Object> body) {
     Map<String, Object> out = new LinkedHashMap<>();
     if (playerId == null || gameDay == null || gameDay < 1) {
@@ -174,29 +175,47 @@ public class PlayerConsumptionService {
       return out;
     }
 
+    // Validate all inventory before any deduction (avoid partial wood burn when fuel fails)
     if (addFood > 0) {
-      String deductErr = deductFoodUnits(playerId, addFood);
-      if (deductErr != null) {
+      String stockErr = checkMaterialKg(playerId, ItemCatalog.FOOD_MATERIAL_ID, addFood);
+      if (stockErr != null) {
         out.put("success", false);
-        out.put("message", deductErr);
+        out.put("message", stockErr);
         return out;
       }
     }
     if (addWood > 0) {
-      String deductErr = deductMaterialKg(playerId, ItemCatalog.WOOD_MATERIAL_ID, addWood);
-      if (deductErr != null) {
+      String stockErr = checkMaterialKg(playerId, ItemCatalog.WOOD_MATERIAL_ID, addWood);
+      if (stockErr != null) {
         out.put("success", false);
-        out.put("message", deductErr);
+        out.put("message", stockErr);
         return out;
       }
     }
     if (addFuel > 0) {
-      String deductErr = deductMaterialKg(playerId, ItemCatalog.FUEL_MATERIAL_ID, addFuel);
-      if (deductErr != null) {
+      String stockErr = checkMaterialKg(playerId, ItemCatalog.FUEL_MATERIAL_ID, addFuel);
+      if (stockErr != null) {
         out.put("success", false);
-        out.put("message", deductErr);
+        out.put("message", stockErr);
         return out;
       }
+    }
+
+    try {
+      if (addFood > 0) {
+        deductMaterialKg(playerId, ItemCatalog.FOOD_MATERIAL_ID, addFood);
+      }
+      if (addWood > 0) {
+        deductMaterialKg(playerId, ItemCatalog.WOOD_MATERIAL_ID, addWood);
+      }
+      if (addFuel > 0) {
+        deductMaterialKg(playerId, ItemCatalog.FUEL_MATERIAL_ID, addFuel);
+      }
+    } catch (IllegalStateException e) {
+      TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+      out.put("success", false);
+      out.put("message", e.getMessage());
+      return out;
     }
 
     row.setConsumedFoodUnits(newFood);
@@ -243,19 +262,28 @@ public class PlayerConsumptionService {
     return opt.map(pi -> pi.getQuantity() != null ? pi.getQuantity() : 0).orElse(0);
   }
 
-  private String deductFoodUnits(int playerId, int units) {
-    return deductMaterialKg(playerId, ItemCatalog.FOOD_MATERIAL_ID, units);
-  }
-
-  private String deductMaterialKg(int playerId, int materialId, int kg) {
+  /** Returns error message if player lacks enough material; does not mutate inventory. */
+  private String checkMaterialKg(int playerId, int materialId, int kg) {
     if (kg <= 0) {
       return null;
+    }
+    int have = availableMaterialKg(playerId, materialId);
+    if (have < kg) {
+      return "物资不足（需要 " + kg + " kg，当前 " + have + " kg）";
+    }
+    return null;
+  }
+
+  private void deductMaterialKg(int playerId, int materialId, int kg) {
+    if (kg <= 0) {
+      return;
     }
     Optional<PlayerItem> opt = playerItemRepository.findByPlayerIdAndItemTypeAndItemId(
         playerId, TradeItem.ItemType.material, materialId);
     int have = opt.map(pi -> pi.getQuantity() != null ? pi.getQuantity() : 0).orElse(0);
     if (have < kg) {
-      return "物资不足（需要 " + kg + " kg，当前 " + have + " kg）";
+      throw new IllegalStateException(
+          "物资不足（需要 " + kg + " kg，当前 " + have + " kg）");
     }
     int left = have - kg;
     if (opt.isPresent()) {
@@ -267,7 +295,6 @@ public class PlayerConsumptionService {
         playerItemRepository.save(pi);
       }
     }
-    return null;
   }
 
   private static int intVal(Object o, int def) {
