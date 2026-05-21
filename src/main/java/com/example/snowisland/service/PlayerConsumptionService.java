@@ -26,10 +26,23 @@ public class PlayerConsumptionService {
   public static final int WOOD_HEAT_PER_KG = 1;
   public static final int FUEL_HEAT_PER_KG = 15;
 
+  /** True when the player has met both food and heating requirements for the day. */
+  public static boolean isDailyRequirementsMet(PlayerDailyConsumption row) {
+    if (row == null) {
+      return false;
+    }
+    int requiredFood = row.getRequiredFoodUnits() != null ? row.getRequiredFoodUnits() : 0;
+    int requiredFuel = row.getRequiredFuelKg() != null ? row.getRequiredFuelKg() : 0;
+    int consumedFood = row.getConsumedFoodUnits() != null ? row.getConsumedFoodUnits() : 0;
+    int consumedFuel = row.getConsumedFuelKg() != null ? row.getConsumedFuelKg() : 0;
+    return consumedFood >= requiredFood && consumedFuel >= requiredFuel;
+  }
+
   @Autowired private PlayerDailyConsumptionRepository consumptionRepository;
   @Autowired private GameDaySettingsRepository gameDaySettingsRepository;
   @Autowired private PlayerRepository playerRepository;
   @Autowired private PlayerItemRepository playerItemRepository;
+  @Autowired private ActivityLogService activityLogService;
 
   public GameDaySettings getOrCreateDaySettings(int gameDay) {
     return gameDaySettingsRepository.findById(gameDay).orElseGet(() -> {
@@ -145,9 +158,10 @@ public class PlayerConsumptionService {
     row.setRequiredFoodUnits(settings.getRequiredFoodUnits());
     row.setRequiredFuelKg(settings.getRequiredFuelKg());
 
-    int addFood = intVal(body.get("foodUnits"), 0);
-    int addWood = intVal(body.get("woodKg"), 0);
-    int addFuel = intVal(body.get("fuelKg"), 0);
+    boolean confirmOverFuel = boolVal(body.get("confirmOverFuel"));
+    int addFood = nonNegativeInt(body.get("foodUnits"));
+    int addWood = nonNegativeInt(body.get("woodKg"));
+    int addFuel = nonNegativeInt(body.get("fuelKg"));
     if (addFood < 0 || addWood < 0 || addFuel < 0) {
       out.put("success", false);
       out.put("message", "数量不能为负数");
@@ -171,10 +185,13 @@ public class PlayerConsumptionService {
       return out;
     }
     if (newHeating > row.getRequiredFuelKg()) {
-      out.put("success", false);
-      out.put("message", "取暖累计将超过当日需求（还需 "
-              + Math.max(0, row.getRequiredFuelKg() - row.getConsumedFuelKg()) + " 热值）");
-      return out;
+      if (!confirmOverFuel) {
+        out.put("success", false);
+        out.put("needsConfirm", true);
+        out.put("message", "取暖投入超过当日仍需的热值。确认后将扣除您填写的全部木材与燃料，并记为满足当日取暖需求。");
+        return out;
+      }
+      newHeating = row.getRequiredFuelKg();
     }
 
     // Validate all inventory before any deduction (avoid partial wood burn when fuel fails)
@@ -227,6 +244,15 @@ public class PlayerConsumptionService {
     row.setSubmitted(newFood >= row.getRequiredFoodUnits() && newHeating >= row.getRequiredFuelKg());
     consumptionRepository.save(row);
 
+    Optional<Player> optPlayer = playerRepository.findById(playerId);
+    Player player = optPlayer.orElse(null);
+    String playerName = player != null ? player.getName() : ("玩家" + playerId);
+    String summary = "进食+" + addFood + " 木" + addWood + "kg 燃" + addFuel + "kg";
+    String detail = "累计进食 " + newFood + "/" + row.getRequiredFoodUnits()
+            + "；取暖 " + newHeating + "/" + row.getRequiredFuelKg() + " 热值";
+    activityLogService.log(gameDay, playerId, playerName, ActivityLogService.factionOf(player),
+            ActivityLogService.CAT_CONSUME, summary, detail);
+
     out.put("success", true);
     out.put("message", "消耗已记录");
     return getConsumptionContext(playerId, gameDay);
@@ -244,9 +270,7 @@ public class PlayerConsumptionService {
         continue;
       }
       Optional<PlayerDailyConsumption> opt = consumptionRepository.findByPlayerIdAndGameDay(player.getId(), gameDay);
-      boolean met = opt.map(c ->
-          c.getConsumedFoodUnits() >= c.getRequiredFoodUnits()
-              && c.getConsumedFuelKg() >= c.getRequiredFuelKg()).orElse(false);
+      boolean met = opt.map(PlayerConsumptionService::isDailyRequirementsMet).orElse(false);
       if (!met) {
         player.setIsWeak(true);
         playerRepository.save(player);
@@ -299,17 +323,28 @@ public class PlayerConsumptionService {
     }
   }
 
+  private static int nonNegativeInt(Object o) {
+    return Math.max(0, intVal(o, 0));
+  }
+
   private static int intVal(Object o, int def) {
     if (o == null || "".equals(o)) {
       return def;
     }
     if (o instanceof Number) {
-      return ((Number) o).intValue();
+      return (int) Math.floor(((Number) o).doubleValue());
     }
     try {
-      return Integer.parseInt(String.valueOf(o));
+      return (int) Math.floor(Double.parseDouble(String.valueOf(o).trim()));
     } catch (NumberFormatException e) {
       return def;
     }
+  }
+
+  private static boolean boolVal(Object o) {
+    if (o instanceof Boolean) {
+      return (Boolean) o;
+    }
+    return Boolean.parseBoolean(String.valueOf(o));
   }
 }

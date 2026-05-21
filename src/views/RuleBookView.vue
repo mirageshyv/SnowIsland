@@ -1,31 +1,51 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
-    <div class="sticky top-0 z-40 bg-slate-900/80 backdrop-blur-md border-b border-slate-700">
+  <div :class="embedded ? '' : 'min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white'">
+    <div v-if="!embedded" class="sticky top-0 z-40 bg-slate-900/80 backdrop-blur-md border-b border-slate-700">
       <div class="max-w-7xl mx-auto px-4 py-4">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between flex-wrap gap-3">
           <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
             海岛生存规则书
           </h1>
-          <div class="flex gap-4">
+          <div class="flex gap-2 flex-wrap">
             <button
               v-for="tab in tabs"
               :key="tab.key"
+              type="button"
               @click="activeTab = tab.key"
-              :class="[
-                'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
-                activeTab === tab.key
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                  : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700 hover:text-white'
-              ]"
+              :class="tabButtonClass(tab.key)"
             >
               {{ tab.label }}
+              <span
+                v-if="tab.key === 'lore' && loreUnreadCount > 0"
+                class="ml-1.5 inline-flex min-w-[16px] h-4 px-1 rounded-full bg-amber-500 text-black text-[10px] font-bold items-center justify-center"
+              >
+                {{ loreUnreadCount }}
+              </span>
             </button>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 py-8">
+    <div v-else class="mb-4 flex flex-wrap gap-2">
+      <button
+        v-for="tab in tabs"
+        :key="tab.key"
+        type="button"
+        @click="activeTab = tab.key"
+        :class="tabButtonClass(tab.key)"
+      >
+        {{ tab.label }}
+        <span
+          v-if="tab.key === 'lore' && loreUnreadCount > 0"
+          class="ml-1.5 inline-flex min-w-[16px] h-4 px-1 rounded-full bg-amber-500 text-black text-[10px] font-bold items-center justify-center"
+        >
+          {{ loreUnreadCount }}
+        </span>
+      </button>
+    </div>
+
+    <div :class="embedded ? '' : 'max-w-7xl mx-auto px-4 py-8'">
       <div v-if="activeTab === 'map'" class="space-y-6">
         <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
           <h2 class="text-xl font-semibold mb-4 text-cyan-400">海岛小镇地图</h2>
@@ -44,6 +64,94 @@
               </div>
               <p class="text-xs text-slate-400 mt-1">{{ location.desc }}</p>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="activeTab === 'lore'" class="space-y-6">
+        <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+          <h2 class="text-xl font-semibold mb-2 text-cyan-400">线索文献</h2>
+          <p class="text-slate-400 text-sm mb-4 leading-relaxed">
+            {{ loreWarning }}
+          </p>
+
+          <div
+            v-if="!isDm && loreUnreadCount > 0"
+            class="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-amber-200/90 text-sm"
+          >
+            你有 {{ loreUnreadCount }} 份新获得的线索文献。请点击「查看文献」阅读后，通知将消失。
+          </div>
+
+          <p v-if="loreLoading" class="text-slate-400 text-sm">加载中…</p>
+          <p v-else-if="loreMessage" class="text-sm" :class="loreMessageOk ? 'text-emerald-400' : 'text-red-400'">
+            {{ loreMessage }}
+          </p>
+
+          <div class="space-y-4">
+            <div
+              v-for="doc in displayedLoreDocuments"
+              :key="doc.slug"
+              class="bg-slate-700/50 rounded-lg p-5 border border-slate-600/50"
+            >
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="min-w-0 flex-1">
+                  <h3 class="text-lg font-semibold text-blue-400">{{ doc.title }}</h3>
+                  <p class="text-slate-500 text-xs mt-1 font-mono">图像文件：{{ doc.fileName }}</p>
+                  <p v-if="doc.unread" class="text-amber-300 text-xs mt-2 font-medium">新文献 · 尚未阅读</p>
+                  <p v-else-if="!isDm && doc.visible" class="text-emerald-400/90 text-xs mt-2">已获得查阅权限</p>
+                  <p v-else-if="!isDm" class="text-slate-500 text-xs mt-2">尚未获得</p>
+                  <div v-if="isDm && doc.grantedPlayers?.length" class="flex flex-wrap gap-1 mt-2">
+                    <span
+                      v-for="gp in doc.grantedPlayers"
+                      :key="gp.playerId"
+                      class="inline-flex items-center gap-1 text-[11px] bg-emerald-500/15 text-emerald-300/90 px-2 py-0.5 rounded"
+                    >
+                      {{ gp.playerName }}
+                      <button
+                        type="button"
+                        class="text-red-400/80 hover:text-red-300"
+                        :disabled="loreGranting === `${doc.slug}-${gp.playerId}`"
+                        @click="revokeLore(doc.slug, gp.playerId)"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  </div>
+                </div>
+                <div class="flex flex-wrap gap-2 shrink-0 items-start">
+                  <button
+                    v-if="doc.visible"
+                    type="button"
+                    class="px-3 py-1.5 rounded-lg text-white text-sm"
+                    :class="doc.unread ? 'bg-amber-600/90 hover:bg-amber-500' : 'bg-cyan-600/80 hover:bg-cyan-500'"
+                    @click="openLoreDoc(doc)"
+                  >
+                    {{ doc.unread ? '查看新文献' : '查看文献' }}
+                  </button>
+                </div>
+              </div>
+              <div v-if="isDm" class="mt-4 pt-3 border-t border-slate-600/40 flex flex-wrap items-center gap-2">
+                <select
+                  v-model="grantPlayerBySlug[doc.slug]"
+                  class="bg-slate-900/80 border border-slate-600 rounded-lg px-2 py-1.5 text-white text-sm min-w-[140px]"
+                >
+                  <option :value="null">选择玩家…</option>
+                  <option v-for="p in allPlayers" :key="p.id" :value="p.id">{{ p.name }}</option>
+                </select>
+                <button
+                  type="button"
+                  class="px-3 py-1.5 rounded-lg bg-amber-600/80 hover:bg-amber-500 text-white text-sm disabled:opacity-50"
+                  :disabled="!grantPlayerBySlug[doc.slug] || loreGranting === doc.slug"
+                  @click="grantLoreToPlayer(doc.slug, grantPlayerBySlug[doc.slug])"
+                >
+                  {{ loreGranting === doc.slug ? '处理中…' : '给予权限' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="!loreLoading && visibleLoreCount === 0 && !isDm" class="text-center py-8 text-slate-400 text-sm">
+            暂无已获得的线索文献。
           </div>
         </div>
       </div>
@@ -67,15 +175,34 @@
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, reactive, onMounted } from 'vue'
+import { loreAPI, playerAPI } from '@/utils/api.js'
+import { LORE_DISCOVERY_WARNING } from '@/data/loreDocuments.js'
 
-const activeTab = ref('map');
-const rules = ref({});
+defineProps({
+  embedded: { type: Boolean, default: false },
+})
+
+const emit = defineEmits(['lore-unread-updated'])
+
+const activeTab = ref('map')
+const rules = ref({})
+const loreDocuments = ref([])
+const loreLoading = ref(false)
+const loreGranting = ref(null)
+const loreMessage = ref('')
+const loreMessageOk = ref(true)
+
+const userRole = (localStorage.getItem('userRole') || '').toLowerCase()
+const viewerPlayerId = parseInt(localStorage.getItem('playerId') || '0', 10) || null
+const isDm = computed(() => userRole === 'dm')
+const loreWarning = LORE_DISCOVERY_WARNING
+const allPlayers = ref([])
+const grantPlayerBySlug = reactive({})
 
 const defaultRules = {
   general: [
@@ -115,19 +242,20 @@ const defaultRules = {
     { id: 503, title: '低调生存', content: '平民的优势在于不引人注目。保持低调可以避免成为冲突的目标。', orderNum: 3 },
     { id: 504, title: '秘密行动', content: '平民可以执行一些秘密行动来影响游戏进程，但需要谨慎行事。', orderNum: 4 }
   ]
-};
+}
 
 const tabs = [
   { key: 'map', label: '海岛地图' },
+  { key: 'lore', label: '线索文献' },
   { key: 'general', label: '通用规则' },
   { key: 'ruler', label: '统治者' },
   { key: 'rebel', label: '反叛者' },
   { key: 'adventurer', label: '冒险者' },
   { key: 'scourge', label: '天灾使者' },
   { key: 'civilian', label: '平民' }
-];
+]
 
-const mapImageUrl = '/src/assets/小镇地图.png';
+const mapImageUrl = '/src/assets/小镇地图.png'
 const locations = [
   { name: '镇长厅', icon: '🏛️', desc: '统治者办公地点' },
   { name: '警察局', icon: '🏢', desc: '维持治安' },
@@ -141,37 +269,141 @@ const locations = [
   { name: '监狱', icon: '🏯', desc: '关押囚犯' },
   { name: '墓地', icon: '⛁', desc: '逝者安息' },
   { name: '气象台', icon: '🌤️', desc: '天气观测' }
-];
+]
+
+function tabButtonClass(key) {
+  return [
+    'px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200',
+    activeTab.value === key
+      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+      : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700 hover:text-white'
+  ]
+}
 
 const currentSectionTitle = computed(() => {
-  const tab = tabs.find(t => t.key === activeTab.value);
-  return tab ? tab.label : '';
-});
+  const tab = tabs.find(t => t.key === activeTab.value)
+  return tab ? tab.label : ''
+})
 
 const currentRules = computed(() => {
-  if (activeTab.value === 'map') return [];
-  const sectionRules = rules.value[activeTab.value];
+  if (activeTab.value === 'map' || activeTab.value === 'lore') return []
+  const sectionRules = rules.value[activeTab.value]
   if (sectionRules && sectionRules.length > 0) {
-    return sectionRules;
+    return sectionRules
   }
-  return defaultRules[activeTab.value] || [];
-});
+  return defaultRules[activeTab.value] || []
+})
+
+const displayedLoreDocuments = computed(() =>
+  isDm.value
+    ? loreDocuments.value
+    : loreDocuments.value.filter((d) => d.visible)
+)
+
+const visibleLoreCount = computed(() =>
+  loreDocuments.value.filter((d) => d.visible).length
+)
+
+const loreUnreadCount = computed(() =>
+  loreDocuments.value.filter((d) => d.unread).length
+)
+
+async function openLoreDoc(doc) {
+  if (!isDm.value && doc.unread && viewerPlayerId) {
+    await loreAPI.acknowledge(doc.slug, viewerPlayerId)
+  }
+  window.open(doc.path, '_blank')
+  await fetchLoreCatalog()
+  emit('lore-unread-updated', loreUnreadCount.value)
+}
+
+async function fetchLoreCatalog() {
+  loreLoading.value = true
+  try {
+    const pid = isDm.value ? null : viewerPlayerId
+    const data = await loreAPI.getCatalog(userRole, pid)
+    if (data?.success) {
+      loreDocuments.value = data.documents || []
+      emit('lore-unread-updated', data.unreadCount || 0)
+    }
+  } catch (e) {
+    console.error('Failed to fetch lore catalog:', e)
+  } finally {
+    loreLoading.value = false
+  }
+}
+
+async function loadPlayers() {
+  if (!isDm.value) return
+  try {
+    const list = await playerAPI.getAll()
+    allPlayers.value = Array.isArray(list) ? list.filter((p) => !p.isDead) : []
+  } catch {
+    allPlayers.value = []
+  }
+}
+
+async function grantLoreToPlayer(slug, targetPlayerId) {
+  if (!targetPlayerId) return
+  loreGranting.value = slug
+  loreMessage.value = ''
+  try {
+    const data = await loreAPI.grantPlayer(slug, targetPlayerId, userRole)
+    if (data?.success) {
+      loreMessageOk.value = true
+      loreMessage.value = data.message || '已授予权限'
+      loreDocuments.value = data.documents || []
+      grantPlayerBySlug[slug] = null
+    } else {
+      loreMessageOk.value = false
+      loreMessage.value = data?.message || '操作失败'
+    }
+  } catch {
+    loreMessageOk.value = false
+    loreMessage.value = '操作失败'
+  } finally {
+    loreGranting.value = null
+  }
+}
+
+async function revokeLore(slug, targetPlayerId) {
+  loreGranting.value = `${slug}-${targetPlayerId}`
+  loreMessage.value = ''
+  try {
+    const data = await loreAPI.revokePlayer(slug, targetPlayerId, userRole)
+    if (data?.success) {
+      loreMessageOk.value = true
+      loreMessage.value = data.message || '已撤销'
+      loreDocuments.value = data.documents || []
+    } else {
+      loreMessageOk.value = false
+      loreMessage.value = data?.message || '操作失败'
+    }
+  } catch {
+    loreMessageOk.value = false
+    loreMessage.value = '操作失败'
+  } finally {
+    loreGranting.value = null
+  }
+}
 
 const fetchRules = async () => {
   try {
-    const response = await fetch('/api/rule-book/all');
-    const data = await response.json();
+    const response = await fetch('/api/rule-book/all')
+    const data = await response.json()
     if (data.success) {
-      rules.value = data.data;
+      rules.value = data.data
     }
   } catch (error) {
-    console.error('Failed to fetch rules:', error);
-    rules.value = defaultRules;
+    console.error('Failed to fetch rules:', error)
+    rules.value = defaultRules
   }
-};
+}
 
 onMounted(() => {
-  rules.value = defaultRules;
-  fetchRules();
-});
+  rules.value = defaultRules
+  fetchRules()
+  loadPlayers()
+  fetchLoreCatalog()
+})
 </script>

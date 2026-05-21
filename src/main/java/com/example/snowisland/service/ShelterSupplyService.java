@@ -51,9 +51,13 @@ public class ShelterSupplyService {
     }
 
     public Map<String, Object> buildShelterEnergyReserve() {
-        int q = shelterQty(ItemCatalog.FUEL_MATERIAL_ID);
+        int fuelQ = shelterQty(ItemCatalog.FUEL_MATERIAL_ID);
+        int woodQ = shelterQty(ItemCatalog.WOOD_MATERIAL_ID);
         Map<String, Object> block = new LinkedHashMap<>();
-        block.put("items", Collections.singletonList(fuelRow(ItemCatalog.FUEL_MATERIAL_ID, ItemCatalog.FUEL_NAME, q)));
+        block.put("woodKg", woodQ);
+        block.put("items", Arrays.asList(
+                fuelRow(ItemCatalog.FUEL_MATERIAL_ID, ItemCatalog.FUEL_NAME, fuelQ),
+                materialRow(ItemCatalog.WOOD_MATERIAL_ID, ItemCatalog.WOOD_NAME, ItemCatalog.WOOD_UNIT, woodQ)));
         return block;
     }
 
@@ -73,10 +77,14 @@ public class ShelterSupplyService {
     }
 
     private static Map<String, Object> fuelRow(int id, String name, int quantity) {
+        return materialRow(id, name, ItemCatalog.FUEL_UNIT, quantity);
+    }
+
+    private static Map<String, Object> materialRow(int id, String name, String unit, int quantity) {
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("id", id);
         row.put("name", name);
-        row.put("unit", ItemCatalog.FUEL_UNIT);
+        row.put("unit", unit);
         row.put("quantity", quantity);
         return row;
     }

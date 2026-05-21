@@ -56,11 +56,15 @@ export function applyFactionPayload(type, payload, forms) {
           action: assigned[0]?.action || '',
           targetLocationId:
             assigned[0]?.targetLocationId != null ? String(assigned[0].targetLocationId) : '',
+          targetPlayerId:
+            assigned[0]?.targetPlayerId != null ? String(assigned[0].targetPlayerId) : '',
         },
         {
           action: assigned[1]?.action || '',
           targetLocationId:
             assigned[1]?.targetLocationId != null ? String(assigned[1].targetLocationId) : '',
+          targetPlayerId:
+            assigned[1]?.targetPlayerId != null ? String(assigned[1].targetPlayerId) : '',
         },
       ]
       f.note = payload.note || ''
@@ -70,8 +74,6 @@ export function applyFactionPayload(type, payload, forms) {
       f.actorId = payload.actorId != null ? String(payload.actorId) : ''
       f.targetLocationId =
         payload.targetLocationId != null ? String(payload.targetLocationId) : ''
-      f.assignedAction = payload.assignedAction || ''
-      f.armed = payload.armed !== false
       break
     case 'extra_labor':
       f.note = payload.note || ''

@@ -396,6 +396,10 @@ export function getDmFeedbackDraft(action) {
 /** 玩家端展示：优先 DM 反馈正文，否则系统结果 */
 export function formatPlayerActionResult(result) {
   if (!result) return ''
+  if (String(result).includes('[mode:')) {
+    const zh = formatTransportNotesForDisplay(result)
+    if (zh) return zh
+  }
   const dm = extractDmFeedback(result)
   if (dm) return formatActionResultText(dm)
   return formatActionResultText(stripDmFeedbackFromResult(result))
@@ -615,14 +619,14 @@ export const SHELTER_ITEM_CATALOG = {
   matches: { id: 'matches', name: '火柴', category: 'prop', description: '取火工具。', imageUrl: imgMatches },
   pencil: { id: 'pencil', name: '铅笔', category: 'prop', description: '书写记录工具。', imageUrl: imgPencil },
   tattered_chart: { id: 'tattered_chart', name: '破损海图', category: 'prop', description: '可用于航线参考。', imageUrl: imgSeaChart },
-  service_pistol: { id: 'service_pistol', name: '制式手枪', category: 'weapon', description: '标准短枪武器。', imageUrl: imgServicePistol },
-  hunting_shotgun: { id: 'hunting_shotgun', name: '猎枪', category: 'weapon', description: '中近距离高威力武器。', imageUrl: imgHuntingShotgun },
-  baton: { id: 'baton', name: '警棍', category: 'weapon', description: '非致命近战武器。', imageUrl: imgBaton },
-  bayonet: { id: 'bayonet', name: '刺刀', category: 'weapon', description: '常见近战刀具。', imageUrl: imgBayonet },
-  harpoon_spear: { id: 'harpoon_spear', name: '鱼叉 / 矛', category: 'weapon', description: '可狩猎亦可近战。', imageUrl: imgHarpoon },
-  hunting_bow: { id: 'hunting_bow', name: '猎弓', category: 'weapon', description: '静音远程武器。', imageUrl: imgHuntingBow },
-  pickaxe: { id: 'pickaxe', name: '十字镐', category: 'weapon', description: '可挖掘也可应急防卫。', imageUrl: imgPickaxe },
-  axe: { id: 'axe', name: '斧头', category: 'weapon', description: '伐木与破拆工具。', imageUrl: imgAxe },
+  service_pistol: { id: 'service_pistol', name: '制式手枪', category: 'weapon', description: '韦伯利.38口径转轮手枪，英军标准配发。威胁值2，近距离防身武器，装弹6发。', imageUrl: imgServicePistol },
+  hunting_shotgun: { id: 'hunting_shotgun', name: '猎枪', category: 'weapon', description: '12号口径单管或双管猎枪，用于狩猎鸟类和小型动物。威胁值3，中距离武器，装弹2发。', imageUrl: imgHuntingShotgun },
+  baton: { id: 'baton', name: '警棍', category: 'weapon', description: '硬木制成的短棍，长50厘米。威胁值0.5，非致命武器，可用于制服而非杀死目标。', imageUrl: imgBaton },
+  bayonet: { id: 'bayonet', name: '刺刀', category: 'weapon', description: '军用制式刺刀，长约20厘米。威胁值1。', imageUrl: imgBayonet },
+  harpoon_spear: { id: 'harpoon_spear', name: '鱼叉 / 矛', category: 'weapon', description: '铁头木柄的捕鱼工具，长110厘米。威胁值2，既可捕鱼也可作为近战武器，渔民的标配。', imageUrl: imgHarpoon },
+  hunting_bow: { id: 'hunting_bow', name: '猎弓', category: 'weapon', description: '简单木质主体金属包角的反曲猎弓，威胁值2，无声远程武器。', imageUrl: imgHuntingBow },
+  pickaxe: { id: 'pickaxe', name: '十字镐', category: 'weapon', description: '采矿用的双头镐具，长65厘米，重5kg。威胁值0.5，主要用来挖掘石料，紧急时也可作为武器。', imageUrl: imgPickaxe },
+  axe: { id: 'axe', name: '斧头', category: 'weapon', description: '伐木用双面斧，长65厘米。威胁值1，砍树是本职工作，砍人也不是不行。', imageUrl: imgAxe },
   wood: { id: 'wood', name: '木材', category: 'material', description: '基础建造材料。', imageUrl: imgWood },
   stone: { id: 'stone', name: '石料', category: 'material', description: '用于加固结构。', imageUrl: imgStone },
   plank: { id: 'plank', name: '木板', category: 'material', description: '用于铺板和隔断。', imageUrl: imgPlank },

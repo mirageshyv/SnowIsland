@@ -281,8 +281,8 @@ defineExpose({ openPlayer: (id) => { selectedPlayerId.value = id } })
       class="mb-4 flex flex-wrap gap-4 text-sm text-gray-400"
     >
       <span>{{ playerName }} — 食物合计 <span class="text-amber-300">{{ summary.foodKg }}</span> 千克</span>
-      <span>固体燃料 <span class="text-yellow-300">{{ summary.fuelKg }}</span> 千克</span>
-      <span v-if="summary.woodKg > 0">+ <span class="text-amber-300">{{ summary.woodKg }}</span> 千克 木材</span>
+      <span>木材 <span class="text-amber-300">{{ summary.woodKg }}</span> 千克</span>
+      <span v-if="summary.fuelKg > 0">+ <span class="text-yellow-300">{{ summary.fuelKg }}</span> 千克 燃料</span>
       <span v-if="summary.fuelLiters > 0">油料 <span class="text-yellow-300">{{ summary.fuelLiters }}</span> L</span>
     </div>
 

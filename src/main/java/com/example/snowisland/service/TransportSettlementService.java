@@ -88,6 +88,35 @@ public class TransportSettlementService {
         return plan;
     }
 
+    /** 将结构化搬运备注转为中文摘要（供日志与展示） */
+    public String formatNotesChinese(String notes) {
+        TransportPlan plan = parseNotes(notes, null);
+        if (plan.mode == null || plan.mode.isEmpty()) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("模式：").append(modeLabel(plan.mode));
+        if (plan.sourceWarehouse != null && !plan.sourceWarehouse.isEmpty()) {
+            sb.append("；源：").append(resolveWarehouseName(plan.sourceWarehouse));
+        }
+        if (plan.destWarehouse != null && !plan.destWarehouse.isEmpty()) {
+            sb.append("；目标：").append(resolveWarehouseName(plan.destWarehouse));
+        }
+        if (plan.targetPlayerId != null) {
+            sb.append("；目标玩家ID：").append(plan.targetPlayerId);
+        }
+        for (TransportItem item : plan.items) {
+            if (item.requestedQty <= 0 && item.actualQty <= 0) continue;
+            int qty = item.actualQty > 0 ? item.actualQty : item.requestedQty;
+            sb.append("；").append(resolveItemName(item.itemType, item.itemId))
+                    .append("×").append(qty);
+        }
+        if (plan.playerDeducted) {
+            sb.append("；已预扣个人物资");
+        }
+        return sb.toString();
+    }
+
     public List<String> validateKeys(Integer playerId, TransportPlan plan) {
         List<String> errors = new ArrayList<>();
         if (plan.mode == null || plan.mode.isEmpty()) {

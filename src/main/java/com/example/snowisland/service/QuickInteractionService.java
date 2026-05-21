@@ -35,6 +35,9 @@ public class QuickInteractionService {
     private PlayerRepository playerRepository;
 
     @Autowired
+    private ActivityLogService activityLogService;
+
+    @Autowired
     private GameStateService gameStateService;
 
     public Map<String, Object> getPlayerContext(Integer playerId, Integer gameDay) {
@@ -104,6 +107,15 @@ public class QuickInteractionService {
         qi.setStatus(InteractionStatus.pending);
 
         qi = quickInteractionRepository.save(qi);
+
+        activityLogService.log(
+                gameDay,
+                playerId,
+                player.getName(),
+                ActivityLogService.factionOf(player),
+                ActivityLogService.CAT_QUICK,
+                TYPE_LABELS.getOrDefault(interactionType, interactionType),
+                ActivityLogService.truncate(content.trim(), 300));
 
         result.put("success", true);
         result.put("message", "提交成功");

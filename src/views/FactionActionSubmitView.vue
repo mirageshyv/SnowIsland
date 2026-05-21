@@ -7,10 +7,10 @@ import {
   FACTION_LABELS,
   FACTION_ACTION_DEFS,
   GM_FACTION_TABS,
-  ASSIGNED_FREE_ACTIONS,
-  NIGHT_ASSIGNED_ACTIONS,
+  PERSONAL_DAY_ACTION_OPTIONS,
   INVESTIGATE_TYPES,
 } from '@/data/factionActions.js'
+import { SABOTAGE_FACILITY_OPTIONS, getSabotageOptionByFacilityId } from '@/data/sabotageTargets.js'
 
 const playerId = parseInt(localStorage.getItem('playerId') || '0')
 const userRole = (localStorage.getItem('userRole') || '').toLowerCase()
@@ -44,10 +44,13 @@ const forms = reactive({
     targetId: '',
     targetKind: 'player',
     actionCount: 1,
-    assignedActions: [{ action: '', targetLocationId: '' }, { action: '', targetLocationId: '' }],
+    assignedActions: [
+      { action: '', targetLocationId: '', targetPlayerId: '' },
+      { action: '', targetLocationId: '', targetPlayerId: '' },
+    ],
     note: '',
   },
-  assign_guard: { actorId: '', targetLocationId: '', assignedAction: '', armed: true },
+  assign_guard: { actorId: '', targetLocationId: '' },
   extra_labor: { note: '' },
   secret_contact: { targetPlayerId: '', message: '', anonymous: false },
   sabotage: { targetLocationId: '', facilityId: '' },
@@ -89,10 +92,45 @@ const npcOptions = computed(() => {
   return out
 })
 
-const personnelTargets = computed(() => [
-  ...allPlayers.value.map(p => ({ value: `player:${p.id}`, id: p.id, kind: 'player', label: p.name })),
-  ...npcOptions.value,
-])
+const personnelTargetsUsedToday = computed(
+  () => new Set(context.value?.personnelTargetsUsedToday || [])
+)
+const guardActorsUsedToday = computed(
+  () => new Set((context.value?.guardActorsUsedToday || []).map((id) => Number(id)))
+)
+
+const personnelTargets = computed(() => {
+  const used = personnelTargetsUsedToday.value
+  return [
+    ...allPlayers.value
+      .filter((p) => !used.has(`player:${p.id}`))
+      .map((p) => ({ value: `player:${p.id}`, id: p.id, kind: 'player', label: p.name })),
+    ...npcOptions.value.filter((n) => !used.has(n.value)),
+  ]
+})
+
+const assignPersonnelNpcWarning = computed(() => {
+  const raw = forms.assign_personnel.targetId
+  return typeof raw === 'string' && raw.startsWith('npc:')
+})
+
+const guardActorOptions = computed(() =>
+  allPlayers.value.filter((p) => !guardActorsUsedToday.value.has(p.id))
+)
+
+const assignedFreeActionOptions = computed(() => {
+  const opts = [...PERSONAL_DAY_ACTION_OPTIONS]
+  if (context.value?.submitterCanProduce) {
+    opts.splice(3, 0, { value: 'produce', label: '生产' })
+  }
+  return opts
+})
+
+const investigatePlayerOptions = computed(() =>
+  allPlayers.value
+    .filter((p) => p.id !== playerId)
+    .map((p) => ({ value: p.id, label: p.name }))
+)
 
 const factionInvestigateTargetOptions = computed(() => {
   const type = forms.extra_investigate.investigateType
@@ -209,12 +247,14 @@ function onArkWarehouseSealantChange() {
   clampArkInput('warehouseSealantKg', arkLimits.value.warehouseSealantKg)
 }
 
-const facilitiesForSabotage = computed(() => {
-  const locId = parseInt(forms.sabotage.targetLocationId)
-  if (!locId) return []
-  const loc = (locations.value || []).find(l => l.id === locId)
-  return (loc?.facilities || []).map(f => ({ value: f.id, label: f.name }))
-})
+const sabotageFacilityOptions = computed(() =>
+  SABOTAGE_FACILITY_OPTIONS.map((o) => ({
+    value: o.facilityId,
+    label: o.label,
+    locationId: o.locationId,
+    governed: governedIds.value.has(o.locationId),
+  }))
+)
 
 const selectedDef = computed(() =>
   actionDefs.value.find(d => d.type === selectedType.value) || null
@@ -263,8 +303,8 @@ function getActionStatus(type) {
     return { key: 'blocked', label: '今日未生产', btn: 'disabled' }
   }
   if (type === 'sabotage') {
-    const locId = parseInt(forms.sabotage.targetLocationId)
-    if (locId && governedIds.value.has(locId)) {
+    const opt = getSabotageOptionByFacilityId(forms.sabotage.facilityId)
+    if (opt && governedIds.value.has(opt.locationId)) {
       return { key: 'blocked', label: '地点被监管', btn: 'disabled' }
     }
   }
@@ -281,10 +321,13 @@ function resetFormFields(type) {
       targetId: '',
       targetKind: 'player',
       actionCount: 1,
-      assignedActions: [{ action: '', targetLocationId: '' }, { action: '', targetLocationId: '' }],
+      assignedActions: [
+        { action: '', targetLocationId: '', targetPlayerId: '' },
+        { action: '', targetLocationId: '', targetPlayerId: '' },
+      ],
       note: '',
     },
-    assign_guard: { actorId: '', targetLocationId: '', assignedAction: '', armed: true },
+    assign_guard: { actorId: '', targetLocationId: '' },
     extra_labor: { note: '' },
     secret_contact: { targetPlayerId: '', message: '', anonymous: false },
     sabotage: { targetLocationId: '', facilityId: '' },
@@ -311,9 +354,11 @@ watch(selectedType, (type, prev) => {
   if (!isHydrating.value) actionResult.value = ''
 })
 
-watch(() => forms.sabotage.targetLocationId, () => {
-  forms.sabotage.facilityId = ''
-})
+function onSabotageFacilityChange(facilityId) {
+  const opt = getSabotageOptionByFacilityId(facilityId)
+  forms.sabotage.facilityId = opt ? String(opt.facilityId) : ''
+  forms.sabotage.targetLocationId = opt ? String(opt.locationId) : ''
+}
 
 watch(() => forms.extra_investigate.investigateType, () => {
   forms.extra_investigate.targetId = ''
@@ -406,10 +451,16 @@ function buildPayload(type) {
       const raw = f.targetId
       const [kind, id] = raw.includes(':') ? raw.split(':') : ['player', raw]
       const count = Math.min(2, Math.max(1, f.actionCount || 1))
-      const assignedActions = f.assignedActions.slice(0, count).map((item) => ({
-        action: item.action,
-        targetLocationId: item.targetLocationId ? parseInt(item.targetLocationId) : null,
-      }))
+      const assignedActions = f.assignedActions.slice(0, count).map((item) => {
+        const row = {
+          action: item.action,
+          targetLocationId: item.targetLocationId ? parseInt(item.targetLocationId) : null,
+        }
+        if (item.action === 'investigate_player' && item.targetPlayerId) {
+          row.targetPlayerId = parseInt(item.targetPlayerId)
+        }
+        return row
+      })
       return {
         targetId: parseInt(id),
         targetKind: kind,
@@ -421,8 +472,6 @@ function buildPayload(type) {
       return {
         actorId: parseInt(f.actorId),
         targetLocationId: parseInt(f.targetLocationId),
-        assignedAction: f.assignedAction,
-        armed: f.armed,
       }
     case 'extra_labor':
       return { note: f.note || '' }
@@ -474,19 +523,25 @@ function validateClient(type) {
       if (!f.targetId) return '请选择目标'
       const count = Math.min(2, Math.max(1, f.actionCount || 1))
       for (let i = 0; i < count; i++) {
-        if (!f.assignedActions[i]?.action) return `请填写第 ${i + 1} 项指定自由行动`
+        const item = f.assignedActions[i]
+        if (!item?.action) return `请填写第 ${i + 1} 项指定自由行动`
+        if (item.action === 'investigate_player' && !item.targetPlayerId) {
+          return `请为第 ${i + 1} 项「调查玩家」选择调查目标`
+        }
+        if (item.action === 'go_location' && !item.targetLocationId) {
+          return `请为第 ${i + 1} 项「前往地点」选择地点`
+        }
       }
       break
     }
     case 'assign_guard':
       if (!f.actorId || !f.targetLocationId) return '请选择看守人员与地点'
-      if (!f.assignedAction) return '请选择对方须提交的夜晚行动'
       break
     case 'secret_contact':
       if (!f.targetPlayerId || !f.message?.trim()) return '请选择目标并填写秘密信息'
       break
     case 'sabotage':
-      if (!f.targetLocationId || !f.facilityId) return '请选择地点与设施'
+      if (!f.facilityId) return '请选择目标设施'
       break
     case 'extra_investigate':
       if (!f.targetId) return '请选择调查目标'
@@ -562,19 +617,12 @@ async function submitAction() {
 }
 
 function needsLocationForAssigned(action) {
-  return ['go_location', 'investigate_location', 'guard'].includes(action)
+  return action === 'go_location'
 }
 
-const guardDefensePreview = computed(() => {
-  const actorId = parseInt(forms.assign_guard.actorId)
-  if (!actorId || selectedType.value !== 'assign_guard') return null
-  const base = 3
-  let bonus = 0
-  for (const w of context.value?.highThreatWeapons || []) {
-    if (w.threatLevel > bonus) bonus = w.threatLevel
-  }
-  return { base, bonus, total: base + bonus }
-})
+function needsPlayerTargetForAssigned(action) {
+  return action === 'investigate_player'
+}
 
 const selectClass = 'w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50'
 const textareaClass = 'w-full resize-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-200 text-sm placeholder:text-gray-600 focus:outline-none focus:border-blue-500/50'
@@ -685,13 +733,19 @@ onMounted(async () => {
 
               <!-- 安排人员 -->
               <template v-if="selectedType === 'assign_personnel'">
-                <p class="text-amber-300/90 text-xs">对方须提交与你安排一致的一项或两项白天自由行动。本行动每日限用一次。</p>
+                <p class="text-amber-300/90 text-xs">对方须提交与你安排一致的一项或两项白天自由行动。全体统治者共享「安排人员」目标名额（同一玩家/NPC 当日仅可被安排一次）。</p>
                 <div>
                   <label class="block text-gray-500 text-xs mb-2 ml-0.5">目标玩家/NPC</label>
                   <select v-model="forms.assign_personnel.targetId" :class="selectClass">
                     <option value="">请选择</option>
                     <option v-for="t in personnelTargets" :key="t.value" :value="t.value">{{ t.label }}</option>
                   </select>
+                  <p
+                    v-if="assignPersonnelNpcWarning"
+                    class="text-amber-300/90 text-xs mt-2 leading-relaxed"
+                  >
+                    NPC 通常需要物资或利益才会配合；若不给予好处，对方很可能拒绝执行安排。
+                  </p>
                 </div>
                 <div>
                   <label class="block text-gray-500 text-xs mb-2 ml-0.5">安排几项行动</label>
@@ -708,13 +762,20 @@ onMounted(async () => {
                   <p class="text-gray-400 text-xs">第 {{ idx }} 项自由行动</p>
                   <select v-model="forms.assign_personnel.assignedActions[idx - 1].action" :class="selectClass">
                     <option value="">请选择</option>
-                    <option v-for="a in ASSIGNED_FREE_ACTIONS" :key="a.value" :value="a.value">{{ a.label }}</option>
+                    <option v-for="a in assignedFreeActionOptions" :key="a.value" :value="a.value">{{ a.label }}</option>
                   </select>
                   <div v-if="needsLocationForAssigned(forms.assign_personnel.assignedActions[idx - 1].action)">
-                    <label class="block text-gray-500 text-xs mb-2">相关地点</label>
+                    <label class="block text-gray-500 text-xs mb-2">前往地点</label>
                     <select v-model="forms.assign_personnel.assignedActions[idx - 1].targetLocationId" :class="selectClass">
                       <option value="">请选择地点</option>
                       <option v-for="o in locationOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+                    </select>
+                  </div>
+                  <div v-if="needsPlayerTargetForAssigned(forms.assign_personnel.assignedActions[idx - 1].action)">
+                    <label class="block text-gray-500 text-xs mb-2">调查目标</label>
+                    <select v-model="forms.assign_personnel.assignedActions[idx - 1].targetPlayerId" :class="selectClass">
+                      <option value="">请选择玩家</option>
+                      <option v-for="p in investigatePlayerOptions" :key="p.value" :value="p.value">{{ p.label }}</option>
                     </select>
                   </div>
                 </div>
@@ -726,12 +787,12 @@ onMounted(async () => {
 
               <!-- 安排看守 -->
               <template v-else-if="selectedType === 'assign_guard'">
-                <p class="text-amber-300/90 text-xs">消耗对方夜晚行动点，对方须提交与你安排一致的夜晚行动。本行动每日限用一次。</p>
+                <p class="text-amber-300/90 text-xs">消耗对方夜晚行动点驻守地点；基础防御 +3。全体统治者共享「安排看守」人员名额（同一人当日仅可被安排一次）。本行动每日限用一次。</p>
                 <div>
                   <label class="block text-gray-500 text-xs mb-2 ml-0.5">看守人员</label>
                   <select v-model="forms.assign_guard.actorId" :class="selectClass">
                     <option value="">请选择</option>
-                    <option v-for="p in allPlayers" :key="p.id" :value="p.id">{{ p.name }}</option>
+                    <option v-for="p in guardActorOptions" :key="p.id" :value="p.id">{{ p.name }}</option>
                   </select>
                 </div>
                 <div>
@@ -740,22 +801,6 @@ onMounted(async () => {
                     <option value="">请选择地点</option>
                     <option v-for="o in locationOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
                   </select>
-                </div>
-                <div>
-                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">对方须提交的夜晚行动</label>
-                  <select v-model="forms.assign_guard.assignedAction" :class="selectClass">
-                    <option value="">请选择</option>
-                    <option v-for="a in NIGHT_ASSIGNED_ACTIONS" :key="a.value" :value="a.value">{{ a.label }}</option>
-                  </select>
-                </div>
-                <label class="flex items-center gap-2 text-gray-400 text-sm">
-                  <input v-model="forms.assign_guard.armed" type="checkbox" class="rounded" />
-                  计入装备武器（自动读取）
-                </label>
-                <div v-if="guardDefensePreview" class="rounded-xl border border-blue-500/20 bg-blue-500/5 px-4 py-3 text-sm text-gray-300 space-y-0.5">
-                  <p>基础防御 +{{ guardDefensePreview.base }}</p>
-                  <p>武器防御 +{{ guardDefensePreview.bonus }}</p>
-                  <p class="text-white font-medium">总防御值：{{ guardDefensePreview.total }}</p>
                 </div>
               </template>
 
@@ -792,24 +837,21 @@ onMounted(async () => {
               <!-- 破坏 -->
               <template v-else-if="selectedType === 'sabotage'">
                 <div>
-                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">目标地点</label>
-                  <select v-model="forms.sabotage.targetLocationId" :class="selectClass">
-                    <option value="">请选择地点</option>
+                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">目标设施</label>
+                  <select
+                    :value="forms.sabotage.facilityId"
+                    :class="selectClass"
+                    @change="onSabotageFacilityChange($event.target.value)"
+                  >
+                    <option value="">请选择设施</option>
                     <option
-                      v-for="o in locationOptions"
+                      v-for="o in sabotageFacilityOptions"
                       :key="o.value"
                       :value="o.value"
-                      :disabled="governedIds.has(o.value)"
+                      :disabled="o.governed"
                     >
-                      {{ o.label }}{{ governedIds.has(o.value) ? '（不可选）' : '' }}
+                      {{ o.label }}{{ o.governed ? '（被监管，不可选）' : '' }}
                     </option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">目标设施</label>
-                  <select v-model="forms.sabotage.facilityId" :class="selectClass" :disabled="!facilitiesForSabotage.length">
-                    <option value="">请选择设施</option>
-                    <option v-for="f in facilitiesForSabotage" :key="f.value" :value="f.value">{{ f.label }}</option>
                   </select>
                 </div>
               </template>

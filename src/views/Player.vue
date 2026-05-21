@@ -14,7 +14,7 @@ import RebelMilestoneView from './RebelMilestoneView.vue'
 import CatastrophePanel from '../components/CatastrophePanel.vue'
 import WarehouseView from './WarehouseView.vue'
 import SnowEffect from '../components/SnowEffect.vue'
-import { tradeAPI, playerAPI, milestoneAPI, gameStateAPI, playerConsumptionAPI } from '../utils/api.js'
+import { tradeAPI, playerAPI, milestoneAPI, gameStateAPI, playerConsumptionAPI, loreAPI } from '../utils/api.js'
 import { sumPersonalFoodAndFuel, formatKgForDisplay } from '../utils/playerResources.js'
 import { getMaterialImageUrlOrDefault } from '../data/gameData.js'
 import { useSidebar } from '../composables/useSidebar.js'
@@ -32,6 +32,7 @@ const activeTab = ref('info')
 const tradePanelRef = ref(null)
 
 const pendingTradesCount = ref(0)
+const loreUnreadCount = ref(0)
 const loading = ref(false)
 const error = ref(null)
 const playerInfo = ref(null)
@@ -43,6 +44,7 @@ const consumptionCtx = ref(null)
 const consumptionForm = ref({ foodUnits: 0, woodKg: 0, fuelKg: 0 })
 const consumptionSaving = ref(false)
 const consumptionMessage = ref(null)
+const showOverFuelConfirm = ref(false)
 
 /** 仅冒险者可见「方舟建造进度」 */
 const showArkTab = computed(() => playerInfo.value?.faction === '冒险者')
@@ -81,6 +83,18 @@ watch([showArkTab, showShelterTab, showMilestoneTab, showCatastropheTab, showFac
 })
 
 let pollTimer = null
+
+async function refreshLoreUnread() {
+  try {
+    const userRole = (localStorage.getItem('userRole') || '').toLowerCase()
+    const data = await loreAPI.getCatalog(userRole, playerId)
+    if (data?.success) {
+      loreUnreadCount.value = data.unreadCount || 0
+    }
+  } catch {
+    /* ignore */
+  }
+}
 
 const fetchPendingTradesCount = async () => {
   try {
@@ -158,9 +172,11 @@ const fetchGameState = async () => {
 
 const startPolling = () => {
   fetchPendingTradesCount()
+  refreshLoreUnread()
   fetchGameState()
   pollTimer = setInterval(() => {
     fetchPendingTradesCount()
+    refreshLoreUnread()
     fetchGameState()
   }, 5000)
 }
@@ -229,6 +245,13 @@ function resetConsumptionForm() {
   consumptionForm.value = { foodUnits: 0, woodKg: 0, fuelKg: 0 }
 }
 
+function clampConsumptionInt(field) {
+  const n = Math.max(0, Math.floor(Number(consumptionForm.value[field]) || 0))
+  if (consumptionForm.value[field] !== n) {
+    consumptionForm.value[field] = n
+  }
+}
+
 async function fetchConsumption() {
   const day = gameState.value.currentDay ?? 1
   try {
@@ -248,6 +271,68 @@ const consumptionNeedsSubmit = computed(() => {
   return !ctx.foodMet || !ctx.fuelMet
 })
 
+const WOOD_HEAT_PER_KG = 1
+const FUEL_HEAT_PER_KG = 15
+
+const consumptionHeatingWarning = computed(() => {
+  const ctx = consumptionCtx.value
+  if (!ctx || ctx.fuelMet === true) return null
+  const remaining = Math.max(
+    0,
+    Number(ctx.remainingFuelKg ?? (ctx.requiredFuelKg - ctx.consumedFuelKg)) || 0
+  )
+  if (remaining <= 0) return null
+  const wood = Math.max(0, Math.floor(Number(consumptionForm.value.woodKg) || 0))
+  const fuel = Math.max(0, Math.floor(Number(consumptionForm.value.fuelKg) || 0))
+  if (wood === 0 && fuel === 0) return null
+  const proposedHeat = wood * WOOD_HEAT_PER_KG + fuel * FUEL_HEAT_PER_KG
+  if (proposedHeat <= remaining) return null
+  if (fuel > 0) {
+    const remainingAfterWood = Math.max(0, remaining - wood * WOOD_HEAT_PER_KG)
+    const fuelHeat = fuel * FUEL_HEAT_PER_KG
+    if (fuelHeat > remainingAfterWood) {
+      return '您投入的燃料将超过当日取暖仍需的热值，属于不必要的额外消耗。1 千克燃料 = 15 热值，请酌情减少燃料或改用木材。'
+    }
+  }
+  return '您投入的取暖物资合计将超过当日仍需的热值。1 千克燃料 = 15 热值，请酌情减少投入。'
+})
+
+const consumptionFoodStockWarning = computed(() => {
+  const ctx = consumptionCtx.value
+  if (!ctx || ctx.foodMet) return null
+  const want = Math.max(0, Math.floor(Number(consumptionForm.value.foodUnits) || 0))
+  if (want <= 0) return null
+  const avail = Number(ctx.availableFoodUnits) || 0
+  if (want > avail) {
+    return `食物库存不足（库存 ${avail} 单位，本次提交 ${want} 单位）`
+  }
+  return null
+})
+
+const consumptionWoodStockWarning = computed(() => {
+  const ctx = consumptionCtx.value
+  if (!ctx || ctx.fuelMet) return null
+  const want = Math.max(0, Math.floor(Number(consumptionForm.value.woodKg) || 0))
+  if (want <= 0) return null
+  const avail = Number(ctx.availableWoodKg) || 0
+  if (want > avail) {
+    return `木材库存不足（库存 ${avail} 千克，本次提交 ${want} 千克）`
+  }
+  return null
+})
+
+const consumptionFuelStockWarning = computed(() => {
+  const ctx = consumptionCtx.value
+  if (!ctx || ctx.fuelMet) return null
+  const want = Math.max(0, Math.floor(Number(consumptionForm.value.fuelKg) || 0))
+  if (want <= 0) return null
+  const avail = Number(ctx.availableFuelKg) || 0
+  if (want > avail) {
+    return `燃料库存不足（库存 ${avail} 千克，本次提交 ${want} 千克）`
+  }
+  return null
+})
+
 async function refreshPersonalInventory() {
   try {
     const [itemsResult, resourcesResult] = await Promise.all([
@@ -265,22 +350,52 @@ async function refreshPersonalInventory() {
   }
 }
 
-async function submitConsumption() {
+function clearOverFuelConfirmState() {
+  showOverFuelConfirm.value = false
+}
+
+function clearHeatingFormFields() {
+  consumptionForm.value.woodKg = 0
+  consumptionForm.value.fuelKg = 0
+}
+
+function buildConsumptionPayload(confirmOverFuel = false) {
+  clampConsumptionInt('foodUnits')
+  clampConsumptionInt('woodKg')
+  clampConsumptionInt('fuelKg')
+  return {
+    playerId,
+    gameDay: gameState.value.currentDay ?? 1,
+    foodUnits: consumptionForm.value.foodUnits,
+    woodKg: consumptionForm.value.woodKg,
+    fuelKg: consumptionForm.value.fuelKg,
+    confirmOverFuel: confirmOverFuel ? true : undefined
+  }
+}
+
+async function submitConsumption(confirmOverFuel = false) {
+  const ctx = consumptionCtx.value
+  const heatingAlreadyMet = ctx?.fuelMet === true
+  if (!confirmOverFuel && !heatingAlreadyMet && consumptionHeatingWarning.value) {
+    showOverFuelConfirm.value = true
+    return
+  }
   consumptionSaving.value = true
   consumptionMessage.value = null
+  showOverFuelConfirm.value = false
   try {
-    const result = await playerConsumptionAPI.submit({
-      playerId,
-      gameDay: gameState.value.currentDay ?? 1,
-      foodUnits: Math.max(0, Math.floor(Number(consumptionForm.value.foodUnits) || 0)),
-      woodKg: Math.max(0, Math.floor(Number(consumptionForm.value.woodKg) || 0)),
-      fuelKg: Math.max(0, Math.floor(Number(consumptionForm.value.fuelKg) || 0))
-    })
+    const result = await playerConsumptionAPI.submit(buildConsumptionPayload(confirmOverFuel))
     if (result?.success) {
+      clearOverFuelConfirmState()
       consumptionCtx.value = result
-      resetConsumptionForm()
+      consumptionForm.value.foodUnits = 0
+      if (result.fuelMet === true) {
+        clearHeatingFormFields()
+      }
       consumptionMessage.value = { type: 'success', text: result.message || '消耗已记录' }
       await refreshPersonalInventory()
+    } else if (result?.needsConfirm && !confirmOverFuel) {
+      showOverFuelConfirm.value = true
     } else {
       consumptionMessage.value = { type: 'error', text: result?.message || '提交失败' }
     }
@@ -288,8 +403,30 @@ async function submitConsumption() {
     consumptionMessage.value = { type: 'error', text: '网络请求失败' }
   } finally {
     consumptionSaving.value = false
+    if (consumptionCtx.value?.fuelMet === true) {
+      clearOverFuelConfirmState()
+      clearHeatingFormFields()
+    }
   }
 }
+
+function cancelOverFuelConfirm() {
+  clearOverFuelConfirmState()
+}
+
+function confirmOverFuelSubmit() {
+  submitConsumption(true)
+}
+
+watch(
+  () => consumptionCtx.value?.fuelMet,
+  (met) => {
+    if (met === true) {
+      clearOverFuelConfirmState()
+      clearHeatingFormFields()
+    }
+  }
+)
 
 const playerResources = computed(() => {
   const api = personalResources.value
@@ -522,16 +659,24 @@ onUnmounted(() => {
         </button>
         <button
           type="button"
-          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px] relative"
           :class="[
             activeTab === 'ruleBook' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
             (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
           ]"
           :title="(!isMobile && collapsed) ? '规则书' : ''"
-          @click="activeTab = 'ruleBook'; isMobile && closeMobile()"
+          @click="activeTab = 'ruleBook'; refreshLoreUnread(); isMobile && closeMobile()"
         >
           <span v-if="!isMobile && collapsed">📖</span>
-          <span v-else>规则书</span>
+          <span v-else class="flex items-center gap-2">
+            规则书
+            <span
+              v-if="loreUnreadCount > 0"
+              class="min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-black text-[10px] font-bold flex items-center justify-center"
+            >
+              {{ loreUnreadCount }}
+            </span>
+          </span>
         </button>
         <button
           type="button"
@@ -841,8 +986,14 @@ onUnmounted(() => {
                               <img :src="fuelIconUrl" alt="" class="w-10 h-10 object-contain" aria-hidden="true" />
                             </div>
                             <div class="text-slate-400 text-xs mb-1">燃料</div>
-                            <div class="text-yellow-300 text-2xl font-bold">{{ dashboardProfile.fuelQuantity }}</div>
-                            <div class="text-slate-500 text-xs mt-1">千克</div>
+                            <div class="text-amber-300 text-2xl font-bold tabular-nums">{{ dashboardProfile.woodFuelQuantity }}</div>
+                            <div class="text-slate-500 text-xs mt-1">千克 木材</div>
+                            <p
+                              v-if="dashboardProfile.fuelQuantity > 0"
+                              class="text-yellow-300/90 text-xs mt-1 tabular-nums"
+                            >
+                              + {{ dashboardProfile.fuelQuantity }} 千克 燃料
+                            </p>
                           </div>
                         </div>
 
@@ -865,8 +1016,16 @@ onUnmounted(() => {
                                   min="0"
                                   :max="consumptionCtx.remainingFoodUnits ?? (consumptionCtx.requiredFoodUnits - consumptionCtx.consumedFoodUnits)"
                                   step="1"
+                                  inputmode="numeric"
                                   class="w-full bg-slate-900/80 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm tabular-nums"
+                                  @input="clampConsumptionInt('foodUnits')"
                                 />
+                                <p
+                                  v-if="consumptionFoodStockWarning"
+                                  class="text-red-400 text-xs mt-2 leading-relaxed"
+                                >
+                                  {{ consumptionFoodStockWarning }}
+                                </p>
                               </template>
                             </div>
                             <div class="rounded-xl bg-slate-800/50 p-4 border border-slate-700/40">
@@ -884,8 +1043,16 @@ onUnmounted(() => {
                                   type="number"
                                   min="0"
                                   step="1"
+                                  inputmode="numeric"
                                   class="w-full bg-slate-900/80 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm tabular-nums mb-2"
+                                  @input="clampConsumptionInt('woodKg')"
                                 />
+                                <p
+                                  v-if="consumptionWoodStockWarning"
+                                  class="text-red-400 text-xs mb-2 leading-relaxed"
+                                >
+                                  {{ consumptionWoodStockWarning }}
+                                </p>
                                 <label class="block text-slate-500 text-xs mb-1">
                                   燃料（kg，库存 {{ consumptionCtx.availableFuelKg }}，燃料1kg：15热值，取暖还需 {{ consumptionCtx.remainingFuelKg ?? (consumptionCtx.requiredFuelKg - consumptionCtx.consumedFuelKg) }} 热值）
                                 </label>
@@ -894,8 +1061,22 @@ onUnmounted(() => {
                                   type="number"
                                   min="0"
                                   step="1"
+                                  inputmode="numeric"
                                   class="w-full bg-slate-900/80 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm tabular-nums"
+                                  @input="clampConsumptionInt('fuelKg')"
                                 />
+                                <p
+                                  v-if="consumptionFuelStockWarning"
+                                  class="text-red-400 text-xs mt-2 leading-relaxed"
+                                >
+                                  {{ consumptionFuelStockWarning }}
+                                </p>
+                                <p
+                                  v-if="consumptionHeatingWarning"
+                                  class="text-amber-300/90 text-xs mt-2 leading-relaxed"
+                                >
+                                  {{ consumptionHeatingWarning }}
+                                </p>
                               </template>
                             </div>
                           </div>
@@ -908,7 +1089,7 @@ onUnmounted(() => {
                               type="button"
                               class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium disabled:opacity-50"
                               :disabled="consumptionSaving"
-                              @click="submitConsumption"
+                              @click="submitConsumption(false)"
                             >
                               {{ consumptionSaving ? '提交中…' : '确认消耗' }}
                             </button>
@@ -990,7 +1171,13 @@ onUnmounted(() => {
       </div>
 
       <div v-else-if="activeTab === 'ruleBook'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
-        <RuleBookView />
+        <p
+          v-if="loreUnreadCount > 0"
+          class="mb-4 text-amber-300/90 text-sm border border-amber-500/30 bg-amber-500/10 rounded-lg px-4 py-2"
+        >
+          你有 {{ loreUnreadCount }} 份新线索文献，请打开「线索文献」并点击「查看文献」。
+        </p>
+        <RuleBookView embedded @lore-unread-updated="(n) => { loreUnreadCount = n }" />
       </div>
 
       <div v-else-if="activeTab === 'ark' && showArkTab" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
@@ -1022,6 +1209,38 @@ onUnmounted(() => {
       </div>
       </div>
     </main>
+
+    <div
+      v-if="showOverFuelConfirm"
+      class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70"
+      @click.self="cancelOverFuelConfirm"
+    >
+      <div class="bg-slate-900 border border-amber-500/30 rounded-2xl max-w-md w-full p-6 shadow-xl" @click.stop>
+        <h3 class="text-white text-lg font-medium mb-2">确认超额取暖消耗？</h3>
+        <p class="text-slate-300 text-sm leading-relaxed mb-4">
+          {{ consumptionHeatingWarning || '您投入的取暖物资超过当日仍需热值。' }}
+          确认后将扣除您填写的全部木材与燃料，生活取暖记为已满足（按所需热值计，不累计超额热值）。
+        </p>
+        <div class="flex justify-end gap-3">
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
+            :disabled="consumptionSaving"
+            @click="cancelOverFuelConfirm"
+          >
+            取消
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium disabled:opacity-50"
+            :disabled="consumptionSaving"
+            @click="confirmOverFuelSubmit"
+          >
+            {{ consumptionSaving ? '提交中…' : '仍要确认消耗' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 

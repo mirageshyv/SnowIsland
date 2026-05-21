@@ -1,7 +1,11 @@
 <script setup>
 import { ref, computed, onMounted, watch, reactive } from 'vue'
 import { actionAPI, playerAPI, locationAPI, warehouseAPI } from '@/utils/api.js'
-import { formatPlayerActionResult, sanitizeNonNegativeInt } from '@/data/gameData.js'
+import {
+  formatPlayerActionResult,
+  formatTransportNotesForDisplay,
+  sanitizeNonNegativeInt,
+} from '@/data/gameData.js'
 import { useGameDayScope } from '@/composables/useGameDayScope.js'
 import { parseTransportNotes, applyTransportQuantities } from '@/utils/actionFormHydration.js'
 
@@ -478,6 +482,10 @@ onMounted(async () => {
 function displayActionResult(action) {
   if (!action) return ''
   if (action.status === 'pending' || action.resultPending) return PENDING_RESULT_TEXT
+  if (action.actionType === 'transport' && action.notes?.includes('[mode:')) {
+    const zh = formatTransportNotesForDisplay(action.notes)
+    if (zh) return zh
+  }
   return action.result ? formatPlayerActionResult(action.result) : ''
 }
 </script>
