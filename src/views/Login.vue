@@ -100,41 +100,41 @@ const handleLogin = async (e) => {
     <SnowEffect :intensity="snowIntensity" />
 
     <!-- Login Container -->
-    <div class="w-full max-w-md relative z-10">
-      <div class="text-center mb-10">
+    <div class="w-full max-w-md relative z-10 px-2 sm:px-0">
+      <div class="text-center mb-8 sm:mb-10">
         <h1
-          class="text-white mb-3 tracking-wider text-5xl font-bold drop-shadow-[0_0_25px_rgba(255,255,255,0.4)]"
+          class="text-white mb-2 sm:mb-3 tracking-wider text-3xl sm:text-5xl font-bold drop-shadow-[0_0_25px_rgba(255,255,255,0.4)]"
         >
           覆雪之下
         </h1>
-        <p class="text-gray-200/80">线上游戏交互网站</p>
+        <p class="text-gray-200/80 text-sm sm:text-base">线上游戏交互网站</p>
       </div>
 
       <div
-        class="relative rounded-2xl p-8 shadow-2xl backdrop-blur-lg"
+        class="relative rounded-2xl p-5 sm:p-8 shadow-2xl backdrop-blur-lg"
         style="background: rgba(15, 20, 30, 0.95); border: 1px solid rgba(255, 255, 255, 0.1);"
       >
-        <form class="relative space-y-6" @submit="handleLogin">
+        <form class="relative space-y-5 sm:space-y-6" @submit="handleLogin">
           <div>
-            <label class="block text-gray-200 text-sm mb-2.5 font-medium">账号</label>
+            <label class="block text-gray-200 text-sm mb-2 font-medium">账号</label>
             <input
               ref="usernameInput"
               v-model="loginForm.username"
               type="text"
               placeholder="请输入登录账号"
               @keyup.enter="passwordInput.focus()"
-              class="w-full bg-black/40 backdrop-blur border border-white/15 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-400 focus:outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-400/20 transition-all"
+              class="w-full bg-black/40 backdrop-blur border border-white/15 rounded-xl px-4 py-3.5 text-gray-100 placeholder-gray-400 focus:outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-400/20 transition-all text-base"
             />
           </div>
 
           <div>
-            <label class="block text-gray-200 text-sm mb-2.5 font-medium">密码</label>
+            <label class="block text-gray-200 text-sm mb-2 font-medium">密码</label>
             <input
               ref="passwordInput"
               v-model="loginForm.password"
               type="password"
               placeholder="请输入密码"
-              class="w-full bg-black/40 backdrop-blur border border-white/15 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-400 focus:outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-400/20 transition-all"
+              class="w-full bg-black/40 backdrop-blur border border-white/15 rounded-xl px-4 py-3.5 text-gray-100 placeholder-gray-400 focus:outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-400/20 transition-all text-base"
             />
           </div>
 
@@ -145,12 +145,12 @@ const handleLogin = async (e) => {
           <button
             type="submit"
             :disabled="loading"
-            class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white py-3 rounded-xl transition-all font-medium shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white py-3.5 rounded-xl transition-all font-medium shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] text-base active:scale-[0.98]"
           >
             {{ loading ? '登录中...' : '登录' }}
           </button>
 
-          <div class="text-center text-gray-400 text-xs mt-6">
+          <div class="text-center text-gray-400 text-xs mt-4 sm:mt-6">
             <p>测试账号：player1-player5 / dm1-dm2</p>
             <p>密码：test123</p>
           </div>

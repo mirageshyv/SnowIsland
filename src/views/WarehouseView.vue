@@ -83,12 +83,14 @@ function selectItem(item) {
 async function fetchWarehouses() {
   loading.value = true;
   try {
-    warehouses.value = await warehouseAPI.getAccessibleWarehouses(playerId, userRole);
+    const result = await warehouseAPI.getAccessibleWarehouses(playerId, userRole);
+    warehouses.value = Array.isArray(result) ? result : [];
     if (accessibleWarehouses.value.length > 0 && !currentWarehouse.value) {
       await selectWarehouse(accessibleWarehouses.value[0].warehouseKey);
     }
   } catch (e) {
     console.error('获取仓库列表失败:', e);
+    warehouses.value = [];
   } finally {
     loading.value = false;
   }

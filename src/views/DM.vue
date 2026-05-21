@@ -22,6 +22,9 @@ import {
   USERNAME_MAX_LENGTH,
   PASSWORD_MAX_LENGTH
 } from '../data/gameData.js'
+import { useSidebar } from '../composables/useSidebar.js'
+
+const { collapsed, mobileOpen, isMobile, toggle: toggleSidebar, closeMobile, sidebarVisible } = useSidebar()
 
 const FACTIONS = ['统治者', '反叛者', '冒险者', '天灾使者', '平民']
 /** 创建玩家时可选的四个阵营 */
@@ -413,145 +416,109 @@ onMounted(() => {
 <template>
   <!-- h-screen + overflow-hidden：侧栏固定；仅右侧 main 纵向滚动 -->
   <div class="flex h-screen max-h-[100dvh] overflow-hidden bg-[#0a0e1a]">
+    <!-- 移动端遮罩层 -->
+    <div
+      v-if="isMobile && mobileOpen"
+      class="fixed inset-0 bg-black/60 z-30 transition-opacity"
+      @click="closeMobile"
+    ></div>
+
+    <!-- 移动端汉堡菜单按钮 -->
+    <button
+      v-if="isMobile && !mobileOpen"
+      type="button"
+      class="fixed top-3 left-3 z-40 w-11 h-11 flex items-center justify-center rounded-xl bg-sky-600/90 border border-sky-400/80 text-white shadow-lg shadow-sky-500/30 active:scale-95 transition-transform"
+      aria-label="打开导航菜单"
+      @click="toggleSidebar"
+    >
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+
     <!-- Sidebar -->
-    <aside class="flex h-full w-64 shrink-0 flex-col border-r border-slate-700/50 relative overflow-hidden" style="background: linear-gradient(to right, rgba(5, 10, 20, 0.95) 0%, rgba(15, 25, 40, 0.92) 50%, rgba(25, 40, 60, 0.88) 100%);">
+    <aside
+      v-if="!isMobile || mobileOpen"
+      class="flex h-full flex-col border-r border-slate-700/50 relative transition-all duration-250 ease-in-out"
+      :class="[
+        isMobile
+          ? 'fixed left-0 top-0 z-40 w-72'
+          : (collapsed ? 'w-16 shrink-0' : 'w-64 shrink-0')
+      ]"
+      style="background: linear-gradient(to right, rgba(5, 10, 20, 0.95) 0%, rgba(15, 25, 40, 0.92) 50%, rgba(25, 40, 60, 0.88) 100%);"
+      :aria-expanded="isMobile ? mobileOpen : !collapsed"
+      aria-label="侧边导航"
+    >
       <SnowEffect :intensity="snowIntensity" />
-      <div class="shrink-0 border-b border-slate-700/50 p-6 relative z-10">
-        <h2 class="text-white tracking-tight text-lg">DM管理中心</h2>
+      <!-- 桌面端收起/展开按钮 -->
+      <button
+        v-if="!isMobile"
+        type="button"
+        class="absolute right-2 top-2 z-50 w-9 h-9 flex items-center justify-center rounded-lg bg-sky-600/80 border-2 border-sky-400/80 text-white hover:bg-sky-500 hover:border-sky-300 transition-all duration-200 shadow-lg shadow-sky-500/30"
+        :aria-label="collapsed ? '展开侧边栏' : '收起侧边栏'"
+        @click="toggleSidebar"
+      >
+        <svg class="w-5 h-5 transition-transform duration-250" :class="collapsed ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
+      <div class="shrink-0 border-b border-slate-700/50 p-4 relative z-10 flex items-center justify-between">
+        <h2 v-if="isMobile || !collapsed" class="text-white tracking-tight text-lg">DM管理中心</h2>
+        <div v-else class="flex justify-center w-full">
+          <span class="text-white text-lg">🎲</span>
+        </div>
+        <!-- 移动端关闭按钮 -->
+        <button
+          v-if="isMobile"
+          type="button"
+          class="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+          aria-label="关闭导航"
+          @click="closeMobile"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
 
-      <nav class="min-h-0 flex-1 overflow-y-auto p-4">
-        <button
+      <nav class="min-h-0 flex-1 overflow-y-auto py-2" :class="isMobile ? 'p-4' : (collapsed ? 'px-1' : 'p-4')">
+        <button v-for="tab in [
+          { key: 'players', icon: '👥', label: '玩家管理' },
+          { key: 'settings', icon: '⚙️', label: '游戏设置' },
+          { key: 'actionFeedback', icon: '📋', label: '📋 行动反馈' },
+          { key: 'factionActionFeedback', icon: '🏴', label: '阵营行动反馈' },
+          { key: 'nightActionSettlement', icon: '🌙', label: '夜晚行动结算' },
+          { key: 'quickInteractionFeedback', icon: '💬', label: '快速交互反馈' },
+          { key: 'combatAssist', icon: '⚔️', label: '战斗辅助' },
+          { key: 'inventories', icon: '🎒', label: '玩家背包' },
+          { key: 'warehouse', icon: '📦', label: '📦 仓库管理' },
+          { key: 'trades', icon: '🤝', label: '交易一览' },
+          { key: 'shelter', icon: '🏠', label: '统治者避难所' },
+          { key: 'ark', icon: '🚢', label: '方舟建造进度' },
+          { key: 'milestones', icon: '🏁', label: '里程碑管理' },
+          { key: 'catastrophe', icon: '⛈️', label: '天灾降临' },
+          { key: 'logs', icon: '📜', label: '系统日志' }
+        ]" :key="tab.key"
           type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'players' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'players'"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
+          :class="[activeTab === tab.key ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300', (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center']"
+          :title="(!isMobile && collapsed) ? tab.label : ''"
+          @click="activeTab = tab.key; isMobile && closeMobile()"
         >
-          玩家管理
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'settings' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'settings'"
-        >
-          游戏设置
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'actionFeedback' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'actionFeedback'"
-        >
-          📋 行动反馈
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'factionActionFeedback' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'factionActionFeedback'"
-        >
-          阵营行动反馈
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'nightActionSettlement' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'nightActionSettlement'"
-        >
-          夜晚行动结算
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'quickInteractionFeedback' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'quickInteractionFeedback'"
-        >
-          快速交互反馈
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'combatAssist' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'combatAssist'"
-        >
-          战斗辅助
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'inventories' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'inventories'"
-        >
-          玩家背包
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'warehouse' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'warehouse'"
-        >
-          📦 仓库管理
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'trades' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'trades'"
-        >
-          交易一览
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'shelter' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'shelter'"
-        >
-          统治者避难所
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'ark' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'ark'"
-        >
-          方舟建造进度
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'milestones' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'milestones'"
-        >
-          里程碑管理
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'catastrophe' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'catastrophe'"
-        >
-          天灾降临
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'logs' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'logs'"
-        >
-          系统日志
+          <span v-if="!isMobile && collapsed">{{ tab.icon }}</span><span v-else>{{ tab.label }}</span>
         </button>
       </nav>
 
-      <div class="shrink-0 border-t border-[#1f2937] p-4">
-        <div class="flex items-center justify-between">
-          <span class="text-gray-400 text-sm">{{ username }}</span>
+      <div class="shrink-0 border-t border-[#1f2937] p-3">
+        <div class="flex items-center" :class="(!isMobile && collapsed) ? 'flex-col gap-2' : 'justify-between'">
+          <span class="text-gray-400 text-sm truncate" :class="(!isMobile && collapsed) ? 'text-xs' : ''">{{ (!isMobile && collapsed) ? username.charAt(0) : username }}</span>
           <button
             type="button"
-            class="text-gray-500 hover:text-white text-sm transition-colors"
+            class="text-gray-500 hover:text-white text-sm transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             @click="handleLogout"
           >
-            退出
+            {{ (!isMobile && collapsed) ? '⏻' : '退出' }}
           </button>
         </div>
       </div>
@@ -560,8 +527,7 @@ onMounted(() => {
     <!-- Main Content -->
     <main class="min-h-0 min-w-0 flex-1 overflow-y-auto relative" style="background-image: url('/src/assets/交互页面背景.png'); background-size: cover; background-position: center; background-repeat: no-repeat;">
       <div class="absolute inset-0 bg-slate-950/10"></div>
-      
-      <div class="relative z-10 p-8 min-h-full">
+      <div class="relative z-10 p-4 md:p-8 min-h-full">
       <!-- Players Tab -->
       <div v-if="activeTab === 'players'" class="max-w-7xl rounded-xl p-6" style="background: rgba(15, 20, 35, 0.9);">
         <div class="mb-6 flex items-center justify-between">

@@ -1,29 +1,9 @@
-const API_BASE = 'http://localhost:8080/api'
-let backendAvailable = true
-let checkedBackend = false
-
-async function checkBackend() {
-  if (checkedBackend) return backendAvailable
-  try {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 1000)
-    const response = await fetch(`${API_BASE}/players`, {
-      method: 'GET',
-      signal: controller.signal
-    })
-    clearTimeout(timeoutId)
-    backendAvailable = response.ok
-  } catch (error) {
-    backendAvailable = false
-  }
-  checkedBackend = true
-  return backendAvailable
-}
+const API_BASE = '/api'
 
 async function request(url, options = {}) {
   try {
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000)
+    const timeoutId = setTimeout(() => controller.abort(), 15000)
     const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
@@ -33,8 +13,6 @@ async function request(url, options = {}) {
       ...options
     })
     clearTimeout(timeoutId)
-    backendAvailable = true
-    checkedBackend = true
     const text = await response.text()
     let data = null
     try {
@@ -50,8 +28,6 @@ async function request(url, options = {}) {
     }
     return data
   } catch (error) {
-    backendAvailable = false
-    checkedBackend = true
     if (error.name === 'AbortError') {
       console.log('请求超时:', url)
     } else if (error.message.includes('Failed to fetch')) {
@@ -460,5 +436,3 @@ export const actionAPI = {
   checkStealth: (playerId, gameDay = 1) =>
     request(`${API_BASE}/actions/stealth/${playerId}?gameDay=${gameDay}`)
 }
-
-export { checkBackend }

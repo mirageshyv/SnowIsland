@@ -17,6 +17,9 @@ import SnowEffect from '../components/SnowEffect.vue'
 import { tradeAPI, playerAPI, milestoneAPI, gameStateAPI, playerConsumptionAPI } from '../utils/api.js'
 import { sumPersonalFoodAndFuel, formatKgForDisplay } from '../utils/playerResources.js'
 import { getMaterialImageUrlOrDefault } from '../data/gameData.js'
+import { useSidebar } from '../composables/useSidebar.js'
+
+const { collapsed, mobileOpen, isMobile, toggle: toggleSidebar, closeMobile, sidebarVisible } = useSidebar()
 
 const foodIconUrl = getMaterialImageUrlOrDefault('material', 5)
 const fuelIconUrl = getMaterialImageUrlOrDefault('material', 8)
@@ -384,147 +387,280 @@ onUnmounted(() => {
 <template>
   <!-- h-screen + overflow-hidden：侧栏固定；仅右侧 main 纵向滚动 -->
   <div class="flex h-screen max-h-[100dvh] overflow-hidden bg-[#0a0e1a]">
-    <aside class="flex h-full w-64 shrink-0 flex-col border-r border-slate-700/50 relative overflow-hidden" style="background: linear-gradient(to right, rgba(5, 10, 20, 0.95) 0%, rgba(15, 25, 40, 0.92) 50%, rgba(25, 40, 60, 0.88) 100%);">
+    <!-- 移动端遮罩层 -->
+    <div
+      v-if="isMobile && mobileOpen"
+      class="fixed inset-0 bg-black/60 z-30 transition-opacity"
+      @click="closeMobile"
+    ></div>
+
+    <!-- 移动端汉堡菜单按钮 -->
+    <button
+      v-if="isMobile && !mobileOpen"
+      type="button"
+      class="fixed top-3 left-3 z-40 w-11 h-11 flex items-center justify-center rounded-xl bg-sky-600/90 border border-sky-400/80 text-white shadow-lg shadow-sky-500/30 active:scale-95 transition-transform"
+      aria-label="打开导航菜单"
+      @click="toggleSidebar"
+    >
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+
+    <aside
+      v-if="!isMobile || mobileOpen"
+      class="flex h-full flex-col border-r border-slate-700/50 relative transition-all duration-250 ease-in-out"
+      :class="[
+        isMobile
+          ? 'fixed left-0 top-0 z-40 w-72'
+          : (collapsed ? 'w-16 shrink-0' : 'w-64 shrink-0')
+      ]"
+      style="background: linear-gradient(to right, rgba(5, 10, 20, 0.95) 0%, rgba(15, 25, 40, 0.92) 50%, rgba(25, 40, 60, 0.88) 100%);"
+      :aria-expanded="isMobile ? mobileOpen : !collapsed"
+      aria-label="侧边导航"
+    >
       <SnowEffect :intensity="snowIntensity" />
-      <div class="shrink-0 border-b border-slate-700/50 p-6 relative z-10">
-        <h2 class="text-white tracking-tight text-lg">玩家中心</h2>
+      <!-- 桌面端收起/展开按钮 -->
+      <button
+        v-if="!isMobile"
+        type="button"
+        class="absolute right-2 top-2 z-50 w-9 h-9 flex items-center justify-center rounded-lg bg-sky-600/80 border-2 border-sky-400/80 text-white hover:bg-sky-500 hover:border-sky-300 transition-all duration-200 shadow-lg shadow-sky-500/30"
+        :aria-label="collapsed ? '展开侧边栏' : '收起侧边栏'"
+        @click="toggleSidebar"
+      >
+        <svg class="w-5 h-5 transition-transform duration-250" :class="collapsed ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
+      <div class="shrink-0 border-b border-slate-700/50 p-4 relative z-10 flex items-center justify-between">
+        <h2 v-if="isMobile || !collapsed" class="text-white tracking-tight text-lg">玩家中心</h2>
+        <div v-else class="flex justify-center w-full">
+          <span class="text-white text-lg">🎮</span>
+        </div>
+        <!-- 移动端关闭按钮 -->
+        <button
+          v-if="isMobile"
+          type="button"
+          class="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+          aria-label="关闭导航"
+          @click="closeMobile"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
 
-      <nav class="min-h-0 flex-1 overflow-y-auto p-4">
+      <nav class="min-h-0 flex-1 overflow-y-auto py-2" :class="isMobile ? 'p-4' : (collapsed ? 'px-1' : 'p-4')">
         <button
           type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'info' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'info'"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
+          :class="[
+            activeTab === 'info' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
+            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
+          ]"
+          :title="(!isMobile && collapsed) ? '个人信息' : ''"
+          @click="activeTab = 'info'; isMobile && closeMobile()"
         >
-          个人信息
+          <span v-if="!isMobile && collapsed">👤</span>
+          <span v-else>个人信息</span>
         </button>
         <button
           type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'actions' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'actions'"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
+          :class="[
+            activeTab === 'actions' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
+            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
+          ]"
+          :title="(!isMobile && collapsed) ? '个人行动提交' : ''"
+          @click="activeTab = 'actions'; isMobile && closeMobile()"
         >
-          个人行动提交
+          <span v-if="!isMobile && collapsed">⚔️</span>
+          <span v-else>个人行动提交</span>
         </button>
         <button
           v-if="showFactionActionsTab"
           type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'factionActions' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'factionActions'"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
+          :class="[
+            activeTab === 'factionActions' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
+            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
+          ]"
+          :title="(!isMobile && collapsed) ? '阵营行动提交' : ''"
+          @click="activeTab = 'factionActions'; isMobile && closeMobile()"
         >
-          阵营行动提交
+          <span v-if="!isMobile && collapsed">🏴</span>
+          <span v-else>阵营行动提交</span>
         </button>
         <button
           v-if="showNightActionsTab"
           type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'nightActions' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'nightActions'"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
+          :class="[
+            activeTab === 'nightActions' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
+            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
+          ]"
+          :title="(!isMobile && collapsed) ? '夜晚行动提交' : ''"
+          @click="activeTab = 'nightActions'; isMobile && closeMobile()"
         >
-          夜晚行动提交
+          <span v-if="!isMobile && collapsed">🌙</span>
+          <span v-else>夜晚行动提交</span>
         </button>
         <button
           type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'quickInteraction' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'quickInteraction'"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
+          :class="[
+            activeTab === 'quickInteraction' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
+            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
+          ]"
+          :title="(!isMobile && collapsed) ? '快速交互' : ''"
+          @click="activeTab = 'quickInteraction'; isMobile && closeMobile()"
         >
-          快速交互
+          <span v-if="!isMobile && collapsed">💬</span>
+          <span v-else>快速交互</span>
         </button>
         <button
           type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'ruleBook' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'ruleBook'"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
+          :class="[
+            activeTab === 'ruleBook' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
+            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
+          ]"
+          :title="(!isMobile && collapsed) ? '规则书' : ''"
+          @click="activeTab = 'ruleBook'; isMobile && closeMobile()"
         >
-          规则书
+          <span v-if="!isMobile && collapsed">📖</span>
+          <span v-else>规则书</span>
         </button>
         <button
           type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'materials' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'materials'"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
+          :class="[
+            activeTab === 'materials' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
+            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
+          ]"
+          :title="(!isMobile && collapsed) ? '物资管理' : ''"
+          @click="activeTab = 'materials'; isMobile && closeMobile()"
         >
-          物资管理
+          <span v-if="!isMobile && collapsed">🎒</span>
+          <span v-else>物资管理</span>
         </button>
         <button
           v-if="showArkTab"
           type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'ark' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'ark'"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
+          :class="[
+            activeTab === 'ark' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
+            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
+          ]"
+          :title="(!isMobile && collapsed) ? '方舟建造进度' : ''"
+          @click="activeTab = 'ark'; isMobile && closeMobile()"
         >
-          方舟建造进度
+          <span v-if="!isMobile && collapsed">🚢</span>
+          <span v-else>方舟建造进度</span>
         </button>
         <button
           v-if="showShelterTab"
           type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'shelter' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'shelter'"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
+          :class="[
+            activeTab === 'shelter' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
+            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
+          ]"
+          :title="(!isMobile && collapsed) ? '统治者避难所' : ''"
+          @click="activeTab = 'shelter'; isMobile && closeMobile()"
         >
-          统治者避难所
+          <span v-if="!isMobile && collapsed">🏠</span>
+          <span v-else>统治者避难所</span>
         </button>
         <button
           v-if="showMilestoneTab"
           type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'milestone' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'milestone'"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
+          :class="[
+            activeTab === 'milestone' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
+            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
+          ]"
+          :title="(!isMobile && collapsed) ? '反叛者里程碑' : ''"
+          @click="activeTab = 'milestone'; isMobile && closeMobile()"
         >
-          反叛者里程碑
+          <span v-if="!isMobile && collapsed">🏁</span>
+          <span v-else>反叛者里程碑</span>
         </button>
         <button
           v-if="showCatastropheTab"
           type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'catastrophe' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'catastrophe'"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
+          :class="[
+            activeTab === 'catastrophe' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
+            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
+          ]"
+          :title="(!isMobile && collapsed) ? '天灾降临' : ''"
+          @click="activeTab = 'catastrophe'; isMobile && closeMobile()"
         >
-          天灾降临
+          <span v-if="!isMobile && collapsed">⛈️</span>
+          <span v-else>天灾降临</span>
         </button>
         <button
           type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium"
-          :class="activeTab === 'warehouse' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="activeTab = 'warehouse'"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
+          :class="[
+            activeTab === 'warehouse' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
+            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
+          ]"
+          :title="(!isMobile && collapsed) ? '仓库管理' : ''"
+          @click="activeTab = 'warehouse'; isMobile && closeMobile()"
         >
-          📦 仓库管理
+          <span v-if="!isMobile && collapsed">📦</span>
+          <span v-else>📦 仓库管理</span>
         </button>
         <button
           type="button"
-          class="w-full text-left px-4 py-3 rounded-xl mb-2 transition-colors font-medium relative group"
-          :class="activeTab === 'trade' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
-          @click="handleTradeTabClick"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium relative group min-h-[44px]"
+          :class="[
+            activeTab === 'trade' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
+            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
+          ]"
+          :title="(!isMobile && collapsed) ? '交易管理' : ''"
+          @click="handleTradeTabClick(); isMobile && closeMobile()"
         >
-          <span class="flex items-center justify-between">
-            <span class="flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-              </svg>
-              <span>交易管理</span>
+          <template v-if="!isMobile && collapsed">
+            <span class="relative">🤝
+              <span
+                v-if="pendingTradesCount > 0"
+                class="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center"
+              >!</span>
             </span>
-            <span
-              v-if="pendingTradesCount > 0"
-              class="bg-gradient-to-r from-red-600 to-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg shadow-red-500/50 animate-pulse min-w-[20px] text-center"
-            >
-              {{ pendingTradesCount > 9 ? '9+' : pendingTradesCount }}
+          </template>
+          <template v-else>
+            <span class="flex items-center justify-between">
+              <span class="flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+                <span>交易管理</span>
+              </span>
+              <span
+                v-if="pendingTradesCount > 0"
+                class="bg-gradient-to-r from-red-600 to-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg shadow-red-500/50 animate-pulse min-w-[20px] text-center"
+              >
+                {{ pendingTradesCount > 9 ? '9+' : pendingTradesCount }}
+              </span>
             </span>
-          </span>
+          </template>
         </button>
       </nav>
 
-      <div class="shrink-0 border-t border-[#1f2937] p-4">
-        <div class="flex items-center justify-between">
-          <span class="text-gray-400 text-sm">{{ username }}</span>
+      <div class="shrink-0 border-t border-[#1f2937] p-3">
+        <div class="flex items-center" :class="collapsed ? 'flex-col gap-2' : 'justify-between'">
+          <span class="text-gray-400 text-sm truncate" :class="collapsed ? 'text-xs' : ''">{{ collapsed ? username.charAt(0) : username }}</span>
           <button
             type="button"
             class="text-gray-500 hover:text-white text-sm transition-colors"
             @click="handleLogout"
           >
-            退出
+            {{ collapsed ? '⏻' : '退出' }}
           </button>
         </div>
       </div>
@@ -533,7 +669,7 @@ onUnmounted(() => {
     <main class="min-h-0 min-w-0 flex-1 overflow-y-auto relative" style="background-image: url('/src/assets/交互页面背景.png'); background-size: cover; background-position: center; background-repeat: no-repeat;">
       <div class="absolute inset-0 bg-slate-950/10"></div>
       
-      <div class="relative z-10 p-8 min-h-full">
+      <div class="relative z-10 p-4 md:p-8 min-h-full">
       <div
         v-if="activeTab === 'info'"
         class="-m-8 min-h-full p-8"
