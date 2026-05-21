@@ -1177,7 +1177,7 @@ onUnmounted(() => {
         >
           你有 {{ loreUnreadCount }} 份新线索文献，请打开「线索文献」并点击「查看文献」。
         </p>
-        <RuleBookView embedded @lore-unread-updated="(n) => { loreUnreadCount = n }" />
+        <RuleBookView embedded :player-faction="playerInfo?.faction || ''" @lore-unread-updated="(n) => { loreUnreadCount = n }" />
       </div>
 
       <div v-else-if="activeTab === 'ark' && showArkTab" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">

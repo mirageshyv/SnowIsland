@@ -166,7 +166,7 @@
               class="bg-slate-700/50 rounded-lg p-5 border border-slate-600/50 hover:border-cyan-500/50 transition-all duration-200"
             >
               <h3 class="text-lg font-semibold text-blue-400 mb-2">{{ rule.title }}</h3>
-              <p class="text-slate-300 leading-relaxed">{{ rule.content }}</p>
+              <div class="text-slate-300 leading-relaxed rule-content" v-html="renderContent(rule.content)"></div>
             </div>
           </div>
           <div v-if="currentRules.length === 0" class="text-center py-12 text-slate-400">
@@ -183,8 +183,9 @@ import { ref, computed, reactive, onMounted } from 'vue'
 import { loreAPI, playerAPI } from '@/utils/api.js'
 import { LORE_DISCOVERY_WARNING } from '@/data/loreDocuments.js'
 
-defineProps({
+const props = defineProps({
   embedded: { type: Boolean, default: false },
+  playerFaction: { type: String, default: '' },
 })
 
 const emit = defineEmits(['lore-unread-updated'])
@@ -244,16 +245,25 @@ const defaultRules = {
   ]
 }
 
-const tabs = [
-  { key: 'map', label: '海岛地图' },
-  { key: 'lore', label: '线索文献' },
-  { key: 'general', label: '通用规则' },
-  { key: 'ruler', label: '统治者' },
-  { key: 'rebel', label: '反叛者' },
-  { key: 'adventurer', label: '冒险者' },
-  { key: 'scourge', label: '天灾使者' },
-  { key: 'civilian', label: '平民' }
-]
+const tabs = computed(() => {
+  const fixedTabs = [
+    { key: 'map', label: '海岛地图' },
+    { key: 'lore', label: '线索文献' }
+  ]
+  const sectionKeys = Object.keys(rules.value).filter(k => {
+    const arr = rules.value[k]
+    if (!Array.isArray(arr) || arr.length === 0) return false
+    // Permission filtering
+    if (isDm.value) return true // DM sees everything
+    // 天灾牌: only 天灾使者 can see
+    if (k === '天灾牌' && props.playerFaction !== '天灾使者') return false
+    // 方舟建造: only 冒险者 can see
+    if (k === '方舟建造' && props.playerFaction !== '冒险者') return false
+    return true
+  })
+  const sectionTabs = sectionKeys.map(key => ({ key, label: key }))
+  return [...fixedTabs, ...sectionTabs]
+})
 
 const mapImageUrl = '/src/assets/小镇地图.png'
 const locations = [
@@ -281,17 +291,41 @@ function tabButtonClass(key) {
 }
 
 const currentSectionTitle = computed(() => {
-  const tab = tabs.find(t => t.key === activeTab.value)
+  const tab = tabs.value.find(t => t.key === activeTab.value)
   return tab ? tab.label : ''
 })
 
 const currentRules = computed(() => {
   if (activeTab.value === 'map' || activeTab.value === 'lore') return []
   const sectionRules = rules.value[activeTab.value]
-  if (sectionRules && sectionRules.length > 0) {
-    return sectionRules
+  if (!Array.isArray(sectionRules) || sectionRules.length === 0) {
+    return defaultRules[activeTab.value] || []
   }
-  return defaultRules[activeTab.value] || []
+  // DM sees everything
+  if (isDm.value) return sectionRules
+  // 阵营机制: players only see their own faction's content
+  if (activeTab.value === '阵营机制') {
+    return sectionRules.filter(rule => {
+      const title = rule.title || ''
+      // Match title pattern "阵营机制-XXX" to faction
+      // Note: 后端枚举用"反叛者"，规则书title用"反抗者"，需兼容
+      if (title === '阵营机制-统治者' && props.playerFaction === '统治者') return true
+      if ((title === '阵营机制-反抗者' || title === '阵营机制-反叛者') && props.playerFaction === '反叛者') return true
+      if (title === '阵营机制-冒险者' && props.playerFaction === '冒险者') return true
+      if (title === '阵营机制-天灾使者' && props.playerFaction === '天灾使者') return true
+      if (title === '阵营机制-平民' && props.playerFaction === '平民') return true
+      return false
+    })
+  }
+  // 终局结算: 避难所结局结算 and 方舟结局结算 are DM-only
+  if (activeTab.value === '终局结算') {
+    return sectionRules.filter(rule => {
+      const title = rule.title || ''
+      if (title === '避难所结局结算' || title === '方舟结局结算') return false
+      return true
+    })
+  }
+  return sectionRules
 })
 
 const displayedLoreDocuments = computed(() =>
@@ -387,6 +421,50 @@ async function revokeLore(slug, targetPlayerId) {
   }
 }
 
+function renderContent(content) {
+  if (!content) return ''
+  let html = content
+  // Escape HTML special chars first (but preserve \r\n)
+  html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  // Convert \r\n or \n to line breaks
+  html = html.replace(/\r\n/g, '\n')
+  // Split into lines and process
+  const lines = html.split('\n')
+  const result = []
+  let inList = false
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) {
+      if (inList) { result.push('</ul>'); inList = false }
+      result.push('<br>')
+      continue
+    }
+    // Heading-like lines (short lines ending with colon or starting with numbers like "一、")
+    if (/^[一二三四五六七八九十]+[、．.]/.test(trimmed) || /^[第][一二三四五六七八九十]+[章阶段]/.test(trimmed)) {
+      if (inList) { result.push('</ul>'); inList = false }
+      result.push(`<h4 class="text-cyan-300 font-semibold mt-3 mb-1">${trimmed}</h4>`)
+    } else if (/^(\d+)[\.、）)]\s*/.test(trimmed)) {
+      // Numbered list items
+      if (!inList) { result.push('<ul class="list-decimal list-inside space-y-1 ml-2">'); inList = true }
+      const itemText = trimmed.replace(/^(\d+)[\.、）)]\s*/, '')
+      result.push(`<li>${itemText}</li>`)
+    } else if (/^[·\-—–•]\s*/.test(trimmed)) {
+      // Bullet list items
+      if (inList) { result.push('</ul>'); inList = false }
+      result.push(`<div class="ml-4 flex gap-2"><span class="text-cyan-400 shrink-0">•</span><span>${trimmed.replace(/^[·\-—–•]\s*/, '')}</span></div>`)
+    } else if (/^[【《]/.test(trimmed) || /】$/.test(trimmed) || /^【.+】$/.test(trimmed)) {
+      // Special terms with brackets - outcome titles like 【诺亚方舟】
+      if (inList) { result.push('</ul>'); inList = false }
+      result.push(`<div class="mt-3 mb-1 text-amber-300 font-semibold text-base">${trimmed}</div>`)
+    } else {
+      if (inList) { result.push('</ul>'); inList = false }
+      result.push(`<p class="mb-1">${trimmed}</p>`)
+    }
+  }
+  if (inList) result.push('</ul>')
+  return result.join('')
+}
+
 const fetchRules = async () => {
   try {
     const response = await fetch('/api/rule-book/all')
@@ -407,3 +485,20 @@ onMounted(() => {
   fetchLoreCatalog()
 })
 </script>
+
+<style scoped>
+.rule-content :deep(h4) {
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+.rule-content :deep(ul) {
+  padding-left: 0.5rem;
+}
+.rule-content :deep(li) {
+  margin-bottom: 0.25rem;
+  line-height: 1.6;
+}
+.rule-content :deep(p) {
+  line-height: 1.7;
+}
+</style>

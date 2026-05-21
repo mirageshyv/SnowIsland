@@ -10,4 +10,5 @@ import java.util.List;
 public interface RuleBookRepository extends JpaRepository<RuleBook, Integer> {
     List<RuleBook> findBySectionOrderByOrderNum(String section);
     List<RuleBook> findBySection(String section);
+    List<RuleBook> findAllByOrderByOrderNum();
 }

@@ -17,12 +17,16 @@ public class RuleBookService {
 
     public Map<String, Object> getAllRules() {
         Map<String, Object> result = new HashMap<>();
-        result.put("general", ruleBookRepository.findBySectionOrderByOrderNum("general"));
-        result.put("ruler", ruleBookRepository.findBySectionOrderByOrderNum("ruler"));
-        result.put("rebel", ruleBookRepository.findBySectionOrderByOrderNum("rebel"));
-        result.put("adventurer", ruleBookRepository.findBySectionOrderByOrderNum("adventurer"));
-        result.put("scourge", ruleBookRepository.findBySectionOrderByOrderNum("scourge"));
-        result.put("civilian", ruleBookRepository.findBySectionOrderByOrderNum("civilian"));
+        List<RuleBook> allRules = ruleBookRepository.findAllByOrderByOrderNum();
+        for (RuleBook rule : allRules) {
+            String section = rule.getSection();
+            if (!result.containsKey(section)) {
+                result.put(section, new java.util.ArrayList<RuleBook>());
+            }
+            @SuppressWarnings("unchecked")
+            List<RuleBook> sectionList = (List<RuleBook>) result.get(section);
+            sectionList.add(rule);
+        }
         return result;
     }
 
