@@ -26,6 +26,11 @@ public class ActionService {
     @Autowired private WarehouseConfigRepository warehouseConfigRepository;
     @Autowired private TransportSettlementService transportSettlementService;
     @Autowired private GameStateService gameStateService;
+    @Autowired private FactionActionRepository factionActionRepository;
+    @Autowired private FactionActionService factionActionService;
+    @Autowired private ActivityLogService activityLogService;
+
+    private static final Random INVESTIGATE_ROLL = new Random();
 
     /** Shown to players while status is pending (DM sees full computed result). */
     public static final String PENDING_PLAYER_MESSAGE = "已提交，等待主持人确认。";
@@ -163,6 +168,8 @@ public class ActionService {
 
         action.setResult(autoResult);
         actionRepository.save(action);
+
+        logActionSubmit(gameDay, player, actionSlot, actionType, action, notes);
 
         result.put("success", true);
         result.put("message", "个人行动提交成功");
@@ -698,12 +705,19 @@ public class ActionService {
                 List<PlayerAction> targetActions = actionRepository.findByPlayerIdAndGameDayOrderByActionSlotAsc(targetPlayerId, gameDay);
                 StringBuilder sb = new StringBuilder("【调查结果】");
                 sb.append(action.getTargetName()).append("的自由行动：\n");
-                for (PlayerAction ta : targetActions) {
-                    sb.append("行动").append(ta.getActionSlot()).append("：")
-                      .append(getActionTypeLabel(ta.getActionType()));
-                    if (ta.getTargetName() != null) sb.append(" → ").append(ta.getTargetName());
-                    sb.append("\n");
+                if (targetActions.isEmpty()) {
+                    sb.append("（当日未提交个人行动）\n");
+                } else {
+                    for (PlayerAction ta : targetActions) {
+                        sb.append("行动").append(ta.getActionSlot()).append("：")
+                          .append(getActionTypeLabel(ta.getActionType()));
+                        if (ta.getTargetName() != null) {
+                            sb.append(" → ").append(ta.getTargetName());
+                        }
+                        sb.append("\n");
+                    }
                 }
+                appendFactionInvestigateIntel(sb, action.getTargetName(), targetPlayerId, gameDay);
                 action.setResult(sb.toString());
             }
             action.setStatus(PlayerAction.ActionStatus.feedbacked);
@@ -715,6 +729,30 @@ public class ActionService {
         result.put("message", "已结算" + resolved + "条调查行动");
         result.put("resolved", resolved);
         return result;
+    }
+
+    /** 50% chance per investigate to reveal target's submitted faction actions for that day. */
+    private void appendFactionInvestigateIntel(StringBuilder sb, String targetName, int targetPlayerId, int gameDay) {
+        sb.append("\n");
+        if (!INVESTIGATE_ROLL.nextBoolean()) {
+            sb.append("未能探知").append(targetName).append("的阵营行动（概率未中）。\n");
+            return;
+        }
+        List<FactionAction> factionActions =
+                factionActionRepository.findByPlayerIdAndGameDayOrderByCreatedAtDesc(targetPlayerId, gameDay);
+        sb.append(targetName).append("的阵营行动：\n");
+        if (factionActions == null || factionActions.isEmpty()) {
+            sb.append("（当日未提交阵营行动）\n");
+            return;
+        }
+        List<FactionAction> ordered = new ArrayList<>(factionActions);
+        Collections.reverse(ordered);
+        int idx = 1;
+        for (FactionAction fa : ordered) {
+            sb.append("阵营行动").append(idx++).append("：")
+              .append(factionActionService.summarizeForInvestigate(fa))
+              .append("\n");
+        }
     }
 
     @Transactional
@@ -1023,6 +1061,36 @@ public class ActionService {
             case "other": return "其他";
             default: return type;
         }
+    }
+
+    private void logActionSubmit(Integer gameDay, Player player, Integer actionSlot, String actionType,
+                                 PlayerAction action, String notes) {
+        StringBuilder detail = new StringBuilder();
+        if (action.getTargetName() != null) {
+            detail.append("目标:").append(action.getTargetName()).append(" ");
+        }
+        if (action.getNpcName() != null) {
+            detail.append("NPC:").append(action.getNpcName()).append(" ");
+        }
+        if (notes != null && !notes.trim().isEmpty()) {
+            if ("transport".equals(actionType)) {
+                String zh = transportSettlementService.formatNotesChinese(notes);
+                if (zh != null) {
+                    detail.append(zh);
+                }
+            } else {
+                detail.append(ActivityLogService.truncate(notes.trim(), 240));
+            }
+        }
+        String summary = "自由#" + actionSlot + "·" + getActionTypeLabel(actionType);
+        activityLogService.log(
+                gameDay,
+                player.getId(),
+                player.getName(),
+                ActivityLogService.factionOf(player),
+                ActivityLogService.CAT_ACTION,
+                summary,
+                detail.length() > 0 ? detail.toString().trim() : null);
     }
 
     private Map<String, Object> toMap(PlayerAction action) {

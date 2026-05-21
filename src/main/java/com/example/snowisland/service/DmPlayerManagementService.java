@@ -66,7 +66,7 @@ public class DmPlayerManagementService {
         int currentGameDay = gameStateService.getCurrentDay();
         Map<Integer, Boolean> consumptionStatus = new HashMap<>();
         for (PlayerDailyConsumption c : playerDailyConsumptionRepository.findByGameDay(currentGameDay)) {
-            consumptionStatus.put(c.getPlayerId(), Boolean.TRUE.equals(c.getSubmitted()));
+            consumptionStatus.put(c.getPlayerId(), PlayerConsumptionService.isDailyRequirementsMet(c));
         }
 
         List<Map<String, Object>> rows = new ArrayList<>();

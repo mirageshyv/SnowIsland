@@ -48,6 +48,7 @@ public class NightActionService {
     @Autowired private LocationRepository locationRepository;
     @Autowired private LocationNpcRepository npcRepository;
     @Autowired private PlayerActionRepository playerActionRepository;
+    @Autowired private ActivityLogService activityLogService;
     @Autowired private GameStateService gameStateService;
 
     public Map<String, Object> getContext(Integer playerId, Integer gameDay) {
@@ -159,6 +160,15 @@ public class NightActionService {
         }
         action.setResult(buildAutoResult(actionType, payload, player));
         nightActionRepository.save(action);
+
+        activityLogService.log(
+                gameDay,
+                playerId,
+                player.getName(),
+                ActivityLogService.factionOf(player),
+                ActivityLogService.CAT_NIGHT,
+                getActionTypeLabel(actionType),
+                ActivityLogService.truncate(action.getResult(), 500));
 
         result.put("success", true);
         result.put("message", "夜晚行动提交成功");

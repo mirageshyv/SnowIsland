@@ -55,13 +55,13 @@ function burnableWoodKg(energy) {
         <span class="text-gray-400 text-sm">{{ energyTitle }}</span>
       </div>
       <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <span class="text-yellow-400 text-3xl font-bold tabular-nums">{{ fuelQty(energy) }}</span>
-        <span class="text-gray-500 text-sm">千克</span>
+        <span class="text-amber-400 text-3xl font-bold tabular-nums">{{ burnableWoodKg(energy) }}</span>
+        <span class="text-gray-500 text-sm">千克 木材</span>
         <span
-          v-if="burnableWoodKg(energy) > 0"
-          class="text-amber-400/90 text-sm font-medium tabular-nums"
+          v-if="fuelQty(energy) > 0"
+          class="text-yellow-400/90 text-sm font-medium tabular-nums"
         >
-          + {{ burnableWoodKg(energy) }} 千克 木材
+          + {{ fuelQty(energy) }} 千克 燃料
         </span>
       </div>
     </div>

@@ -14,6 +14,8 @@ import QuickInteractionFeedbackView from './QuickInteractionFeedbackView.vue'
 import DmPlayerInventoryView from './DmPlayerInventoryView.vue'
 import DmCombatAssistView from './DmCombatAssistView.vue'
 import GameSettingsView from './GameSettingsView.vue'
+import RuleBookView from './RuleBookView.vue'
+import DmSystemLogView from './DmSystemLogView.vue'
 import DmPlayerModalInventory from '../components/DmPlayerModalInventory.vue'
 import SnowEffect from '../components/SnowEffect.vue'
 import { dmPlayerAPI, jobAPI, skillAPI, gameStateAPI } from '../utils/api.js'
@@ -109,7 +111,10 @@ function normalizePlayer(raw) {
     loginPassword: raw.loginPassword ?? '',
     isWeak: Boolean(raw.isWeak ?? raw.is_weak),
     isOverworked: Boolean(raw.isOverworked ?? raw.is_overworked),
-    isInjured: raw.isInjured ?? raw.is_injured ?? 0
+    isInjured: raw.isInjured ?? raw.is_injured ?? 0,
+    isSeverelyInjured: Boolean(raw.isSeverelyInjured ?? raw.is_severely_injured),
+    isDead: Boolean(raw.isDead ?? raw.is_dead),
+    dailyConsumptionMet: Boolean(raw.dailyConsumptionMet)
   }
 }
 
@@ -486,6 +491,7 @@ onMounted(() => {
         <button v-for="tab in [
           { key: 'players', icon: '👥', label: '玩家管理' },
           { key: 'settings', icon: '⚙️', label: '游戏设置' },
+          { key: 'ruleBook', icon: '📖', label: '规则书' },
           { key: 'actionFeedback', icon: '📋', label: '📋 行动反馈' },
           { key: 'factionActionFeedback', icon: '🏴', label: '阵营行动反馈' },
           { key: 'nightActionSettlement', icon: '🌙', label: '夜晚行动结算' },
@@ -950,12 +956,17 @@ onMounted(() => {
         <GameSettingsView />
       </div>
 
+      <div v-else-if="activeTab === 'ruleBook'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+        <RuleBookView embedded />
+      </div>
+
+      <div v-else-if="activeTab === 'logs'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+        <DmSystemLogView />
+      </div>
+
       <!-- Other Tabs -->
       <div v-else style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
-        <h1 class="text-white mb-6 tracking-tight text-2xl">系统日志</h1>
-        <div class="bg-[#0f1419] border border-[#1f2937] rounded-xl p-6">
-          <p class="text-gray-500 font-normal">功能开发中...</p>
-        </div>
+        <p class="text-gray-500 font-normal">功能开发中…</p>
       </div>
       </div>
     </main>

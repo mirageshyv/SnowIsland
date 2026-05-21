@@ -204,6 +204,46 @@ export const gameStateAPI = {
     })
 }
 
+export const loreAPI = {
+  getCatalog: (userRole, playerId) => {
+    const q = new URLSearchParams()
+    if (userRole) q.set('userRole', userRole)
+    if (playerId != null) q.set('playerId', String(playerId))
+    return request(`${API_BASE}/lore/catalog?${q}`)
+  },
+  grantPlayer: (loreSlug, playerId, userRole) => {
+    const q = new URLSearchParams({ loreSlug, playerId: String(playerId) })
+    if (userRole) q.set('userRole', userRole)
+    return request(`${API_BASE}/lore/grant-player?${q}`, { method: 'POST' })
+  },
+  revokePlayer: (loreSlug, playerId, userRole) => {
+    const q = new URLSearchParams({ loreSlug, playerId: String(playerId) })
+    if (userRole) q.set('userRole', userRole)
+    return request(`${API_BASE}/lore/revoke-player?${q}`, { method: 'POST' })
+  },
+  canAccess: (loreSlug, userRole, playerId) => {
+    const q = new URLSearchParams({ loreSlug })
+    if (userRole) q.set('userRole', userRole)
+    if (playerId != null) q.set('playerId', String(playerId))
+    return request(`${API_BASE}/lore/access?${q}`)
+  },
+  acknowledge: (loreSlug, playerId) => {
+    const q = new URLSearchParams({ loreSlug, playerId: String(playerId) })
+    return request(`${API_BASE}/lore/acknowledge?${q}`, { method: 'POST' })
+  },
+}
+
+export const dmActivityLogAPI = {
+  list: ({ userRole = 'dm', gameDay, limit = 500, playerId, faction } = {}) => {
+    const q = new URLSearchParams({ userRole })
+    if (gameDay != null) q.set('gameDay', String(gameDay))
+    if (limit != null) q.set('limit', String(limit))
+    if (playerId != null) q.set('playerId', String(playerId))
+    if (faction) q.set('faction', faction)
+    return request(`${API_BASE}/dm/activity-log?${q}`)
+  },
+}
+
 export const playerConsumptionAPI = {
   getContext: (playerId, gameDay) => {
     const q = new URLSearchParams({ playerId: String(playerId) })

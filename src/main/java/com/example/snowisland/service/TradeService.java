@@ -31,6 +31,12 @@ public class TradeService {
     @Autowired
     private PlayerRepository playerRepository;
 
+    @Autowired
+    private ActivityLogService activityLogService;
+
+    @Autowired
+    private GameStateService gameStateService;
+
     private Map<String, Map<Integer, String>> itemNames = new HashMap<>();
     private Map<String, Map<Integer, String>> itemUnits = new HashMap<>();
 
@@ -223,6 +229,7 @@ public class TradeService {
             }
             result.put("success", true);
             result.put("trade", savedTrade);
+            logTrade("发起交易", savedTrade.getFromPlayerId(), savedTrade.getToPlayerId(), savedTrade.getId(), items);
         } catch (Exception e) {
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             result.put("success", false);
@@ -260,6 +267,7 @@ public class TradeService {
             result.put("success", true);
             result.put("message", "交易成功！" + transferMessage);
             result.put("trade", trade);
+            logTrade("接受交易", playerId, trade.getFromPlayerId(), trade.getId(), null);
         } catch (Exception e) {
             result.put("success", false);
             result.put("message", "确认交易失败: " + e.getMessage());
@@ -414,5 +422,30 @@ public class TradeService {
             e.printStackTrace();
         }
         return result;
+    }
+
+    private void logTrade(String verb, Integer actorPlayerId, Integer otherPlayerId, Integer tradeId,
+                          List<Map<String, Object>> items) {
+        Player actor = playerRepository.findById(actorPlayerId).orElse(null);
+        String actorName = actor != null ? actor.getName() : ("#" + actorPlayerId);
+        Player other = otherPlayerId != null ? playerRepository.findById(otherPlayerId).orElse(null) : null;
+        String otherName = other != null ? other.getName() : ("#" + otherPlayerId);
+        int day = gameStateService.getCurrentDay();
+        String summary = verb + "→" + otherName + " #" + tradeId;
+        StringBuilder detail = new StringBuilder("对方:").append(otherName);
+        if (items != null) {
+            for (Map<String, Object> item : items) {
+                if (item == null) continue;
+                String type = String.valueOf(item.get("itemType"));
+                int id = item.get("itemId") instanceof Number ? ((Number) item.get("itemId")).intValue() : 0;
+                int qty = item.get("quantity") instanceof Number ? ((Number) item.get("quantity")).intValue() : 0;
+                String dir = item.get("direction") != null ? String.valueOf(item.get("direction")) : "";
+                detail.append(" | ").append(dir).append(" ")
+                        .append(getItemName(type, id)).append("×").append(qty);
+            }
+        }
+        String actorFaction = actor != null && actor.getFaction() != null ? actor.getFaction().name() : null;
+        activityLogService.log(day, actorPlayerId, actorName, actorFaction, ActivityLogService.CAT_TRADE, summary,
+                ActivityLogService.truncate(detail.toString(), 400));
     }
 }

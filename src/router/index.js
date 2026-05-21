@@ -105,6 +105,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/lore/:slug',
+      name: 'LoreDocument',
+      component: () => import('../views/LoreDocumentView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/player/materials',
       name: 'PlayerMaterials',
       component: () => import('../views/PlayerMaterials.vue'),

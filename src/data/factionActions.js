@@ -10,24 +10,19 @@ export const FACTION_LABELS = {
 
 export const GM_FACTION_TABS = ['统治者', '反叛者', '冒险者', '天灾使者', '平民']
 
-export const ASSIGNED_FREE_ACTIONS = [
-  { value: 'investigate_location', label: '调查地点' },
-  { value: 'investigate_player', label: '调查玩家' },
-  { value: 'produce', label: '生产' },
+/** 与「个人行动提交」白天选项一致（生产由 canProduce 动态插入） */
+export const PERSONAL_DAY_ACTION_OPTIONS = [
   { value: 'go_location', label: '前往地点' },
-  { value: 'guard', label: '看守' },
-  { value: 'trade', label: '交易' },
-  { value: 'other', label: '其他自由行动' },
+  { value: 'investigate_player', label: '调查玩家' },
+  { value: 'use_trait', label: '使用特性' },
+  { value: 'use_skill', label: '使用职业技能' },
+  { value: 'hide', label: '隐藏' },
+  { value: 'transport', label: '搬运' },
+  { value: 'other', label: '其他' },
 ]
 
-/** 安排看守：对方须提交一致的夜晚行动 */
-export const NIGHT_ASSIGNED_ACTIONS = [
-  { value: 'hide', label: '隐藏' },
-  { value: 'conspiracy', label: '密谋' },
-  { value: 'patrol', label: '巡逻' },
-  { value: 'assassinate', label: '暗杀' },
-  { value: 'other', label: '其他夜晚行动' },
-]
+/** @deprecated 使用 PERSONAL_DAY_ACTION_OPTIONS */
+export const ASSIGNED_FREE_ACTIONS = PERSONAL_DAY_ACTION_OPTIONS
 
 /** 额外行动：与白天个人行动类型一致（不含搬运） */
 export const EXTRA_DAY_ACTION_TYPES = [
@@ -79,14 +74,14 @@ export const FACTION_ACTION_DEFS = {
     {
       type: 'assign_personnel',
       title: '安排人员',
-      description: '指定某玩家/NPC 在白天提交一项或两项自由行动（须与你安排的一致）；对方可拒绝（可作为审判理由）。每日限用一次。',
-      tooltip: '可安排 1～2 项对方白天自由行动；对方须提交相同行动。每日一次。',
+      description: '指定某玩家/NPC 在白天提交一项或两项自由行动（选项与个人行动一致，须与你安排的一致）；对方可拒绝（可作为审判理由）。每日限用一次；同一目标当日不可重复被安排人员。',
+      tooltip: '可安排 1～2 项对方白天自由行动。每日一次，目标不可与当日其他「安排人员」重复。',
     },
     {
       type: 'assign_guard',
       title: '安排看守',
-      description: '指定人员在夜晚驻守地点（消耗对方夜晚行动点），须提交与你安排一致的夜晚行动；基础防御 +3，可计入武器威胁值。每日限用一次。',
-      tooltip: '占用对方夜晚行动点；须提交相同夜晚行动。每日一次。',
+      description: '指定人员在夜晚驻守地点（消耗对方夜晚行动点）；基础防御 +3。每日限用一次；同一人员当日不可重复安排看守。',
+      tooltip: '占用对方夜晚行动点。每日一次，人员不可与当日其他「安排看守」重复。',
     },
   ],
   '反叛者': [
