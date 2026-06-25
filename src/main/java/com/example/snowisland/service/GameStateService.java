@@ -4,6 +4,7 @@ import com.example.snowisland.entity.GameDaySettings;
 import com.example.snowisland.entity.GameState;
 import com.example.snowisland.repository.GameStateRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,10 @@ public class GameStateService {
 
     @Autowired
     private PlayerConsumptionService playerConsumptionService;
+
+    @Autowired
+    @Lazy
+    private NpcDialogueService npcDialogueService;
 
     public Map<String, Object> getGameState() {
         GameState state = ensureState();
@@ -127,6 +132,15 @@ public class GameStateService {
 
         state = gameStateRepository.save(state);
         int settingsDay = state.getCurrentDay() != null ? state.getCurrentDay() : 1;
+
+        // 当DM更新游戏天数时，打印日志提示（对话次数会在玩家对话时自动检测并重置）
+        if (body.containsKey("currentDay")) {
+            Integer newDay = intOrNull(body.get("currentDay"));
+            if (newDay != null) {
+                System.out.println("[游戏天数更新] 已更新到第" + newDay + "天，NPC对话限制将在下次对话时自动检测并重置");
+            }
+        }
+
         if (body.containsKey("requiredFoodUnits") || body.containsKey("requiredFuelKg")) {
             playerConsumptionService.saveDaySettings(
                     settingsDay,

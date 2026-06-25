@@ -8,6 +8,7 @@ import {
   FACTION_ACTION_DEFS,
   GM_FACTION_TABS,
   PERSONAL_DAY_ACTION_OPTIONS,
+  EXTRA_DAY_ACTION_TYPES,
   INVESTIGATE_TYPES,
 } from '@/data/factionActions.js'
 import { SABOTAGE_FACILITY_OPTIONS, getSabotageOptionByFacilityId } from '@/data/sabotageTargets.js'
@@ -65,6 +66,7 @@ const forms = reactive({
     note: '',
   },
   curse: { weaponId: '', target1: '', target2: '' },
+  extra_action: { actionType: '', targetLocationId: '', targetPlayerId: '', note: '' },
 })
 
 const playerFaction = computed(() => context.value?.faction || '')
@@ -131,6 +133,24 @@ const investigatePlayerOptions = computed(() =>
     .filter((p) => p.id !== playerId)
     .map((p) => ({ value: p.id, label: p.name }))
 )
+
+const extraActionOptions = computed(() => {
+  const opts = [...EXTRA_DAY_ACTION_TYPES]
+  if (context.value?.submitterCanProduce) {
+    // produce already in EXTRA_DAY_ACTION_TYPES
+  }
+  return opts
+})
+
+const extraActionNeedsLocation = computed(() => {
+  const t = forms.extra_action.actionType
+  return t === 'go_location'
+})
+
+const extraActionNeedsPlayer = computed(() => {
+  const t = forms.extra_action.actionType
+  return t === 'investigate_player'
+})
 
 const factionInvestigateTargetOptions = computed(() => {
   const type = forms.extra_investigate.investigateType
@@ -342,6 +362,7 @@ function resetFormFields(type) {
       note: '',
     },
     curse: { weaponId: '', target1: '', target2: '' },
+    extra_action: { actionType: '', targetLocationId: '', targetPlayerId: '', note: '' },
   }
   if (type && defaults[type]) {
     Object.assign(forms[type], defaults[type])
@@ -511,6 +532,13 @@ function buildPayload(type) {
         target1: parseInt(f.target1),
         target2: f.target2 ? parseInt(f.target2) : null,
       }
+    case 'extra_action':
+      return {
+        actionType: f.actionType,
+        targetLocationId: f.targetLocationId ? parseInt(f.targetLocationId) : null,
+        targetPlayerId: f.targetPlayerId ? parseInt(f.targetPlayerId) : null,
+        note: f.note || '',
+      }
     default:
       return {}
   }
@@ -565,6 +593,11 @@ function validateClient(type) {
     }
     case 'curse':
       if (!f.weaponId || !f.target1) return '请选择武器与目标'
+      break
+    case 'extra_action':
+      if (!f.actionType) return '请选择行动类型'
+      if (f.actionType === 'go_location' && !f.targetLocationId) return '请选择前往地点'
+      if (f.actionType === 'investigate_player' && !f.targetPlayerId) return '请选择调查目标'
       break
     default:
       break
@@ -832,6 +865,36 @@ onMounted(async () => {
                   <input v-model="forms.secret_contact.anonymous" type="checkbox" class="rounded" />
                   匿名发送
                 </label>
+              </template>
+
+              <!-- 额外行动（反叛者） -->
+              <template v-else-if="selectedType === 'extra_action'">
+                <p class="text-amber-300/90 text-xs mb-3">在夜晚时间执行白天回合的一个任意行动。此环节无法寻找NPC进行对话。</p>
+                <div>
+                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">选择行动类型</label>
+                  <select v-model="forms.extra_action.actionType" :class="selectClass" @change="forms.extra_action.targetLocationId = ''; forms.extra_action.targetPlayerId = ''">
+                    <option value="">请选择</option>
+                    <option v-for="a in extraActionOptions" :key="a.value" :value="a.value">{{ a.label }}</option>
+                  </select>
+                </div>
+                <div v-if="extraActionNeedsLocation">
+                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">前往地点</label>
+                  <select v-model="forms.extra_action.targetLocationId" :class="selectClass">
+                    <option value="">请选择地点</option>
+                    <option v-for="o in locationOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+                  </select>
+                </div>
+                <div v-if="extraActionNeedsPlayer">
+                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">调查目标</label>
+                  <select v-model="forms.extra_action.targetPlayerId" :class="selectClass">
+                    <option value="">请选择玩家</option>
+                    <option v-for="p in investigatePlayerOptions" :key="p.value" :value="p.value">{{ p.label }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">备注（可选）</label>
+                  <textarea v-model="forms.extra_action.note" rows="2" :class="textareaClass" />
+                </div>
               </template>
 
               <!-- 破坏 -->

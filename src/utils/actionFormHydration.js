@@ -111,6 +111,12 @@ export function applyFactionPayload(type, payload, forms) {
       f.target1 = payload.target1 != null ? String(payload.target1) : ''
       f.target2 = payload.target2 != null ? String(payload.target2) : ''
       break
+    case 'extra_action':
+      f.actionType = payload.actionType || ''
+      f.targetLocationId = payload.targetLocationId != null ? String(payload.targetLocationId) : ''
+      f.targetPlayerId = payload.targetPlayerId != null ? String(payload.targetPlayerId) : ''
+      f.note = payload.note || ''
+      break
     default:
       break
   }

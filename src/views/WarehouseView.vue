@@ -34,8 +34,12 @@ const typeLabels = {
 };
 
 const accessibleWarehouses = computed(() => {
-  if (isDm) return warehouses.value;
-  return warehouses.value.filter(w => w.accessible);
+  return warehouses.value.filter(w => {
+    if (!w.accessible && !isDm) return false;
+    // 永久隐藏避难所仓库
+    if (w.isShelter || w.warehouseName === '避难所仓库') return false;
+    return true;
+  });
 });
 
 const hasAnyAccess = computed(() => accessibleWarehouses.value.length > 0);

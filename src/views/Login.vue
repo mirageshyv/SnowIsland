@@ -68,12 +68,17 @@ const handleLogin = async (e) => {
         localStorage.setItem('playerId', result.playerId)
       }
 
-      router.push(`/${result.username}`).then(() => {
-        ElMessage.success('登录成功')
-      }).catch((err) => {
+      ElMessage.success('登录成功')
+
+      // 根据角色直接跳转到对应路由，避免使用动态用户名路由
+      const targetRoute = (result.role || '').toLowerCase() === 'dm' ? '/dm' : '/player'
+      try {
+        await router.push(targetRoute)
+      } catch (err) {
         console.error('路由跳转失败:', err)
-        ElMessage.error('登录成功，但页面跳转失败，请手动刷新')
-      })
+        // 即使动态导入失败，也使用 location 强制跳转
+        window.location.href = targetRoute
+      }
     } else {
       errorMessage.value = result.message || '登录失败'
       ElMessage.error(errorMessage.value)
@@ -150,10 +155,6 @@ const handleLogin = async (e) => {
             {{ loading ? '登录中...' : '登录' }}
           </button>
 
-          <div class="text-center text-gray-400 text-xs mt-4 sm:mt-6">
-            <p>测试账号：player1-player5 / dm1-dm2</p>
-            <p>密码：test123</p>
-          </div>
         </form>
       </div>
     </div>

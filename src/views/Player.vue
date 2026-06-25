@@ -13,6 +13,8 @@ import RuleBookView from './RuleBookView.vue'
 import RebelMilestoneView from './RebelMilestoneView.vue'
 import CatastrophePanel from '../components/CatastrophePanel.vue'
 import WarehouseView from './WarehouseView.vue'
+import PlayerNpcView from './PlayerNpcView.vue'
+import MinesweeperGame from './MinesweeperGame.vue'
 import SnowEffect from '../components/SnowEffect.vue'
 import { tradeAPI, playerAPI, milestoneAPI, gameStateAPI, playerConsumptionAPI, loreAPI } from '../utils/api.js'
 import { sumPersonalFoodAndFuel, formatKgForDisplay } from '../utils/playerResources.js'
@@ -795,6 +797,32 @@ onUnmounted(() => {
             </span>
           </template>
         </button>
+        <button
+          type="button"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
+          :class="[
+            activeTab === 'npc' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
+            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
+          ]"
+          :title="(!isMobile && collapsed) ? 'NPC交互' : ''"
+          @click="activeTab = 'npc'; isMobile && closeMobile()"
+        >
+          <span v-if="!isMobile && collapsed">👥</span>
+          <span v-else>NPC 交互</span>
+        </button>
+        <button
+          type="button"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
+          :class="[
+            activeTab === 'game' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
+            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
+          ]"
+          :title="(!isMobile && collapsed) ? '小游戏' : ''"
+          @click="activeTab = 'game'; isMobile && closeMobile()"
+        >
+          <span v-if="!isMobile && collapsed">🎮</span>
+          <span v-else>小游戏</span>
+        </button>
       </nav>
 
       <div class="shrink-0 border-t border-[#1f2937] p-3">
@@ -1206,6 +1234,14 @@ onUnmounted(() => {
 
       <div v-else-if="activeTab === 'trade'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <TradePanel ref="tradePanelRef" />
+      </div>
+
+      <div v-else-if="activeTab === 'npc'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+        <PlayerNpcView />
+      </div>
+
+      <div v-else-if="activeTab === 'game'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+        <MinesweeperGame />
       </div>
       </div>
     </main>

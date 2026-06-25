@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch, defineAsyncComponent } from 'vue'
 import { useRouter } from 'vue-router'
 import ArkProgressView from './ArkProgressView.vue'
 import ShelterProgressView from './ShelterProgressView.vue'
@@ -16,6 +16,10 @@ import DmCombatAssistView from './DmCombatAssistView.vue'
 import GameSettingsView from './GameSettingsView.vue'
 import RuleBookView from './RuleBookView.vue'
 import DmSystemLogView from './DmSystemLogView.vue'
+import EndgameSettlementView from './EndgameSettlementView.vue'
+import DmExplorationSettlementView from './DmExplorationSettlementView.vue'
+const DmNpcManagementView = defineAsyncComponent(() => import('./DmNpcManagementView.vue'))
+import MinesweeperGame from './MinesweeperGame.vue'
 import DmPlayerModalInventory from '../components/DmPlayerModalInventory.vue'
 import SnowEffect from '../components/SnowEffect.vue'
 import { dmPlayerAPI, jobAPI, skillAPI, gameStateAPI } from '../utils/api.js'
@@ -30,7 +34,7 @@ const { collapsed, mobileOpen, isMobile, toggle: toggleSidebar, closeMobile, sid
 
 const FACTIONS = ['统治者', '反叛者', '冒险者', '天灾使者', '平民']
 /** 创建玩家时可选的四个阵营 */
-const CREATE_FACTIONS = ['统治者', '反叛者', '冒险者', '天灾使者']
+const CREATE_FACTIONS = ['统治者', '反叛者', '冒险者', '天灾使者', '平民']
 
 const router = useRouter()
 const username = localStorage.getItem('username') || ''
@@ -495,6 +499,7 @@ onMounted(() => {
           { key: 'actionFeedback', icon: '📋', label: '📋 行动反馈' },
           { key: 'factionActionFeedback', icon: '🏴', label: '阵营行动反馈' },
           { key: 'nightActionSettlement', icon: '🌙', label: '夜晚行动结算' },
+          { key: 'explorationSettlement', icon: '🗺️', label: '探索岛屿结算' },
           { key: 'quickInteractionFeedback', icon: '💬', label: '快速交互反馈' },
           { key: 'combatAssist', icon: '⚔️', label: '战斗辅助' },
           { key: 'inventories', icon: '🎒', label: '玩家背包' },
@@ -504,7 +509,10 @@ onMounted(() => {
           { key: 'ark', icon: '🚢', label: '方舟建造进度' },
           { key: 'milestones', icon: '🏁', label: '里程碑管理' },
           { key: 'catastrophe', icon: '⛈️', label: '天灾降临' },
-          { key: 'logs', icon: '📜', label: '系统日志' }
+          { key: 'endgame', icon: '🏁', label: '终局结算' },
+          { key: 'logs', icon: '📜', label: '系统日志' },
+          { key: 'npc', icon: '👥', label: 'NPC 管理' },
+          { key: 'game', icon: '🎮', label: '小游戏' }
         ]" :key="tab.key"
           type="button"
           class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
@@ -944,6 +952,10 @@ onMounted(() => {
         <NightActionSettlementView />
       </div>
 
+      <div v-else-if="activeTab === 'explorationSettlement'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+        <DmExplorationSettlementView />
+      </div>
+
       <div v-else-if="activeTab === 'quickInteractionFeedback'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <QuickInteractionFeedbackView />
       </div>
@@ -962,6 +974,18 @@ onMounted(() => {
 
       <div v-else-if="activeTab === 'logs'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <DmSystemLogView />
+      </div>
+
+      <div v-else-if="activeTab === 'endgame'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+        <EndgameSettlementView />
+      </div>
+
+      <div v-else-if="activeTab === 'npc'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+        <DmNpcManagementView />
+      </div>
+
+      <div v-else-if="activeTab === 'game'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+        <MinesweeperGame />
       </div>
 
       <!-- Other Tabs -->

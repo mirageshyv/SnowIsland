@@ -43,7 +43,8 @@ const allMaterialsMap = {
     { id: 22, name: '码头集购站钥匙', unit: '把', icon: '🔑' },
     { id: 23, name: '反叛者基地钥匙', unit: '把', icon: '🔑' },
     { id: 24, name: '方舟钥匙', unit: '把', icon: '🔑' },
-    { id: 25, name: '监狱钥匙', unit: '把', icon: '🔑' }
+    { id: 25, name: '火把', unit: '把', icon: '🔥' },
+    { id: 26, name: '诅咒硬币', unit: '个', icon: '🪙' }
   ],
   weapon: [
     { id: 1, name: '制式手枪', unit: '把', icon: '🔫' },
@@ -77,6 +78,7 @@ const allMaterialsMap = {
     { id: 10, name: '发动机', unit: '个', icon: '🔧' },
     { id: 11, name: '螺旋桨', unit: '个', icon: '🌀' },
     { id: 12, name: '发电机', unit: '个', icon: '⚡' },
+    { id: 13, name: '草木灰', unit: 'kg', icon: '🪨' },
     { id: 5, name: '食物', unit: 'kg', icon: '🍖' },
     { id: 8, name: '燃料', unit: 'kg', icon: '⛽' }
   ]

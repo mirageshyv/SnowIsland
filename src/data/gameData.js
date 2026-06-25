@@ -64,6 +64,9 @@ import imgGenerator from '@/assets/发电机.png?url'
 import imgChainsaw from '@/assets/电锯.png?url'
 import imgScalpel from '@/assets/手术刀.png?url'
 import imgExplosives from '@/assets/炸药.png?url'
+import imgTorch from '@/assets/火把.png?url'
+import imgCursedCoin from '@/assets/诅咒硬币.png?url'
+import imgPlantAsh from '@/assets/草木灰.png?url'
 
 // -----------------------------
 // 物资管理页：图片映射
@@ -93,7 +96,8 @@ const ITEM_IMAGES = {
   22: imgDockMarketKey,
   23: imgRebelBaseKey,
   24: imgArkKey,
-  25: imgPrisonKey,
+  25: imgTorch,
+  26: imgCursedCoin,
 }
 
 const WEAPON_IMAGES = {
@@ -131,6 +135,7 @@ const MATERIAL_IMAGES = {
   10: imgEngine,
   11: imgPropeller,
   12: imgGenerator,
+  13: imgPlantAsh,
   5: imgFood,
   8: imgFuel,
 }
@@ -163,13 +168,14 @@ export const GAME_ITEM_NAMES = {
     16: '铅笔',
     17: '破损海图',
     18: '便当',
-    19: '仓库钥匙',
+    19: '矿场仓库钥匙',
     20: '燃料仓库钥匙',
     21: '镇武库钥匙',
     22: '码头集换站钥匙',
     23: '反叛者基地钥匙',
     24: '方舟钥匙',
-    25: '监狱钥匙',
+    25: '火把',
+    26: '诅咒硬币',
   },
   weapon: {
     1: '制式手枪',
@@ -184,7 +190,6 @@ export const GAME_ITEM_NAMES = {
     10: '电锯',
     11: '手术刀',
     12: '炸药',
-    13: '电钻',
   },
   ammo: {
     1: '手枪弹',
@@ -205,6 +210,7 @@ export const GAME_ITEM_NAMES = {
     10: '发动机',
     11: '螺旋桨',
     12: '发电机',
+    13: '草木灰',
   },
 }
 
@@ -620,9 +626,9 @@ export const SHELTER_ITEM_CATALOG = {
   pencil: { id: 'pencil', name: '铅笔', category: 'prop', description: '书写记录工具。', imageUrl: imgPencil },
   tattered_chart: { id: 'tattered_chart', name: '破损海图', category: 'prop', description: '可用于航线参考。', imageUrl: imgSeaChart },
   service_pistol: { id: 'service_pistol', name: '制式手枪', category: 'weapon', description: '韦伯利.38口径转轮手枪，英军标准配发。威胁值2，近距离防身武器，装弹6发。', imageUrl: imgServicePistol },
-  hunting_shotgun: { id: 'hunting_shotgun', name: '猎枪', category: 'weapon', description: '12号口径单管或双管猎枪，用于狩猎鸟类和小型动物。威胁值3，中距离武器，装弹2发。', imageUrl: imgHuntingShotgun },
+  hunting_shotgun: { id: 'hunting_shotgun', name: '猎枪', category: 'weapon', description: '12号口径单管或双管猎枪，用于狩猎鸟类和小型动物。威胁值8，中距离武器，装弹2发。', imageUrl: imgHuntingShotgun },
   baton: { id: 'baton', name: '警棍', category: 'weapon', description: '硬木制成的短棍，长50厘米。威胁值0.5，非致命武器，可用于制服而非杀死目标。', imageUrl: imgBaton },
-  bayonet: { id: 'bayonet', name: '刺刀', category: 'weapon', description: '军用制式刺刀，长约20厘米。威胁值1。', imageUrl: imgBayonet },
+  bayonet: { id: 'bayonet', name: '刺刀', category: 'weapon', description: '军用制式刺刀，长约20厘米。威胁值2。', imageUrl: imgBayonet },
   harpoon_spear: { id: 'harpoon_spear', name: '鱼叉 / 矛', category: 'weapon', description: '铁头木柄的捕鱼工具，长110厘米。威胁值2，既可捕鱼也可作为近战武器，渔民的标配。', imageUrl: imgHarpoon },
   hunting_bow: { id: 'hunting_bow', name: '猎弓', category: 'weapon', description: '简单木质主体金属包角的反曲猎弓，威胁值2，无声远程武器。', imageUrl: imgHuntingBow },
   pickaxe: { id: 'pickaxe', name: '十字镐', category: 'weapon', description: '采矿用的双头镐具，长65厘米，重5kg。威胁值0.5，主要用来挖掘石料，紧急时也可作为武器。', imageUrl: imgPickaxe },

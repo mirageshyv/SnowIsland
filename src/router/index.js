@@ -22,9 +22,21 @@ const router = createRouter({
     },
     {
       path: '/dm',
-      name: 'DM',
       component: () => import('../views/DM.vue'),
-      meta: { requiresAuth: true, role: 'dm' }
+      meta: { requiresAuth: true, role: 'dm' },
+      children: [
+        {
+          path: '',
+          name: 'DM',
+          component: () => import('../views/DM.vue')
+        },
+        {
+          path: 'npc',
+          name: 'DmNpc',
+          component: () => import('../views/DmNpcManagementView.vue'),
+          meta: { requiresAuth: true, role: 'dm' }
+        }
+      ]
     },
     {
       path: '/ark',
@@ -132,6 +144,12 @@ const router = createRouter({
           component: () => import('../views/materials/PlayerBasicMaterials.vue')
         }
       ]
+    },
+    {
+      path: '/player/npc',
+      name: 'PlayerNpc',
+      component: () => import('../views/PlayerNpcView.vue'),
+      meta: { requiresAuth: true, role: 'player' }
     }
   ]
 })

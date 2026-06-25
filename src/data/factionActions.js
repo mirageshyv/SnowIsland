@@ -98,6 +98,12 @@ export const FACTION_ACTION_DEFS = {
       tooltip: '仅 DM 与收件人可见。',
     },
     {
+      type: 'extra_action',
+      title: '额外行动',
+      description: '作为反抗者你已经习惯在黑暗中行动，你不需要手电筒即可进行夜晚行动。在夜晚时间你可以执行白天回合的一个任意行动，或者尝试杀掉某个反抗革命的人。此环节无法寻找NPC进行对话，NPC在没有前置沟通的情况下会默认回家睡觉。',
+      tooltip: '选择一项白天自由行动在夜晚执行，选项与个人行动提交一致。',
+    },
+    {
       type: 'sabotage',
       title: '破坏',
       description: '摧毁某地设施；被监管地点无法破坏。',

@@ -24,6 +24,27 @@ public class LocationNpc {
     @Column(columnDefinition = "TEXT")
     private String introduction;
 
+    @Column(columnDefinition = "TEXT")
+    private String personality;
+
+    @Column(length = 50)
+    private String status = "正常";
+
+    @Column(name = "dialogue_style", length = 50)
+    private String dialogueStyle;
+
+    @Column(name = "avatar_url", length = 255)
+    private String avatarUrl;
+
+    @Column(name = "daily_trade_limit")
+    private Integer dailyTradeLimit = 1;
+
+    @Column(name = "clue_keywords", columnDefinition = "TEXT")
+    private String clueKeywords;
+
+    @Column(name = "special_clue_content", columnDefinition = "TEXT")
+    private String specialClueContent;
+
     @Column(name = "location_id", nullable = false)
     private Integer locationId;
 
@@ -85,6 +106,27 @@ public class LocationNpc {
 
     public String getIntroduction() { return introduction; }
     public void setIntroduction(String introduction) { this.introduction = introduction; }
+
+    public String getPersonality() { return personality; }
+    public void setPersonality(String personality) { this.personality = personality; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    public String getDialogueStyle() { return dialogueStyle; }
+    public void setDialogueStyle(String dialogueStyle) { this.dialogueStyle = dialogueStyle; }
+
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
+    public Integer getDailyTradeLimit() { return dailyTradeLimit; }
+    public void setDailyTradeLimit(Integer dailyTradeLimit) { this.dailyTradeLimit = dailyTradeLimit; }
+
+    public String getClueKeywords() { return clueKeywords; }
+    public void setClueKeywords(String clueKeywords) { this.clueKeywords = clueKeywords; }
+
+    public String getSpecialClueContent() { return specialClueContent; }
+    public void setSpecialClueContent(String specialClueContent) { this.specialClueContent = specialClueContent; }
 
     public Integer getLocationId() { return locationId; }
     public void setLocationId(Integer locationId) { this.locationId = locationId; }

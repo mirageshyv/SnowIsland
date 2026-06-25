@@ -64,7 +64,7 @@ public class QuickInteractionService {
         result.put("gameDay", gameDay);
 
         List<QuickInteraction> history = quickInteractionRepository
-                .findByPlayerIdAndGameDayOrderByCreatedAtDesc(playerId, gameDay);
+                .findByPlayerIdOrderByCreatedAtDesc(playerId);
         result.put("history", history.stream()
                 .map(this::toMap)
                 .collect(Collectors.toList()));

@@ -24,7 +24,7 @@ public class NightActionService {
         NIGHT_ACTION_TYPES.put("反叛者", new LinkedHashSet<>(Arrays.asList(
                 "pressure_ruler", "conspiracy", "other")));
         NIGHT_ACTION_TYPES.put("冒险者", new LinkedHashSet<>(Arrays.asList(
-                "pressure_ruler", "publicity", "conspiracy", "other")));
+                "pressure_ruler", "publicity", "conspiracy", "explore_island", "other")));
         NIGHT_ACTION_TYPES.put("天灾使者", new LinkedHashSet<>(Arrays.asList(
                 "conspiracy", "other")));
         NIGHT_ACTION_TYPES.put("平民", new LinkedHashSet<>(Arrays.asList(
@@ -48,6 +48,7 @@ public class NightActionService {
     @Autowired private LocationRepository locationRepository;
     @Autowired private LocationNpcRepository npcRepository;
     @Autowired private PlayerActionRepository playerActionRepository;
+    @Autowired private PlayerExplorationRepository playerExplorationRepository;
     @Autowired private ActivityLogService activityLogService;
     @Autowired private GameStateService gameStateService;
 
@@ -73,6 +74,18 @@ public class NightActionService {
         Set<String> usedTypes = todayActions.stream().map(NightAction::getActionType).collect(Collectors.toSet());
         boolean hasSubmittedToday = !todayActions.isEmpty();
 
+        // 获取探索信息
+        Optional<PlayerExploration> todayExploration = playerExplorationRepository.findByPlayerIdAndGameDay(playerId, gameDay);
+
+        // 如果有探索且没有其他夜晚行动，将探索添加到usedTypes
+        if (todayExploration.isPresent()) {
+            usedTypes.add("explore_island");
+            // 如果没有其他行动，hasSubmittedToday应该为true
+            if (!hasSubmittedToday) {
+                hasSubmittedToday = true;
+            }
+        }
+
         boolean hasProduceToday = playerActionRepository.findByPlayerIdAndGameDayOrderByActionSlotAsc(playerId, gameDay)
                 .stream().anyMatch(a -> "produce".equals(a.getActionType()));
 
@@ -91,6 +104,25 @@ public class NightActionService {
         ctx.put("conspiracySubtypes", CONSPIRACY_SUBTYPES.getOrDefault(faction, Collections.emptySet()));
         ctx.put("history", todayActions.stream().map(this::toMap).collect(Collectors.toList()));
         gameStateService.enrichActionEditMeta(ctx, gameDay);
+
+        // 添加探索信息到历史记录
+        todayExploration.ifPresent(exploration -> {
+            Map<String, Object> explorationMap = new LinkedHashMap<>();
+            explorationMap.put("id", exploration.getId());
+            explorationMap.put("actionType", "explore_island");
+            explorationMap.put("actionTypeLabel", "探索岛屿");
+            explorationMap.put("result", exploration.getResult());
+            explorationMap.put("investPoints", exploration.getInvestPoints());
+            explorationMap.put("diceResult", exploration.getDiceResult());
+            explorationMap.put("totalExplorationValue", exploration.getTotalExplorationValue());
+            explorationMap.put("status", exploration.getStatus().name());
+            explorationMap.put("gameDay", exploration.getGameDay());
+            // 将探索添加到历史列表的开头
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> history = (List<Map<String, Object>>) ctx.get("history");
+            history.add(0, explorationMap);
+        });
+
         return ctx;
     }
 
@@ -232,6 +264,8 @@ public class NightActionService {
                 if (note == null || note.trim().length() < 5) return "请详细描述你想执行的具体行动内容";
                 return null;
             }
+            case "explore_island":
+                return null;
             default:
                 return "未知行动类型";
         }
@@ -327,6 +361,7 @@ public class NightActionService {
             case "pressure_ruler": return "向统治者施压";
             case "publicity": return "公开宣传";
             case "conspiracy": return "进行密谋";
+            case "explore_island": return "探索岛屿";
             case "other": return "其他";
             default: return type;
         }

@@ -135,16 +135,26 @@ export function fighterTotalPower(fighter) {
   return sum
 }
 
-export function resolveCombatOutcome(diff) {
-  const d = Number(diff)
-  if (!Number.isFinite(d)) return COMBAT_OUTCOMES[3]
-  if (d >= 5) return COMBAT_OUTCOMES[0]
-  if (d >= 3) return COMBAT_OUTCOMES[1]
-  if (d >= 1) return COMBAT_OUTCOMES[2]
-  if (d === 0) return COMBAT_OUTCOMES[3]
-  if (d >= -2) return COMBAT_OUTCOMES[4]
-  if (d >= -4) return COMBAT_OUTCOMES[5]
-  return COMBAT_OUTCOMES[6]
+export function computeAdjustedValue(powerDiff, totalFighters) {
+  if (!Number.isFinite(powerDiff)) return 0
+  if (!Number.isFinite(totalFighters) || totalFighters <= 0) return powerDiff
+  return Math.round((powerDiff * 3) / totalFighters * 10) / 10
+}
+
+export function resolveCombatOutcome(powerDiff, totalFighters) {
+  const adjustedValue = computeAdjustedValue(powerDiff, totalFighters)
+  if (!Number.isFinite(adjustedValue)) return { ...COMBAT_OUTCOMES[3], adjustedValue: 0 }
+  
+  if (adjustedValue > 0) {
+    if (adjustedValue >= 7) return { ...COMBAT_OUTCOMES[0], adjustedValue }
+    if (adjustedValue >= 4) return { ...COMBAT_OUTCOMES[1], adjustedValue }
+    if (adjustedValue >= 1) return { ...COMBAT_OUTCOMES[2], adjustedValue }
+  } else if (adjustedValue < 0) {
+    if (adjustedValue <= -7) return { ...COMBAT_OUTCOMES[6], adjustedValue }
+    if (adjustedValue <= -4) return { ...COMBAT_OUTCOMES[5], adjustedValue }
+    if (adjustedValue <= -1) return { ...COMBAT_OUTCOMES[4], adjustedValue }
+  }
+  return { ...COMBAT_OUTCOMES[3], adjustedValue }
 }
 
 export function createEmptyFighter(playerId, playerName, jobSkills = '') {

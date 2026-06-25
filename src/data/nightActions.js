@@ -75,6 +75,11 @@ export const NIGHT_ACTION_DEFS = {
       description: '在夜间于集市对一名玩家召开公开审判。每日一次。',
     },
     {
+      type: 'explore_island',
+      title: '探索岛屿',
+      description: '在夜晚探索岛屿周边区域，可能发现物资、遭遇事件或找到有用的线索。每日一次。',
+    },
+    {
       type: 'other',
       title: '其他',
       description: '执行未列出的特殊行动，由主持人判定是否成功及效果。每日一次。',
@@ -90,6 +95,11 @@ export const NIGHT_ACTION_DEFS = {
       type: 'conspiracy',
       title: '进行密谋',
       description: '与其他玩家秘密组织行动：袭击地点、暗杀统治者或解救被关押人员。夜间由主持人结算成功率与防御值。',
+    },
+    {
+      type: 'explore_island',
+      title: '探索岛屿',
+      description: '在夜晚探索岛屿周边区域，可能发现物资、遭遇事件或找到有用的线索。每日一次。',
     },
     {
       type: 'other',
@@ -115,6 +125,11 @@ export const NIGHT_ACTION_DEFS = {
       description: '组织秘密袭击地点；结算规则与反叛者袭击类似。',
     },
     {
+      type: 'explore_island',
+      title: '探索岛屿',
+      description: '在夜晚探索岛屿周边区域，可能发现物资、遭遇事件或找到有用的线索。每日一次。',
+    },
+    {
       type: 'other',
       title: '其他',
       description: '执行未列出的特殊行动，由主持人判定是否成功及效果。每日一次。',
@@ -127,6 +142,11 @@ export const NIGHT_ACTION_DEFS = {
       description: '袭击地点、制造恐怖或暗杀目标；夜间由主持人结算。',
     },
     {
+      type: 'explore_island',
+      title: '探索岛屿',
+      description: '在夜晚探索岛屿周边区域，可能发现物资、遭遇事件或找到有用的线索。每日一次。',
+    },
+    {
       type: 'other',
       title: '其他',
       description: '执行未列出的特殊行动，由主持人判定是否成功及效果。每日一次。',
@@ -137,6 +157,11 @@ export const NIGHT_ACTION_DEFS = {
       type: 'conspiracy',
       title: '进行密谋',
       description: '袭击地点或制造恐怖；夜间由主持人结算。',
+    },
+    {
+      type: 'explore_island',
+      title: '探索岛屿',
+      description: '在夜晚探索岛屿周边区域，可能发现物资、遭遇事件或找到有用的线索。每日一次。',
     },
     {
       type: 'other',

@@ -11,7 +11,7 @@ const weaponsMap = {
   1: { name: '制式手枪', threat_level: 5, remark: '标准配备' },
   2: { name: '猎枪', threat_level: 8, remark: '威力较大' },
   3: { name: '警棍', threat_level: 3, remark: '非致命武器' },
-  4: { name: '刺刀', threat_level: 4, remark: '近战武器' },
+  4: { name: '刺刀', threat_level: 2, remark: '近战武器' },
   5: { name: '水手刀', threat_level: 3, remark: '多功能刀具' },
   6: { name: '鱼叉/矛', threat_level: 6, remark: '狩猎工具' },
   7: { name: '猎弓', threat_level: 5, remark: '远程武器' },

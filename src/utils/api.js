@@ -5,12 +5,12 @@ async function request(url, options = {}) {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 15000)
     const response = await fetch(url, {
+      ...options,
       headers: {
         'Content-Type': 'application/json',
         ...options.headers
       },
-      signal: controller.signal,
-      ...options
+      signal: controller.signal
     })
     clearTimeout(timeoutId)
     const text = await response.text()
@@ -146,6 +146,47 @@ export const tradeAPI = {
     method: 'POST',
     body: JSON.stringify({ playerId })
   })
+}
+
+export const explorationAPI = {
+  submit: (playerId, gameDay, investItems) => request(`${API_BASE}/exploration/submit`, {
+    method: 'POST',
+    body: JSON.stringify({ playerId, gameDay, investItems })
+  }),
+  getPlayerExplorations: (playerId) => request(`${API_BASE}/exploration/player/${playerId}`),
+  getPendingExplorations: (gameDay) => request(`${API_BASE}/exploration/pending/${gameDay}`),
+  getAllEvents: () => request(`${API_BASE}/exploration/events`),
+  createEvent: (payload) => request(`${API_BASE}/exploration/events`, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  }),
+  updateEvent: (eventId, payload) => request(`${API_BASE}/exploration/events/${eventId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload)
+  }),
+  deleteEvent: (eventId) => request(`${API_BASE}/exploration/events/${eventId}`, {
+    method: 'DELETE'
+  }),
+  triggerEvent: (explorationId, eventId) => request(`${API_BASE}/exploration/${explorationId}/trigger`, {
+    method: 'POST',
+    body: JSON.stringify({ eventId })
+  }),
+  triggerRandomEvent: (explorationId) => request(`${API_BASE}/exploration/${explorationId}/trigger`, {
+    method: 'POST',
+    body: JSON.stringify({})
+  }),
+  settle: (explorationId, rewards) => request(`${API_BASE}/exploration/${explorationId}/settle`, {
+    method: 'POST',
+    body: JSON.stringify({ rewards })
+  }),
+  reimportEvents: () => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/exploration/admin/reimport`, {
+      method: 'POST',
+      headers: { userId }
+    })
+  },
+  getEventRewards: (eventId) => request(`${API_BASE}/exploration/events/${eventId}/rewards`)
 }
 
 export const arkAPI = {
@@ -475,4 +516,272 @@ export const actionAPI = {
     request(`${API_BASE}/actions/production-info/${playerId}`),
   checkStealth: (playerId, gameDay = 1) =>
     request(`${API_BASE}/actions/stealth/${playerId}?gameDay=${gameDay}`)
+}
+
+export const endgameAPI = {
+  drawShelterEvent: () =>
+    request(`${API_BASE}/endgame/shelter/draw`),
+  drawArkEvent: () =>
+    request(`${API_BASE}/endgame/ark/draw`),
+  getAllShelterEvents: () =>
+    request(`${API_BASE}/endgame/shelter/all`),
+  getAllArkEvents: () =>
+    request(`${API_BASE}/endgame/ark/all`),
+}
+
+export const npcAPI = {
+  getAllNpcs: (playerId) => {
+    const q = playerId != null ? `?playerId=${playerId}` : ''
+    return request(`${API_BASE}/npc/list${q}`)
+  },
+  getNpcsByLocation: (locationId, playerId) => {
+    const q = playerId != null ? `?playerId=${playerId}` : ''
+    return request(`${API_BASE}/npc/location/${locationId}${q}`)
+  },
+  getNpcDetail: (npcId, playerId) => {
+    const q = playerId != null ? `?playerId=${playerId}` : ''
+    return request(`${API_BASE}/npc/${npcId}${q}`)
+  },
+  sendMessage: (playerId, npcId, message) =>
+    request(`${API_BASE}/npc/chat`, {
+      method: 'POST',
+      body: JSON.stringify({ playerId, npcId, message })
+    }),
+  getDialogueHistory: (playerId, npcId) => {
+    const q = npcId != null ? `?playerId=${playerId}&npcId=${npcId}` : `?playerId=${playerId}`
+    return request(`${API_BASE}/npc/dialogue/history${q}`)
+  },
+  getPlayerFavors: (playerId) =>
+    request(`${API_BASE}/npc/favors/${playerId}`),
+  setFavor: (npcId, playerId, favorValue) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/favor/set`, {
+      method: 'POST',
+      headers: { userId },
+      body: JSON.stringify({ npcId, playerId, favorValue })
+    })
+  },
+  getTradeConfig: (playerId, npcId) =>
+    request(`${API_BASE}/npc/trade/config?playerId=${playerId}&npcId=${npcId}`),
+  executeTrade: (playerId, npcId) =>
+    request(`${API_BASE}/npc/trade/execute`, {
+      method: 'POST',
+      body: JSON.stringify({ playerId, npcId })
+    }),
+  getTradeHistory: (playerId, npcId) => {
+    const q = npcId != null ? `?playerId=${playerId}&npcId=${npcId}` : `?playerId=${playerId}`
+    return request(`${API_BASE}/npc/trade/history${q}`)
+  },
+  getAllTradeConfigs: () =>
+    request(`${API_BASE}/npc/trade/dm/configs`),
+  saveTradeConfig: (npcId, demandItems, supplyItems) =>
+    request(`${API_BASE}/npc/trade/dm/save-config`, {
+      method: 'POST',
+      body: JSON.stringify({ npcId, demandItems, supplyItems })
+    }),
+  setDailyTradeLimit: (npcId, limit) =>
+    request(`${API_BASE}/npc/trade/dm/set-limit`, {
+      method: 'POST',
+      body: JSON.stringify({ npcId, limit })
+    }),
+  claimFreeReward: (playerId, npcId) =>
+    request(`${API_BASE}/npc/trade/claim-free-reward`, {
+      method: 'POST',
+      body: JSON.stringify({ playerId, npcId })
+    }),
+  // 对话限制API
+  getDialogueLimit: (playerId, npcId) =>
+    request(`${API_BASE}/npc/dialogue/limit?playerId=${playerId}&npcId=${npcId}`),
+  getAllDialogueCounts: (playerId) =>
+    request(`${API_BASE}/npc/dialogue/counts?playerId=${playerId}`),
+  resetDialogueCounts: (playerId, userRole) =>
+    request(`${API_BASE}/npc/dialogue/reset`, {
+      method: 'POST',
+      body: JSON.stringify({ playerId, userRole })
+    }),
+  // 求助API
+  getHelpOptions: (playerId, npcId) =>
+    request(`${API_BASE}/npc/help/options?playerId=${playerId}&npcId=${npcId}`),
+  requestHelp: (playerId, npcId, helpType) =>
+    request(`${API_BASE}/npc/help/request`, {
+      method: 'POST',
+      body: JSON.stringify({ playerId, npcId, helpType })
+    }),
+  getHelpHistory: (playerId, npcId) => {
+    const q = npcId != null ? `?playerId=${playerId}&npcId=${npcId}` : `?playerId=${playerId}`
+    return request(`${API_BASE}/npc/help/history${q}`)
+  },
+  getPendingHelps: (playerId) =>
+    request(`${API_BASE}/npc/help/pending?playerId=${playerId}`),
+  // DM求助配置API
+  getAllHelpConfigs: () =>
+    request(`${API_BASE}/npc/help/dm/configs`),
+  saveHelpConfig: (npcId, helpConfigs) =>
+    request(`${API_BASE}/npc/help/dm/save-config`, {
+      method: 'POST',
+      body: JSON.stringify({ npcId, helpConfigs })
+    }),
+  deleteHelpConfig: (configId) =>
+    request(`${API_BASE}/npc/help/dm/config/${configId}`, {
+      method: 'DELETE'
+    }),
+  // 认知系统API
+  getRecognizedNpcs: (playerId) =>
+    request(`${API_BASE}/npc/cognition/recognized?playerId=${playerId}`),
+  checkRecognition: (playerId, npcId) =>
+    request(`${API_BASE}/npc/cognition/check?playerId=${playerId}&npcId=${npcId}`),
+  getCognitionStats: (playerId) =>
+    request(`${API_BASE}/npc/cognition/stats?playerId=${playerId}`),
+  updateFavor: (playerId, npcId, delta) =>
+    request(`${API_BASE}/npc/cognition/favor/update`, {
+      method: 'POST',
+      body: JSON.stringify({ playerId, npcId, delta })
+    }),
+  getFavor: (playerId, npcId) =>
+    request(`${API_BASE}/npc/cognition/favor?playerId=${playerId}&npcId=${npcId}`),
+  forceRecognizeNpc: (playerId, npcId) =>
+    request(`${API_BASE}/npc/cognition/force-recognize`, {
+      method: 'POST',
+      body: JSON.stringify({ playerId, npcId })
+    }),
+  resetRecognition: (playerId, userRole) =>
+    request(`${API_BASE}/npc/cognition/reset`, {
+      method: 'POST',
+      body: JSON.stringify({ playerId, userRole })
+    }),
+  // NPC管理API（DM用）
+  getAllNpcsForDm: () => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/manage/all`, { headers: { userId } })
+  },
+  getNpcDetailForDm: (npcId) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/manage/${npcId}`, { headers: { userId } })
+  },
+  updateNpc: (npcData) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/manage/update`, {
+      method: 'POST',
+      headers: { userId },
+      body: JSON.stringify(npcData)
+    })
+  },
+  createNpc: (npcData) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/manage/create`, {
+      method: 'POST',
+      headers: { userId },
+      body: JSON.stringify(npcData)
+    })
+  },
+  deleteNpc: (npcId) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/manage/${npcId}`, {
+      method: 'DELETE',
+      headers: { userId }
+    })
+  },
+  getAllLocations: () => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/manage/locations`, { headers: { userId } })
+  },
+  batchUpdateNpcStatus: (npcIds, status) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/manage/batch-status`, {
+      method: 'POST',
+      headers: { userId },
+      body: JSON.stringify({ npcIds, status })
+    })
+  },
+  getNpcStats: () => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/manage/stats`, { headers: { userId } })
+  },
+  // 好感度管理API（DM用）
+  getAllFavors: () => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/manage/favors/all`, { headers: { userId } })
+  },
+  getFavorsByNpc: (npcId) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/manage/favors/npc/${npcId}`, { headers: { userId } })
+  },
+  getFavorsByPlayer: (playerId) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/manage/favors/player/${playerId}`, { headers: { userId } })
+  },
+  adjustFavor: (npcId, playerId, newValue, reason, operatorId, operatorName) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/manage/favor/adjust`, {
+      method: 'POST',
+      headers: { userId },
+      body: JSON.stringify({ npcId, playerId, newValue, reason, operatorId, operatorName })
+    })
+  },
+  getFavorAdjustments: (npcId, playerId, page, size) => {
+    const userId = localStorage.getItem('userId')
+    let url = `${API_BASE}/npc/manage/favor/adjustments?`
+    if (npcId) url += `npcId=${npcId}&`
+    if (playerId) url += `playerId=${playerId}&`
+    url += `page=${page || 0}&size=${size || 50}`
+    return request(url, { headers: { userId } })
+  },
+  getAllPlayers: () => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/manage/players`, { headers: { userId } })
+  },
+  resetAllFavors: (userRole) =>
+    request(`${API_BASE}/npc/manage/favor/reset`, {
+      method: 'POST',
+      body: JSON.stringify({ userRole })
+    }),
+  getRecognizedPlayers: (npcId) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/manage/recognition/npc/${npcId}`, { headers: { userId } })
+  },
+  createRecognition: (npcId, playerId) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/manage/recognition/create`, {
+      method: 'POST',
+      body: JSON.stringify({ npcId, playerId }),
+      headers: { userId }
+    })
+  },
+  deleteRecognition: (npcId, playerId) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/manage/recognition/delete`, {
+      method: 'POST',
+      body: JSON.stringify({ npcId, playerId }),
+      headers: { userId }
+    })
+  }
+}
+
+export const specialClueAPI = {
+  getAll: () => request(`${API_BASE}/special-clue/all`),
+  get: (id) => request(`${API_BASE}/special-clue/${id}`),
+  create: (data) => request(`${API_BASE}/special-clue/create`, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  update: (id, data) => request(`${API_BASE}/special-clue/update/${id}`, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  delete: (id) => request(`${API_BASE}/special-clue/${id}`, {
+    method: 'DELETE'
+  }),
+  getLogs: (playerId, clueId) => {
+    let url = `${API_BASE}/special-clue/logs`
+    const params = []
+    if (playerId) params.push(`playerId=${playerId}`)
+    if (clueId) params.push(`clueId=${clueId}`)
+    if (params.length) url += `?${params.join('&')}`
+    return request(url)
+  },
+  export: () => request(`${API_BASE}/special-clue/export`),
+  import: (data) => request(`${API_BASE}/special-clue/import`, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  })
 }

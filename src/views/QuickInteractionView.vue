@@ -24,7 +24,7 @@ async function loadContext() {
   loading.value = true
   try {
     const [ctx, gs] = await Promise.all([
-      quickInteractionAPI.getContext(playerId, gameDay.value),
+      quickInteractionAPI.getContext(playerId),
       gameStateAPI.get(),
     ])
     context.value = ctx

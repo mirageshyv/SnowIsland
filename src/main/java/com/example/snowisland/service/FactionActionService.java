@@ -26,7 +26,7 @@ public class FactionActionService {
         FACTION_ACTION_TYPES.put("统治者", new LinkedHashSet<>(Arrays.asList(
                 "assign_personnel", "assign_guard")));
         FACTION_ACTION_TYPES.put("反叛者", new LinkedHashSet<>(Arrays.asList(
-                "extra_labor", "secret_contact", "sabotage")));
+                "extra_labor", "secret_contact", "extra_action", "sabotage")));
         FACTION_ACTION_TYPES.put("冒险者", new LinkedHashSet<>(Arrays.asList(
                 "extra_investigate", "extra_labor", "guard_ark", "ark_construction")));
         FACTION_ACTION_TYPES.put("天灾使者", new LinkedHashSet<>(Arrays.asList(
@@ -235,6 +235,15 @@ public class FactionActionService {
                 if (msg == null || msg.trim().length() < 3) return "请填写秘密信息";
                 return null;
             }
+            case "extra_action": {
+                String subType = str(payload.get("actionType"));
+                if (subType == null || subType.trim().isEmpty()) return "请选择行动类型";
+                if ("go_location".equals(subType) && toInt(payload.get("targetLocationId")) == null)
+                    return "请选择前往地点";
+                if ("investigate_player".equals(subType) && toInt(payload.get("targetPlayerId")) == null)
+                    return "请选择调查目标";
+                return null;
+            }
             case "sabotage": {
                 Integer locationId = toInt(payload.get("targetLocationId"));
                 Integer facilityId = toInt(payload.get("facilityId"));
@@ -344,6 +353,25 @@ public class FactionActionService {
                         + "匿名发送：" + (anon ? "是" : "否") + "\n"
                         + "信息摘要：" + (preview != null ? preview : "—") + "\n\n"
                         + "仅主持人与目标可见。等待主持人确认。";
+            }
+            case "extra_action": {
+                String subType = str(payload.get("actionType"));
+                String subLabel = getPersonalActionLabel(subType);
+                StringBuilder sb = new StringBuilder();
+                sb.append("✓ 已提交【额外行动】\n\n");
+                sb.append("行动类型：").append(subLabel).append("\n");
+                if ("go_location".equals(subType)) {
+                    sb.append("前往地点：").append(resolveLocationName(toInt(payload.get("targetLocationId")))).append("\n");
+                }
+                if ("investigate_player".equals(subType)) {
+                    sb.append("调查目标：").append(resolvePlayerName(toInt(payload.get("targetPlayerId")))).append("\n");
+                }
+                String note = str(payload.get("note"));
+                if (note != null && !note.trim().isEmpty()) {
+                    sb.append("备注：").append(note).append("\n");
+                }
+                sb.append("\n此环节无法寻找NPC进行对话。\n等待主持人确认。");
+                return sb.toString();
             }
             case "sabotage": {
                 String fac = SabotageTargets.labelFor(toInt(payload.get("facilityId")));
@@ -961,6 +989,22 @@ public class FactionActionService {
             case "guard_ark": return "看守方舟";
             case "ark_construction": return "方舟建设";
             case "curse": return "诅咒";
+            case "extra_action": return "额外行动";
+            default: return type;
+        }
+    }
+
+    private String getPersonalActionLabel(String type) {
+        if (type == null) return "未知";
+        switch (type) {
+            case "go_location": return "前往地点";
+            case "investigate_player": return "调查玩家";
+            case "use_trait": return "使用特性";
+            case "produce": return "生产";
+            case "use_skill": return "使用职业技能";
+            case "hide": return "隐藏";
+            case "transport": return "搬运";
+            case "other": return "其他";
             default: return type;
         }
     }

@@ -41,6 +41,30 @@ const submitContext = ref({ isShelterLaborer: false, laborerMessage: '' })
 
 const PENDING_RESULT_TEXT = '已提交，等待主持人确认。'
 
+const displayedQrCode = ref(null)
+
+const LOCATION_QR_MAP = {
+  '警察局': '警察站.jpg',
+  '镇长厅': '镇长厅.jpg',
+  '邮局': '邮局.jpg',
+  '教堂': '教堂.jpg',
+  '灯塔': '灯塔.jpg',
+  '杂货店': '杂货店.jpg',
+  '码头': '港口.jpg',
+  '方舟': '',
+  '旅店': '旅店.jpg',
+  '集市': '集市.jpg',
+  '酒吧': '酒吧.jpg',
+  '面包店': '面包店.jpg',
+  '气象观测站': '气象观测站.jpg',
+  '教室': '教室.jpg',
+  '伐木营地': '伐木营地.jpg',
+  '墓地': '墓地.jpg',
+  '猎人小屋': '猎人小屋.jpg',
+  '矿场': '矿场.jpg',
+  '监狱': '',
+}
+
 const isShelterLaborer = computed(() => Boolean(submitContext.value?.isShelterLaborer))
 
 const submittedSlotSet = computed(
@@ -375,6 +399,7 @@ async function hydrateFromSubmitted() {
     }
   } finally {
     isHydrating.value = false
+    updateDisplayedQrCode()
   }
 }
 
@@ -412,6 +437,26 @@ function validateAction(slot) {
     if (totalWeight > maxWeight) { alert(`行动${slot === 1 ? '一' : '二'}：搬运总重量${totalWeight}kg超过上限${maxWeight}kg`); return false }
   }
   return true
+}
+
+function updateDisplayedQrCode() {
+  for (const s of [1, 2]) {
+    const ad = actionData[s]
+    if (ad.type === 'go_location' && ad.target) {
+      const loc = locations.value.find(l => l.id === parseInt(ad.target))
+      if (loc && loc.name) {
+        const fileName = LOCATION_QR_MAP[loc.name]
+        if (fileName) {
+          displayedQrCode.value = {
+            locationName: loc.name,
+            imageUrl: `/place/${fileName}`
+          }
+          return
+        }
+      }
+    }
+  }
+  displayedQrCode.value = null
 }
 
 async function submitActions() {
@@ -455,6 +500,7 @@ async function submitActions() {
     }
     if (anySuccess) {
       submitMessage.value = { type: 'success', text: '个人行动提交成功' }
+      updateDisplayedQrCode()
     }
     await loadSubmittedActions()
   } catch (e) {
@@ -762,6 +808,17 @@ function displayActionResult(action) {
         >
           {{ submitting ? '提交中...' : '提交行动' }}
         </button>
+      </div>
+
+      <div v-if="displayedQrCode" class="flex justify-center mt-6">
+        <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-2xl p-6 max-w-sm w-full">
+          <div class="text-center">
+            <p class="text-gray-400 text-sm mb-3">扫描下方二维码查看 <span class="text-blue-400">{{ displayedQrCode.locationName }}</span> 详情</p>
+            <div class="bg-white/5 rounded-xl p-4 flex justify-center">
+              <img :src="displayedQrCode.imageUrl" :alt="displayedQrCode.locationName + '二维码'" class="max-w-[200px] max-h-[200px] object-contain" />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div v-if="submittedActions && submittedActions.length > 0" class="mt-8">

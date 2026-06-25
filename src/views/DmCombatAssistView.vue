@@ -11,6 +11,7 @@ import {
   getSkillBonusSuppression,
   fighterTotalPower,
   resolveCombatOutcome,
+  computeAdjustedValue,
   createEmptyFighter,
   createDefaultBonusRow,
 } from '@/data/combatAssist.js'
@@ -29,13 +30,13 @@ const locationDefenseValue = ref('')
 const BONUS_LABEL_PLACEHOLDER = '数值调整'
 
 const OUTCOME_ROWS = [
-  { range: '≥5', ...COMBAT_OUTCOMES[0] },
-  { range: '3～4', ...COMBAT_OUTCOMES[1] },
-  { range: '1～2', ...COMBAT_OUTCOMES[2] },
+  { range: '≥7', ...COMBAT_OUTCOMES[0] },
+  { range: '4～6', ...COMBAT_OUTCOMES[1] },
+  { range: '1～3', ...COMBAT_OUTCOMES[2] },
   { range: '0', ...COMBAT_OUTCOMES[3] },
-  { range: '-1～-2', ...COMBAT_OUTCOMES[4] },
-  { range: '-3～-4', ...COMBAT_OUTCOMES[5] },
-  { range: '≤-5', ...COMBAT_OUTCOMES[6] },
+  { range: '-1～-3', ...COMBAT_OUTCOMES[4] },
+  { range: '-4～-6', ...COMBAT_OUTCOMES[5] },
+  { range: '≤-7', ...COMBAT_OUTCOMES[6] },
 ]
 
 const playerRoster = computed(() =>
@@ -88,7 +89,9 @@ const defenseSideTotal = computed(() => {
   return t
 })
 const powerDiff = computed(() => attackSideTotal.value - defenseSideTotal.value)
-const outcome = computed(() => resolveCombatOutcome(powerDiff.value))
+const totalFighters = computed(() => attackers.value.length + defenders.value.length)
+const adjustedValue = computed(() => computeAdjustedValue(powerDiff.value, totalFighters.value))
+const outcome = computed(() => resolveCombatOutcome(powerDiff.value, totalFighters.value))
 
 function combatOptionsForFighter(fighter) {
   return {
@@ -608,6 +611,21 @@ onMounted(loadStaticData)
               <p v-if="useLocationDefense" class="text-xs text-gray-500 mt-1">
                 玩家 {{ defensePlayersTotal }} + 地点 {{ parseCombatNumber(locationDefenseValue) }}
               </p>
+            </div>
+          </div>
+
+          <div class="border-t border-amber-500/20 pt-4 mb-4">
+            <div class="text-xs text-gray-400 mb-1">战力差值</div>
+            <div class="text-xl font-bold text-gray-200 tabular-nums">
+              {{ attackSideTotal }} − {{ defenseSideTotal }} = <span :class="powerDiff >= 0 ? 'text-red-300' : 'text-cyan-300'">{{ powerDiff > 0 ? '+' : '' }}{{ powerDiff }}</span>
+            </div>
+          </div>
+
+          <div v-if="totalFighters > 0" class="border-t border-amber-500/20 pt-4 mb-4">
+            <div class="text-xs text-gray-400 mb-1">调整值计算</div>
+            <div class="text-sm text-gray-300 tabular-nums">
+              ({{ powerDiff > 0 ? '+' : '' }}{{ powerDiff }} × 3) ÷ {{ totalFighters }} = 
+              <span :class="adjustedValue >= 0 ? 'text-red-300' : 'text-cyan-300'" class="font-bold">{{ adjustedValue > 0 ? '+' : '' }}{{ adjustedValue }}</span>
             </div>
           </div>
 

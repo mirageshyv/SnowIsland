@@ -36,9 +36,9 @@ public class JobService {
         itemNames.put(6, "复合盾");
         itemNames.put(7, "信号枪");
         itemNames.put(8, "维修工具包");
-        itemNames.put(9, "交易凭证");
+        itemNames.put(9, "协议书");
         itemNames.put(10, "朗姆酒");
-        itemNames.put(11, "医疗材料");
+        itemNames.put(11, "草药");
         itemNames.put(12, "渔网");
         itemNames.put(13, "蜡烛");
         itemNames.put(14, "医用酒精");
@@ -46,10 +46,13 @@ public class JobService {
         itemNames.put(16, "铅笔");
         itemNames.put(17, "破损海图");
         itemNames.put(18, "便当");
-        itemNames.put(19, "仓库钥匙");
+        itemNames.put(19, "矿场仓库钥匙");
         itemNames.put(20, "燃料仓库钥匙");
         itemNames.put(21, "镇武库钥匙");
-        itemNames.put(22, "码头集购站钥匙");
+        itemNames.put(22, "码头集换站钥匙");
+        itemNames.put(23, "反叛者基地钥匙");
+        itemNames.put(24, "方舟钥匙");
+        itemNames.put(25, "火把");
         ITEM_NAMES.put("item", itemNames);
 
         Map<Integer, String> weaponNames = new HashMap<>();
@@ -79,14 +82,14 @@ public class JobService {
         materialNames.put(2, "木材");
         materialNames.put(3, "绳索");
         materialNames.put(4, "木板");
+        materialNames.put(5, "食物");
         materialNames.put(6, "沥青");
         materialNames.put(7, "石料");
+        materialNames.put(8, "燃料");
         materialNames.put(9, "帆布");
         materialNames.put(10, "发动机");
         materialNames.put(11, "螺旋桨");
         materialNames.put(12, "发电机");
-        materialNames.put(com.example.snowisland.util.ItemCatalog.FOOD_MATERIAL_ID, com.example.snowisland.util.ItemCatalog.FOOD_NAME);
-        materialNames.put(com.example.snowisland.util.ItemCatalog.FUEL_MATERIAL_ID, com.example.snowisland.util.ItemCatalog.FUEL_NAME);
         ITEM_NAMES.put("material", materialNames);
     }
 

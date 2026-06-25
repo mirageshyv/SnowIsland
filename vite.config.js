@@ -12,7 +12,10 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    allowedHosts: ['frp-sea.com', 'frp-six.com'],
+    allowedHosts: ['frp-sea.com', 'frp-six.com', 'frp-hub.com', 'frp-dry.com'],
+    hmr: {
+      protocol: 'ws',
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:8080',

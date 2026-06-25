@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { nightActionAPI, locationAPI, actionAPI } from '@/utils/api.js'
+import { nightActionAPI, locationAPI, actionAPI, explorationAPI, playerAPI } from '@/utils/api.js'
 import { useGameDayScope } from '@/composables/useGameDayScope.js'
 import { applyNightPayload } from '@/utils/actionFormHydration.js'
 import {
@@ -33,6 +33,7 @@ const submitting = ref(false)
 const submitMessage = ref(null)
 const selectedType = ref('')
 const actionResult = ref('')
+const explorationDetails = ref(null)
 
 const forms = reactive({
   night_personal_action: { actionType: '', targetId: '', npcId: '', notes: '' },
@@ -47,7 +48,68 @@ const forms = reactive({
     raidOutcome: '',
     note: '',
   },
+  explore_island: { investItems: {} },
   other: { note: '' },
+})
+
+const EXPLORATION_ITEMS = [
+  { itemId: 26, itemType: 'item', name: '火把', bonus: 7, icon: '🔥' },
+  { itemId: 2, itemType: 'item', name: '手电筒', bonus: 5, icon: '🔦' },
+  { itemId: 13, itemType: 'item', name: '蜡烛', bonus: 2, icon: '🕯️' },
+  { itemId: 3, itemType: 'material', name: '绳索', bonus: 1, icon: '🪢' },
+]
+
+const MAX_EXPLORATION_POINTS = 15
+const playerInventory = ref([])
+
+async function loadPlayerInventory() {
+  try {
+    const result = await playerAPI.getItems(playerId)
+    if (Array.isArray(result)) {
+      // 过滤出探索可用的物品类型（item和material）
+      playerInventory.value = result.filter((item) => item.type === 'item' || item.type === 'material')
+    }
+  } catch (e) {
+    console.error('加载玩家物资失败:', e)
+  }
+}
+
+function getItemQuantity(itemId) {
+  const item = playerInventory.value.find((i) => i.id === itemId && i.type === EXPLORATION_ITEMS.find(e => e.itemId === itemId)?.itemType)
+  return item ? item.quantity || 0 : 0
+}
+
+function getInvestQuantity(itemId) {
+  return forms.explore_island.investItems[itemId] || 0
+}
+
+function setInvestQuantity(itemId, quantity) {
+  const max = getItemQuantity(itemId)
+  const qty = Math.max(0, Math.min(max, quantity))
+  if (qty > 0) {
+    forms.explore_island.investItems[itemId] = qty
+  } else {
+    delete forms.explore_island.investItems[itemId]
+  }
+}
+
+const totalInvestPoints = computed(() => {
+  let total = 0
+  for (const item of EXPLORATION_ITEMS) {
+    const qty = getInvestQuantity(item.itemId)
+    total += qty * item.bonus
+  }
+  return Math.min(total, MAX_EXPLORATION_POINTS)
+})
+
+const investItemsForSubmit = computed(() => {
+  const items = {}
+  for (const [itemId, qty] of Object.entries(forms.explore_island.investItems)) {
+    if (qty > 0) {
+      items[itemId] = qty
+    }
+  }
+  return items
 })
 
 const playerFaction = computed(() => context.value?.faction || '')
@@ -155,6 +217,7 @@ function resetForm(type) {
       raidOutcome: '',
       note: '',
     },
+    explore_island: { investItems: {} },
     other: { note: '' },
   }
   if (defaults[type]) Object.assign(forms[type], defaults[type])
@@ -190,6 +253,7 @@ async function loadContext() {
     locations.value = Array.isArray(locs) ? locs : []
     productionInfo.value = prod
     hydrateNightFromHistory()
+    await loadPlayerInventory()
   } catch (e) {
     console.error(e)
   } finally {
@@ -203,6 +267,7 @@ function hydrateNightFromHistory() {
     if (!isHydrating.value) {
       selectedType.value = ''
       actionResult.value = ''
+      explorationDetails.value = null
     }
     return
   }
@@ -215,6 +280,17 @@ function hydrateNightFromHistory() {
       applyNightPayload(type, entry.payload || {}, forms)
       selectedType.value = type
       actionResult.value = entry.result || ''
+
+      // 如果是探索行动，恢复探索详情
+      if (type === 'explore_island') {
+        explorationDetails.value = {
+          investPoints: entry.investPoints,
+          diceResult: entry.diceResult,
+          totalExplorationValue: entry.totalExplorationValue,
+        }
+      } else {
+        explorationDetails.value = null
+      }
     }
   } finally {
     isHydrating.value = false
@@ -225,6 +301,7 @@ watch(gameDay, () => {
   if (!isHydrating.value) {
     selectedType.value = ''
     actionResult.value = ''
+    explorationDetails.value = null
   }
   loadContext()
 })
@@ -256,6 +333,8 @@ function buildPayload(type) {
       }
     case 'other':
       return { note: f.note || '' }
+    case 'explore_island':
+      return {}
     default:
       return {}
   }
@@ -292,6 +371,8 @@ function validateClient(type) {
       if (!f.participantIds.length) return '请至少选择一名参与玩家'
       if (showRaidOutcome.value && !f.raidOutcome) return '请选择袭击成功后的意向'
       break
+    case 'explore_island':
+      break
     case 'other':
       if (!f.note || f.note.trim().length < 5) return '请详细描述你想执行的具体行动内容'
       break
@@ -320,14 +401,56 @@ async function submitAction() {
   submitting.value = true
   submitMessage.value = null
   try {
-    const res = await nightActionAPI.submitAction({
-      playerId,
-      actionType: selectedType.value,
-      gameDay: gameDay.value,
-      payload: buildPayload(selectedType.value),
-    })
+    let res
+    if (selectedType.value === 'explore_island') {
+      res = await explorationAPI.submit(playerId, gameDay.value, investItemsForSubmit.value)
+    } else {
+      res = await nightActionAPI.submitAction({
+        playerId,
+        actionType: selectedType.value,
+        gameDay: gameDay.value,
+        payload: buildPayload(selectedType.value),
+      })
+    }
     if (res?.success) {
-      actionResult.value = res.data?.result || '已提交'
+      if (selectedType.value === 'explore_island' && res.data) {
+        const data = res.data
+        explorationDetails.value = {
+          investPoints: data.investPoints,
+          diceResult: data.diceResult,
+          totalExplorationValue: data.totalExplorationValue,
+          targetDifficulty: res.targetDifficulty,
+        }
+        // 生成友好的探索结果显示
+        let detailText = `✓ 已提交【探索岛屿】\n\n`
+        detailText += `📊 探索统计\n`
+        detailText += `• 投入探索值: ${data.investPoints}\n`
+        detailText += `• 骰子结果: ${data.diceResult}\n`
+        detailText += `• 总探索值: ${data.totalExplorationValue}\n`
+        if (res.targetDifficulty) {
+          detailText += `• 目标难度: ${res.targetDifficulty} (最高20)\n`
+        }
+        
+        if (res.eventTriggered && data.event) {
+          detailText += `\n🎯 探索事件\n`
+          detailText += `发现: ${data.event.name}\n`
+          detailText += `难度: ${data.event.eventDifficulty}\n`
+          
+          if (res.rewards && res.rewards.length > 0) {
+            detailText += `\n🎁 探索奖励\n`
+            res.rewards.forEach(r => {
+              detailText += `+${r.quantity}${r.unit} ${r.name}\n`
+            })
+          }
+        } else {
+          detailText += `\n等待主持人在夜晚阶段结算探索结果。`
+        }
+        
+        actionResult.value = detailText
+      } else {
+        explorationDetails.value = null
+        actionResult.value = res.data?.result || '已提交'
+      }
       submitMessage.value = { type: 'success', text: '夜晚行动提交成功' }
       await loadContext()
     } else {
@@ -505,6 +628,104 @@ onMounted(async () => {
               />
             </template>
 
+            <!-- 探索岛屿 -->
+            <template v-else-if="selectedType === 'explore_island'">
+              <div class="rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-4 py-3 mb-4">
+                <p class="text-indigo-300 text-sm">
+                  投入物资增加探索值，探索值越高越可能发现高难度地点和珍贵物资。
+                  最终探索值 = 投入探索值 + 1d6（1-6随机）。
+                </p>
+              </div>
+
+              <div class="mb-4">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-gray-400 text-sm">投入探索值</span>
+                  <span class="text-white font-bold">
+                    {{ totalInvestPoints }} / {{ MAX_EXPLORATION_POINTS }}
+                  </span>
+                </div>
+                <div class="w-full bg-black/30 rounded-full h-3">
+                  <div
+                    class="bg-gradient-to-r from-indigo-500 to-purple-500 h-3 rounded-full transition-all duration-300"
+                    :style="{ width: `${(totalInvestPoints / MAX_EXPLORATION_POINTS) * 100}%` }"
+                  />
+                </div>
+                <p v-if="totalInvestPoints >= MAX_EXPLORATION_POINTS" class="text-amber-400 text-xs mt-1">
+                  已达到探索值上限，继续投入不会增加探索值
+                </p>
+              </div>
+
+              <div class="space-y-3">
+                <div
+                  v-for="item in EXPLORATION_ITEMS"
+                  :key="item.itemId"
+                  class="bg-black/20 border border-white/10 rounded-xl p-3"
+                >
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xl">{{ item.icon }}</span>
+                      <div>
+                        <span class="text-white text-sm font-medium">{{ item.name }}</span>
+                        <span class="text-indigo-400 text-xs ml-2">+{{ item.bonus }} 探索值/个</span>
+                      </div>
+                    </div>
+                    <span class="text-gray-400 text-xs">
+                      拥有: {{ getItemQuantity(item.itemId) }}
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <button
+                      type="button"
+                      :disabled="getInvestQuantity(item.itemId) <= 0"
+                      class="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+                      @click="setInvestQuantity(item.itemId, getInvestQuantity(item.itemId) - 1)"
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      :value="getInvestQuantity(item.itemId)"
+                      :min="0"
+                      :max="getItemQuantity(item.itemId)"
+                      class="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-center text-white focus:outline-none focus:border-indigo-500/50"
+                      @input="setInvestQuantity(item.itemId, parseInt($event.target.value) || 0)"
+                    />
+                    <button
+                      type="button"
+                      :disabled="getInvestQuantity(item.itemId) >= getItemQuantity(item.itemId)"
+                      class="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+                      @click="setInvestQuantity(item.itemId, getInvestQuantity(item.itemId) + 1)"
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      :disabled="getItemQuantity(item.itemId) === 0"
+                      class="px-3 py-1 text-xs rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      @click="setInvestQuantity(item.itemId, getItemQuantity(item.itemId))"
+                    >
+                      全部
+                    </button>
+                  </div>
+                  <p v-if="getInvestQuantity(item.itemId) > 0" class="text-indigo-400 text-xs mt-2">
+                    贡献探索值: +{{ getInvestQuantity(item.itemId) * item.bonus }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="mt-4 p-3 rounded-xl bg-black/20 border border-white/10">
+                <p class="text-gray-400 text-xs mb-1">📊 预估探索结果</p>
+                <p class="text-gray-300 text-sm">
+                  投入探索值: <span class="text-white font-medium">{{ totalInvestPoints }}</span>
+                  + 骰子 1d6 (1-6)
+                </p>
+                <p class="text-gray-300 text-sm">
+                  最终探索值范围:
+                  <span class="text-amber-400 font-medium">{{ totalInvestPoints + 1 }} - {{ totalInvestPoints + 6 }}</span>
+                </p>
+              </div>
+            </template>
+
             <!-- 其他 -->
             <template v-else-if="selectedType === 'other'">
               <div class="rounded-xl border border-gray-500/20 bg-gray-500/5 px-4 py-3">
@@ -583,6 +804,23 @@ onMounted(async () => {
               <div
                 class="min-h-[5rem] rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-gray-400 whitespace-pre-wrap"
               >
+                <!-- 探索详情卡片 -->
+                <div v-if="explorationDetails && selectedType === 'explore_island'" class="mb-3">
+                  <div class="flex flex-wrap gap-2 text-xs">
+                    <span class="bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded">
+                      投入: {{ explorationDetails.investPoints }}
+                    </span>
+                    <span class="bg-amber-500/20 text-amber-300 px-2 py-1 rounded">
+                      骰子: {{ explorationDetails.diceResult }}
+                    </span>
+                    <span class="bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded">
+                      总计: {{ explorationDetails.totalExplorationValue }}
+                    </span>
+                    <span v-if="explorationDetails.targetDifficulty" class="bg-purple-500/20 text-purple-300 px-2 py-1 rounded">
+                      难度: {{ explorationDetails.targetDifficulty }}
+                    </span>
+                  </div>
+                </div>
                 {{ actionResult || '结果将在此显示' }}
               </div>
             </div>
@@ -628,9 +866,23 @@ onMounted(async () => {
               </span>
             </div>
             <div
-              v-if="item.result"
-              class="text-gray-400 text-xs whitespace-pre-wrap bg-black/20 rounded-lg p-3"
-            >{{ item.result }}</div>
+            v-if="item.result"
+            class="text-gray-400 text-xs whitespace-pre-wrap bg-black/20 rounded-lg p-3"
+          >
+            <!-- 探索详情 -->
+            <div v-if="item.actionType === 'explore_island' && item.investPoints !== undefined" class="mb-2 flex flex-wrap gap-2">
+              <span class="bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded">
+                投入: {{ item.investPoints }}
+              </span>
+              <span class="bg-amber-500/20 text-amber-300 px-2 py-1 rounded">
+                骰子: {{ item.diceResult }}
+              </span>
+              <span class="bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded">
+                总计: {{ item.totalExplorationValue }}
+              </span>
+            </div>
+            {{ item.result }}
+          </div>
           </div>
         </div>
       </template>

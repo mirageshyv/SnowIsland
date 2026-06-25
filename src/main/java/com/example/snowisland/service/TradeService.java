@@ -45,40 +45,124 @@ public class TradeService {
         itemNames.put("item", new HashMap<>());
         itemNames.get("item").put(1, "医疗包");
         itemNames.get("item").put(2, "手电筒");
+        itemNames.get("item").put(3, "手铐");
         itemNames.get("item").put(4, "哨子");
+        itemNames.get("item").put(5, "防弹衣");
+        itemNames.get("item").put(6, "复合盾");
+        itemNames.get("item").put(7, "信号枪");
         itemNames.get("item").put(8, "维修工具包");
-        itemNames.get("item").put(19, "仓库钥匙");
+        itemNames.get("item").put(9, "协议书");
+        itemNames.get("item").put(10, "朗姆酒");
+        itemNames.get("item").put(11, "草药");
+        itemNames.get("item").put(12, "渔网");
+        itemNames.get("item").put(13, "蜡烛");
+        itemNames.get("item").put(14, "医用酒精");
+        itemNames.get("item").put(15, "火柴");
+        itemNames.get("item").put(16, "铅笔");
+        itemNames.get("item").put(17, "破损海图");
+        itemNames.get("item").put(18, "便当");
+        itemNames.get("item").put(19, "矿场仓库钥匙");
         itemNames.get("item").put(20, "燃料仓库钥匙");
         itemNames.get("item").put(21, "镇武库钥匙");
-        itemNames.get("item").put(22, "码头集购站钥匙");
+        itemNames.get("item").put(22, "码头集换站钥匙");
+        itemNames.get("item").put(23, "反叛者基地钥匙");
+        itemNames.get("item").put(24, "方舟钥匙");
+        itemNames.get("item").put(25, "火把");
 
         itemNames.put("weapon", new HashMap<>());
         itemNames.get("weapon").put(1, "制式手枪");
         itemNames.get("weapon").put(2, "猎枪");
         itemNames.get("weapon").put(3, "警棍");
         itemNames.get("weapon").put(4, "刺刀");
+        itemNames.get("weapon").put(5, "水手刀");
+        itemNames.get("weapon").put(6, "鱼叉/矛");
+        itemNames.get("weapon").put(7, "猎弓");
+        itemNames.get("weapon").put(8, "十字镐");
         itemNames.get("weapon").put(9, "斧头");
+        itemNames.get("weapon").put(10, "电锯");
         itemNames.get("weapon").put(11, "手术刀");
         itemNames.get("weapon").put(12, "炸药");
 
         itemNames.put("ammo", new HashMap<>());
         itemNames.get("ammo").put(1, "手枪弹");
         itemNames.get("ammo").put(2, "猎枪弹");
+        itemNames.get("ammo").put(3, "信号弹");
+        itemNames.get("ammo").put(4, "箭矢");
 
         itemNames.put("material", new HashMap<>());
         itemNames.get("material").put(1, "金属制品");
         itemNames.get("material").put(2, "木材");
+        itemNames.get("material").put(3, "绳索");
+        itemNames.get("material").put(4, "木板");
+        itemNames.get("material").put(5, "食物");
+        itemNames.get("material").put(6, "沥青");
         itemNames.get("material").put(7, "石料");
+        itemNames.get("material").put(8, "燃料");
+        itemNames.get("material").put(9, "帆布");
+        itemNames.get("material").put(10, "发动机");
+        itemNames.get("material").put(11, "螺旋桨");
         itemNames.get("material").put(12, "发电机");
 
-        itemNames.get("material").put(5, com.example.snowisland.util.ItemCatalog.FOOD_NAME);
-        itemNames.get("material").put(8, com.example.snowisland.util.ItemCatalog.FUEL_NAME);
         itemUnits.put("item", new HashMap<>());
+        itemUnits.get("item").put(1, "个");
+        itemUnits.get("item").put(2, "个");
+        itemUnits.get("item").put(3, "个");
+        itemUnits.get("item").put(4, "个");
+        itemUnits.get("item").put(5, "件");
+        itemUnits.get("item").put(6, "个");
+        itemUnits.get("item").put(7, "把");
+        itemUnits.get("item").put(8, "个");
+        itemUnits.get("item").put(9, "个");
+        itemUnits.get("item").put(10, "瓶");
+        itemUnits.get("item").put(11, "个");
+        itemUnits.get("item").put(12, "张");
+        itemUnits.get("item").put(13, "根");
+        itemUnits.get("item").put(14, "升");
+        itemUnits.get("item").put(15, "盒");
+        itemUnits.get("item").put(16, "盒");
+        itemUnits.get("item").put(17, "张");
+        itemUnits.get("item").put(18, "份");
+        itemUnits.get("item").put(19, "把");
+        itemUnits.get("item").put(20, "把");
+        itemUnits.get("item").put(21, "把");
+        itemUnits.get("item").put(22, "把");
+        itemUnits.get("item").put(23, "把");
+        itemUnits.get("item").put(24, "把");
+        itemUnits.get("item").put(25, "把");
+
         itemUnits.put("weapon", new HashMap<>());
+        itemUnits.get("weapon").put(1, "把");
+        itemUnits.get("weapon").put(2, "把");
+        itemUnits.get("weapon").put(3, "个");
+        itemUnits.get("weapon").put(4, "把");
+        itemUnits.get("weapon").put(5, "把");
+        itemUnits.get("weapon").put(6, "个");
+        itemUnits.get("weapon").put(7, "张");
+        itemUnits.get("weapon").put(8, "把");
+        itemUnits.get("weapon").put(9, "把");
+        itemUnits.get("weapon").put(10, "把");
+        itemUnits.get("weapon").put(11, "把");
+        itemUnits.get("weapon").put(12, "kg");
+
         itemUnits.put("ammo", new HashMap<>());
+        itemUnits.get("ammo").put(1, "枚");
+        itemUnits.get("ammo").put(2, "枚");
+        itemUnits.get("ammo").put(3, "枚");
+        itemUnits.get("ammo").put(4, "枝");
+
         itemUnits.put("material", new HashMap<>());
-        itemUnits.get("material").put(5, com.example.snowisland.util.ItemCatalog.FOOD_UNIT);
-        itemUnits.get("material").put(8, com.example.snowisland.util.ItemCatalog.FUEL_UNIT);
+        itemUnits.get("material").put(1, "kg");
+        itemUnits.get("material").put(2, "kg");
+        itemUnits.get("material").put(3, "米");
+        itemUnits.get("material").put(4, "kg");
+        itemUnits.get("material").put(5, "kg");
+        itemUnits.get("material").put(6, "kg");
+        itemUnits.get("material").put(7, "kg");
+        itemUnits.get("material").put(8, "升");
+        itemUnits.get("material").put(9, "米");
+        itemUnits.get("material").put(10, "个");
+        itemUnits.get("material").put(11, "个");
+        itemUnits.get("material").put(12, "个");
     }
 
     private String getItemName(String itemType, Integer itemId) {
@@ -261,6 +345,12 @@ public class TradeService {
                 return result;
             }
             List<TradeItem> tradeItems = tradeItemRepository.findByTradeId(id);
+            String validationError = validateTradeStock(trade, tradeItems);
+            if (validationError != null) {
+                result.put("success", false);
+                result.put("message", validationError);
+                return result;
+            }
             String transferMessage = executeItemTransfer(trade, tradeItems);
             trade.setStatus(Trade.TradeStatus.completed);
             tradeRepository.save(trade);
@@ -269,11 +359,32 @@ public class TradeService {
             result.put("trade", trade);
             logTrade("接受交易", playerId, trade.getFromPlayerId(), trade.getId(), null);
         } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             result.put("success", false);
             result.put("message", "确认交易失败: " + e.getMessage());
             e.printStackTrace();
         }
         return result;
+    }
+
+    private String validateTradeStock(Trade trade, List<TradeItem> tradeItems) {
+        Integer fromPlayerId = trade.getFromPlayerId();
+        Integer toPlayerId = trade.getToPlayerId();
+        for (TradeItem item : tradeItems) {
+            fillTradeItemDisplay(item);
+            if (item.getDirection() == TradeItem.Direction.give) {
+                int stock = getStockQuantity(fromPlayerId, item.getItemType().name(), item.getItemId());
+                if (stock < item.getQuantity()) {
+                    return "发起者 " + getItemName(item.getItemType().name(), item.getItemId()) + " 库存不足";
+                }
+            } else if (item.getDirection() == TradeItem.Direction.take) {
+                int stock = getStockQuantity(toPlayerId, item.getItemType().name(), item.getItemId());
+                if (stock < item.getQuantity()) {
+                    return "接收者 " + getItemName(item.getItemType().name(), item.getItemId()) + " 库存不足";
+                }
+            }
+        }
+        return null;
     }
 
     private String executeItemTransfer(Trade trade, List<TradeItem> tradeItems) {
@@ -284,14 +395,14 @@ public class TradeService {
             Integer fromPlayerId = trade.getFromPlayerId();
             Integer toPlayerId = trade.getToPlayerId();
             if (item.getDirection() == TradeItem.Direction.give) {
-                int affected = addStockByType(toPlayerId, item);
+                int affected = transferStock(fromPlayerId, toPlayerId, item);
                 if (affected > 0) successCount++;
             } else if (item.getDirection() == TradeItem.Direction.take) {
                 int affected = transferStock(toPlayerId, fromPlayerId, item);
                 if (affected > 0) successCount++;
             }
         }
-        sb.append("成功添加 ").append(successCount).append(" 项物资到玩家背包。");
+        sb.append("成功完成 ").append(successCount).append(" 项物资转移。");
         return sb.toString();
     }
 
@@ -346,12 +457,6 @@ public class TradeService {
                 return result;
             }
         }
-        for (Map<String, Object> item : giveItems) {
-            String itemType = String.valueOf(item.get("itemType"));
-            int qty = ((Number) item.get("quantity")).intValue();
-            int itemId = item.get("itemId") != null ? ((Number) item.get("itemId")).intValue() : 0;
-            reducePlayerItem(fromPlayerId, ItemType.valueOf(itemType), itemId, qty);
-        }
         result.put("success", true);
         return result;
     }
@@ -364,14 +469,29 @@ public class TradeService {
     }
 
     private int reducePlayerItem(Integer playerId, ItemType itemType, Integer itemId, Integer quantity) {
-        return playerItemRepository.updateQuantity(playerId, itemType, itemId, -quantity);
+        Optional<PlayerItem> existingOpt = playerItemRepository.findByPlayerIdAndItemTypeAndItemId(
+                playerId, itemType, itemId);
+        if (existingOpt.isPresent()) {
+            PlayerItem item = existingOpt.get();
+            int currentQty = item.getQuantity();
+            if (currentQty < quantity) {
+                return 0;
+            }
+            item.setQuantity(currentQty - quantity);
+            playerItemRepository.save(item);
+            return 1;
+        }
+        return 0;
     }
 
     private int addPlayerItem(Integer playerId, ItemType itemType, Integer itemId, Integer quantity) {
         Optional<PlayerItem> existingOpt = playerItemRepository.findByPlayerIdAndItemTypeAndItemId(
             playerId, itemType, itemId);
         if (existingOpt.isPresent()) {
-            return playerItemRepository.updateQuantity(playerId, itemType, itemId, quantity);
+            PlayerItem item = existingOpt.get();
+            item.setQuantity(item.getQuantity() + quantity);
+            playerItemRepository.save(item);
+            return 1;
         } else {
             PlayerItem newItem = new PlayerItem();
             newItem.setPlayerId(playerId);
@@ -404,19 +524,13 @@ public class TradeService {
                 result.put("message", "该交易不是待处理状态");
                 return result;
             }
-            List<TradeItem> tradeItems = tradeItemRepository.findByTradeId(id);
-            for (TradeItem item : tradeItems) {
-                if (item.getDirection() == TradeItem.Direction.give) {
-                    fillTradeItemDisplay(item);
-                    addStockByType(trade.getFromPlayerId(), item);
-                }
-            }
             trade.setStatus(Trade.TradeStatus.rejected);
             tradeRepository.save(trade);
             result.put("success", true);
             result.put("message", "交易已拒绝");
             result.put("trade", trade);
         } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             result.put("success", false);
             result.put("message", "拒绝交易失败: " + e.getMessage());
             e.printStackTrace();

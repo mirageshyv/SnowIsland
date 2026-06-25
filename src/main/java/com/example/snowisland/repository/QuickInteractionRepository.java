@@ -11,6 +11,8 @@ public interface QuickInteractionRepository extends JpaRepository<QuickInteracti
 
     List<QuickInteraction> findByPlayerIdAndGameDayOrderByCreatedAtDesc(Integer playerId, Integer gameDay);
 
+    List<QuickInteraction> findByPlayerIdOrderByCreatedAtDesc(Integer playerId);
+
     List<QuickInteraction> findByGameDayOrderByCreatedAtAsc(Integer gameDay);
 
     List<QuickInteraction> findByFactionAndGameDayOrderByCreatedAtAsc(String faction, Integer gameDay);

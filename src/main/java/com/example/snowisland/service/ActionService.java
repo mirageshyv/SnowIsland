@@ -29,6 +29,7 @@ public class ActionService {
     @Autowired private FactionActionRepository factionActionRepository;
     @Autowired private FactionActionService factionActionService;
     @Autowired private ActivityLogService activityLogService;
+    @Autowired private NpcCognitionService npcCognitionService;
 
     private static final Random INVESTIGATE_ROLL = new Random();
 
@@ -248,6 +249,14 @@ public class ActionService {
             sb.append("\n\n【NPC】");
             for (LocationNpc n : npcs) {
                 sb.append("\n• ").append(n.getName()).append("（").append(n.getJob()).append("）");
+            }
+
+            List<Map<String, Object>> recognized = npcCognitionService.recognizeNpcsAtLocation(player.getId(), locationId);
+            if (!recognized.isEmpty()) {
+                sb.append("\n\n【新认识的NPC】");
+                for (Map<String, Object> r : recognized) {
+                    sb.append("\n• ").append(r.get("npcName")).append("（").append(r.get("npcJob")).append("）");
+                }
             }
         }
 

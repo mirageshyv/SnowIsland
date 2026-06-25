@@ -34,33 +34,50 @@ public class AuthInterceptor implements HandlerInterceptor {
             requestUri.startsWith("/api/ark/sail") ||
             requestUri.startsWith("/api/ark/reset")) {
             
-            String userIdStr = request.getHeader("userId");
-            if (userIdStr == null || userIdStr.isEmpty()) {
-                userIdStr = request.getParameter("userId");
-            }
+            return checkDmPermission(request, response);
+        }
 
-            if (userIdStr == null || userIdStr.isEmpty()) {
-                sendErrorResponse(response, "请先登录");
+        if (requestUri.startsWith("/api/npc/manage") || requestUri.startsWith("/api/npc/favor/set")) {
+            return checkDmPermission(request, response);
+        }
+
+        if (requestUri.startsWith("/api/exploration/admin/") ||
+            requestUri.matches(".*/exploration/events$") && !"GET".equalsIgnoreCase(request.getMethod()) ||
+            requestUri.matches(".*/exploration/events/\\d+$") && "DELETE".equalsIgnoreCase(request.getMethod()) ||
+            requestUri.matches(".*/exploration/events/\\d+$") && "PUT".equalsIgnoreCase(request.getMethod())) {
+            return checkDmPermission(request, response);
+        }
+
+        return true;
+    }
+
+    private boolean checkDmPermission(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        String userIdStr = request.getHeader("userId");
+        if (userIdStr == null || userIdStr.isEmpty()) {
+            userIdStr = request.getParameter("userId");
+        }
+
+        if (userIdStr == null || userIdStr.isEmpty()) {
+            sendErrorResponse(response, "请先登录");
+            return false;
+        }
+
+        try {
+            Integer userId = Integer.parseInt(userIdStr);
+            User user = userRepository.findById(userId).orElse(null);
+            
+            if (user == null) {
+                sendErrorResponse(response, "用户不存在");
                 return false;
             }
 
-            try {
-                Integer userId = Integer.parseInt(userIdStr);
-                User user = userRepository.findById(userId).orElse(null);
-                
-                if (user == null) {
-                    sendErrorResponse(response, "用户不存在");
-                    return false;
-                }
-
-                if (!User.Role.DM.equals(user.getRole())) {
-                    sendErrorResponse(response, "无权进行操作");
-                    return false;
-                }
-            } catch (NumberFormatException e) {
-                sendErrorResponse(response, "用户ID格式错误");
+            if (!User.Role.DM.equals(user.getRole())) {
+                sendErrorResponse(response, "无权进行操作");
                 return false;
             }
+        } catch (NumberFormatException e) {
+            sendErrorResponse(response, "用户ID格式错误");
+            return false;
         }
 
         return true;
