@@ -96,6 +96,12 @@ public class ShelterController {
         return shelterService.verifyLaborDay(gameDay);
     }
 
+    /** DM：重置避难所建设数据为初始状态 */
+    @PostMapping("/reset")
+    public Map<String, Object> resetShelter() {
+        return shelterService.resetShelter();
+    }
+
     private static List<Map<String, Object>> extractLaborerRows(Map<String, Object> body) {
         List<Map<String, Object>> rows = new ArrayList<>();
         Object raw = body.get("laborers");

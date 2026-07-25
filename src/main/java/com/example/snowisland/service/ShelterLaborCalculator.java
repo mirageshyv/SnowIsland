@@ -13,6 +13,7 @@ public final class ShelterLaborCalculator {
     public static final int BASE_BUILD_VALUE = 4;
     public static final int PRODUCTION_JOB_BONUS = 1;
     public static final int EXPLOIT_BONUS = 3;
+    public static final int SLACKING_PENALTY = 1;
 
     private static final Set<String> PRODUCTION_JOB_NAMES = new HashSet<>(Arrays.asList(
             "渔民", "农户", "伐木工", "矿工", "猎户"
@@ -70,7 +71,7 @@ public final class ShelterLaborCalculator {
         return false;
     }
 
-    public static int calculateBuildValue(boolean productionJob, boolean exploited, boolean escaped) {
+    public static int calculateBuildValue(boolean productionJob, boolean exploited, boolean escaped, boolean slacking) {
         if (escaped) {
             return 0;
         }
@@ -81,12 +82,23 @@ public final class ShelterLaborCalculator {
         if (exploited) {
             value += EXPLOIT_BONUS;
         }
-        return value;
+        if (slacking) {
+            value -= SLACKING_PENALTY;
+        }
+        return Math.max(0, value);
+    }
+
+    public static int calculateBuildValue(boolean productionJob, boolean exploited, boolean escaped) {
+        return calculateBuildValue(productionJob, exploited, escaped, false);
+    }
+
+    public static int calculateBuildValue(Player player, Map<Integer, Job> jobsById, boolean exploited, boolean escaped, boolean slacking) {
+        boolean production = isProductionLaborJob(player, jobsById);
+        return calculateBuildValue(production, exploited, escaped, slacking);
     }
 
     public static int calculateBuildValue(Player player, Map<Integer, Job> jobsById, boolean exploited, boolean escaped) {
-        boolean production = isProductionLaborJob(player, jobsById);
-        return calculateBuildValue(production, exploited, escaped);
+        return calculateBuildValue(player, jobsById, exploited, escaped, false);
     }
 
     public static String laborTypeLabel(boolean productionJob, boolean exploited) {
@@ -102,7 +114,7 @@ public final class ShelterLaborCalculator {
         return "普通劳工";
     }
 
-    public static String buildValueBreakdown(boolean productionJob, boolean exploited, boolean escaped) {
+    public static String buildValueBreakdown(boolean productionJob, boolean exploited, boolean escaped, boolean slacking) {
         if (escaped) {
             return "逃役（0）";
         }
@@ -114,6 +126,13 @@ public final class ShelterLaborCalculator {
         if (exploited) {
             parts.add("压榨+" + EXPLOIT_BONUS);
         }
+        if (slacking) {
+            parts.add("怠工-" + SLACKING_PENALTY);
+        }
         return String.join(" + ", parts);
+    }
+
+    public static String buildValueBreakdown(boolean productionJob, boolean exploited, boolean escaped) {
+        return buildValueBreakdown(productionJob, exploited, escaped, false);
     }
 }

@@ -122,6 +122,10 @@ export const shelterAPI = {
   deleteStock: (itemType, itemId) =>
     request(`${API_BASE}/shelter/stock?itemType=${encodeURIComponent(itemType)}&itemId=${itemId}`, {
       method: 'DELETE'
+    }),
+  resetShelter: () =>
+    request(`${API_BASE}/shelter/reset`, {
+      method: 'POST'
     })
 }
 
@@ -194,6 +198,13 @@ export const arkAPI = {
   invest: (wood, metal, sealant) => {
     const userId = localStorage.getItem('userId')
     return request(`${API_BASE}/ark/invest?wood=${wood}&metal=${metal}&sealant=${sealant}`, {
+      method: 'POST',
+      headers: { userId }
+    })
+  },
+  remove: (wood, metal, sealant) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/ark/remove?wood=${wood}&metal=${metal}&sealant=${sealant}`, {
       method: 'POST',
       headers: { userId }
     })
@@ -784,4 +795,15 @@ export const specialClueAPI = {
     method: 'POST',
     body: JSON.stringify(data)
   })
+}
+
+export const gameResetAPI = {
+  getPreview: () => request(`${API_BASE}/game-reset/preview`),
+  reset: (userRole) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/game-reset/reset?userRole=${encodeURIComponent(userRole)}`, {
+      method: 'POST',
+      headers: { userId }
+    })
+  }
 }

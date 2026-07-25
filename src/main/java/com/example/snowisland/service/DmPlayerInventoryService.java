@@ -157,11 +157,11 @@ public class DmPlayerInventoryService {
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> loadCatalogRows() {
         List<Object[]> raw = entityManager.createNativeQuery(
-                "SELECT 'item' as type, id, name, unit FROM item " +
-                "UNION ALL SELECT 'weapon', id, name, unit FROM weapon " +
-                "UNION ALL SELECT 'ammo', id, name, unit FROM ammo " +
-                "UNION ALL SELECT 'material', id, name, unit FROM material " +
-                "ORDER BY type, id"
+                "SELECT 'item' as itemType, id, name, unit, NULL as threatLevel FROM item " +
+                "UNION ALL SELECT 'weapon', id, name, unit, threat_level FROM weapon " +
+                "UNION ALL SELECT 'ammo', id, name, unit, NULL FROM ammo " +
+                "UNION ALL SELECT 'material', id, name, unit, NULL FROM material " +
+                "ORDER BY itemType, id"
         ).getResultList();
 
         List<Map<String, Object>> items = new ArrayList<>();
@@ -171,6 +171,9 @@ public class DmPlayerInventoryService {
             item.put("itemId", ((Number) row[1]).intValue());
             item.put("name", row[2]);
             item.put("unit", row[3]);
+            if (row[4] != null) {
+                item.put("threatLevel", ((Number) row[4]).intValue());
+            }
             items.add(item);
         }
         return items;

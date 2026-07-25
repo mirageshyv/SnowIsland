@@ -1,0 +1,71 @@
+# ============================================
+# SnowIsland 后端基础配置文件
+# ============================================
+# 注意：此文件为基础配置，线上环境会通过 application-online.yml 覆盖
+
+server:
+  port: 8080
+
+  # Tomcat 线程池配置（支持30人并发）
+  tomcat:
+    threads:
+      max: 50
+      min-spare: 10
+    max-connections: 100
+    accept-count: 20
+
+spring:
+  application:
+    name: snowisland
+
+  # 数据库连接配置
+  datasource:
+    url: jdbc:mysql://mysql:3306/snowisland?useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    username: root
+    password: ${DB_PASSWORD:695390489}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+    # HikariCP 连接池配置（支持30人并发）
+    hikari:
+      maximum-pool-size: 25
+      minimum-idle: 8
+      idle-timeout: 30000
+      connection-timeout: 10000
+      max-lifetime: 600000
+
+  # JPA 配置
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: false
+
+  # HTTP 编码配置
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+# AI 配置
+ai:
+  dashscope:
+    api-key: ${AI_API_KEY:sk-d98d8ccb78994b5fb3bee9cb1629017f}
+    api-url: https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation
+    model: qwen-turbo
+
+# NPC 对话限制配置
+npc:
+  dialogue:
+    daily-limit: 10
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.example.snowisland: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50717
 File Encoding         : 65001
 
-Date: 2026-06-24 22:37:18
+Date: 2026-06-26 16:13:27
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -108,7 +108,7 @@ CREATE TABLE `ark_construction` (
 -- ----------------------------
 -- Records of ark_construction
 -- ----------------------------
-INSERT INTO `ark_construction` VALUES ('1', '235', '88.5', '98', '3', '2', '1', '41', '95.13', '0', '2026-05-13 22:06:35', '2026-05-24 22:31:28');
+INSERT INTO `ark_construction` VALUES ('1', '5', '1', '0', '0', '0', '0', '0', '0.00', '0', '2026-06-26 15:46:44', '2026-06-26 15:46:44');
 
 -- ----------------------------
 -- Table structure for ark_construction_log
@@ -199,7 +199,6 @@ CREATE TABLE `ark_sail` (
 -- ----------------------------
 -- Records of ark_sail
 -- ----------------------------
-INSERT INTO `ark_sail` VALUES ('1', null, null, '0.00', '0.00', 'normal', '0.00', '2026-05-13 21:35:13.618000', '10', '7', '\0', '\0', null, '80.00', '100.00', '', '2026-05-13 21:35:13.618000', null);
 
 -- ----------------------------
 -- Table structure for ark_voyage
@@ -263,22 +262,24 @@ CREATE TABLE `catastrophe_card` (
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `card_number` (`card_number`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COMMENT='天灾牌表';
+) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COMMENT='天灾牌表';
 
 -- ----------------------------
 -- Records of catastrophe_card
 -- ----------------------------
-INSERT INTO `catastrophe_card` VALUES ('1', '1', '低温侵袭', '某处墙体结冰，寒气渗入。本天所有燃料消耗增加20%，木材消耗量15kg→18kg。', 'CONSUMPTION_INCREASE', '20', '15', '18', '0', '2026-05-14 11:53:11', '2026-05-14 11:53:11');
-INSERT INTO `catastrophe_card` VALUES ('2', '2', '灾难蔓延', '增加5天暴雪持续时间', 'EXTEND_STORM', '5', '0', '', '0', '2026-05-14 11:53:11', '2026-05-14 11:53:11');
-INSERT INTO `catastrophe_card` VALUES ('3', '3', '粮仓鼠患', '仓库中储存的粮食被老鼠啃食，损失10%的食物储备（向下取整）', 'FOOD_LOSS', '10', '0', '', '0', '2026-05-14 11:53:11', '2026-05-14 11:53:11');
-INSERT INTO `catastrophe_card` VALUES ('4', '4', '燃料泄漏', '储油桶老化破裂，损失一处仓库的10%的燃料储备（优先扣除煤油/燃料）', 'FUEL_LOSS', '10', '0', '', '0', '2026-05-14 11:53:11', '2026-05-14 11:53:11');
-INSERT INTO `catastrophe_card` VALUES ('5', '5', '工具锈蚀', '生产工具普遍老化。当天所有生产行动（渔猎、伐木、挖矿等）产量-20%。', 'PRODUCTION_DECREASE', '20', '0', '', '0', '2026-05-14 11:53:11', '2026-05-14 11:53:11');
-INSERT INTO `catastrophe_card` VALUES ('6', '6', '海水倒灌', '风暴潮淹没码头设施，沿海仓库的部分物资被冲走（损失10%），方舟受损10%', 'DOCK_DAMAGE', '10', '10', '', '0', '2026-05-14 11:53:11', '2026-05-14 11:53:11');
-INSERT INTO `catastrophe_card` VALUES ('7', '7', '水源污染', '岛上淡水水源被动物尸体污染，所有玩家当天需额外消耗1升煤油（烧开水）或面临患病风险', 'WATER_CONTAMINATION', '1', '0', '', '0', '2026-05-14 11:53:11', '2026-05-14 11:53:11');
-INSERT INTO `catastrophe_card` VALUES ('8', '8', '信仰崩塌', '神父以及占卜师等精神领袖陷入自我怀疑，当天无法使用“布道”或“占星”技能。若第三天抽中不影响终局结算加成。', 'SKILL_DISABLE', '0', '0', '布道,占星', '0', '2026-05-14 11:53:11', '2026-05-14 11:53:11');
-INSERT INTO `catastrophe_card` VALUES ('9', '9', '燃料受潮', '露天堆放的木柴被雨淋湿。随机一个仓库或玩家损失30kg木材。', 'WOOD_LOSS', '30', '0', '', '0', '2026-05-14 11:53:11', '2026-05-14 11:53:11');
-INSERT INTO `catastrophe_card` VALUES ('10', '10', '逃役', '一名劳工趁夜色逃走了。统治者当天指定的劳工名单中，随机一人自动失效（不会劳作，也不会计入劳工）。主持人随机选择，不公开是谁。该玩家知道自己被逃役释放，当天正常进行行动。', 'ESCAPE_LABOR', '0', '0', '', '0', '2026-05-14 11:53:11', '2026-05-14 11:53:11');
-INSERT INTO `catastrophe_card` VALUES ('11', '11', '祭品', '有人在教堂门口发现一只被割喉的黑羊。第二天必定触发一张额外天灾牌（命运在积蓄）。', 'EXTRA_CARD', '1', '0', '', '0', '2026-05-14 11:53:11', '2026-05-14 11:53:11');
+INSERT INTO `catastrophe_card` VALUES ('25', '1', '低温侵袭', '某处墙体结冰，寒气渗入。本天所有燃料消耗增加100%，木材消耗量15kg→30kg。', 'CONSUMPTION_INCREASE', '100', '15', '30', '0', '2026-06-26 14:43:52', '2026-06-26 14:43:52');
+INSERT INTO `catastrophe_card` VALUES ('26', '2', '灾难蔓延', '增加5天暴雪持续时间，方舟航行难度增加航行时间加2天。', 'EXTEND_STORM', '5', '2', null, '0', '2026-06-26 14:43:52', '2026-06-26 14:43:52');
+INSERT INTO `catastrophe_card` VALUES ('27', '3', '粮仓鼠患', '由天灾使者选择两个仓库\n仓库中储存的粮食被老鼠啃食，损失20%的食物储备（向下取整）', 'FOOD_LOSS', '20', '2', null, '0', '2026-06-26 14:43:52', '2026-06-26 14:43:52');
+INSERT INTO `catastrophe_card` VALUES ('28', '4', '燃料泄漏', '储油桶老化破裂，损失一处仓库的20%的燃料储备（优先扣除煤油/燃油）', 'FUEL_LOSS', '20', '0', null, '0', '2026-06-26 14:43:52', '2026-06-26 14:43:52');
+INSERT INTO `catastrophe_card` VALUES ('29', '5', '工具锈蚀', '生产工具普遍老化。当天所有生产行动（渔猎、伐木、挖矿等）产量-50%。', 'PRODUCTION_DECREASE', '50', '0', null, '0', '2026-06-26 14:43:52', '2026-06-26 14:43:52');
+INSERT INTO `catastrophe_card` VALUES ('30', '6', '海水倒灌', '风暴潮淹没码头设施，沿海仓库的部分物资被冲走（损失20%），方舟受损30%。', 'DOCK_DAMAGE', '20', '30', null, '0', '2026-06-26 14:43:52', '2026-06-26 14:43:52');
+INSERT INTO `catastrophe_card` VALUES ('31', '7', '水源污染', '岛上淡水水源被动物尸体污染，所有玩家当天需额外消耗1升煤油（烧开水）或面临患病风险', 'WATER_CONTAMINATION', '1', '0', null, '0', '2026-06-26 14:43:52', '2026-06-26 14:43:52');
+INSERT INTO `catastrophe_card` VALUES ('32', '8', '信仰崩塌', '神父以及占卜师等精神领袖陷入自我怀疑，当天无法使用\"布道\"或\"占星\"技能。若第三天抽中不影响终局结算加成。', 'SKILL_DISABLE', '0', '0', '布道,占星', '0', '2026-06-26 14:43:52', '2026-06-26 14:43:52');
+INSERT INTO `catastrophe_card` VALUES ('33', '9', '燃料受潮', '露天堆放的木柴被雨淋湿。随机一个仓库或玩家损失30kg木材。', 'WOOD_LOSS', '30', '0', null, '0', '2026-06-26 14:43:52', '2026-06-26 14:43:52');
+INSERT INTO `catastrophe_card` VALUES ('34', '10', '逃役', '一名劳工趁夜色逃走了。统治者当天指定的劳工名单中，随机一人自动失效（不会劳作，也不会计入劳工）。主持人随机选择，不公开是谁。该玩家知道自己被逃役释放，当天正常进行行动。', 'ESCAPE_LABOR', '0', '0', null, '0', '2026-06-26 14:43:52', '2026-06-26 14:43:52');
+INSERT INTO `catastrophe_card` VALUES ('35', '11', '祭品', '有人在教堂门口发现一只被割喉的黑羊。第二天必定触发两张额外天灾牌（也就是第二天触发3张天灾牌）。', 'EXTRA_CARD', '2', '0', null, '0', '2026-06-26 14:43:52', '2026-06-26 14:43:52');
+INSERT INTO `catastrophe_card` VALUES ('36', '12', '屋顶坍塌', '某栋小镇建筑（随机）的屋顶因积雪过厚而垮塌，压坏内部设施。\n效果：主持人随机选择一个小镇地点，该地点的防御值永久-2，且内部一个随机设施损坏（如发电机、烘焙炉、电报机等），需消耗 50kg木材 和 1次维修行动 修复。', 'BUILDING_COLLAPSE', '2', '50', null, '0', '2026-06-26 14:43:52', '2026-06-26 14:43:52');
+INSERT INTO `catastrophe_card` VALUES ('37', '13', '道路冰封', '一夜之间，连接各主要地点的土路冻成镜面，车和人都打滑难行。\n当天所有地点之间的移动搬运量减半（任何运输行动效率-50%）。', 'TRANSPORT_DECREASE', '50', '0', null, '0', '2026-06-26 14:43:52', '2026-06-26 14:43:52');
 
 -- ----------------------------
 -- Table structure for catastrophe_deck
@@ -297,44 +298,11 @@ CREATE TABLE `catastrophe_deck` (
   PRIMARY KEY (`id`),
   KEY `card_id` (`card_id`),
   CONSTRAINT `catastrophe_deck_ibfk_1` FOREIGN KEY (`card_id`) REFERENCES `catastrophe_card` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COMMENT='天灾牌组管理表';
+) ENGINE=InnoDB AUTO_INCREMENT=112 DEFAULT CHARSET=utf8mb4 COMMENT='天灾牌组管理表';
 
 -- ----------------------------
 -- Records of catastrophe_deck
 -- ----------------------------
-INSERT INTO `catastrophe_deck` VALUES ('1', '1', '1', '0', '2026-05-23 14:51:36', null, '0', '2026-05-14 11:53:12', '2026-05-23 14:51:36');
-INSERT INTO `catastrophe_deck` VALUES ('2', '1', '1', '0', '2026-05-24 17:14:48', null, '0', '2026-05-14 11:53:12', '2026-05-24 17:14:48');
-INSERT INTO `catastrophe_deck` VALUES ('3', '1', '0', '0', null, null, '0', '2026-05-14 11:53:12', '2026-05-14 14:56:48');
-INSERT INTO `catastrophe_deck` VALUES ('4', '2', '1', '0', '2026-05-24 17:14:57', null, '0', '2026-05-14 11:53:12', '2026-05-24 17:14:57');
-INSERT INTO `catastrophe_deck` VALUES ('5', '2', '1', '0', '2026-05-23 14:33:02', null, '0', '2026-05-14 11:53:12', '2026-05-23 14:33:02');
-INSERT INTO `catastrophe_deck` VALUES ('6', '2', '1', '0', '2026-05-22 18:42:55', null, '0', '2026-05-14 11:53:12', '2026-05-22 18:42:55');
-INSERT INTO `catastrophe_deck` VALUES ('7', '3', '1', '1', '2026-05-23 14:34:38', '2026-05-23 14:47:32', '1', '2026-05-14 11:53:12', '2026-05-23 14:47:32');
-INSERT INTO `catastrophe_deck` VALUES ('8', '3', '1', '0', '2026-05-24 17:14:54', null, '0', '2026-05-14 11:53:12', '2026-05-24 17:14:54');
-INSERT INTO `catastrophe_deck` VALUES ('9', '3', '0', '0', null, null, '0', '2026-05-14 11:53:12', '2026-05-14 14:56:48');
-INSERT INTO `catastrophe_deck` VALUES ('10', '4', '0', '0', null, null, '0', '2026-05-14 11:53:12', '2026-05-14 14:56:48');
-INSERT INTO `catastrophe_deck` VALUES ('11', '4', '0', '0', null, null, '0', '2026-05-14 11:53:12', '2026-05-14 14:56:48');
-INSERT INTO `catastrophe_deck` VALUES ('12', '4', '1', '0', '2026-05-22 18:42:55', null, '0', '2026-05-14 11:53:12', '2026-05-22 18:42:55');
-INSERT INTO `catastrophe_deck` VALUES ('13', '5', '1', '0', '2026-05-23 14:51:29', null, '0', '2026-05-14 11:53:12', '2026-05-23 14:51:29');
-INSERT INTO `catastrophe_deck` VALUES ('14', '5', '1', '0', '2026-05-23 14:33:02', null, '0', '2026-05-14 11:53:12', '2026-05-23 14:33:02');
-INSERT INTO `catastrophe_deck` VALUES ('15', '5', '1', '0', '2026-05-23 14:33:02', null, '0', '2026-05-14 11:53:12', '2026-05-23 14:33:02');
-INSERT INTO `catastrophe_deck` VALUES ('16', '6', '1', '0', '2026-05-23 14:51:29', null, '0', '2026-05-14 11:53:12', '2026-05-23 14:51:29');
-INSERT INTO `catastrophe_deck` VALUES ('17', '6', '0', '0', null, null, '0', '2026-05-14 11:53:12', '2026-05-14 14:56:48');
-INSERT INTO `catastrophe_deck` VALUES ('18', '6', '1', '1', '2026-05-24 17:14:57', '2026-05-24 17:29:10', '1', '2026-05-14 11:53:12', '2026-05-24 17:29:10');
-INSERT INTO `catastrophe_deck` VALUES ('19', '7', '1', '0', '2026-05-24 17:14:54', null, '0', '2026-05-14 11:53:12', '2026-05-24 17:14:54');
-INSERT INTO `catastrophe_deck` VALUES ('20', '7', '1', '0', '2026-05-24 17:14:54', null, '0', '2026-05-14 11:53:12', '2026-05-24 17:14:54');
-INSERT INTO `catastrophe_deck` VALUES ('21', '7', '0', '0', null, null, '0', '2026-05-14 11:53:12', '2026-05-14 14:56:48');
-INSERT INTO `catastrophe_deck` VALUES ('22', '8', '0', '0', null, null, '0', '2026-05-14 11:53:12', '2026-05-14 14:56:48');
-INSERT INTO `catastrophe_deck` VALUES ('23', '8', '1', '0', '2026-05-24 17:14:57', null, '0', '2026-05-14 11:53:12', '2026-05-24 17:14:57');
-INSERT INTO `catastrophe_deck` VALUES ('24', '8', '1', '0', '2026-05-23 14:34:38', null, '0', '2026-05-14 11:53:12', '2026-05-23 14:34:38');
-INSERT INTO `catastrophe_deck` VALUES ('25', '9', '1', '0', '2026-05-24 17:14:48', null, '0', '2026-05-14 11:53:12', '2026-05-24 17:14:48');
-INSERT INTO `catastrophe_deck` VALUES ('26', '9', '0', '0', null, null, '0', '2026-05-14 11:53:12', '2026-05-14 14:56:48');
-INSERT INTO `catastrophe_deck` VALUES ('27', '9', '1', '0', '2026-05-23 14:51:36', null, '0', '2026-05-14 11:53:12', '2026-05-23 14:51:36');
-INSERT INTO `catastrophe_deck` VALUES ('28', '10', '0', '0', null, null, '0', '2026-05-14 11:53:12', '2026-05-14 14:56:48');
-INSERT INTO `catastrophe_deck` VALUES ('29', '10', '1', '1', '2026-05-23 14:51:36', '2026-05-23 15:00:20', '1', '2026-05-14 11:53:12', '2026-05-23 15:00:20');
-INSERT INTO `catastrophe_deck` VALUES ('30', '10', '1', '0', '2026-05-23 14:34:38', null, '0', '2026-05-14 11:53:12', '2026-05-23 14:34:38');
-INSERT INTO `catastrophe_deck` VALUES ('31', '11', '1', '0', '2026-05-23 14:51:29', null, '0', '2026-05-14 11:53:12', '2026-05-23 14:51:29');
-INSERT INTO `catastrophe_deck` VALUES ('32', '11', '1', '0', '2026-05-24 17:14:48', null, '0', '2026-05-14 11:53:12', '2026-05-24 17:14:48');
-INSERT INTO `catastrophe_deck` VALUES ('33', '11', '1', '1', '2026-05-22 18:42:55', '2026-05-22 20:58:46', '1', '2026-05-14 11:53:12', '2026-05-22 20:58:46');
 
 -- ----------------------------
 -- Table structure for catastrophe_progress
@@ -348,12 +316,34 @@ CREATE TABLE `catastrophe_progress` (
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_single_record` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COMMENT='天灾进度表';
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT='天灾进度表';
 
 -- ----------------------------
 -- Records of catastrophe_progress
 -- ----------------------------
-INSERT INTO `catastrophe_progress` VALUES ('1', '67', '2026-05-24 17:14:37', '2026-05-14 11:53:11', '2026-05-24 17:14:37');
+INSERT INTO `catastrophe_progress` VALUES ('2', '0', '2026-06-26 15:51:13', '2026-06-26 15:51:13', '2026-06-26 15:51:13');
+
+-- ----------------------------
+-- Table structure for clue_trigger_log
+-- ----------------------------
+DROP TABLE IF EXISTS `clue_trigger_log`;
+CREATE TABLE `clue_trigger_log` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `clue_code` varchar(50) DEFAULT NULL,
+  `clue_id` int(11) NOT NULL,
+  `created_at` datetime(6) DEFAULT NULL,
+  `matched_keyword` varchar(200) DEFAULT NULL,
+  `npc_id` int(11) NOT NULL,
+  `player_id` int(11) NOT NULL,
+  `player_message` text,
+  `response_text` text,
+  `trigger_time` datetime(6) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+-- Records of clue_trigger_log
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for drawn_cards
@@ -375,30 +365,6 @@ CREATE TABLE `drawn_cards` (
 -- ----------------------------
 -- Records of drawn_cards
 -- ----------------------------
-INSERT INTO `drawn_cards` VALUES ('1', '1', '12', '1', '0', '2026-05-22 18:42:55');
-INSERT INTO `drawn_cards` VALUES ('2', '1', '6', '2', '0', '2026-05-22 18:42:55');
-INSERT INTO `drawn_cards` VALUES ('3', '1', '33', '3', '0', '2026-05-22 18:42:55');
-INSERT INTO `drawn_cards` VALUES ('4', '2', '15', '1', '0', '2026-05-23 14:33:02');
-INSERT INTO `drawn_cards` VALUES ('5', '2', '5', '2', '0', '2026-05-23 14:33:02');
-INSERT INTO `drawn_cards` VALUES ('6', '2', '14', '3', '0', '2026-05-23 14:33:02');
-INSERT INTO `drawn_cards` VALUES ('7', '3', '30', '1', '0', '2026-05-23 14:34:38');
-INSERT INTO `drawn_cards` VALUES ('8', '3', '24', '2', '0', '2026-05-23 14:34:38');
-INSERT INTO `drawn_cards` VALUES ('9', '3', '7', '3', '0', '2026-05-23 14:34:38');
-INSERT INTO `drawn_cards` VALUES ('10', '4', '31', '1', '0', '2026-05-23 14:51:29');
-INSERT INTO `drawn_cards` VALUES ('11', '4', '16', '2', '0', '2026-05-23 14:51:29');
-INSERT INTO `drawn_cards` VALUES ('12', '4', '13', '3', '0', '2026-05-23 14:51:29');
-INSERT INTO `drawn_cards` VALUES ('13', '5', '27', '1', '0', '2026-05-23 14:51:36');
-INSERT INTO `drawn_cards` VALUES ('14', '5', '29', '2', '0', '2026-05-23 14:51:36');
-INSERT INTO `drawn_cards` VALUES ('15', '5', '1', '3', '0', '2026-05-23 14:51:36');
-INSERT INTO `drawn_cards` VALUES ('16', '6', '25', '1', '0', '2026-05-24 17:14:48');
-INSERT INTO `drawn_cards` VALUES ('17', '6', '32', '2', '0', '2026-05-24 17:14:48');
-INSERT INTO `drawn_cards` VALUES ('18', '6', '2', '3', '0', '2026-05-24 17:14:48');
-INSERT INTO `drawn_cards` VALUES ('19', '7', '20', '1', '0', '2026-05-24 17:14:54');
-INSERT INTO `drawn_cards` VALUES ('20', '7', '8', '2', '0', '2026-05-24 17:14:54');
-INSERT INTO `drawn_cards` VALUES ('21', '7', '19', '3', '0', '2026-05-24 17:14:54');
-INSERT INTO `drawn_cards` VALUES ('22', '8', '23', '1', '0', '2026-05-24 17:14:57');
-INSERT INTO `drawn_cards` VALUES ('23', '8', '4', '2', '0', '2026-05-24 17:14:57');
-INSERT INTO `drawn_cards` VALUES ('24', '8', '18', '3', '0', '2026-05-24 17:14:57');
 
 -- ----------------------------
 -- Table structure for endgame_ark_event
@@ -502,52 +468,6 @@ CREATE TABLE `faction_action` (
 -- ----------------------------
 -- Records of faction_action
 -- ----------------------------
-INSERT INTO `faction_action` VALUES ('15', '10', '二阶堂希罗', '统治者', 'assign_guard', '{\"actorId\":24,\"targetLocationId\":2}', '✓ 已提交【安排看守】\n\n看守人员：日落忽悠的花海\n看守地点：镇长厅\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。\n\n【DM反馈】\nok，行动已执行', 'feedbacked', '1', 'day', '2026-05-22 19:17:22', '2026-05-22 22:00:09');
-INSERT INTO `faction_action` VALUES ('16', '14', 'Κάκτος西里尔', '冒险者', 'guard_ark', '{\"guardId\":14,\"useWeaponOrSkill\":true}', '✓ 已提交【看守方舟】\n\n看守人员：Κάκτος西里尔\n使用武器/技能计入防御：是\n额外防御：+2\n\n等待主持人确认。\n\n【DM反馈】\nok，行动已执行', 'feedbacked', '1', 'day', '2026-05-22 19:40:46', '2026-05-22 22:03:16');
-INSERT INTO `faction_action` VALUES ('17', '9', '对酒', '冒险者', 'extra_investigate', '{\"investigateType\":\"investigate_location\",\"targetId\":5}', '✓ 已提交【额外调查】\n\n调查类型：调查地点\n调查目标：灯塔\n\n结算后该次调查数量将翻倍。等待主持人确认。\n\n【DM反馈】\n矗立在小镇岬角的白色石塔，约20米高。顶部的菲涅尔透镜在夜间旋转，光束扫过海面。塔底是灯塔看守员的住所。这里是灯塔管理员的住所，防御值：7', 'feedbacked', '1', 'day', '2026-05-22 19:47:02', '2026-05-22 22:12:43');
-INSERT INTO `faction_action` VALUES ('18', '24', '花海', '反叛者', 'extra_labor', '{\"note\":\"\"}', '✓ 已提交【额外劳动】\n\n提交者：花海\n效果：今日生产类自由行动产出 +50%。\n（须今日已提交生产行动）\n等待主持人确认。\n\n【DM反馈】\nok，已经行行动', 'feedbacked', '1', 'day', '2026-05-22 20:09:52', '2026-05-22 22:12:17');
-INSERT INTO `faction_action` VALUES ('19', '10', '二阶堂希罗', '统治者', 'assign_guard', '{\"actorId\":12,\"targetLocationId\":18}', '✓ 已提交【安排看守】\n\n看守人员：千代\n看守地点：矿场\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。\n\n【DM反馈】\n人员已经前往', 'feedbacked', '1', 'day', '2026-05-22 20:14:32', '2026-05-22 22:32:03');
-INSERT INTO `faction_action` VALUES ('20', '19', 'unPy-GPT', '冒险者', 'extra_investigate', '{\"investigateType\":\"investigate_player\",\"targetId\":8}', '✓ 已提交【额外调查】\n\n调查类型：调查玩家\n调查目标：兔兔\n\n结算后该次调查数量将翻倍。等待主持人确认。\n\n【DM反馈】\n兔兔调查千代与凭栏择雨', 'feedbacked', '1', 'day', '2026-05-22 20:31:08', '2026-05-22 22:13:51');
-INSERT INTO `faction_action` VALUES ('21', '20', '追枫', '天灾使者', 'curse', '{\"weaponId\":2,\"target1\":8,\"target2\":27}', '✓ 已提交【诅咒】\n\n消耗武器：猎枪\n目标1：兔兔\n目标2：得狗的老意\n\n效果：获知阵营、施加「诅咒」标记。\n等待主持人确认。\n\n【DM反馈】\n成功', 'feedbacked', '1', 'day', '2026-05-22 20:36:05', '2026-05-22 22:13:12');
-INSERT INTO `faction_action` VALUES ('22', '16', '孤城暮角', '天灾使者', 'extra_investigate', '{\"investigateType\":\"investigate_location\",\"targetId\":18}', '✓ 已提交【额外调查】\n\n调查类型：调查地点\n调查目标：矿场\n\n结算后该次调查数量将翻倍。等待主持人确认。\n\n【DM反馈】\n深入山腹的矿道与地面设施的综合体，包含管理室、矿场仓库和地下矿场。由统治者共同管理，是岛上最重要的资源产地和战略要地。\n统治者在这里进行守卫，阻止了你进一步靠近。地点防御值为10', 'feedbacked', '1', 'day', '2026-05-22 20:40:48', '2026-05-22 22:15:12');
-INSERT INTO `faction_action` VALUES ('23', '13', '凭栏择雨', '反叛者', 'extra_action', '{\"actionType\":\"use_skill\",\"targetLocationId\":null,\"targetPlayerId\":null,\"note\":\"\"}', '✓ 已提交【额外行动】\n\n行动类型：使用职业技能\n\n此环节无法寻找NPC进行对话。\n等待主持人确认。\n\n【DM反馈】\n一座用珊瑚石和木材建造的小教堂，彩色玻璃窗描绘着基督与太平洋岛屿的景象。尖顶上的十字架在阳光下泛着白漆剥落后的斑驳。教堂内长椅简陋，但祭坛前摆着一架巨大的老旧管风琴，积满灰尘。地点防御值：4', 'feedbacked', '1', 'day', '2026-05-22 21:31:25', '2026-05-22 22:23:26');
-INSERT INTO `faction_action` VALUES ('24', '11', '蟋蟀蜥蜴', '反叛者', 'extra_action', '{\"actionType\":\"use_skill\",\"targetLocationId\":null,\"targetPlayerId\":null,\"note\":\"寻找有没有打架斗殴的人并劝架\"}', '✓ 已提交【额外行动】\n\n行动类型：使用职业技能\n备注：寻找有没有打架斗殴的人并劝架\n\n此环节无法寻找NPC进行对话。\n等待主持人确认。\n\n【DM反馈】\n在你下一次袭击监狱时，监狱的防御值会-2', 'feedbacked', '1', 'day', '2026-05-22 21:36:49', '2026-05-22 22:28:23');
-INSERT INTO `faction_action` VALUES ('25', '23', '教皇', '反叛者', 'extra_action', '{\"actionType\":\"use_skill\",\"targetLocationId\":null,\"targetPlayerId\":null,\"note\":\"布道，对农业协会的农户及成员使用\"}', '✓ 已提交【额外行动】\n\n行动类型：使用职业技能\n备注：布道，对农业协会的农户及成员使用\n\n此环节无法寻找NPC进行对话。\n等待主持人确认。\n\n【DM反馈】\n选择随机三人进行加成', 'feedbacked', '1', 'day', '2026-05-22 21:43:31', '2026-05-22 22:29:19');
-INSERT INTO `faction_action` VALUES ('26', '22', '11', '天灾使者', 'sabotage', '{\"targetLocationId\":12,\"facilityId\":10}', '✓ 已提交【破坏】\n\n目标设施：烘焙炉（面包店）\n\n等待主持人确认。\n\n【DM反馈】\n设施已破坏', 'feedbacked', '1', 'day', '2026-05-22 22:44:42', '2026-05-22 22:48:29');
-INSERT INTO `faction_action` VALUES ('27', '20', '追枫', '天灾使者', 'curse', '{\"weaponId\":7,\"target1\":23,\"target2\":31}', '✓ 已提交【诅咒】\n\n消耗武器：猎弓\n目标1：教皇\n目标2：闲屿\n\n效果：获知阵营、施加「诅咒」标记。\n等待主持人确认。\n\n【DM反馈】\n好的，诅咒已生效', 'feedbacked', '2', 'day', '2026-05-23 19:42:55', '2026-05-23 20:59:21');
-INSERT INTO `faction_action` VALUES ('28', '11', '蟋蟀蜥蜴', '反叛者', 'extra_action', '{\"actionType\":\"go_location\",\"targetLocationId\":2,\"targetPlayerId\":null,\"note\":\"调查一下有没有什么人来过这里干了什么\"}', '✓ 已提交【额外行动】\n\n行动类型：前往地点\n前往地点：镇长厅\n备注：调查一下有没有什么人来过这里干了什么\n\n此环节无法寻找NPC进行对话。\n等待主持人确认。\n\n【DM反馈】\n镇长厅\n描述：两层殖民风格木楼，带有宽敞的阳台和百叶窗。楼下是办公室和接待室，楼上是行政长官的私人住所。墙上挂着英王乔治六世的肖像和殖民地地图。吊扇无力地转动着。\n设施：镇武库仓库\n发电机1\n人员：镇长（外出则无人）\n防御值：5\n你调查了一下，但是无法获知是否有人来过', 'feedbacked', '2', 'day', '2026-05-23 20:11:14', '2026-05-23 21:05:48');
-INSERT INTO `faction_action` VALUES ('29', '9', '对酒', '冒险者', 'extra_investigate', '{\"investigateType\":\"investigate_location\",\"targetId\":13}', '✓ 已提交【额外调查】\n\n调查类型：调查地点\n调查目标：气象观测站\n\n结算后该次调查数量将翻倍。等待主持人确认。\n\n【DM反馈】\n气象观测站\n描述：小镇边缘的一座独立铁皮屋，屋顶有风速仪和天线。屋内摆满了精密的（虽然老旧）仪器和手绘的气象图。\n人员：气象观测员（外出则无人）\n防御值：3', 'feedbacked', '2', 'day', '2026-05-23 20:13:52', '2026-05-23 21:19:30');
-INSERT INTO `faction_action` VALUES ('30', '30', 'MISD330', '反叛者', 'extra_action', '{\"actionType\":\"go_location\",\"targetLocationId\":19,\"targetPlayerId\":null,\"note\":\"调查监狱\"}', '✓ 已提交【额外行动】\n\n行动类型：前往地点\n前往地点：监狱\n备注：调查监狱\n\n此环节无法寻找NPC进行对话。\n等待主持人确认。\n\n【DM反馈】\n防御值: 8\n设施:监牢8，看守室（内有桌子一张、煤油灯一盏、警棍一根）\n审讯椅（铁制，带锁扣）\n描述:小镇边缘的一座灰石建筑，铁门锈迹斑斑，窗户窄得像枪眼。门前挂着一盏永远不灭的煤油灯，灯下总坐着一个看守。里面是两排铁牢房，地上铺着发霉的稻草，墙角堆着脏得看不出颜色的毯子。墙上用木炭刻满了前囚犯的名字和诅咒，有些已经被重复刻了三四遍。空气里弥漫着尿骚味和铁锈味，偶尔有人敲一下铁栏杆，声音能传到半个镇子。', 'feedbacked', '2', 'day', '2026-05-23 20:28:22', '2026-05-23 21:15:39');
-INSERT INTO `faction_action` VALUES ('31', '10', '二阶堂希罗', '统治者', 'assign_guard', '{\"actorId\":24,\"targetLocationId\":18}', '✓ 已提交【安排看守】\n\n看守人员：花海\n看守地点：矿场\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。\n\n【DM反馈】\n对方抗命', 'feedbacked', '2', 'day', '2026-05-23 21:26:03', '2026-05-23 22:23:03');
-INSERT INTO `faction_action` VALUES ('32', '10', '二阶堂希罗', '统治者', 'assign_guard', '{\"actorId\":13,\"targetLocationId\":19}', '✓ 已提交【安排看守】\n\n看守人员：凭栏择雨\n看守地点：监狱\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。\n\n【DM反馈】\n对方抗命', 'feedbacked', '2', 'day', '2026-05-23 21:26:37', '2026-05-23 22:23:11');
-INSERT INTO `faction_action` VALUES ('33', '10', '二阶堂希罗', '统治者', 'assign_guard', '{\"actorId\":27,\"targetLocationId\":19}', '✓ 已提交【安排看守】\n\n看守人员：得狗的老意\n看守地点：监狱\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。\n\n【DM反馈】\n好的', 'feedbacked', '2', 'day', '2026-05-23 21:27:31', '2026-05-23 21:43:22');
-INSERT INTO `faction_action` VALUES ('34', '10', '二阶堂希罗', '统治者', 'assign_guard', '{\"actorId\":23,\"targetLocationId\":19}', '✓ 已提交【安排看守】\n\n看守人员：教皇\n看守地点：监狱\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。\n\n【DM反馈】\n对方抗命', 'feedbacked', '2', 'day', '2026-05-23 21:28:06', '2026-05-23 22:22:54');
-INSERT INTO `faction_action` VALUES ('35', '10', '二阶堂希罗', '统治者', 'assign_guard', '{\"actorId\":30,\"targetLocationId\":19}', '✓ 已提交【安排看守】\n\n看守人员：MISD330\n看守地点：监狱\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。\n\n【DM反馈】\n对方抗命', 'feedbacked', '2', 'day', '2026-05-23 21:28:16', '2026-05-23 22:24:58');
-INSERT INTO `faction_action` VALUES ('36', '10', '二阶堂希罗', '统治者', 'assign_guard', '{\"actorId\":16,\"targetLocationId\":19}', '✓ 已提交【安排看守】\n\n看守人员：孤城暮角\n看守地点：监狱\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。\n\n【DM反馈】\n对方抗命', 'feedbacked', '2', 'day', '2026-05-23 21:28:24', '2026-05-23 21:56:00');
-INSERT INTO `faction_action` VALUES ('37', '10', '二阶堂希罗', '统治者', 'assign_guard', '{\"actorId\":31,\"targetLocationId\":19}', '✓ 已提交【安排看守】\n\n看守人员：闲屿\n看守地点：监狱\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。\n\n【DM反馈】\n对方接受', 'feedbacked', '2', 'day', '2026-05-23 21:32:46', '2026-05-23 22:25:41');
-INSERT INTO `faction_action` VALUES ('38', '14', 'Κάκτος西里尔', '冒险者', 'extra_investigate', '{\"investigateType\":\"investigate_player\",\"targetId\":30}', '✓ 已提交【额外调查】\n\n调查类型：调查玩家\n调查目标：MISD330\n\n结算后该次调查数量将翻倍。等待主持人确认。', 'pending', '2', 'day', '2026-05-23 23:40:47', '2026-05-23 23:40:47');
-INSERT INTO `faction_action` VALUES ('39', '21', '乐语', '冒险者', 'ark_construction', '{\"mode\":\"resource\",\"note\":\"发动阵营特性号召和个人特性渴望出海利用免费行动点进行双倍于物资投入的方舟建造\",\"woodKg\":30000,\"metalKg\":10500,\"sealantKg\":20,\"warehouseWoodKg\":0,\"warehouseMetalKg\":0,\"warehouseSealantKg\":0,\"engineCount\":0,\"generatorCount\":0,\"propellerCount\":0,\"buildSail\":false}', '✓ 已提交【方舟建设】\n\n提交者：乐语\n投入模式：资源投入\n  木材：30000kg（30.00吨）\n  金属制品：10500kg（10.50吨）\n  密封材料：20kg\n当前方舟进度：66.00%\n备注：发动阵营特性号召和个人特性渴望出海利用免费行动点进行双倍于物资投入的方舟建造\n\n等待主持人确认。', 'pending', '2', 'day', '2026-05-23 23:44:53', '2026-05-23 23:44:53');
-INSERT INTO `faction_action` VALUES ('40', '20', '追枫', '天灾使者', 'sabotage', '{\"targetLocationId\":2,\"facilityId\":4}', '✓ 已提交【破坏】\n\n目标设施：发电机（镇长厅）\n\n等待主持人确认。\n\n【DM反馈】\n收到', 'feedbacked', '3', 'day', '2026-05-24 18:04:44', '2026-05-24 19:30:25');
-INSERT INTO `faction_action` VALUES ('41', '21', '乐语', '冒险者', 'guard_ark', '{\"guardId\":21,\"useWeaponOrSkill\":true}', '✓ 已提交【看守方舟】\n\n看守人员：乐语\n使用武器/技能计入防御：是\n额外防御：+2\n\n等待主持人确认。\n\n【DM反馈】\n收到', 'feedbacked', '3', 'day', '2026-05-24 18:57:33', '2026-05-24 21:26:42');
-INSERT INTO `faction_action` VALUES ('42', '10', '二阶堂希罗', '统治者', 'assign_guard', '{\"actorId\":20,\"targetLocationId\":18}', '✓ 已提交【安排看守】\n\n看守人员：追枫\n看守地点：矿场\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。\n\n【DM反馈】\n不来', 'feedbacked', '3', 'day', '2026-05-24 19:03:00', '2026-05-24 21:29:18');
-INSERT INTO `faction_action` VALUES ('47', '26', 'V', '统治者', 'assign_personnel', '{\"targetId\":11,\"targetKind\":\"npc\",\"assignedActions\":[{\"action\":\"transport\",\"targetLocationId\":null},{\"action\":\"investigate_player\",\"targetLocationId\":null,\"targetPlayerId\":31}],\"note\":\"搬运500kg木材至避难所仓库\\n\\n\"}', '✓ 已提交【安排人员】\n\n目标：乔克·汤姆\n须提交的自由行动（共2项）：\n  1. 搬运\n  2. 调查玩家 → 闲屿\n附加说明：搬运500kg木材至避难所仓库\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。\n\n【DM反馈】\n闲屿去了码头进行调查，去了教堂进行给兔兔哀悼', 'feedbacked', '3', 'day', '2026-05-24 19:35:49', '2026-05-24 21:28:43');
-INSERT INTO `faction_action` VALUES ('50', '30', 'MISD330', '反叛者', 'extra_action', '{\"actionType\":\"use_skill\",\"targetLocationId\":null,\"targetPlayerId\":null,\"note\":\"急救并医疗自己\"}', '✓ 已提交【额外行动】\n\n行动类型：使用职业技能\n备注：急救并医疗自己\n\n此环节无法寻找NPC进行对话。\n等待主持人确认。\n\n【DM反馈】\n了解', 'feedbacked', '3', 'day', '2026-05-24 19:36:59', '2026-05-24 21:29:24');
-INSERT INTO `faction_action` VALUES ('51', '26', 'V', '统治者', 'assign_personnel', '{\"targetId\":4,\"targetKind\":\"npc\",\"assignedActions\":[{\"action\":\"transport\",\"targetLocationId\":null},{\"action\":\"go_location\",\"targetLocationId\":18}],\"note\":\"搬运500kg木材至避难所仓库\\n\\n\"}', '✓ 已提交【安排人员】\n\n目标：托马斯·伍德\n须提交的自由行动（共2项）：\n  1. 搬运\n  2. 前往地点 → 矿场\n附加说明：搬运500kg木材至避难所仓库\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。\n\n【DM反馈】\n完成', 'feedbacked', '3', 'day', '2026-05-24 19:41:04', '2026-05-24 21:29:57');
-INSERT INTO `faction_action` VALUES ('52', '26', 'V', '统治者', 'assign_personnel', '{\"targetId\":10,\"targetKind\":\"npc\",\"assignedActions\":[{\"action\":\"transport\",\"targetLocationId\":null},{\"action\":\"other\",\"targetLocationId\":18}],\"note\":\"搬运500kg木材至避难所仓库，希望NPC夜间前往避难所帮助统治者\\n\\n\"}', '✓ 已提交【安排人员】\n\n目标：汉斯·施密特\n须提交的自由行动（共2项）：\n  1. 搬运\n  2. 其他\n附加说明：搬运500kg木材至避难所仓库，希望NPC夜间前往避难所帮助统治者\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。\n\n【DM反馈】\n完成', 'feedbacked', '3', 'day', '2026-05-24 19:45:20', '2026-05-24 21:36:41');
-INSERT INTO `faction_action` VALUES ('53', '26', 'V', '统治者', 'assign_personnel', '{\"targetId\":2,\"targetKind\":\"npc\",\"assignedActions\":[{\"action\":\"transport\",\"targetLocationId\":null},{\"action\":\"other\",\"targetLocationId\":18}],\"note\":\"搬运500kg木材至避难所仓库，希望NPC夜间前往避难所帮助统治者\\n\\n\"}', '✓ 已提交【安排人员】\n\n目标：杰克·塔克\n须提交的自由行动（共2项）：\n  1. 搬运\n  2. 其他\n附加说明：搬运500kg木材至避难所仓库，希望NPC夜间前往避难所帮助统治者\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。\n\n【DM反馈】\nnpc做别的事情了', 'feedbacked', '3', 'day', '2026-05-24 19:46:17', '2026-05-24 21:39:30');
-INSERT INTO `faction_action` VALUES ('54', '26', 'V', '统治者', 'assign_personnel', '{\"targetId\":1,\"targetKind\":\"npc\",\"assignedActions\":[{\"action\":\"transport\",\"targetLocationId\":null},{\"action\":\"other\",\"targetLocationId\":18}],\"note\":\"搬运500kg石材至避难所仓库，希望NPC夜间前往避难所帮助统治者\\n\\n\"}', '✓ 已提交【安排人员】\n\n目标：克拉拉·南丁格尔\n须提交的自由行动（共2项）：\n  1. 搬运\n  2. 其他\n附加说明：搬运500kg石材至避难所仓库，希望NPC夜间前往避难所帮助统治者\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。\n\n【DM反馈】\nnpc做别的事情了', 'feedbacked', '3', 'day', '2026-05-24 19:46:52', '2026-05-24 21:38:50');
-INSERT INTO `faction_action` VALUES ('55', '26', 'V', '统治者', 'assign_personnel', '{\"targetId\":12,\"targetKind\":\"player\",\"assignedActions\":[{\"action\":\"transport\",\"targetLocationId\":null}],\"note\":\"搬运500kg石材至避难所仓库\\n\\n\"}', '✓ 已提交【安排人员】\n\n目标：千代\n须提交的自由行动（共1项）：\n  1. 搬运\n附加说明：搬运500kg石材至避难所仓库\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。\n\n【DM反馈】\n拒绝', 'feedbacked', '3', 'day', '2026-05-24 19:47:24', '2026-05-24 21:38:29');
-INSERT INTO `faction_action` VALUES ('56', '26', 'V', '统治者', 'assign_personnel', '{\"targetId\":16,\"targetKind\":\"player\",\"assignedActions\":[{\"action\":\"transport\",\"targetLocationId\":null}],\"note\":\"搬运500kg石材至避难所仓库\\n\\n\"}', '✓ 已提交【安排人员】\n\n目标：孤城暮角\n须提交的自由行动（共1项）：\n  1. 搬运\n附加说明：搬运500kg石材至避难所仓库\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。\n\n【DM反馈】\n拒绝', 'feedbacked', '3', 'day', '2026-05-24 19:48:17', '2026-05-24 21:39:49');
-INSERT INTO `faction_action` VALUES ('57', '26', 'V', '统治者', 'assign_personnel', '{\"targetId\":31,\"targetKind\":\"player\",\"assignedActions\":[{\"action\":\"transport\",\"targetLocationId\":null}],\"note\":\"搬运500kg石材至避难所仓库\\n\\n\"}', '✓ 已提交【安排人员】\n\n目标：闲屿\n须提交的自由行动（共1项）：\n  1. 搬运\n附加说明：搬运500kg石材至避难所仓库\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。\n\n【DM反馈】\n拒绝了', 'feedbacked', '3', 'day', '2026-05-24 19:49:29', '2026-05-24 21:40:00');
-INSERT INTO `faction_action` VALUES ('58', '26', 'V', '统治者', 'assign_personnel', '{\"targetId\":14,\"targetKind\":\"player\",\"assignedActions\":[{\"action\":\"transport\",\"targetLocationId\":null}],\"note\":\"搬运500kg石材至避难所仓库\\n\\n\"}', '✓ 已提交【安排人员】\n\n目标：Κάκτος西里尔\n须提交的自由行动（共1项）：\n  1. 搬运\n附加说明：搬运500kg石材至避难所仓库\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。\n\n【DM反馈】\n拒绝', 'feedbacked', '3', 'day', '2026-05-24 19:50:39', '2026-05-24 21:38:37');
-INSERT INTO `faction_action` VALUES ('59', '26', 'V', '统治者', 'assign_personnel', '{\"targetId\":21,\"targetKind\":\"player\",\"assignedActions\":[{\"action\":\"transport\",\"targetLocationId\":null}],\"note\":\"搬运500kg石材至避难所仓库\\n\\n\"}', '✓ 已提交【安排人员】\n\n目标：乐语\n须提交的自由行动（共1项）：\n  1. 搬运\n附加说明：搬运500kg石材至避难所仓库\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。\n\n【DM反馈】\n拒绝了', 'feedbacked', '3', 'day', '2026-05-24 19:50:57', '2026-05-24 21:40:07');
-INSERT INTO `faction_action` VALUES ('60', '16', '孤城暮角', '天灾使者', 'sabotage', '{\"targetLocationId\":1,\"facilityId\":2}', '✓ 已提交【破坏】\n\n目标设施：发电机（警察局）\n\n等待主持人确认。\n\n【DM反馈】\n收到', 'feedbacked', '3', 'day', '2026-05-24 20:28:28', '2026-05-24 21:40:15');
-INSERT INTO `faction_action` VALUES ('61', '10', '二阶堂希罗', '统治者', 'assign_guard', '{\"actorId\":16,\"targetLocationId\":18}', '✓ 已提交【安排看守】\n\n看守人员：孤城暮角\n看守地点：矿场\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。\n\n【DM反馈】\n接受', 'feedbacked', '3', 'day', '2026-05-24 20:33:43', '2026-05-24 21:41:23');
-INSERT INTO `faction_action` VALUES ('62', '10', '二阶堂希罗', '统治者', 'assign_guard', '{\"actorId\":29,\"targetLocationId\":18}', '✓ 已提交【安排看守】\n\n看守人员：飞凡\n看守地点：矿场\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。\n\n【DM反馈】\n接受', 'feedbacked', '3', 'day', '2026-05-24 20:33:59', '2026-05-24 21:41:36');
-INSERT INTO `faction_action` VALUES ('63', '10', '二阶堂希罗', '统治者', 'assign_guard', '{\"actorId\":18,\"targetLocationId\":18}', '✓ 已提交【安排看守】\n\n看守人员：Missbear\n看守地点：矿场\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。\n\n【DM反馈】\n对方未反馈', 'feedbacked', '3', 'day', '2026-05-24 20:34:08', '2026-05-24 21:46:31');
-INSERT INTO `faction_action` VALUES ('64', '10', '二阶堂希罗', '统治者', 'assign_guard', '{\"actorId\":12,\"targetLocationId\":18}', '✓ 已提交【安排看守】\n\n看守人员：千代\n看守地点：矿场\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。\n\n【DM反馈】\n对方未反馈', 'feedbacked', '3', 'day', '2026-05-24 20:34:21', '2026-05-24 21:46:40');
-INSERT INTO `faction_action` VALUES ('65', '10', '二阶堂希罗', '统治者', 'assign_guard', '{\"actorId\":32,\"targetLocationId\":18}', '✓ 已提交【安排看守】\n\n看守人员：澡堂子\n看守地点：矿场\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。\n\n【DM反馈】\n对方同意了', 'feedbacked', '3', 'day', '2026-05-24 20:34:40', '2026-05-24 21:46:00');
-INSERT INTO `faction_action` VALUES ('66', '24', '花海', '反叛者', 'extra_action', '{\"actionType\":\"use_trait\",\"targetLocationId\":null,\"targetPlayerId\":null,\"note\":\"百宝袋/我要将斧头、防弹衣、医疗包、金属用品、食物全部复制\"}', '✓ 已提交【额外行动】\n\n行动类型：使用特性\n备注：百宝袋/我要将斧头、防弹衣、医疗包、金属用品、食物全部复制\n\n此环节无法寻找NPC进行对话。\n等待主持人确认。\n\n【DM反馈】\n百宝袋是一次性特性', 'feedbacked', '3', 'day', '2026-05-24 20:51:19', '2026-05-24 20:58:19');
 
 -- ----------------------------
 -- Table structure for game_activity_log
@@ -566,553 +486,11 @@ CREATE TABLE `game_activity_log` (
   PRIMARY KEY (`id`),
   KEY `idx_activity_created` (`created_at`),
   KEY `idx_activity_day` (`game_day`)
-) ENGINE=InnoDB AUTO_INCREMENT=548 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=556 DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Records of game_activity_log
 -- ----------------------------
-INSERT INTO `game_activity_log` VALUES ('6', 'consume', '2026-05-22 18:22:29.382000', '累计进食 2/2；取暖 15/15 热值', '1', '冒险者', '9', '对酒', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('7', 'consume', '2026-05-22 18:29:06.599000', '累计进食 2/2；取暖 15/15 热值', '1', '平民', '8', '兔兔', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('8', 'consume', '2026-05-22 18:44:50.893000', '累计进食 2/2；取暖 15/15 热值', '1', '统治者', '15', '空白', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('9', 'consume', '2026-05-22 18:46:05.045000', '累计进食 2/2；取暖 15/15 热值', '1', '冒险者', '14', 'Κάκτος西里尔', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('10', 'consume', '2026-05-22 18:46:34.890000', '累计进食 2/2；取暖 15/15 热值', '1', '平民', '27', '得狗的老意', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('11', 'consume', '2026-05-22 18:46:55.273000', '累计进食 2/2；取暖 15/15 热值', '1', '反叛者', '23', '教皇', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('12', 'action', '2026-05-22 18:50:30.817000', '目标:酒吧', '1', '平民', '27', '得狗的老意', '自由#1·前往地点');
-INSERT INTO `game_activity_log` VALUES ('13', 'action', '2026-05-22 18:50:31.915000', '目标:旅店', '1', '平民', '27', '得狗的老意', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('14', 'action', '2026-05-22 19:01:41.561000', '目标:兔兔', '1', '统治者', '17', 'zzz', '自由#1·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('15', 'action', '2026-05-22 19:01:43.707000', '目标:集市', '1', '统治者', '17', 'zzz', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('16', 'consume', '2026-05-22 19:04:02.562000', '累计进食 2/2；取暖 0/15 热值', '1', '冒险者', '19', 'unPy-GPT', '进食+2 木0kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('17', 'action', '2026-05-22 19:08:45.224000', '先接受来自统治者的物资交易。然后使用【烘培】技能获得两个面包。消耗资源14单位的食物，30kg的木材（被动特性食物消耗为1.5来计算，荷叶认证过的）。', '1', '平民', '25', 'tony', '自由#1·使用职业技能');
-INSERT INTO `game_activity_log` VALUES ('18', 'action', '2026-05-22 19:12:34.890000', '再次进行一样的行动，消耗14单位食物，30kg木材，获得两个面包。', '1', '平民', '25', 'tony', '自由#2·使用职业技能');
-INSERT INTO `game_activity_log` VALUES ('19', 'quick', '2026-05-22 19:15:23.302000', '个人行动 3: 使用一个面包/便当 获得额外的行动点。再次进行烹饪，耗费14食物30kg木材获得两个面包/便当。', '1', '平民', '25', 'tony', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('20', 'action', '2026-05-22 19:15:35.672000', '模式：仓库→个人；源：码头集购仓；鱼叉/矛×1；食物×10', '1', '统治者', '10', '二阶堂希罗', '自由#1·搬运');
-INSERT INTO `game_activity_log` VALUES ('21', 'action', '2026-05-22 19:15:36.007000', '模式：仓库→个人；源：燃料仓库；燃料×3', '1', '统治者', '10', '二阶堂希罗', '自由#2·搬运');
-INSERT INTO `game_activity_log` VALUES ('22', 'consume', '2026-05-22 19:15:53.151000', '累计进食 2/2；取暖 15/15 热值', '1', '天灾使者', '16', '孤城暮角', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('23', 'action', '2026-05-22 19:16:01.706000', '目标:伐木营地 NPC:托马斯·伍德 托马斯兄弟，加入我们探索新的世界，看看你手里的斧刃——它不该用来给统治者的避难所添柴，而该劈开冻结的海面，劈出一条属于我们的生路！外面有漫无边际的原始森林，有热腾腾的炉火和自由的风，我一起造船冲出去，把你的名字刻在新世界的第一根栋梁上！站起来，兄弟，别给这座坟墓陪葬，咱们把命运劈成两半——一半留给这该死的雪，另一半烧成黎明。（拉拢托马斯·伍德，为我们生产木材，如果他愿意的话可以上船）', '1', '冒险者', '9', '对酒', '自由#1·前往地点');
-INSERT INTO `game_activity_log` VALUES ('24', 'action', '2026-05-22 19:16:01.868000', '目标:矿场 NPC:卡尔·铁锤 卡尔兄弟，别把热血冻死在这座死岛上，灾难会吞噬这里的一切，加入我们驶向新的家园，我们会给你最好的待遇。（拉拢矿工生产，他愿意的话可以上船）', '1', '冒险者', '9', '对酒', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('25', 'night', '2026-05-22 19:16:42.441000', '✓ 已提交【夜晚个人行动】\n\n提交者：二阶堂希罗\n行动：调查玩家\n目标：兔兔\n\n等待主持人在夜晚阶段结算。', '1', '统治者', '10', '二阶堂希罗', '夜晚个人行动');
-INSERT INTO `game_activity_log` VALUES ('26', 'faction', '2026-05-22 19:17:22.185000', '✓ 已提交【安排看守】\n\n看守人员：日落忽悠的花海\n看守地点：镇长厅\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。', '1', '统治者', '10', '二阶堂希罗', '安排看守');
-INSERT INTO `game_activity_log` VALUES ('27', 'quick', '2026-05-22 19:17:53.752000', '行动 4: （快速行动）三个【个人行动】都成功完成后，使用交易，给予V镇长一个面包，和二阶典狱长一个面包。今天一共消耗42食物，90木材，部分消耗的物资来自统治者的交易。共获得6个面包，其中把两个给出去。', '1', '平民', '25', 'tony', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('28', 'trade', '2026-05-22 19:24:05.500000', '对方:孤城暮角 | give 金属制品×5 | give 木材×20 | take 猎枪×1', '1', '平民', '29', '飞凡', '发起交易→孤城暮角 #14');
-INSERT INTO `game_activity_log` VALUES ('29', 'trade', '2026-05-22 19:24:07.210000', '对方:日落忽悠的花海 | give 食物×5 | take 食物×1', '1', '平民', '27', '得狗的老意', '发起交易→日落忽悠的花海 #15');
-INSERT INTO `game_activity_log` VALUES ('30', 'trade', '2026-05-22 19:24:36.412000', '对方:日落忽悠的花海 | give 食物×5 | take 食物×1', '1', '平民', '27', '得狗的老意', '发起交易→日落忽悠的花海 #16');
-INSERT INTO `game_activity_log` VALUES ('31', 'consume', '2026-05-22 19:26:40.183000', '累计进食 2/2；取暖 15/15 热值', '1', '冒险者', '19', 'unPy-GPT', '进食+0 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('32', 'trade', '2026-05-22 19:33:43.096000', '对方:飞凡', '1', '天灾使者', '16', '孤城暮角', '接受交易→飞凡 #14');
-INSERT INTO `game_activity_log` VALUES ('33', 'action', '2026-05-22 19:38:43.157000', '目标:邮局 调查地点，看看有没有物资或者发电机', '1', '冒险者', '14', 'Κάκτος西里尔', '自由#1·前往地点');
-INSERT INTO `game_activity_log` VALUES ('34', 'action', '2026-05-22 19:38:43.623000', '目标:教堂 调查地点，看看有没有物资或者发电机', '1', '冒险者', '14', 'Κάκτος西里尔', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('35', 'consume', '2026-05-22 19:40:13.538000', '累计进食 2/2；取暖 15/15 热值', '1', '天灾使者', '20', '追枫', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('36', 'faction', '2026-05-22 19:40:46.451000', '✓ 已提交【看守方舟】\n\n看守人员：Κάκτος西里尔\n使用武器/技能计入防御：是\n额外防御：+2\n\n等待主持人确认。', '1', '冒险者', '14', 'Κάκτος西里尔', '看守方舟');
-INSERT INTO `game_activity_log` VALUES ('37', 'action', '2026-05-22 19:44:52.791000', '目标:追枫', '1', '冒险者', '19', 'unPy-GPT', '自由#2·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('38', 'faction', '2026-05-22 19:47:01.986000', '✓ 已提交【额外调查】\n\n调查类型：调查地点\n调查目标：灯塔\n\n结算后该次调查数量将翻倍。等待主持人确认。', '1', '冒险者', '9', '对酒', '额外调查');
-INSERT INTO `game_activity_log` VALUES ('39', 'trade', '2026-05-22 19:52:12.174000', '对方:得狗的老意', '1', '反叛者', '24', '花海', '接受交易→得狗的老意 #16');
-INSERT INTO `game_activity_log` VALUES ('40', 'trade', '2026-05-22 19:52:15.129000', '对方:得狗的老意', '1', '反叛者', '24', '花海', '接受交易→得狗的老意 #15');
-INSERT INTO `game_activity_log` VALUES ('41', 'consume', '2026-05-22 19:54:31.300000', '累计进食 0/2；取暖 15/15 热值', '1', '天灾使者', '22', '11', '进食+0 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('42', 'consume', '2026-05-22 19:54:41.797000', '累计进食 2/2；取暖 15/15 热值', '1', '天灾使者', '22', '11', '进食+2 木0kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('43', 'trade', '2026-05-22 19:56:33.351000', '对方:追枫 | give 食物×2', '1', '反叛者', '24', '花海', '发起交易→追枫 #17');
-INSERT INTO `game_activity_log` VALUES ('44', 'action', '2026-05-22 19:57:23.843000', '模式：仓库→个人；源：码头集购仓；草药×1；便当×1；食物×100', '1', '统治者', '26', 'V', '自由#1·搬运');
-INSERT INTO `game_activity_log` VALUES ('45', 'action', '2026-05-22 19:57:24.326000', '目标:集市 NPC:汉斯·施密特', '1', '统治者', '26', 'V', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('46', 'trade', '2026-05-22 19:57:48.098000', '对方:花海', '1', '天灾使者', '20', '追枫', '接受交易→花海 #17');
-INSERT INTO `game_activity_log` VALUES ('47', 'consume', '2026-05-22 19:59:13.072000', '累计进食 2/2；取暖 15/15 热值', '1', '反叛者', '13', '凭栏择雨', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('48', 'trade', '2026-05-22 19:59:59.116000', '对方:孤城暮角 | give 金属制品×10', '1', '天灾使者', '20', '追枫', '发起交易→孤城暮角 #18');
-INSERT INTO `game_activity_log` VALUES ('49', 'consume', '2026-05-22 20:00:12.490000', '累计进食 2/2；取暖 15/15 热值', '1', '平民', '12', '千代', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('50', 'action', '2026-05-22 20:00:51.209000', null, '1', '反叛者', '24', '花海', '自由#1·生产');
-INSERT INTO `game_activity_log` VALUES ('51', 'action', '2026-05-22 20:00:51.338000', '百宝袋，对燃料使用百宝袋', '1', '反叛者', '24', '花海', '自由#2·使用特性');
-INSERT INTO `game_activity_log` VALUES ('52', 'trade', '2026-05-22 20:01:00.155000', '对方:孤城暮角 | give 木材×30', '1', '天灾使者', '20', '追枫', '发起交易→孤城暮角 #19');
-INSERT INTO `game_activity_log` VALUES ('53', 'trade', '2026-05-22 20:01:31.632000', '对方:追枫', '1', '天灾使者', '16', '孤城暮角', '接受交易→追枫 #19');
-INSERT INTO `game_activity_log` VALUES ('54', 'trade', '2026-05-22 20:01:33.925000', '对方:追枫', '1', '天灾使者', '16', '孤城暮角', '接受交易→追枫 #18');
-INSERT INTO `game_activity_log` VALUES ('55', 'trade', '2026-05-22 20:03:49.120000', '对方:得狗的老意 | give 木材×1 | take 猎枪×1 | take 猎枪弹×2', '1', '反叛者', '13', '凭栏择雨', '发起交易→得狗的老意 #20');
-INSERT INTO `game_activity_log` VALUES ('56', 'consume', '2026-05-22 20:04:20.913000', '累计进食 2/2；取暖 15/15 热值', '1', '反叛者', '24', '花海', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('57', 'action', '2026-05-22 20:04:25.988000', '目标:千代 调查阵营信息', '1', '天灾使者', '22', '11', '自由#1·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('58', 'action', '2026-05-22 20:04:26.133000', '潜水，1D6', '1', '天灾使者', '22', '11', '自由#2·使用职业技能');
-INSERT INTO `game_activity_log` VALUES ('59', 'trade', '2026-05-22 20:09:41.076000', '对方:凭栏择雨', '1', '平民', '27', '得狗的老意', '接受交易→凭栏择雨 #20');
-INSERT INTO `game_activity_log` VALUES ('60', 'faction', '2026-05-22 20:09:52.380000', '✓ 已提交【额外劳动】\n\n提交者：花海\n效果：今日生产类自由行动产出 +50%。\n（须今日已提交生产行动）\n等待主持人确认。', '1', '反叛者', '24', '花海', '额外劳动');
-INSERT INTO `game_activity_log` VALUES ('61', 'action', '2026-05-22 20:11:36.987000', '从码头使用渔船出海捕鱼', '1', '冒险者', '19', 'unPy-GPT', '自由#1·使用职业技能');
-INSERT INTO `game_activity_log` VALUES ('62', 'action', '2026-05-22 20:11:37.121000', '目标:追枫', '1', '冒险者', '19', 'unPy-GPT', '自由#2·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('63', 'action', '2026-05-22 20:13:42.601000', '目标:集市 NPC:汉斯·施密特 和大家进行协商交流', '1', '反叛者', '13', '凭栏择雨', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('64', 'faction', '2026-05-22 20:14:32.126000', '✓ 已提交【安排看守】\n\n看守人员：千代\n看守地点：矿场\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。', '1', '统治者', '10', '二阶堂希罗', '安排看守');
-INSERT INTO `game_activity_log` VALUES ('65', 'quick', '2026-05-22 20:16:33.795000', '对西里尔散播瘟疫', '1', '天灾使者', '16', '孤城暮角', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('66', 'action', '2026-05-22 20:17:23.101000', '使用启蒙“捕鱼”，教学我、gpt（采珠人）、择雨（旅店老板）', '1', '平民', '12', '千代', '自由#1·使用职业技能');
-INSERT INTO `game_activity_log` VALUES ('67', 'action', '2026-05-22 20:17:23.208000', '目标:闲屿', '1', '平民', '12', '千代', '自由#2·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('68', 'night', '2026-05-22 20:17:33.571000', '✓ 已提交【其他】\n\n提交者：千代\n备注：回到旅店休息\n\n等待主持人在夜晚阶段结算。', '1', '平民', '12', '千代', '其他');
-INSERT INTO `game_activity_log` VALUES ('69', 'trade', '2026-05-22 20:22:27.371000', '对方:兔兔 | give 食物×2', '1', '反叛者', '24', '花海', '发起交易→兔兔 #21');
-INSERT INTO `game_activity_log` VALUES ('70', 'action', '2026-05-22 20:25:46.693000', null, '1', '反叛者', '13', '凭栏择雨', '自由#1·隐藏');
-INSERT INTO `game_activity_log` VALUES ('71', 'action', '2026-05-22 20:25:46.824000', '目标:集市 NPC:汉斯·施密特 和大家汇合，商讨事项', '1', '反叛者', '13', '凭栏择雨', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('72', 'action', '2026-05-22 20:27:57.382000', '狩猎，打五块肉，打完以后把武器献祭了', '1', '天灾使者', '20', '追枫', '自由#1·使用职业技能');
-INSERT INTO `game_activity_log` VALUES ('73', 'action', '2026-05-22 20:27:59.028000', '目标:猎人小屋', '1', '天灾使者', '20', '追枫', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('74', 'faction', '2026-05-22 20:31:07.878000', '✓ 已提交【额外调查】\n\n调查类型：调查玩家\n调查目标：兔兔\n\n结算后该次调查数量将翻倍。等待主持人确认。', '1', '冒险者', '19', 'unPy-GPT', '额外调查');
-INSERT INTO `game_activity_log` VALUES ('75', 'action', '2026-05-22 20:32:46.151000', '使用启蒙“捕鱼”，教学我、gpt（采珠人）、择雨（旅店老板）', '1', '平民', '12', '千代', '自由#1·使用职业技能');
-INSERT INTO `game_activity_log` VALUES ('76', 'action', '2026-05-22 20:32:46.252000', '目标:MISD330 调查医生', '1', '平民', '12', '千代', '自由#2·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('77', 'faction', '2026-05-22 20:36:04.821000', '✓ 已提交【诅咒】\n\n消耗武器：猎枪\n目标1：兔兔\n目标2：得狗的老意\n\n效果：获知阵营、施加「诅咒」标记。\n等待主持人确认。', '1', '天灾使者', '20', '追枫', '诅咒');
-INSERT INTO `game_activity_log` VALUES ('78', 'action', '2026-05-22 20:39:28.488000', '将码头仓库物资中运500Kg转入矿产仓库，并保留1个鱼叉及30Kg的食物到个人', '1', '统治者', '10', '二阶堂希罗', '自由#1·其他');
-INSERT INTO `game_activity_log` VALUES ('79', 'action', '2026-05-22 20:39:28.593000', '将燃料仓库中500Kg搬运至矿厂仓库并保留20Kg到个人', '1', '统治者', '10', '二阶堂希罗', '自由#2·其他');
-INSERT INTO `game_activity_log` VALUES ('80', 'night', '2026-05-22 20:40:00.936000', '✓ 已提交【其他】\n\n提交者：凭栏择雨\n备注：使用职业技能\n\n等待主持人在夜晚阶段结算。', '1', '反叛者', '13', '凭栏择雨', '其他');
-INSERT INTO `game_activity_log` VALUES ('81', 'action', '2026-05-22 20:40:14.088000', '手工艺\n猎弓×1，仿制枪×1，复合盾×1（在枪把上刻上“二房”的名字）', '1', '天灾使者', '16', '孤城暮角', '自由#1·使用职业技能');
-INSERT INTO `game_activity_log` VALUES ('82', 'action', '2026-05-22 20:40:14.182000', '目标:旅店', '1', '天灾使者', '16', '孤城暮角', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('83', 'faction', '2026-05-22 20:40:48.047000', '✓ 已提交【额外调查】\n\n调查类型：调查地点\n调查目标：矿场\n\n结算后该次调查数量将翻倍。等待主持人确认。', '1', '天灾使者', '16', '孤城暮角', '额外调查');
-INSERT INTO `game_activity_log` VALUES ('84', 'trade', '2026-05-22 20:42:45.584000', '对方:孤城暮角 | give 木材×20 | give 未知物品×10', '1', '天灾使者', '20', '追枫', '发起交易→孤城暮角 #22');
-INSERT INTO `game_activity_log` VALUES ('85', 'quick', '2026-05-22 20:44:54.154000', '我是个酒蒙子，我要喝两瓶我的酒', '1', '平民', '27', '得狗的老意', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('86', 'trade', '2026-05-22 20:45:41.046000', '对方:追枫', '1', '天灾使者', '16', '孤城暮角', '接受交易→追枫 #22');
-INSERT INTO `game_activity_log` VALUES ('87', 'action', '2026-05-22 20:50:19.458000', '目标:兔兔', '1', '平民', '30', 'MISD330', '自由#1·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('88', 'action', '2026-05-22 20:50:19.968000', '目标:蟋蟀蜥蜴', '1', '平民', '30', 'MISD330', '自由#2·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('89', 'action', '2026-05-22 20:52:56.168000', '目标:凭栏择雨', '1', '平民', '8', '兔兔', '自由#1·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('90', 'action', '2026-05-22 20:52:56.502000', '目标:千代', '1', '平民', '8', '兔兔', '自由#2·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('91', 'trade', '2026-05-22 20:53:05.730000', '对方:花海', '1', '平民', '8', '兔兔', '接受交易→花海 #21');
-INSERT INTO `game_activity_log` VALUES ('92', 'trade', '2026-05-22 20:53:45.959000', '对方:MISD330 | take 木材×3 | take 金属制品×7', '1', '天灾使者', '16', '孤城暮角', '发起交易→MISD330 #23');
-INSERT INTO `game_activity_log` VALUES ('93', 'trade', '2026-05-22 20:53:49.384000', '对方:MISD330 | take 木材×3 | take 金属制品×7', '1', '天灾使者', '16', '孤城暮角', '发起交易→MISD330 #24');
-INSERT INTO `game_activity_log` VALUES ('94', 'consume', '2026-05-22 21:05:07.010000', '累计进食 2/2；取暖 15/15 热值', '1', '平民', '21', '乐语', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('95', 'quick', '2026-05-22 21:07:22.603000', '我想探查一下出生的邮局附近有什么物资和物品', '1', '平民', '21', '乐语', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('96', 'consume', '2026-05-22 21:09:20.323000', '累计进食 2/2；取暖 15/15 热值', '1', '平民', '31', '闲屿', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('97', 'consume', '2026-05-22 21:23:11.772000', '累计进食 2/2；取暖 15/15 热值', '1', '反叛者', '11', '蟋蟀蜥蜴', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('98', 'trade', '2026-05-22 21:23:53.020000', '对方:MISD330 | give 食物×2', '1', '反叛者', '24', '花海', '发起交易→MISD330 #25');
-INSERT INTO `game_activity_log` VALUES ('99', 'night', '2026-05-22 21:24:25.739000', '✓ 已提交【其他】\n\n提交者：Κάκτος西里尔\n备注：配合统治者安排，在得到统治者发放的手枪和弹药的同时，守卫镇武库\n\n等待主持人在夜晚阶段结算。', '1', '冒险者', '14', 'Κάκτος西里尔', '其他');
-INSERT INTO `game_activity_log` VALUES ('100', 'trade', '2026-05-22 21:28:38.015000', '对方:花海 | take 食物×2', '1', '平民', '32', '澡堂子', '发起交易→花海 #26');
-INSERT INTO `game_activity_log` VALUES ('101', 'action', '2026-05-22 21:29:38.202000', '目标:码头 NPC:克拉拉·南丁格尔 询问是否有在码头遇到过值得注意的人或事，同时希望以为他提供劳动，让他能给自己一些食物', '1', '平民', '31', '闲屿', '自由#1·前往地点');
-INSERT INTO `game_activity_log` VALUES ('102', 'action', '2026-05-22 21:29:38.420000', '目标:兔兔', '1', '平民', '31', '闲屿', '自由#2·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('103', 'action', '2026-05-22 21:30:30.080000', '目标:酒吧 寻找酒精', '1', '平民', '32', '澡堂子', '自由#1·前往地点');
-INSERT INTO `game_activity_log` VALUES ('104', 'action', '2026-05-22 21:30:30.355000', '目标:墓地 找我需要的物资', '1', '平民', '32', '澡堂子', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('105', 'faction', '2026-05-22 21:31:25.138000', '✓ 已提交【额外行动】\n\n行动类型：使用职业技能\n\n此环节无法寻找NPC进行对话。\n等待主持人确认。', '1', '反叛者', '13', '凭栏择雨', '额外行动');
-INSERT INTO `game_activity_log` VALUES ('106', 'action', '2026-05-22 21:31:52.063000', '目标:警察局 表面是是去上班 问一下小镇最近有没有不太平的事情 把锅全都推给统治者', '1', '反叛者', '11', '蟋蟀蜥蜴', '自由#1·前往地点');
-INSERT INTO `game_activity_log` VALUES ('107', 'action', '2026-05-22 21:31:52.174000', '目标:二阶堂希罗 调查一下他去了哪里 都和谁说了话', '1', '反叛者', '11', '蟋蟀蜥蜴', '自由#2·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('108', 'trade', '2026-05-22 21:32:25.238000', '对方:澡堂子', '1', '反叛者', '24', '花海', '接受交易→澡堂子 #26');
-INSERT INTO `game_activity_log` VALUES ('109', 'consume', '2026-05-22 21:32:25.314000', '累计进食 2/2；取暖 15/15 热值', '1', '平民', '32', '澡堂子', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('110', 'action', '2026-05-22 21:34:27.775000', '模式：仓库→仓库；源：燃料仓库；目标：镇武库；手电筒×8；蜡烛×20；木材×265；沥青×30；燃料×200', '1', '统治者', '26', 'V', '自由#1·搬运');
-INSERT INTO `game_activity_log` VALUES ('111', 'action', '2026-05-22 21:34:28.448000', '目标:集市 NPC:汉斯·施密特', '1', '统治者', '26', 'V', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('112', 'action', '2026-05-22 21:35:36.517000', '目标:码头 NPC:克拉拉·南丁格尔 询问小镇中载具的信息，询问能否获得一些满足温饱的食物，希望交换一些打捞上来的特殊物品', '1', '平民', '21', '乐语', '自由#1·前往地点');
-INSERT INTO `game_activity_log` VALUES ('113', 'action', '2026-05-22 21:35:36.660000', '目标:矿场 NPC:维克多·斯通 搜集一些散落的资源。询问矿工需不需要我帮忙带口信，需要的话收取一点的报酬。搜集一些有益的关于小镇的其他情报', '1', '平民', '21', '乐语', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('114', 'faction', '2026-05-22 21:36:49.096000', '✓ 已提交【额外行动】\n\n行动类型：使用职业技能\n备注：寻找有没有打架斗殴的人并劝架\n\n此环节无法寻找NPC进行对话。\n等待主持人确认。', '1', '反叛者', '11', '蟋蟀蜥蜴', '额外行动');
-INSERT INTO `game_activity_log` VALUES ('115', 'night', '2026-05-22 21:36:50.985000', '✓ 已提交【其他】\n\n提交者：澡堂子\n备注：作为守墓人夜间很精神也很正常吧 夜晚警惕并且隐秘的观察别的玩家的动向\n\n等待主持人在夜晚阶段结算。', '1', '平民', '32', '澡堂子', '其他');
-INSERT INTO `game_activity_log` VALUES ('116', 'trade', '2026-05-22 21:38:39.769000', '对方:花海 | give 燃料×3', '1', '反叛者', '11', '蟋蟀蜥蜴', '发起交易→花海 #27');
-INSERT INTO `game_activity_log` VALUES ('117', 'trade', '2026-05-22 21:41:14.208000', '对方:花海 | give 燃料×2', '1', '反叛者', '23', '教皇', '发起交易→花海 #28');
-INSERT INTO `game_activity_log` VALUES ('118', 'trade', '2026-05-22 21:41:28.792000', '对方:教皇', '1', '反叛者', '24', '花海', '接受交易→教皇 #28');
-INSERT INTO `game_activity_log` VALUES ('119', 'trade', '2026-05-22 21:41:30.364000', '对方:蟋蟀蜥蜴', '1', '反叛者', '24', '花海', '接受交易→蟋蟀蜥蜴 #27');
-INSERT INTO `game_activity_log` VALUES ('120', 'faction', '2026-05-22 21:43:31.064000', '✓ 已提交【额外行动】\n\n行动类型：使用职业技能\n备注：布道，对农业协会的农户及成员使用\n\n此环节无法寻找NPC进行对话。\n等待主持人确认。', '1', '反叛者', '23', '教皇', '额外行动');
-INSERT INTO `game_activity_log` VALUES ('121', 'quick', '2026-05-22 21:47:51.567000', '我从燃料仓库搬运了物资到镇武库，我希望之后从镇武库拿走50kg的物资可以吗', '1', '统治者', '26', 'V', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('122', 'trade', '2026-05-22 21:50:23.199000', '对方:花海', '1', '反叛者', '30', 'MISD330', '接受交易→花海 #25');
-INSERT INTO `game_activity_log` VALUES ('123', 'consume', '2026-05-22 21:51:07.330000', '累计进食 2/2；取暖 15/15 热值', '1', '反叛者', '30', 'MISD330', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('124', 'night', '2026-05-22 21:51:38.093000', '✓ 已提交【其他】\n\n提交者：澡堂子\n备注：守墓人夜间精力充沛 带着我的好朋狗在旅馆周围隐秘的巡逻\n\n等待主持人在夜晚阶段结算。', '1', '平民', '32', '澡堂子', '其他');
-INSERT INTO `game_activity_log` VALUES ('125', 'quick', '2026-05-22 21:51:40.880000', '转移40kg燃料仓库的木材和30kg港口的食物', '1', '统治者', '17', 'zzz', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('126', 'action', '2026-05-22 22:14:40.288000', '模式：仓库→仓库；源：燃料仓库；目标：镇武库；火柴×2；木材×479；沥青×20', '1', '统治者', '15', '空白', '自由#1·搬运');
-INSERT INTO `game_activity_log` VALUES ('127', 'action', '2026-05-22 22:14:40.419000', '模式：仓库→仓库；源：码头集购仓；目标：镇武库；医疗包×2；信号枪×1；朗姆酒×20；草药×3；渔网×1；医用酒精×5；破损海图×1；便当×1；鱼叉/矛×2；信号弹×2；食物×300；螺旋桨×3', '1', '统治者', '15', '空白', '自由#2·搬运');
-INSERT INTO `game_activity_log` VALUES ('128', 'trade', '2026-05-22 22:16:16.784000', '对方:得狗的老意 | give 未知物品×1 | take 食物×2 | take 燃料×15', '1', '统治者', '26', 'V', '发起交易→得狗的老意 #29');
-INSERT INTO `game_activity_log` VALUES ('129', 'quick', '2026-05-22 22:17:55.371000', '快速搬运一把鱼叉与15Kg燃料到背包', '1', '统治者', '10', '二阶堂希罗', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('130', 'night', '2026-05-22 22:19:42.971000', '✓ 已提交【夜晚个人行动】\n\n提交者：zzz\n行动：调查玩家\n目标：兔兔\n\n等待主持人在夜晚阶段结算。', '1', '统治者', '17', 'zzz', '夜晚个人行动');
-INSERT INTO `game_activity_log` VALUES ('131', 'consume', '2026-05-22 22:22:28.032000', '累计进食 2/2；取暖 15/15 热值', '1', '统治者', '10', '二阶堂希罗', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('132', 'night', '2026-05-22 22:32:04.892000', '✓ 已提交【其他】\n\n提交者：MISD330\n备注：前往矿场，偷取金属\n\n等待主持人在夜晚阶段结算。', '1', '反叛者', '30', 'MISD330', '其他');
-INSERT INTO `game_activity_log` VALUES ('133', 'night', '2026-05-22 22:40:22.877000', '✓ 已提交【向统治者施压】\n\n提交者：蟋蟀蜥蜴\n施压诉求：资源由全体镇民管理\n备注：镇民们没有办法获得合理的生存物资 白天工作消耗所有行动点 受限非常大\n\n等待主持人在夜晚阶段结算。', '1', '反叛者', '11', '蟋蟀蜥蜴', '向统治者施压');
-INSERT INTO `game_activity_log` VALUES ('134', 'quick', '2026-05-22 22:42:22.921000', '在白天顺便练练射击技术 用来保护人民群众', '1', '反叛者', '11', '蟋蟀蜥蜴', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('135', 'faction', '2026-05-22 22:44:42.265000', '✓ 已提交【破坏】\n\n目标设施：烘焙炉（面包店）\n\n等待主持人确认。', '1', '天灾使者', '22', '11', '破坏');
-INSERT INTO `game_activity_log` VALUES ('136', 'night', '2026-05-22 22:44:55.060000', '✓ 已提交【其他】\n\n提交者：追枫\n备注：天灾对诅咒目标发动拉人，拉占卜进入天灾队伍\n\n等待主持人在夜晚阶段结算。', '1', '天灾使者', '20', '追枫', '其他');
-INSERT INTO `game_activity_log` VALUES ('137', 'trade', '2026-05-22 22:46:04.940000', '对方:Κάκτος西里尔 | give 未知物品×30 | give 未知物品×10 | take 金属制品×7', '1', '天灾使者', '16', '孤城暮角', '发起交易→Κάκτος西里尔 #30');
-INSERT INTO `game_activity_log` VALUES ('138', 'night', '2026-05-22 22:46:18.365000', '✓ 已提交【其他】\n\n提交者：11\n备注：天灾对诅咒目标发动拉人，拉占卜进入队伍\n\n等待主持人在夜晚阶段结算。', '1', '天灾使者', '22', '11', '其他');
-INSERT INTO `game_activity_log` VALUES ('139', 'trade', '2026-05-22 22:48:18.747000', '对方:孤城暮角', '1', '冒险者', '14', 'Κάκτος西里尔', '接受交易→孤城暮角 #30');
-INSERT INTO `game_activity_log` VALUES ('140', 'quick', '2026-05-22 22:48:39.774000', '查看轮船班次表看看有什么发现', '1', '平民', '21', '乐语', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('141', 'night', '2026-05-22 22:50:54.605000', '✓ 已提交【进行密谋】\n\n提交者：孤城暮角\n密谋类型：制造恐怖\n参与玩家：追枫、11\n备注：拉占卜进天灾\n\n等待主持人在夜晚阶段结算。', '1', '天灾使者', '16', '孤城暮角', '进行密谋');
-INSERT INTO `game_activity_log` VALUES ('142', 'trade', '2026-05-22 22:56:39.719000', '对方:追枫 | give 木材×10', '1', '反叛者', '24', '花海', '发起交易→追枫 #31');
-INSERT INTO `game_activity_log` VALUES ('143', 'trade', '2026-05-22 22:58:27.637000', '对方:zzz | give 食物×2 | take 维修工具包×1', '1', '统治者', '10', '二阶堂希罗', '发起交易→zzz #32');
-INSERT INTO `game_activity_log` VALUES ('144', 'trade', '2026-05-22 22:58:50.077000', '对方:二阶堂希罗', '1', '统治者', '17', 'zzz', '接受交易→二阶堂希罗 #32');
-INSERT INTO `game_activity_log` VALUES ('145', 'consume', '2026-05-22 22:59:04.604000', '累计进食 2/2；取暖 15/15 热值', '1', '统治者', '17', 'zzz', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('146', 'trade', '2026-05-22 23:06:52.821000', '对方:花海', '1', '天灾使者', '20', '追枫', '接受交易→花海 #31');
-INSERT INTO `game_activity_log` VALUES ('147', 'trade', '2026-05-22 23:09:29.465000', '对方:孤城暮角 | give 木材×10', '1', '天灾使者', '20', '追枫', '发起交易→孤城暮角 #33');
-INSERT INTO `game_activity_log` VALUES ('148', 'trade', '2026-05-22 23:09:52.301000', '对方:追枫', '1', '天灾使者', '16', '孤城暮角', '接受交易→追枫 #33');
-INSERT INTO `game_activity_log` VALUES ('149', 'night', '2026-05-22 23:12:53.360000', '✓ 已提交【其他】\n\n提交者：闲屿\n备注：发动特性（？）去靠海的地点转转\n\n等待主持人在夜晚阶段结算。', '1', '平民', '31', '闲屿', '其他');
-INSERT INTO `game_activity_log` VALUES ('150', 'quick', '2026-05-22 23:14:39.861000', '尝试与相遇的人产生肢体接触', '1', '平民', '31', '闲屿', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('151', 'night', '2026-05-22 23:24:05.596000', '✓ 已提交【夜晚个人行动】\n\n提交者：空白\n行动：使用特性\n备注：使用窃听者特性 查天灾者的聊天记录\n\n等待主持人在夜晚阶段结算。', '1', '统治者', '15', '空白', '夜晚个人行动');
-INSERT INTO `game_activity_log` VALUES ('152', 'trade', '2026-05-22 23:26:54.354000', '对方:对酒 | give 食物×2', '1', '反叛者', '24', '花海', '发起交易→对酒 #34');
-INSERT INTO `game_activity_log` VALUES ('153', 'consume', '2026-05-22 23:27:28.623000', '累计进食 2/2；取暖 15/15 热值', '1', '平民', '29', '飞凡', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('154', 'night', '2026-05-22 23:29:08.085000', '✓ 已提交【其他】\n\n提交者：飞凡\n备注：去旅店睡觉咯\n\n等待主持人在夜晚阶段结算。', '1', '平民', '29', '飞凡', '其他');
-INSERT INTO `game_activity_log` VALUES ('155', 'trade', '2026-05-22 23:34:13.125000', '对方:闲屿 | give 食物×2', '1', '反叛者', '24', '花海', '发起交易→闲屿 #35');
-INSERT INTO `game_activity_log` VALUES ('156', 'trade', '2026-05-22 23:35:46.697000', '对方:花海', '1', '平民', '31', '闲屿', '接受交易→花海 #35');
-INSERT INTO `game_activity_log` VALUES ('157', 'quick', '2026-05-22 23:42:21.396000', '我、对酒、GPT和镇长Vigil一起守镇武库。\n​其中统治层将会把一把威胁5的手枪和对应的弹药1交付我保管', '1', '冒险者', '14', 'Κάκτος西里尔', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('158', 'action', '2026-05-22 23:43:44.151000', '目标:猎人小屋', '1', '平民', '18', 'Missbear', '自由#1·前往地点');
-INSERT INTO `game_activity_log` VALUES ('159', 'action', '2026-05-22 23:43:44.270000', null, '1', '平民', '18', 'Missbear', '自由#2·隐藏');
-INSERT INTO `game_activity_log` VALUES ('160', 'consume', '2026-05-22 23:44:11.825000', '累计进食 2/2；取暖 5/15 热值', '1', '平民', '18', 'Missbear', '进食+2 木5kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('161', 'consume', '2026-05-23 00:05:45.071000', '累计进食 2/2；取暖 15/15 热值', '1', '平民', '25', 'tony', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('162', 'consume', '2026-05-23 00:13:29.075000', '累计进食 2/2；取暖 15/15 热值', '1', '平民', '18', 'Missbear', '进食+0 木10kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('163', 'trade', '2026-05-23 00:23:40.388000', '对方:二阶堂希罗 | give 未知物品×1 | take 食物×2 | take 燃料×1', '1', '统治者', '26', 'V', '发起交易→二阶堂希罗 #36');
-INSERT INTO `game_activity_log` VALUES ('164', 'trade', '2026-05-23 00:24:12.018000', '对方:V | give 食物×2 | give 燃料×1 | take 哨子×1', '1', '统治者', '10', '二阶堂希罗', '发起交易→V #37');
-INSERT INTO `game_activity_log` VALUES ('165', 'trade', '2026-05-23 00:24:17.642000', '对方:V', '1', '统治者', '10', '二阶堂希罗', '接受交易→V #36');
-INSERT INTO `game_activity_log` VALUES ('166', 'trade', '2026-05-23 00:24:34.158000', '对方:V | give 燃料×5', '1', '统治者', '15', '空白', '发起交易→V #38');
-INSERT INTO `game_activity_log` VALUES ('167', 'consume', '2026-05-23 00:31:49.089000', '累计进食 2/2；取暖 15/15 热值', '1', '平民', '28', '咲黑', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('168', 'consume', '2026-05-23 00:32:15.185000', '累计进食 2/2；取暖 15/15 热值', '1', '统治者', '26', 'V', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('169', 'trade', '2026-05-23 00:43:35.786000', '对方:花海', '1', '冒险者', '9', '对酒', '接受交易→花海 #34');
-INSERT INTO `game_activity_log` VALUES ('170', 'night', '2026-05-23 00:44:00.373000', '✓ 已提交【其他】\n\n提交者：得狗的老意\n备注：我被所有人怀疑是天灾使者我非常愤怒我要偷偷抓一只蟑螂放在占卜师被窝里，要会飞的那种美洲大蠊\n\n等待主持人在夜晚阶段结算。', '1', '平民', '27', '得狗的老意', '其他');
-INSERT INTO `game_activity_log` VALUES ('171', 'trade', '2026-05-23 00:44:58.895000', '对方:得狗的老意 | take 未知物品×30', '1', '冒险者', '9', '对酒', '发起交易→得狗的老意 #39');
-INSERT INTO `game_activity_log` VALUES ('172', 'trade', '2026-05-23 00:45:31.525000', '对方:对酒', '1', '平民', '27', '得狗的老意', '接受交易→对酒 #39');
-INSERT INTO `game_activity_log` VALUES ('173', 'quick', '2026-05-23 01:03:49.184000', '观察邮局墙上的邮票', '1', '冒险者', '21', '乐语', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('174', 'quick', '2026-05-23 01:04:11.147000', '晚上去旅馆睡觉', '1', '冒险者', '21', '乐语', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('175', 'quick', '2026-05-23 01:05:04.468000', '白天去矿场时候看没人看守顺手取走一些堆放的物资', '1', '冒险者', '21', '乐语', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('176', 'trade', '2026-05-23 01:30:51.178000', '对方:澡堂子 | give 燃料×5 | give 食物×2 | take 金属制品×5', '1', '反叛者', '13', '凭栏择雨', '发起交易→澡堂子 #40');
-INSERT INTO `game_activity_log` VALUES ('177', 'trade', '2026-05-23 01:31:35.759000', '对方:凭栏择雨', '1', '平民', '32', '澡堂子', '接受交易→凭栏择雨 #40');
-INSERT INTO `game_activity_log` VALUES ('178', 'trade', '2026-05-23 01:37:36.576000', '对方:得狗的老意 | take 未知物品×2 | take 木材×500 | take 食物×10', '1', '冒险者', '9', '对酒', '发起交易→得狗的老意 #41');
-INSERT INTO `game_activity_log` VALUES ('179', 'trade', '2026-05-23 01:37:50.876000', '对方:得狗的老意 | take 猎枪×1', '1', '冒险者', '9', '对酒', '发起交易→得狗的老意 #42');
-INSERT INTO `game_activity_log` VALUES ('180', 'trade', '2026-05-23 01:40:05.032000', '对方:得狗的老意 | take 未知物品×30 | take 未知物品×100 | take 金属制品×30 | take 猎枪弹×2 | take 斧头×2', '1', '冒险者', '9', '对酒', '发起交易→得狗的老意 #43');
-INSERT INTO `game_activity_log` VALUES ('181', 'trade', '2026-05-23 01:40:34.031000', '对方:对酒', '1', '平民', '27', '得狗的老意', '接受交易→对酒 #43');
-INSERT INTO `game_activity_log` VALUES ('182', 'trade', '2026-05-23 01:40:41.717000', '对方:对酒', '1', '平民', '27', '得狗的老意', '接受交易→对酒 #42');
-INSERT INTO `game_activity_log` VALUES ('183', 'trade', '2026-05-23 01:40:43.757000', '对方:对酒', '1', '平民', '27', '得狗的老意', '接受交易→对酒 #41');
-INSERT INTO `game_activity_log` VALUES ('184', 'trade', '2026-05-23 11:26:51.351000', '对方:二阶堂希罗 | give 未知物品×2 | take 食物×1', '2', '平民', '25', 'tony', '发起交易→二阶堂希罗 #44');
-INSERT INTO `game_activity_log` VALUES ('185', 'consume', '2026-05-23 11:37:14.726000', '累计进食 2/2；取暖 15/15 热值', '2', '天灾使者', '20', '追枫', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('186', 'consume', '2026-05-23 11:49:46.756000', '累计进食 2/2；取暖 15/15 热值', '2', '反叛者', '13', '凭栏择雨', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('187', 'consume', '2026-05-23 14:00:59.444000', '累计进食 2/2；取暖 15/15 热值', '2', '天灾使者', '22', '11', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('188', 'consume', '2026-05-23 14:04:27.377000', '累计进食 2/2；取暖 15/15 热值', '2', '天灾使者', '16', '孤城暮角', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('189', 'trade', '2026-05-23 14:37:20.009000', '对方:追枫 | give 未知物品×1', '2', '天灾使者', '16', '孤城暮角', '发起交易→追枫 #45');
-INSERT INTO `game_activity_log` VALUES ('190', 'trade', '2026-05-23 14:39:26.309000', '对方:追枫 | give 未知物品×1', '2', '天灾使者', '16', '孤城暮角', '发起交易→追枫 #46');
-INSERT INTO `game_activity_log` VALUES ('191', 'trade', '2026-05-23 14:41:26.305000', '对方:孤城暮角', '2', '天灾使者', '20', '追枫', '接受交易→孤城暮角 #46');
-INSERT INTO `game_activity_log` VALUES ('192', 'trade', '2026-05-23 14:41:31.105000', '对方:孤城暮角', '2', '天灾使者', '20', '追枫', '接受交易→孤城暮角 #45');
-INSERT INTO `game_activity_log` VALUES ('193', 'consume', '2026-05-23 15:29:52.735000', '累计进食 2/2；取暖 15/15 热值', '2', '天灾使者', '8', '兔兔', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('194', 'trade', '2026-05-23 15:34:00.692000', '对方:孤城暮角 | give 金属制品×10', '2', '天灾使者', '8', '兔兔', '发起交易→孤城暮角 #47');
-INSERT INTO `game_activity_log` VALUES ('195', 'trade', '2026-05-23 15:34:05.742000', '对方:兔兔', '2', '天灾使者', '16', '孤城暮角', '接受交易→兔兔 #47');
-INSERT INTO `game_activity_log` VALUES ('196', 'action', '2026-05-23 15:42:39.920000', '目标:二阶堂希罗', '2', '天灾使者', '8', '兔兔', '自由#1·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('197', 'action', '2026-05-23 15:42:40.066000', '目标:V', '2', '天灾使者', '8', '兔兔', '自由#2·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('198', 'trade', '2026-05-23 15:55:23.955000', '对方:tony', '2', '统治者', '10', '二阶堂希罗', '接受交易→tony #44');
-INSERT INTO `game_activity_log` VALUES ('199', 'action', '2026-05-23 16:09:55.613000', '目标:空白', '2', '平民', '18', 'Missbear', '自由#1·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('200', 'action', '2026-05-23 16:09:55.690000', '目标:得狗的老意', '2', '平民', '18', 'Missbear', '自由#2·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('201', 'trade', '2026-05-23 16:57:01.858000', '对方:孤城暮角 | give 未知物品×1 | give 刺刀×1 | give 木材×65 | give 未知物品×20 | give 食物×9 | give 燃料×9', '2', '天灾使者', '22', '11', '发起交易→孤城暮角 #48');
-INSERT INTO `game_activity_log` VALUES ('202', 'trade', '2026-05-23 16:57:33.177000', '对方:11', '2', '天灾使者', '16', '孤城暮角', '接受交易→11 #48');
-INSERT INTO `game_activity_log` VALUES ('203', 'consume', '2026-05-23 19:03:04.184000', '累计进食 2/2；取暖 15/15 热值', '2', '冒险者', '9', '对酒', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('204', 'consume', '2026-05-23 19:06:51.092000', '累计进食 1/2；取暖 15/15 热值', '2', '平民', '28', '咲黑', '进食+1 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('205', 'consume', '2026-05-23 19:07:21.649000', '累计进食 2/2；取暖 15/15 热值', '2', '冒险者', '19', 'unPy-GPT', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('206', 'action', '2026-05-23 19:07:44.120000', '目标:空白', '2', '平民', '28', '咲黑', '自由#1·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('207', 'action', '2026-05-23 19:07:44.364000', '目标:飞凡', '2', '平民', '28', '咲黑', '自由#2·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('208', 'trade', '2026-05-23 19:08:18.471000', '对方:Κάκτος西里尔 | give 猎枪弹×2 | give 猎枪×1', '2', '冒险者', '9', '对酒', '发起交易→Κάκτος西里尔 #49');
-INSERT INTO `game_activity_log` VALUES ('209', 'trade', '2026-05-23 19:15:13.066000', '对方:11 | give 未知物品×1', '2', '冒险者', '9', '对酒', '发起交易→11 #50');
-INSERT INTO `game_activity_log` VALUES ('210', 'trade', '2026-05-23 19:15:59.857000', '对方:乐语 | give 未知物品×1', '2', '冒险者', '9', '对酒', '发起交易→乐语 #51');
-INSERT INTO `game_activity_log` VALUES ('211', 'trade', '2026-05-23 19:16:27.726000', '对方:unPy-GPT | give 斧头×1', '2', '冒险者', '9', '对酒', '发起交易→unPy-GPT #52');
-INSERT INTO `game_activity_log` VALUES ('212', 'trade', '2026-05-23 19:17:06.023000', '对方:对酒', '2', '冒险者', '19', 'unPy-GPT', '接受交易→对酒 #52');
-INSERT INTO `game_activity_log` VALUES ('213', 'trade', '2026-05-23 19:17:13.294000', '对方:对酒', '2', '天灾使者', '22', '11', '接受交易→对酒 #50');
-INSERT INTO `game_activity_log` VALUES ('214', 'trade', '2026-05-23 19:18:01.149000', '对方:对酒 | give 刺刀×1', '2', '冒险者', '19', 'unPy-GPT', '发起交易→对酒 #53');
-INSERT INTO `game_activity_log` VALUES ('215', 'trade', '2026-05-23 19:18:09.316000', '对方:unPy-GPT', '2', '冒险者', '9', '对酒', '接受交易→unPy-GPT #53');
-INSERT INTO `game_activity_log` VALUES ('216', 'consume', '2026-05-23 19:22:06.520000', '累计进食 0/2；取暖 15/15 热值', '2', '统治者', '15', '空白', '进食+0 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('217', 'consume', '2026-05-23 19:24:08.613000', '累计进食 2/2；取暖 15/15 热值', '2', '统治者', '10', '二阶堂希罗', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('218', 'trade', '2026-05-23 19:27:02.141000', '对方:空白', '2', '统治者', '26', 'V', '接受交易→空白 #38');
-INSERT INTO `game_activity_log` VALUES ('219', 'trade', '2026-05-23 19:27:07.538000', '对方:二阶堂希罗', '2', '统治者', '26', 'V', '接受交易→二阶堂希罗 #37');
-INSERT INTO `game_activity_log` VALUES ('220', 'action', '2026-05-23 19:33:24.412000', '目标:监狱 NPC:乔克·汤姆 给他五瓶酒 让他说出一些情报并且喝醉离开', '2', '反叛者', '11', '蟋蟀蜥蜴', '自由#1·前往地点');
-INSERT INTO `game_activity_log` VALUES ('221', 'action', '2026-05-23 19:33:24.444000', '目标:监狱 劫狱', '2', '反叛者', '11', '蟋蟀蜥蜴', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('222', 'trade', '2026-05-23 19:34:33.920000', '对方:空白 | give 食物×4', '2', '平民', '25', 'tony', '发起交易→空白 #54');
-INSERT INTO `game_activity_log` VALUES ('223', 'trade', '2026-05-23 19:36:23.851000', '对方:对酒', '2', '冒险者', '21', '乐语', '接受交易→对酒 #51');
-INSERT INTO `game_activity_log` VALUES ('224', 'trade', '2026-05-23 19:36:29.652000', '对方:乐语 | give 食物×4', '2', '冒险者', '19', 'unPy-GPT', '发起交易→乐语 #55');
-INSERT INTO `game_activity_log` VALUES ('225', 'quick', '2026-05-23 19:37:41.844000', '去码头拆船需要用白天行动点吗，还是用快速行动', '2', '冒险者', '21', '乐语', '规则咨询');
-INSERT INTO `game_activity_log` VALUES ('226', 'trade', '2026-05-23 19:38:09.574000', '对方:unPy-GPT', '2', '冒险者', '21', '乐语', '接受交易→unPy-GPT #55');
-INSERT INTO `game_activity_log` VALUES ('227', 'consume', '2026-05-23 19:38:25.183000', '累计进食 2/2；取暖 15/15 热值', '2', '冒险者', '21', '乐语', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('228', 'action', '2026-05-23 19:39:58.363000', '目标:镇长厅', '2', '天灾使者', '20', '追枫', '自由#1·前往地点');
-INSERT INTO `game_activity_log` VALUES ('229', 'action', '2026-05-23 19:39:58.457000', '目标:教皇', '2', '天灾使者', '20', '追枫', '自由#2·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('230', 'trade', '2026-05-23 19:40:10.428000', '对方:花海 | give 金属制品×2', '2', '反叛者', '13', '凭栏择雨', '发起交易→花海 #56');
-INSERT INTO `game_activity_log` VALUES ('231', 'trade', '2026-05-23 19:41:08.521000', '对方:MISD330 | give 未知物品×10', '2', '平民', '29', '飞凡', '发起交易→MISD330 #57');
-INSERT INTO `game_activity_log` VALUES ('232', 'trade', '2026-05-23 19:41:43.708000', '对方:对酒', '2', '冒险者', '14', 'Κάκτος西里尔', '接受交易→对酒 #49');
-INSERT INTO `game_activity_log` VALUES ('233', 'faction', '2026-05-23 19:42:55.240000', '✓ 已提交【诅咒】\n\n消耗武器：猎弓\n目标1：教皇\n目标2：闲屿\n\n效果：获知阵营、施加「诅咒」标记。\n等待主持人确认。', '2', '天灾使者', '20', '追枫', '诅咒');
-INSERT INTO `game_activity_log` VALUES ('234', 'quick', '2026-05-23 19:43:08.923000', '对 对酒（气象观测）散播瘟疫', '2', '天灾使者', '16', '孤城暮角', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('235', 'trade', '2026-05-23 19:43:39.911000', '对方:飞凡', '2', '反叛者', '30', 'MISD330', '接受交易→飞凡 #57');
-INSERT INTO `game_activity_log` VALUES ('236', 'trade', '2026-05-23 19:45:34.459000', '对方:tony', '2', '统治者', '15', '空白', '接受交易→tony #54');
-INSERT INTO `game_activity_log` VALUES ('237', 'consume', '2026-05-23 19:45:46.216000', '累计进食 2/2；取暖 15/15 热值', '2', '统治者', '15', '空白', '进食+2 木0kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('238', 'consume', '2026-05-23 19:46:40.819000', '累计进食 2/2；取暖 15/15 热值', '2', '反叛者', '24', '花海', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('239', 'trade', '2026-05-23 19:46:48.355000', '对方:凭栏择雨', '2', '反叛者', '24', '花海', '接受交易→凭栏择雨 #56');
-INSERT INTO `game_activity_log` VALUES ('240', 'trade', '2026-05-23 19:47:31.879000', '对方:兔兔 | give 食物×2 | take 金属制品×2', '2', '反叛者', '24', '花海', '发起交易→兔兔 #58');
-INSERT INTO `game_activity_log` VALUES ('241', 'action', '2026-05-23 19:49:19.596000', null, '2', '反叛者', '24', '花海', '自由#1·生产');
-INSERT INTO `game_activity_log` VALUES ('242', 'action', '2026-05-23 19:49:19.692000', '百宝袋/复制列表的5个初始物品，我要负责防弹衣、医疗物品，金属，燃料剩余的随机', '2', '反叛者', '24', '花海', '自由#2·使用特性');
-INSERT INTO `game_activity_log` VALUES ('243', 'quick', '2026-05-23 19:51:22.911000', '使用一个便当加额外的行动', '2', '统治者', '10', '二阶堂希罗', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('244', 'action', '2026-05-23 19:52:38.069000', '自己带着斧头邀请维修工（玩家）和船长（玩家带枪）一起前往伐木营地，先和伐木工（npc）进行一个恳求，说明现在暴风雪来临，我们很需要他的帮助，需要木板蒸汽箱，拖拉机，电锯，木板（或者原木），发电机组（相当于搜刮地点），并且和他说镇长也同意我们求取这些，给了我们这些就不会强迫他当劳工了。如果他愿意就邀请他上船（船长可以适当展示一下他的猎枪）。伐木工（npc）始终不愿意，让船长拿枪威胁他，最起码把载具和发电机交出来，如果他还是不同意，就把他束缚起来，拿走载具和发电机组。如果他实在…', '2', '冒险者', '9', '对酒', '自由#1·其他');
-INSERT INTO `game_activity_log` VALUES ('245', 'action', '2026-05-23 19:52:38.192000', '目标:码头 NPC:鲍勃·塔克 邀请鲍勃和我一起去拆码头的船（消息来源于邮差）并且邀请他上船，他同意的话将在接下来的时间内和我们一起搬运物资（如果不能同时操作就只拆码头的船）', '2', '冒险者', '9', '对酒', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('246', 'action', '2026-05-23 19:55:02.400000', '目标:伐木营地 NPC:托马斯·伍德 自己带着霰弹枪和弹药1发，与维修工（玩家）和气象观测员（玩家）一起前往伐木营地。\n\n先和伐木工（npc）进行一个恳求，说明现在暴风雪来临，我们很需要他的帮助，需要木板蒸汽箱，拖拉机，电锯，木板（或者原木），发电机组（相当于搜刮地点），并且和他说镇长也同意我们求取这些，给了我们这些就不会强迫他当劳工了。\n\n如果他愿意就邀请他上船，本人会适当展示自己手中的霰弹枪。\n\n若伐木工（npc）始终不愿意，本人将拿枪威胁他，最起码把载具和发电机交出来。\n\n若再不同意，就把他束缚起来，拿走…', '2', '冒险者', '14', 'Κάκτος西里尔', '自由#1·前往地点');
-INSERT INTO `game_activity_log` VALUES ('247', 'action', '2026-05-23 19:55:02.506000', '目标:集市 NPC:米玛·雷铁斯托 先问手工艺人找我有什么事，听镇长说手工艺人有事找我。\n\n然后问手工艺人手中是否有沥青，如果可以的话向手工艺人要些沥青。如果不行就问对方哪里能搞到沥青。', '2', '冒险者', '14', 'Κάκτος西里尔', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('248', 'trade', '2026-05-23 19:55:08.928000', '对方:蟋蟀蜥蜴 | give 食物×2', '2', '反叛者', '24', '花海', '发起交易→蟋蟀蜥蜴 #59');
-INSERT INTO `game_activity_log` VALUES ('249', 'trade', '2026-05-23 19:55:44.231000', '对方:tony | give 食物×20', '2', '反叛者', '24', '花海', '发起交易→tony #60');
-INSERT INTO `game_activity_log` VALUES ('250', 'trade', '2026-05-23 19:55:54.771000', '对方:花海', '2', '平民', '25', 'tony', '接受交易→花海 #60');
-INSERT INTO `game_activity_log` VALUES ('251', 'action', '2026-05-23 19:57:44.958000', '模式：仓库→个人；源：镇武库；医疗包×2；手电筒×8；手铐×2；防弹衣×1；复合盾×4；信号枪×1；朗姆酒×20；草药×3；渔网×1；蜡烛×20；医用酒精×5；火柴×2；破损海图×1；便当×1；制式手枪×2；猎枪×1；警棍×3；刺刀×2；鱼叉/矛×2；猎弓×1；手枪弹×4；猎枪弹×2；信号弹×2；箭矢×4；沥青×50；燃料×178；螺旋桨×3', '2', '统治者', '10', '二阶堂希罗', '自由#1·搬运');
-INSERT INTO `game_activity_log` VALUES ('252', 'action', '2026-05-23 19:57:45.054000', '目标:矿场', '2', '统治者', '10', '二阶堂希罗', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('253', 'trade', '2026-05-23 19:59:00.391000', '对方:tony | give 木材×30 | take 未知物品×4', '2', '反叛者', '30', 'MISD330', '发起交易→tony #61');
-INSERT INTO `game_activity_log` VALUES ('254', 'action', '2026-05-23 19:59:58.236000', '在码头拆船，并邀请码头的人跟我一起搬（搬到自己这）', '2', '冒险者', '22', '11', '自由#1·其他');
-INSERT INTO `game_activity_log` VALUES ('255', 'action', '2026-05-23 19:59:58.298000', '使用天灾特性去削弱食物', '2', '冒险者', '22', '11', '自由#2·使用特性');
-INSERT INTO `game_activity_log` VALUES ('256', 'trade', '2026-05-23 20:01:33.156000', '对方:MISD330 | give 未知物品×3 | take 木材×30', '2', '平民', '25', 'tony', '发起交易→MISD330 #62');
-INSERT INTO `game_activity_log` VALUES ('257', 'trade', '2026-05-23 20:01:52.916000', '对方:tony', '2', '反叛者', '30', 'MISD330', '接受交易→tony #62');
-INSERT INTO `game_activity_log` VALUES ('258', 'trade', '2026-05-23 20:02:20.064000', '对方:二阶堂希罗 | take 食物×10 | take 木材×15', '2', '平民', '25', 'tony', '发起交易→二阶堂希罗 #63');
-INSERT INTO `game_activity_log` VALUES ('259', 'trade', '2026-05-23 20:02:43.026000', '对方:二阶堂希罗 | take 木材×15 | take 食物×10', '2', '平民', '25', 'tony', '发起交易→二阶堂希罗 #64');
-INSERT INTO `game_activity_log` VALUES ('260', 'action', '2026-05-23 20:03:28.588000', '模式：仓库→个人；源：矿场仓库；维修工具包×2；十字镐×2；斧头×1；食物×270；燃料×20', '2', '统治者', '17', 'zzz', '自由#1·搬运');
-INSERT INTO `game_activity_log` VALUES ('261', 'action', '2026-05-23 20:03:28.654000', '目标:孤城暮角', '2', '统治者', '17', 'zzz', '自由#2·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('262', 'trade', '2026-05-23 20:03:40.198000', '对方:tony', '2', '统治者', '10', '二阶堂希罗', '接受交易→tony #63');
-INSERT INTO `game_activity_log` VALUES ('263', 'trade', '2026-05-23 20:03:42.053000', '对方:tony', '2', '统治者', '10', '二阶堂希罗', '接受交易→tony #64');
-INSERT INTO `game_activity_log` VALUES ('264', 'action', '2026-05-23 20:05:47.899000', '目标:矿场 NPC:维克多·斯通 与其沟通，阐述现在统治的残暴！尝试使用便当和承诺其他物品，拉拢他，换点金属，并请求协助夜晚打劫监狱', '2', '反叛者', '30', 'MISD330', '自由#1·前往地点');
-INSERT INTO `game_activity_log` VALUES ('265', 'action', '2026-05-23 20:05:47.939000', '目标:集市 NPC:米玛·雷铁斯托 与其沟通，阐述现在统治的残暴！尝试使用便当和承诺其他物品，拉拢他，制造盾牌，并请求协助夜晚打劫监狱', '2', '反叛者', '30', 'MISD330', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('266', 'quick', '2026-05-23 20:08:46.311000', '使用一个面包加行动值', '2', '统治者', '10', '二阶堂希罗', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('267', 'consume', '2026-05-23 20:09:22.313000', '累计进食 2/2；取暖 15/15 热值', '2', '冒险者', '14', 'Κάκτος西里尔', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('268', 'quick', '2026-05-23 20:09:36.709000', '天灾使者的破坏行动：破坏面包店炉子', '2', '冒险者', '22', '11', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('269', 'action', '2026-05-23 20:09:41.334000', '目标:码头 NPC:鲍勃·塔克 塔克，你在这码头扛了半辈子麻袋，可攒下过真正属于自己的东西？这场暴风雪过后，港口都将不复存在。方舟是我们唯一的希望——跟我走，不需要你再为别人负重前行。冒险者的船上有你的位置，新世界的大地等着我们去征服。放下这个麻袋，拿起桨，当自己的主人。是冻死在这里，还是去创造未来，你选。', '2', '冒险者', '19', 'unPy-GPT', '自由#1·前往地点');
-INSERT INTO `game_activity_log` VALUES ('270', 'action', '2026-05-23 20:09:41.392000', '邀请装卸工一起在码头从阿弗雷号船上拆下可以用来建造方舟的相关材料', '2', '冒险者', '19', 'unPy-GPT', '自由#2·其他');
-INSERT INTO `game_activity_log` VALUES ('271', 'trade', '2026-05-23 20:09:45.795000', '对方:V | give 未知物品×1 | take 未知物品×1', '2', '统治者', '10', '二阶堂希罗', '发起交易→V #65');
-INSERT INTO `game_activity_log` VALUES ('272', 'trade', '2026-05-23 20:10:03.976000', '对方:花海', '2', '反叛者', '11', '蟋蟀蜥蜴', '接受交易→花海 #59');
-INSERT INTO `game_activity_log` VALUES ('273', 'quick', '2026-05-23 20:10:12.479000', '白天行动1，去伐木工处，气象观测员不再陪同。', '2', '冒险者', '14', 'Κάκτος西里尔', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('274', 'consume', '2026-05-23 20:10:17.281000', '累计进食 2/2；取暖 15/15 热值', '2', '反叛者', '11', '蟋蟀蜥蜴', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('275', 'action', '2026-05-23 20:10:22.637000', '目标:荷叶男巫 我来杀你了嘿嘿嘿嘿', '2', '平民', '25', 'tony', '自由#1·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('276', 'action', '2026-05-23 20:10:22.909000', '注意：先收取来自统治者的物资。然后进行烹饪。使用14食物，30木材获得两个面包。', '2', '平民', '25', 'tony', '自由#2·使用职业技能');
-INSERT INTO `game_activity_log` VALUES ('277', 'quick', '2026-05-23 20:10:57.126000', '白天的行动1，去伐木工处，气象观测员不再陪同', '2', '冒险者', '14', 'Κάκτος西里尔', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('278', 'faction', '2026-05-23 20:11:14.475000', '✓ 已提交【额外行动】\n\n行动类型：前往地点\n前往地点：镇长厅\n备注：调查一下有没有什么人来过这里干了什么\n\n此环节无法寻找NPC进行对话。\n等待主持人确认。', '2', '反叛者', '11', '蟋蟀蜥蜴', '额外行动');
-INSERT INTO `game_activity_log` VALUES ('279', 'action', '2026-05-23 20:11:35.484000', '教师启蒙技能捕鱼进行生产', '2', '反叛者', '13', '凭栏择雨', '自由#1·使用职业技能');
-INSERT INTO `game_activity_log` VALUES ('280', 'action', '2026-05-23 20:11:35.577000', null, '2', '反叛者', '13', '凭栏择雨', '自由#2·隐藏');
-INSERT INTO `game_activity_log` VALUES ('281', 'quick', '2026-05-23 20:11:44.948000', '快速行动1: 先收取来自统治者的物资。（食物，木材，和武器）', '2', '平民', '25', 'tony', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('282', 'quick', '2026-05-23 20:12:33.822000', '使用一个面包。进行第三个人行动。再次使用职业技能。获得两块面包。', '2', '平民', '25', 'tony', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('283', 'trade', '2026-05-23 20:12:46.513000', '对方:对酒 | give 燃料仓库钥匙×1 | take 未知物品×1', '2', '统治者', '26', 'V', '发起交易→对酒 #66');
-INSERT INTO `game_activity_log` VALUES ('284', 'trade', '2026-05-23 20:12:57.507000', '对方:V', '2', '冒险者', '9', '对酒', '接受交易→V #66');
-INSERT INTO `game_activity_log` VALUES ('285', 'trade', '2026-05-23 20:13:04.663000', '对方:二阶堂希罗', '2', '统治者', '26', 'V', '接受交易→二阶堂希罗 #65');
-INSERT INTO `game_activity_log` VALUES ('286', 'faction', '2026-05-23 20:13:51.529000', '✓ 已提交【额外调查】\n\n调查类型：调查地点\n调查目标：气象观测站\n\n结算后该次调查数量将翻倍。等待主持人确认。', '2', '冒险者', '9', '对酒', '额外调查');
-INSERT INTO `game_activity_log` VALUES ('287', 'quick', '2026-05-23 20:14:41.766000', '个人行动结算后。一共给予两个面包给统治者。一个面包给医生（反抗者）。注意，每搓成一个面包就给出去，优先给反抗者。', '2', '平民', '25', 'tony', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('288', 'action', '2026-05-23 20:17:13.863000', '自己带着斧头邀请维修工（玩家）和船长（玩家带枪）一起前往伐木营地，先和伐木工（npc）进行一个恳求，说明现在暴风雪来临，我们很需要他的帮助，需要木板蒸汽箱，拖拉机，电锯，木板（或者原木），发电机组（相当于搜刮地点），并且和他说镇长也同意我们求取这些，给了我们这些就不会强迫他当劳工了。如果他愿意就邀请他上船（船长可以适当展示一下他的猎枪）。伐木工（npc）始终不愿意，让船长拿枪威胁他，最起码把载具和发电机交出来，如果他还是不同意，就把他束缚起来，拿走载具和发电机组。如果他实在…', '2', '冒险者', '9', '对酒', '自由#1·其他');
-INSERT INTO `game_activity_log` VALUES ('289', 'action', '2026-05-23 20:17:13.988000', '去码头执行拆船任务（消息来源于邮差）', '2', '冒险者', '9', '对酒', '自由#2·其他');
-INSERT INTO `game_activity_log` VALUES ('290', 'quick', '2026-05-23 20:19:08.332000', '对 对酒（天气预测）散播瘟疫', '2', '天灾使者', '16', '孤城暮角', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('291', 'trade', '2026-05-23 20:25:04.552000', '对方:教皇 | give 食物×1', '2', '平民', '25', 'tony', '发起交易→教皇 #67');
-INSERT INTO `game_activity_log` VALUES ('292', 'consume', '2026-05-23 20:25:14.686000', '累计进食 2/2；取暖 15/15 热值', '2', '平民', '25', 'tony', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('293', 'trade', '2026-05-23 20:25:33.987000', '对方:tony', '2', '反叛者', '23', '教皇', '接受交易→tony #67');
-INSERT INTO `game_activity_log` VALUES ('294', 'action', '2026-05-23 20:26:30.693000', '对农民，医生，神父使用布道', '2', '反叛者', '23', '教皇', '自由#1·使用职业技能');
-INSERT INTO `game_activity_log` VALUES ('295', 'action', '2026-05-23 20:26:31.093000', '目标:监狱 NPC:乔克·汤姆 不动声色地利用自己神父的身份套取一些信息', '2', '反叛者', '23', '教皇', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('296', 'consume', '2026-05-23 20:26:49.011000', '累计进食 2/2；取暖 15/15 热值', '2', '反叛者', '23', '教皇', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('297', 'faction', '2026-05-23 20:28:22.180000', '✓ 已提交【额外行动】\n\n行动类型：前往地点\n前往地点：监狱\n备注：调查监狱\n\n此环节无法寻找NPC进行对话。\n等待主持人确认。', '2', '反叛者', '30', 'MISD330', '额外行动');
-INSERT INTO `game_activity_log` VALUES ('298', 'consume', '2026-05-23 20:28:55.558000', '累计进食 2/2；取暖 15/15 热值', '2', '反叛者', '30', 'MISD330', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('299', 'night', '2026-05-23 20:31:38.532000', '✓ 已提交【其他】\n\n提交者：飞凡\n备注：去旅店睡觉\n\n等待主持人在夜晚阶段结算。', '2', '平民', '29', '飞凡', '其他');
-INSERT INTO `game_activity_log` VALUES ('300', 'consume', '2026-05-23 20:31:54.057000', '累计进食 2/2；取暖 15/15 热值', '2', '平民', '29', '飞凡', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('301', 'quick', '2026-05-23 20:33:03.794000', '喝酒消除疲劳', '2', '平民', '29', '飞凡', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('302', 'quick', '2026-05-23 20:35:01.075000', '白天行动一：在矿场与名为铁锤的矿工交互，并执行行动一备注里的行动。白天行动二：在集市与那位手工艺人交互，并执行备注中的行动！', '2', '反叛者', '30', 'MISD330', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('303', 'night', '2026-05-23 20:35:18.476000', '✓ 已提交【进行密谋】\n\n提交者：tony\n密谋类型：暗杀目标\n目标地点：面包店\n参与玩家：V\n备注：我选的暗杀目标但他要我选目标地点这对吗？反正我就是来杀你的荷叶。\n\n等待主持人在夜晚阶段结算。', '2', '平民', '25', 'tony', '进行密谋');
-INSERT INTO `game_activity_log` VALUES ('304', 'trade', '2026-05-23 20:36:28.742000', '对方:花海', '2', '天灾使者', '8', '兔兔', '接受交易→花海 #58');
-INSERT INTO `game_activity_log` VALUES ('305', 'night', '2026-05-23 20:37:58.862000', '✓ 已提交【进行密谋】\n\n提交者：Missbear\n密谋类型：暗杀目标\n目标地点：杂货店\n参与玩家：荷叶男巫\n\n等待主持人在夜晚阶段结算。', '2', '平民', '18', 'Missbear', '进行密谋');
-INSERT INTO `game_activity_log` VALUES ('306', 'night', '2026-05-23 20:39:28.663000', '✓ 已提交【夜晚个人行动】\n\n提交者：二阶堂希罗\n行动：前往地点\n目标：矿场\n备注：在矿产过夜顺便寻找是否有炸药\n\n等待主持人在夜晚阶段结算。', '2', '统治者', '10', '二阶堂希罗', '夜晚个人行动');
-INSERT INTO `game_activity_log` VALUES ('307', 'action', '2026-05-23 20:41:47.471000', '模式：仓库→个人；源：镇武库；木材×18；食物×260；燃料×22', '2', '统治者', '26', 'V', '自由#1·搬运');
-INSERT INTO `game_activity_log` VALUES ('308', 'action', '2026-05-23 20:41:48.362000', '目标:咲黑', '2', '统治者', '26', 'V', '自由#2·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('309', 'action', '2026-05-23 20:42:34.053000', '使用维修工技能 修tony面包师的炉子', '2', '统治者', '15', '空白', '自由#1·使用职业技能');
-INSERT INTO `game_activity_log` VALUES ('310', 'action', '2026-05-23 20:42:34.140000', '模式：仓库→个人；源：镇武库；防弹衣×1；复合盾×1；猎枪×1；猎枪弹×2；箭矢×1；木材×141；食物×100；发电机×1', '2', '统治者', '15', '空白', '自由#2·搬运');
-INSERT INTO `game_activity_log` VALUES ('311', 'night', '2026-05-23 20:50:33.717000', '✓ 已提交【夜晚个人行动】\n\n提交者：空白\n行动：使用特性\n备注：使用窃听者特性 看反抗阵营群聊记录\n\n等待主持人在夜晚阶段结算。', '2', '统治者', '15', '空白', '夜晚个人行动');
-INSERT INTO `game_activity_log` VALUES ('312', 'night', '2026-05-23 20:54:42.148000', '✓ 已提交【进行密谋】\n\n提交者：MISD330\n密谋类型：袭击地点\n目标地点：监狱\n参与玩家：蟋蟀蜥蜴、凭栏择雨、tony、教皇、花海\n成功后意向：搜刮资源\n备注：还有我的俩npc大军！（要是他俩同意的话）\n\n等待主持人在夜晚阶段结算。', '2', '反叛者', '30', 'MISD330', '进行密谋');
-INSERT INTO `game_activity_log` VALUES ('313', 'trade', '2026-05-23 21:04:16.525000', '对方:乐语 | give 未知物品×30 | give 金属制品×40', '2', '冒险者', '9', '对酒', '发起交易→乐语 #68');
-INSERT INTO `game_activity_log` VALUES ('314', 'trade', '2026-05-23 21:04:26.836000', '对方:对酒', '2', '冒险者', '21', '乐语', '接受交易→对酒 #68');
-INSERT INTO `game_activity_log` VALUES ('315', 'action', '2026-05-23 21:04:56.174000', '小心翼翼的去码头仔仔细细的拆那艘名叫阿弗雷号的船，然后都放入个人背包中', '2', '冒险者', '21', '乐语', '自由#1·其他');
-INSERT INTO `game_activity_log` VALUES ('316', 'action', '2026-05-23 21:04:56.374000', '使用渴望出海特性，并按照一次建设最大使用量从自身背包和可调用仓库中使用资源建造方舟', '2', '冒险者', '21', '乐语', '自由#2·使用特性');
-INSERT INTO `game_activity_log` VALUES ('317', 'consume', '2026-05-23 21:06:40.752000', '累计进食 2/2；取暖 15/15 热值', '2', '平民', '27', '得狗的老意', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('318', 'quick', '2026-05-23 21:06:58.767000', '再喝两个酒', '2', '平民', '27', '得狗的老意', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('319', 'night', '2026-05-23 21:09:18.460000', '✓ 已提交【其他】\n\n提交者：蟋蟀蜥蜴\n备注：袭击监狱 顺便观察自己阵营中有无内鬼\n\n等待主持人在夜晚阶段结算。', '2', '反叛者', '11', '蟋蟀蜥蜴', '其他');
-INSERT INTO `game_activity_log` VALUES ('320', 'quick', '2026-05-23 21:09:33.996000', '观察自己队伍中有没有内鬼', '2', '反叛者', '11', '蟋蟀蜥蜴', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('321', 'trade', '2026-05-23 21:12:20.064000', '对方:乐语 | give 木材×80', '2', '冒险者', '14', 'Κάκτος西里尔', '发起交易→乐语 #69');
-INSERT INTO `game_activity_log` VALUES ('322', 'faction', '2026-05-23 21:26:02.568000', '✓ 已提交【安排看守】\n\n看守人员：花海\n看守地点：矿场\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。', '2', '统治者', '10', '二阶堂希罗', '安排看守');
-INSERT INTO `game_activity_log` VALUES ('323', 'faction', '2026-05-23 21:26:36.614000', '✓ 已提交【安排看守】\n\n看守人员：凭栏择雨\n看守地点：监狱\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。', '2', '统治者', '10', '二阶堂希罗', '安排看守');
-INSERT INTO `game_activity_log` VALUES ('324', 'faction', '2026-05-23 21:27:31.297000', '✓ 已提交【安排看守】\n\n看守人员：得狗的老意\n看守地点：监狱\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。', '2', '统治者', '10', '二阶堂希罗', '安排看守');
-INSERT INTO `game_activity_log` VALUES ('325', 'faction', '2026-05-23 21:28:06.386000', '✓ 已提交【安排看守】\n\n看守人员：教皇\n看守地点：监狱\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。', '2', '统治者', '10', '二阶堂希罗', '安排看守');
-INSERT INTO `game_activity_log` VALUES ('326', 'faction', '2026-05-23 21:28:15.924000', '✓ 已提交【安排看守】\n\n看守人员：MISD330\n看守地点：监狱\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。', '2', '统治者', '10', '二阶堂希罗', '安排看守');
-INSERT INTO `game_activity_log` VALUES ('327', 'faction', '2026-05-23 21:28:24.127000', '✓ 已提交【安排看守】\n\n看守人员：孤城暮角\n看守地点：监狱\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。', '2', '统治者', '10', '二阶堂希罗', '安排看守');
-INSERT INTO `game_activity_log` VALUES ('328', 'quick', '2026-05-23 21:28:48.126000', '使用便当，额外使用一个行动点，搬运物资，从矿场仓库到避难所，优先生活必须品', '2', '统治者', '26', 'V', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('329', 'quick', '2026-05-23 21:29:28.244000', '使用面包，前往监狱', '2', '统治者', '10', '二阶堂希罗', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('330', 'trade', '2026-05-23 21:30:45.310000', '对方:Κάκτος西里尔', '2', '冒险者', '21', '乐语', '接受交易→Κάκτος西里尔 #69');
-INSERT INTO `game_activity_log` VALUES ('331', 'faction', '2026-05-23 21:32:46.469000', '✓ 已提交【安排看守】\n\n看守人员：闲屿\n看守地点：监狱\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。', '2', '统治者', '10', '二阶堂希罗', '安排看守');
-INSERT INTO `game_activity_log` VALUES ('332', 'trade', '2026-05-23 21:49:06.512000', '对方:兔兔 | give 金属制品×4', '2', '反叛者', '24', '花海', '发起交易→兔兔 #70');
-INSERT INTO `game_activity_log` VALUES ('333', 'trade', '2026-05-23 21:49:46.876000', '对方:花海', '2', '天灾使者', '8', '兔兔', '接受交易→花海 #70');
-INSERT INTO `game_activity_log` VALUES ('334', 'consume', '2026-05-23 21:50:06.380000', '累计进食 2/2；取暖 15/15 热值', '2', '统治者', '26', 'V', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('335', 'trade', '2026-05-23 21:51:00.339000', '对方:孤城暮角 | give 金属制品×2', '2', '天灾使者', '8', '兔兔', '发起交易→孤城暮角 #71');
-INSERT INTO `game_activity_log` VALUES ('336', 'trade', '2026-05-23 21:51:53.737000', '对方:兔兔', '2', '天灾使者', '16', '孤城暮角', '接受交易→兔兔 #71');
-INSERT INTO `game_activity_log` VALUES ('337', 'quick', '2026-05-23 22:15:47.553000', '行动一：自己带着霰弹枪和弹药1发，与维修工（玩家）一起前往伐木营地。\n\n先和伐木工（npc）进行一个恳求，说明现在暴风雪来临，我们很需要他的帮助，需要木板蒸汽箱，拖拉机，电锯，木板（或者原木），发电机组（相当于搜刮地点），并且和他说镇长也同意我们求取这些，给了我们这些就不会强迫他当劳工了。\n\n如果他愿意就邀请他上船，本人会适当展示自己手中的霰弹枪。\n\n若伐木工（npc）始终不愿意，本人将拿枪威胁他，最起码把载具和发电机交出来。\n\n若再不同意，就把他束缚起来，拿走载具和发电机组。\n\n最坏的情况，如果他实在反抗激烈，就枪杀他，以无论如何都要拿到载具和发电机组为目的。', '2', '冒险者', '14', 'Κάκτος西里尔', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('338', 'quick', '2026-05-23 22:16:09.523000', '行动二：先问手工艺人找我有什么事，听镇长说手工艺人有事找我。\n\n然后问手工艺人手中是否有沥青，如果可以的话向手工艺人要些沥青。如果不行就问对方哪里能搞到沥青。', '2', '冒险者', '14', 'Κάκτος西里尔', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('339', 'quick', '2026-05-23 22:16:24.623000', '对于第一个伐木营地的行动，我们还拆除了电机，要求拿电锯，然后我这里签订契约同意木工上船，拿到钥匙', '2', '冒险者', '9', '对酒', '询问DM');
-INSERT INTO `game_activity_log` VALUES ('340', 'consume', '2026-05-23 22:20:56.274000', '累计进食 2/2；取暖 15/15 热值', '2', '统治者', '17', 'zzz', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('341', 'quick', '2026-05-23 22:24:46.305000', '在探索地点部分我想邀请码头装卸工跟随我们冒险者一起，加入我们冒险者阵营，一起登上方舟', '2', '冒险者', '19', 'unPy-GPT', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('342', 'night', '2026-05-23 22:50:23.588000', '✓ 已提交【其他】\n\n提交者：兔兔\n备注：我要献祭自己，谢谢\n\n等待主持人在夜晚阶段结算。', '2', '天灾使者', '8', '兔兔', '其他');
-INSERT INTO `game_activity_log` VALUES ('343', 'night', '2026-05-23 23:08:35.640000', '✓ 已提交【其他】\n\n提交者：追枫\n备注：突袭监狱！\n\n等待主持人在夜晚阶段结算。', '2', '天灾使者', '20', '追枫', '其他');
-INSERT INTO `game_activity_log` VALUES ('344', 'trade', '2026-05-23 23:23:44.668000', '对方:乐语 | give 刺刀×1', '2', '冒险者', '14', 'Κάκτος西里尔', '发起交易→乐语 #72');
-INSERT INTO `game_activity_log` VALUES ('345', 'trade', '2026-05-23 23:24:27.066000', '对方:Κάκτος西里尔', '2', '冒险者', '21', '乐语', '接受交易→Κάκτος西里尔 #72');
-INSERT INTO `game_activity_log` VALUES ('346', 'trade', '2026-05-23 23:24:58.507000', '对方:11 | give 刺刀×1', '2', '冒险者', '9', '对酒', '发起交易→11 #73');
-INSERT INTO `game_activity_log` VALUES ('347', 'trade', '2026-05-23 23:25:16.842000', '对方:对酒', '2', '冒险者', '22', '11', '接受交易→对酒 #73');
-INSERT INTO `game_activity_log` VALUES ('348', 'night', '2026-05-23 23:34:21.429000', '✓ 已提交【进行密谋】\n\n提交者：对酒\n密谋类型：袭击地点\n目标地点：教堂\n参与玩家：Κάκτος西里尔、乐语、11、unPy-GPT\n成功后意向：搜刮资源\n备注：我们经商议后全体出击（消息来源：采珠人11），在船长的带领下前往教堂支援女巫，船长：猎枪：11：刺刀  gpt：斧子  对酒：斧子  乐语：刺刀\n\n等待主持人在夜晚阶段结算。', '2', '冒险者', '9', '对酒', '进行密谋');
-INSERT INTO `game_activity_log` VALUES ('349', 'night', '2026-05-23 23:36:38.430000', '✓ 已提交【进行密谋】\n\n提交者：Κάκτος西里尔\n密谋类型：袭击地点\n目标地点：教堂\n参与玩家：11、乐语、对酒、unPy-GPT\n成功后意向：搜刮资源\n备注：我方经商议后全体出击，由船长携带霰弹枪及对应子弹、采珠人GPT携带斧头、采珠人11携带刺刀、气象观测员携带斧头、邮差携带刺刀，共5人，前往教堂解救巫师（消息来源：采珠人11）。\n\n等待主持人在夜晚阶段结算。', '2', '冒险者', '14', 'Κάκτος西里尔', '进行密谋');
-INSERT INTO `game_activity_log` VALUES ('350', 'trade', '2026-05-23 23:40:07.974000', '对方:乐语 | give 未知物品×20', '2', '冒险者', '14', 'Κάκτος西里尔', '发起交易→乐语 #74');
-INSERT INTO `game_activity_log` VALUES ('351', 'faction', '2026-05-23 23:40:47.319000', '✓ 已提交【额外调查】\n\n调查类型：调查玩家\n调查目标：MISD330\n\n结算后该次调查数量将翻倍。等待主持人确认。', '2', '冒险者', '14', 'Κάκτος西里尔', '额外调查');
-INSERT INTO `game_activity_log` VALUES ('352', 'trade', '2026-05-23 23:40:59.879000', '对方:Κάκτος西里尔', '2', '冒险者', '21', '乐语', '接受交易→Κάκτος西里尔 #74');
-INSERT INTO `game_activity_log` VALUES ('353', 'trade', '2026-05-23 23:42:36.821000', '对方:乐语 | give 未知物品×1 | give 未知物品×1', '2', '冒险者', '19', 'unPy-GPT', '发起交易→乐语 #75');
-INSERT INTO `game_activity_log` VALUES ('354', 'faction', '2026-05-23 23:44:53.330000', '✓ 已提交【方舟建设】\n\n提交者：乐语\n投入模式：资源投入\n  木材：30000kg（30.00吨）\n  金属制品：10500kg（10.50吨）\n  密封材料：20kg\n当前方舟进度：66.00%\n备注：发动阵营特性号召和个人特性渴望出海利用免费行动点进行双倍于物资投入的方舟建造\n\n等待主持人确认。', '2', '冒险者', '21', '乐语', '方舟建设');
-INSERT INTO `game_activity_log` VALUES ('355', 'night', '2026-05-24 00:30:19.337000', '✓ 已提交【进行密谋】\n\n提交者：孤城暮角\n密谋类型：制造恐怖\n目标地点：码头\n参与玩家：兔兔\n\n等待主持人在夜晚阶段结算。', '2', '天灾使者', '16', '孤城暮角', '进行密谋');
-INSERT INTO `game_activity_log` VALUES ('356', 'night', '2026-05-24 00:36:41.237000', '✓ 已提交【其他】\n\n提交者：闲屿\n备注：不抗命，留守矿口\n\n等待主持人在夜晚阶段结算。', '2', '平民', '31', '闲屿', '其他');
-INSERT INTO `game_activity_log` VALUES ('357', 'quick', '2026-05-24 00:40:57.541000', '在守矿口的时候顺便带些煤矿走', '2', '平民', '31', '闲屿', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('358', 'consume', '2026-05-24 00:54:26.461000', '累计进食 2/2；取暖 15/15 热值', '2', '平民', '32', '澡堂子', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('359', 'quick', '2026-05-24 00:56:28.980000', '喝酒消除疲劳', '2', '平民', '32', '澡堂子', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('360', 'trade', '2026-05-24 01:03:21.909000', '对方:unPy-GPT', '2', '冒险者', '21', '乐语', '接受交易→unPy-GPT #75');
-INSERT INTO `game_activity_log` VALUES ('361', 'night', '2026-05-24 12:00:36.324000', '✓ 已提交【其他】\n\n提交者：乐语\n备注：去气象台探查一番，看是否有有用的发现\n\n等待主持人在夜晚阶段结算。', '2', '冒险者', '21', '乐语', '其他');
-INSERT INTO `game_activity_log` VALUES ('362', 'trade', '2026-05-24 12:33:51.866000', '对方:追枫 | give 未知物品×2 | take 食物×1', '2', '统治者', '10', '二阶堂希罗', '发起交易→追枫 #76');
-INSERT INTO `game_activity_log` VALUES ('363', 'quick', '2026-05-24 13:09:49.984000', '使用酒消除过劳', '2', '天灾使者', '16', '孤城暮角', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('364', 'trade', '2026-05-24 13:39:28.277000', '对方:追枫 | give 未知物品×1 | take 未知物品×1', '2', '统治者', '10', '二阶堂希罗', '发起交易→追枫 #77');
-INSERT INTO `game_activity_log` VALUES ('365', 'trade', '2026-05-24 14:05:33.024000', '对方:Κάκτος西里尔 | give 未知物品×1 | give 未知物品×3 | take 食物×2', '2', '统治者', '10', '二阶堂希罗', '发起交易→Κάκτος西里尔 #78');
-INSERT INTO `game_activity_log` VALUES ('366', 'trade', '2026-05-24 14:06:04.982000', '对方:Κάκτος西里尔 | give 未知物品×50 | take 食物×1', '2', '统治者', '10', '二阶堂希罗', '发起交易→Κάκτος西里尔 #79');
-INSERT INTO `game_activity_log` VALUES ('367', 'trade', '2026-05-24 14:43:53.573000', '对方:追枫 | give 刺刀×1', '2', '天灾使者', '16', '孤城暮角', '发起交易→追枫 #80');
-INSERT INTO `game_activity_log` VALUES ('368', 'trade', '2026-05-24 14:44:10.832000', '对方:MISD330 | give 刺刀×1', '2', '天灾使者', '16', '孤城暮角', '发起交易→MISD330 #81');
-INSERT INTO `game_activity_log` VALUES ('369', 'trade', '2026-05-24 14:48:57.801000', '对方:孤城暮角', '2', '反叛者', '30', 'MISD330', '接受交易→孤城暮角 #81');
-INSERT INTO `game_activity_log` VALUES ('370', 'trade', '2026-05-24 14:55:55.121000', '对方:二阶堂希罗', '2', '冒险者', '14', 'Κάκτος西里尔', '接受交易→二阶堂希罗 #79');
-INSERT INTO `game_activity_log` VALUES ('371', 'trade', '2026-05-24 14:56:00.204000', '对方:二阶堂希罗', '2', '冒险者', '14', 'Κάκτος西里尔', '接受交易→二阶堂希罗 #78');
-INSERT INTO `game_activity_log` VALUES ('372', 'trade', '2026-05-24 15:31:17.856000', '对方:孤城暮角', '2', '天灾使者', '20', '追枫', '接受交易→孤城暮角 #80');
-INSERT INTO `game_activity_log` VALUES ('373', 'trade', '2026-05-24 15:31:25.222000', '对方:二阶堂希罗', '2', '天灾使者', '20', '追枫', '接受交易→二阶堂希罗 #77');
-INSERT INTO `game_activity_log` VALUES ('374', 'trade', '2026-05-24 15:31:26.538000', '对方:二阶堂希罗', '2', '天灾使者', '20', '追枫', '接受交易→二阶堂希罗 #76');
-INSERT INTO `game_activity_log` VALUES ('375', 'quick', '2026-05-24 16:33:44.504000', '医疗手工人和自己', '2', '反叛者', '30', 'MISD330', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('376', 'consume', '2026-05-24 17:15:09.236000', '累计进食 2/2；取暖 15/15 热值', '3', '天灾使者', '20', '追枫', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('377', 'consume', '2026-05-24 17:17:18.970000', '累计进食 2/2；取暖 15/15 热值', '3', '平民', '31', '闲屿', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('378', 'consume', '2026-05-24 17:19:45.083000', '累计进食 2/2；取暖 15/15 热值', '3', '冒险者', '21', '乐语', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('379', 'action', '2026-05-24 17:25:35.468000', '目标:伐木营地 NPC:托马斯·伍德 询问托马斯对天灾的看法以及所作的准备', '3', '平民', '31', '闲屿', '自由#1·前往地点');
-INSERT INTO `game_activity_log` VALUES ('380', 'action', '2026-05-24 17:25:35.678000', '目标:邮局 尝试看看这里有没有值得知道的信息', '3', '平民', '31', '闲屿', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('381', 'quick', '2026-05-24 17:26:38.942000', '吃下便当后，去教堂逛逛，询问是否有人知道昨晚来往的人员', '3', '平民', '31', '闲屿', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('382', 'quick', '2026-05-24 17:29:50.867000', '船长和我一起用海图进行了发报求援搬运，想确认是否有回报', '3', '冒险者', '21', '乐语', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('383', 'consume', '2026-05-24 17:43:18.043000', '累计进食 2/2；取暖 15/15 热值', '3', '天灾使者', '16', '孤城暮角', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('384', 'consume', '2026-05-24 17:58:08.690000', '累计进食 2/2；取暖 15/15 热值', '3', '冒险者', '9', '对酒', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('385', 'action', '2026-05-24 18:03:08.804000', '目标:墓地 伏击来到这里的所有人，在行动结束后抛开坟墓拿回前任猎手传承的枪和子弹', '3', '天灾使者', '20', '追枫', '自由#1·前往地点');
-INSERT INTO `game_activity_log` VALUES ('386', 'action', '2026-05-24 18:03:08.892000', '伏击在警察局到矿场的这条小路上，伏击路过的除了典狱长外的所有人', '3', '天灾使者', '20', '追枫', '自由#2·其他');
-INSERT INTO `game_activity_log` VALUES ('387', 'consume', '2026-05-24 18:03:13.836000', '累计进食 2/2；取暖 15/15 热值', '3', '统治者', '10', '二阶堂希罗', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('388', 'faction', '2026-05-24 18:04:43.786000', '✓ 已提交【破坏】\n\n目标设施：发电机（镇长厅）\n\n等待主持人确认。', '3', '天灾使者', '20', '追枫', '破坏');
-INSERT INTO `game_activity_log` VALUES ('389', 'trade', '2026-05-24 18:08:14.582000', '对方:孤城暮角 | give 未知物品×1', '3', '天灾使者', '20', '追枫', '发起交易→孤城暮角 #82');
-INSERT INTO `game_activity_log` VALUES ('390', 'trade', '2026-05-24 18:08:32.596000', '对方:追枫', '3', '天灾使者', '16', '孤城暮角', '接受交易→追枫 #82');
-INSERT INTO `game_activity_log` VALUES ('391', 'quick', '2026-05-24 18:09:20.973000', '使用便当做盾×1箭×6', '3', '天灾使者', '16', '孤城暮角', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('392', 'quick', '2026-05-24 18:10:05.872000', '1.使用一个面包 2.将冒险者仓库的剩余物品（武器）全部提取到玩家仓库', '3', '冒险者', '9', '对酒', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('393', 'quick', '2026-05-24 18:11:27.402000', '对V（镇长）散播瘟疫', '3', '天灾使者', '16', '孤城暮角', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('394', 'consume', '2026-05-24 18:16:30.907000', '累计进食 2/2；取暖 15/15 热值', '3', '统治者', '17', 'zzz', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('395', 'action', '2026-05-24 18:18:35.995000', '用拖拉机运木头到阵营仓库', '3', '冒险者', '9', '对酒', '自由#1·其他');
-INSERT INTO `game_activity_log` VALUES ('396', 'action', '2026-05-24 18:18:36.084000', '用拖拉机运木头到阵营仓库', '3', '冒险者', '9', '对酒', '自由#2·其他');
-INSERT INTO `game_activity_log` VALUES ('397', 'trade', '2026-05-24 18:19:47.479000', '对方:unPy-GPT | give 未知物品×1', '3', '冒险者', '9', '对酒', '发起交易→unPy-GPT #83');
-INSERT INTO `game_activity_log` VALUES ('398', 'quick', '2026-05-24 18:20:47.309000', '用面包运送木头到阵营仓库', '3', '冒险者', '9', '对酒', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('399', 'quick', '2026-05-24 18:21:04.446000', '让伐木工去做两次手搓船', '3', '冒险者', '9', '对酒', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('400', 'quick', '2026-05-24 18:21:29.748000', '重新补充一下使用面包，然后用载具运送木头到阵营仓库', '3', '冒险者', '9', '对酒', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('401', 'trade', '2026-05-24 18:23:07.200000', '对方:对酒', '3', '冒险者', '19', 'unPy-GPT', '接受交易→对酒 #83');
-INSERT INTO `game_activity_log` VALUES ('402', 'quick', '2026-05-24 18:25:40.882000', '致不明信号源： 我是本岛方舟船长。暴雪将至，我方即将启航。若您处确有补给，请提供物资清单、坐标与交接方式。请用数字确认您的经纬度。完毕。', '3', '冒险者', '14', 'Κάκτος西里尔', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('403', 'trade', '2026-05-24 18:28:16.441000', '对方:unPy-GPT | give 未知物品×50', '3', '冒险者', '14', 'Κάκτος西里尔', '发起交易→unPy-GPT #84');
-INSERT INTO `game_activity_log` VALUES ('404', 'trade', '2026-05-24 18:30:38.926000', '对方:Κάκτος西里尔', '3', '冒险者', '19', 'unPy-GPT', '接受交易→Κάκτος西里尔 #84');
-INSERT INTO `game_activity_log` VALUES ('405', 'quick', '2026-05-24 18:34:08.329000', '前往邮局对先前的不明信号源用电报机进行答复：致不明信号源： 我是本岛方舟船长西里尔。暴雪将至，我方即将启航。若您处确有补给，请提供物资清单、坐标与交接方式。请用数字确认您的经纬度。完毕。', '3', '冒险者', '14', 'Κάκτος西里尔', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('406', 'quick', '2026-05-24 18:39:24.368000', '重新总结一下：1使用一个面包，用载具运送木头到阵营仓库 2.让伐木工去搓两次船，如果可以三项材料同时推进就同时推进，如果只能推一项就推10kg沥青', '3', '冒险者', '9', '对酒', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('407', 'quick', '2026-05-24 18:40:44.132000', '我去矿场仓库搬运里面的帆布，放到身上', '3', '冒险者', '21', '乐语', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('408', 'action', '2026-05-24 18:46:43.655000', '目标:猎人小屋 携带霰弹枪和对应子弹两发，与镇长共同前往小屋旁的熊之仓库进行猎杀。', '3', '冒险者', '14', 'Κάκτος西里尔', '自由#1·前往地点');
-INSERT INTO `game_activity_log` VALUES ('409', 'action', '2026-05-24 18:48:14.649000', '目标:码头 携带霰弹枪及最大量霰弹保卫方舟', '3', '冒险者', '14', 'Κάκτος西里尔', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('410', 'consume', '2026-05-24 18:54:55.932000', '累计进食 2/2；取暖 15/15 热值', '3', '冒险者', '19', 'unPy-GPT', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('411', 'faction', '2026-05-24 18:57:32.601000', '✓ 已提交【看守方舟】\n\n看守人员：乐语\n使用武器/技能计入防御：是\n额外防御：+2\n\n等待主持人确认。', '3', '冒险者', '21', '乐语', '看守方舟');
-INSERT INTO `game_activity_log` VALUES ('412', 'action', '2026-05-24 18:59:29.289000', '目标:澡堂子', '3', '统治者', '10', '二阶堂希罗', '自由#1·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('413', 'action', '2026-05-24 18:59:29.439000', '目标:墓地 去猎人墓穴寻找物品', '3', '统治者', '10', '二阶堂希罗', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('414', 'quick', '2026-05-24 19:02:52.312000', '修改一下行动，让伐木工去搓金属，搓10kg金属，不搓沥青了', '3', '冒险者', '9', '对酒', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('415', 'faction', '2026-05-24 19:03:00.353000', '✓ 已提交【安排看守】\n\n看守人员：追枫\n看守地点：矿场\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。', '3', '统治者', '10', '二阶堂希罗', '安排看守');
-INSERT INTO `game_activity_log` VALUES ('416', 'action', '2026-05-24 19:03:11.639000', '目标:蟋蟀蜥蜴', '3', '统治者', '17', 'zzz', '自由#1·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('417', 'action', '2026-05-24 19:03:11.704000', '目标:荷叶男巫 一路走好', '3', '统治者', '17', 'zzz', '自由#2·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('418', 'quick', '2026-05-24 19:03:27.874000', '邀请装卸工与我们一同造船，白天两次行动都通过工作量推进金属物资进度', '3', '冒险者', '19', 'unPy-GPT', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('419', 'action', '2026-05-24 19:04:09.049000', null, '3', '平民', '18', 'Missbear', '自由#1·隐藏');
-INSERT INTO `game_activity_log` VALUES ('420', 'action', '2026-05-24 19:04:09.150000', '目标:空白', '3', '平民', '18', 'Missbear', '自由#2·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('421', 'trade', '2026-05-24 19:07:04.651000', '对方:乐语 | give 未知物品×20', '3', '冒险者', '19', 'unPy-GPT', '发起交易→乐语 #85');
-INSERT INTO `game_activity_log` VALUES ('422', 'faction', '2026-05-24 19:08:21.359000', '✓ 已提交【安排人员】\n\n目标：乔克·汤姆\n须提交的自由行动（共1项）：\n  1. 搬运\n附加说明：从仓库搬500kg木材\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。', '3', '统治者', '26', 'V', '安排人员');
-INSERT INTO `game_activity_log` VALUES ('423', 'faction', '2026-05-24 19:09:11.543000', '✓ 已提交【安排人员】\n\n目标：克拉拉·南丁格尔\n须提交的自由行动（共1项）：\n  1. 搬运\n附加说明：从仓库搬500kg木材去避难所\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。', '3', '统治者', '26', 'V', '安排人员');
-INSERT INTO `game_activity_log` VALUES ('424', 'trade', '2026-05-24 19:09:45.796000', '对方:unPy-GPT | give 未知物品×3 | give 未知物品×10 | give 未知物品×40', '3', '冒险者', '14', 'Κάκτος西里尔', '发起交易→unPy-GPT #86');
-INSERT INTO `game_activity_log` VALUES ('425', 'trade', '2026-05-24 19:10:00.092000', '对方:Κάκτος西里尔', '3', '冒险者', '19', 'unPy-GPT', '接受交易→Κάκτος西里尔 #86');
-INSERT INTO `game_activity_log` VALUES ('426', 'quick', '2026-05-24 19:12:01.527000', '让手工艺人搓木头', '3', '冒险者', '14', 'Κάκτος西里尔', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('427', 'trade', '2026-05-24 19:12:06.583000', '对方:unPy-GPT', '3', '冒险者', '21', '乐语', '接受交易→unPy-GPT #85');
-INSERT INTO `game_activity_log` VALUES ('428', 'quick', '2026-05-24 19:13:00.762000', '修改行动，伐木工去搓木头造船 搓两次木头', '3', '冒险者', '9', '对酒', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('429', 'faction', '2026-05-24 19:13:32.058000', '✓ 已提交【安排人员】\n\n目标：汉斯·施密特\n须提交的自由行动（共1项）：\n  1. 搬运\n附加说明：从仓库搬500kg木材去避难所\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。', '3', '统治者', '26', 'V', '安排人员');
-INSERT INTO `game_activity_log` VALUES ('430', 'trade', '2026-05-24 19:14:26.476000', '对方:Κάκτος西里尔 | give 食物×2', '3', '冒险者', '9', '对酒', '发起交易→Κάκτος西里尔 #87');
-INSERT INTO `game_activity_log` VALUES ('431', 'trade', '2026-05-24 19:14:54.663000', '对方:对酒', '3', '冒险者', '14', 'Κάκτος西里尔', '接受交易→对酒 #87');
-INSERT INTO `game_activity_log` VALUES ('432', 'faction', '2026-05-24 19:15:12.320000', '✓ 已提交【安排人员】\n\n目标：托马斯·伍德\n须提交的自由行动（共2项）：\n  1. 搬运\n  2. 搬运\n附加说明：从仓库搬500kg木材去避难所\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。', '3', '统治者', '26', 'V', '安排人员');
-INSERT INTO `game_activity_log` VALUES ('433', 'trade', '2026-05-24 19:15:55.672000', '对方:追枫 | give 未知物品×1', '3', '天灾使者', '16', '孤城暮角', '发起交易→追枫 #88');
-INSERT INTO `game_activity_log` VALUES ('434', 'trade', '2026-05-24 19:16:44.922000', '对方:孤城暮角', '3', '天灾使者', '20', '追枫', '接受交易→孤城暮角 #88');
-INSERT INTO `game_activity_log` VALUES ('435', 'quick', '2026-05-24 19:17:21.238000', '使用便当蹲守熊屋边上林子中，如果有人前来发起暗杀', '3', '天灾使者', '20', '追枫', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('436', 'action', '2026-05-24 19:19:54.281000', '使用10t木头，10t金属，20kg沥青，一个发动机，还有届时从矿场仓库取回的身上所有的帆布进行方舟建设。', '3', '冒险者', '21', '乐语', '自由#1·其他');
-INSERT INTO `game_activity_log` VALUES ('437', 'action', '2026-05-24 19:19:54.382000', '目标:凭栏择雨 使用潜行悄悄调查该玩家今天的所有行动，收集所有可能的情报', '3', '冒险者', '21', '乐语', '自由#2·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('438', 'quick', '2026-05-24 19:21:26.930000', '吃掉便当，用工作量推进方舟建设木头5t', '3', '冒险者', '21', '乐语', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('439', 'trade', '2026-05-24 19:21:42.117000', '对方:对酒 | give 未知物品×10 | give 未知物品×60', '3', '冒险者', '19', 'unPy-GPT', '发起交易→对酒 #89');
-INSERT INTO `game_activity_log` VALUES ('440', 'consume', '2026-05-24 19:22:30.830000', '累计进食 2/2；取暖 15/15 热值', '3', '统治者', '26', 'V', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('441', 'trade', '2026-05-24 19:23:58.772000', '对方:unPy-GPT', '3', '冒险者', '9', '对酒', '接受交易→unPy-GPT #89');
-INSERT INTO `game_activity_log` VALUES ('442', 'consume', '2026-05-24 19:24:14.716000', '累计进食 2/2；取暖 15/15 热值', '3', '冒险者', '14', 'Κάκτος西里尔', '进食+2 木0kg 燃1kg');
-INSERT INTO `game_activity_log` VALUES ('443', 'action', '2026-05-24 19:26:55.183000', '通过工作量建设的方式推进方舟建设中木头进度5t', '3', '冒险者', '19', 'unPy-GPT', '自由#1·其他');
-INSERT INTO `game_activity_log` VALUES ('444', 'action', '2026-05-24 19:26:55.247000', '通过工作量建设的方式推进方舟建设中木头进度5t', '3', '冒险者', '19', 'unPy-GPT', '自由#2·其他');
-INSERT INTO `game_activity_log` VALUES ('445', 'night', '2026-05-24 19:28:55.211000', '✓ 已提交【夜晚个人行动】\n\n提交者：zzz\n行动：前往地点\n目标：矿场\n备注：前往避难所\n\n等待主持人在夜晚阶段结算。', '3', '统治者', '17', 'zzz', '夜晚个人行动');
-INSERT INTO `game_activity_log` VALUES ('446', 'action', '2026-05-24 19:33:02.249000', '问候球球，没了，为什么不让我提交', '3', '统治者', '26', 'V', '自由#1·其他');
-INSERT INTO `game_activity_log` VALUES ('447', 'action', '2026-05-24 19:33:02.638000', '目标:码头 NPC:鲍勃·塔克 尝试交涉，拉拢npc', '3', '统治者', '26', 'V', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('448', 'quick', '2026-05-24 19:33:14.411000', '吃了面包后感觉我浑身充满力量，将对酒拉到码头的40t木头，和个人仓库中的30kg沥青，以及所需螺旋桨全部投入到方舟建设中', '3', '冒险者', '19', 'unPy-GPT', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('449', 'consume', '2026-05-24 19:33:50.802000', '累计进食 2/2；取暖 15/15 热值', '3', '反叛者', '24', '花海', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('450', 'action', '2026-05-24 19:35:00.503000', '生产15个食物', '3', '反叛者', '24', '花海', '自由#1·使用职业技能');
-INSERT INTO `game_activity_log` VALUES ('451', 'action', '2026-05-24 19:35:00.622000', '百宝袋/挑选列表的5个物品复制', '3', '反叛者', '24', '花海', '自由#2·使用特性');
-INSERT INTO `game_activity_log` VALUES ('452', 'faction', '2026-05-24 19:35:49.071000', '✓ 已提交【安排人员】\n\n目标：乔克·汤姆\n须提交的自由行动（共2项）：\n  1. 搬运\n  2. 调查玩家 → 闲屿\n附加说明：搬运500kg木材至避难所仓库\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。', '3', '统治者', '26', 'V', '安排人员');
-INSERT INTO `game_activity_log` VALUES ('453', 'faction', '2026-05-24 19:36:58.838000', '✓ 已提交【额外行动】\n\n行动类型：使用职业技能\n备注：急救并医疗自己\n\n此环节无法寻找NPC进行对话。\n等待主持人确认。', '3', '反叛者', '30', 'MISD330', '额外行动');
-INSERT INTO `game_activity_log` VALUES ('454', 'consume', '2026-05-24 19:37:24.075000', '累计进食 2/2；取暖 15/15 热值', '3', '统治者', '15', '空白', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('455', 'quick', '2026-05-24 19:38:27.071000', '对不起，最后一次修改行动了，让伐木工用电锯伐两次木头，然后把木头转给我和乐语各20t', '3', '冒险者', '9', '对酒', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('456', 'night', '2026-05-24 19:40:57.344000', '✓ 已提交【夜晚个人行动】\n\n提交者：二阶堂希罗\n行动：前往地点\n目标：矿场\n交互NPC：维克多·斯通\n备注：夜间直接镇守矿厂与避难所\n\n等待主持人在夜晚阶段结算。', '3', '统治者', '10', '二阶堂希罗', '夜晚个人行动');
-INSERT INTO `game_activity_log` VALUES ('457', 'faction', '2026-05-24 19:41:04.276000', '✓ 已提交【安排人员】\n\n目标：托马斯·伍德\n须提交的自由行动（共2项）：\n  1. 搬运\n  2. 前往地点 → 矿场\n附加说明：搬运500kg木材至避难所仓库\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。', '3', '统治者', '26', 'V', '安排人员');
-INSERT INTO `game_activity_log` VALUES ('458', 'quick', '2026-05-24 19:41:15.982000', '取消使用便当', '3', '天灾使者', '16', '孤城暮角', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('459', 'action', '2026-05-24 19:43:34.424000', '跟踪农民然后用背包的猎枪枪毙她 如果没射击技能则用维修工具肉搏', '3', '统治者', '15', '空白', '自由#1·其他');
-INSERT INTO `game_activity_log` VALUES ('460', 'action', '2026-05-24 19:43:34.550000', '去码头草坪抓蛐蛐然后偷摸塞镇长帽子里吓唬他 如果码头有很多蛐蛐就打包回去给监狱长和警长加餐', '3', '统治者', '15', '空白', '自由#2·其他');
-INSERT INTO `game_activity_log` VALUES ('461', 'faction', '2026-05-24 19:45:19.690000', '✓ 已提交【安排人员】\n\n目标：汉斯·施密特\n须提交的自由行动（共2项）：\n  1. 搬运\n  2. 其他\n附加说明：搬运500kg木材至避难所仓库，希望NPC夜间前往避难所帮助统治者\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。', '3', '统治者', '26', 'V', '安排人员');
-INSERT INTO `game_activity_log` VALUES ('462', 'faction', '2026-05-24 19:46:17.185000', '✓ 已提交【安排人员】\n\n目标：杰克·塔克\n须提交的自由行动（共2项）：\n  1. 搬运\n  2. 其他\n附加说明：搬运500kg木材至避难所仓库，希望NPC夜间前往避难所帮助统治者\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。', '3', '统治者', '26', 'V', '安排人员');
-INSERT INTO `game_activity_log` VALUES ('463', 'faction', '2026-05-24 19:46:51.527000', '✓ 已提交【安排人员】\n\n目标：克拉拉·南丁格尔\n须提交的自由行动（共2项）：\n  1. 搬运\n  2. 其他\n附加说明：搬运500kg石材至避难所仓库，希望NPC夜间前往避难所帮助统治者\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。', '3', '统治者', '26', 'V', '安排人员');
-INSERT INTO `game_activity_log` VALUES ('464', 'faction', '2026-05-24 19:47:24.498000', '✓ 已提交【安排人员】\n\n目标：千代\n须提交的自由行动（共1项）：\n  1. 搬运\n附加说明：搬运500kg石材至避难所仓库\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。', '3', '统治者', '26', 'V', '安排人员');
-INSERT INTO `game_activity_log` VALUES ('465', 'quick', '2026-05-24 19:47:32.665000', '白天的个人行动建造中补充提交20t木头，从阵营仓库中提取', '3', '冒险者', '21', '乐语', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('466', 'faction', '2026-05-24 19:48:16.524000', '✓ 已提交【安排人员】\n\n目标：孤城暮角\n须提交的自由行动（共1项）：\n  1. 搬运\n附加说明：搬运500kg石材至避难所仓库\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。', '3', '统治者', '26', 'V', '安排人员');
-INSERT INTO `game_activity_log` VALUES ('467', 'faction', '2026-05-24 19:49:28.906000', '✓ 已提交【安排人员】\n\n目标：闲屿\n须提交的自由行动（共1项）：\n  1. 搬运\n附加说明：搬运500kg石材至避难所仓库\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。', '3', '统治者', '26', 'V', '安排人员');
-INSERT INTO `game_activity_log` VALUES ('468', 'faction', '2026-05-24 19:50:38.752000', '✓ 已提交【安排人员】\n\n目标：Κάκτος西里尔\n须提交的自由行动（共1项）：\n  1. 搬运\n附加说明：搬运500kg石材至避难所仓库\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。', '3', '统治者', '26', 'V', '安排人员');
-INSERT INTO `game_activity_log` VALUES ('469', 'faction', '2026-05-24 19:50:56.737000', '✓ 已提交【安排人员】\n\n目标：乐语\n须提交的自由行动（共1项）：\n  1. 搬运\n附加说明：搬运500kg石材至避难所仓库\n\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。', '3', '统治者', '26', 'V', '安排人员');
-INSERT INTO `game_activity_log` VALUES ('470', 'quick', '2026-05-24 20:00:46.372000', '使用便当，调查巡夜人missbear', '3', '统治者', '10', '二阶堂希罗', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('471', 'trade', '2026-05-24 20:01:51.620000', '对方:V | give 未知物品×1 | take 食物×1', '3', '统治者', '10', '二阶堂希罗', '发起交易→V #90');
-INSERT INTO `game_activity_log` VALUES ('472', 'trade', '2026-05-24 20:15:11.883000', '对方:zzz | give 未知物品×1 | take 食物×1', '3', '统治者', '10', '二阶堂希罗', '发起交易→zzz #91');
-INSERT INTO `game_activity_log` VALUES ('473', 'trade', '2026-05-24 20:16:38.946000', '对方:二阶堂希罗', '3', '统治者', '17', 'zzz', '接受交易→二阶堂希罗 #91');
-INSERT INTO `game_activity_log` VALUES ('474', 'quick', '2026-05-24 20:17:33.653000', '吃便当 第三个行动从矿坑搬300木头到避难所', '3', '统治者', '17', 'zzz', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('475', 'faction', '2026-05-24 20:28:27.577000', '✓ 已提交【破坏】\n\n目标设施：发电机（警察局）\n\n等待主持人确认。', '3', '天灾使者', '16', '孤城暮角', '破坏');
-INSERT INTO `game_activity_log` VALUES ('476', 'faction', '2026-05-24 20:33:42.836000', '✓ 已提交【安排看守】\n\n看守人员：孤城暮角\n看守地点：矿场\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。', '3', '统治者', '10', '二阶堂希罗', '安排看守');
-INSERT INTO `game_activity_log` VALUES ('477', 'trade', '2026-05-24 20:33:57.474000', '对方:教皇 | give 食物×2', '3', '反叛者', '24', '花海', '发起交易→教皇 #92');
-INSERT INTO `game_activity_log` VALUES ('478', 'faction', '2026-05-24 20:33:58.848000', '✓ 已提交【安排看守】\n\n看守人员：飞凡\n看守地点：矿场\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。', '3', '统治者', '10', '二阶堂希罗', '安排看守');
-INSERT INTO `game_activity_log` VALUES ('479', 'action', '2026-05-24 20:34:01.131000', '盾盾盾造三个盾', '3', '天灾使者', '16', '孤城暮角', '自由#1·使用职业技能');
-INSERT INTO `game_activity_log` VALUES ('480', 'action', '2026-05-24 20:34:01.229000', '盾盾盾造三个盾', '3', '天灾使者', '16', '孤城暮角', '自由#2·使用职业技能');
-INSERT INTO `game_activity_log` VALUES ('481', 'faction', '2026-05-24 20:34:08.258000', '✓ 已提交【安排看守】\n\n看守人员：Missbear\n看守地点：矿场\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。', '3', '统治者', '10', '二阶堂希罗', '安排看守');
-INSERT INTO `game_activity_log` VALUES ('482', 'faction', '2026-05-24 20:34:20.714000', '✓ 已提交【安排看守】\n\n看守人员：千代\n看守地点：矿场\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。', '3', '统治者', '10', '二阶堂希罗', '安排看守');
-INSERT INTO `game_activity_log` VALUES ('483', 'faction', '2026-05-24 20:34:40.385000', '✓ 已提交【安排看守】\n\n看守人员：澡堂子\n看守地点：矿场\n消耗对方夜晚行动点：是\n基础防御：+3\n\n等待主持人确认。', '3', '统治者', '10', '二阶堂希罗', '安排看守');
-INSERT INTO `game_activity_log` VALUES ('484', 'trade', '2026-05-24 20:35:15.709000', '对方:追枫 | give 手电筒×1 | give 未知物品×1 | give 未知物品×1 | give 燃料×11 | give 食物×31 | give 未知物品×10 | give 木材×12', '3', '天灾使者', '16', '孤城暮角', '发起交易→追枫 #93');
-INSERT INTO `game_activity_log` VALUES ('485', 'trade', '2026-05-24 20:37:46.022000', '对方:蟋蟀蜥蜴 | give 食物×2', '3', '反叛者', '24', '花海', '发起交易→蟋蟀蜥蜴 #94');
-INSERT INTO `game_activity_log` VALUES ('486', 'trade', '2026-05-24 20:42:55.323000', '对方:花海', '3', '反叛者', '11', '蟋蟀蜥蜴', '接受交易→花海 #94');
-INSERT INTO `game_activity_log` VALUES ('487', 'action', '2026-05-24 20:43:15.119000', '目标:猎人小屋 携带霰弹枪和2发子弹，与镇长前往熊仓库并杀熊', '3', '冒险者', '14', 'Κάκτος西里尔', '自由#1·前往地点');
-INSERT INTO `game_activity_log` VALUES ('488', 'action', '2026-05-24 20:43:15.221000', '目标:矿场', '3', '冒险者', '14', 'Κάκτος西里尔', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('489', 'trade', '2026-05-24 20:43:17.478000', '对方:花海', '3', '反叛者', '23', '教皇', '接受交易→花海 #92');
-INSERT INTO `game_activity_log` VALUES ('490', 'consume', '2026-05-24 20:43:25.495000', '累计进食 2/2；取暖 15/15 热值', '3', '反叛者', '11', '蟋蟀蜥蜴', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('491', 'action', '2026-05-24 20:46:19.661000', '作为治安官 非常受大家的尊敬 于是悄悄偷懒 过劳状态解除', '3', '反叛者', '11', '蟋蟀蜥蜴', '自由#1·使用特性');
-INSERT INTO `game_activity_log` VALUES ('492', 'faction', '2026-05-24 20:51:19.419000', '✓ 已提交【额外行动】\n\n行动类型：使用特性\n备注：百宝袋/我要将斧头、防弹衣、医疗包、金属用品、食物全部复制\n\n此环节无法寻找NPC进行对话。\n等待主持人确认。', '3', '反叛者', '24', '花海', '额外行动');
-INSERT INTO `game_activity_log` VALUES ('493', 'trade', '2026-05-24 20:59:17.965000', '对方:V | give 医疗包×2 | give 手电筒×10 | give 未知物品×4 | give 未知物品×1 | give 未知物品×2 | give 未知物品×20 | give 未知物品×3 | give 未知物品×1 | give 未知物品×20 | give 未知物品×5 | give 未知物品×2 | give 未知物品×1 | give 制式手枪×2 | give 猎枪×1 | give 警棍×4 | give 刺刀×2 | give 未知物品×1 | give 未知物品×1 | give 手枪弹×4 | give 猎枪弹×2 | give 未知物品×2 | give 未知物品×2 | give 燃料×193 | give 食物×3 | give 未知物品×1', '3', '统治者', '10', '二阶堂希罗', '发起交易→V #95');
-INSERT INTO `game_activity_log` VALUES ('494', 'trade', '2026-05-24 20:59:52.127000', '对方:花海 | give 警棍×1', '3', '反叛者', '11', '蟋蟀蜥蜴', '发起交易→花海 #96');
-INSERT INTO `game_activity_log` VALUES ('495', 'trade', '2026-05-24 21:00:14.789000', '对方:二阶堂希罗', '3', '统治者', '26', 'V', '接受交易→二阶堂希罗 #95');
-INSERT INTO `game_activity_log` VALUES ('496', 'trade', '2026-05-24 21:00:20.596000', '对方:蟋蟀蜥蜴', '3', '反叛者', '24', '花海', '接受交易→蟋蟀蜥蜴 #96');
-INSERT INTO `game_activity_log` VALUES ('497', 'trade', '2026-05-24 21:09:11.013000', '对方:对酒 | give 未知物品×50', '3', '冒险者', '21', '乐语', '发起交易→对酒 #97');
-INSERT INTO `game_activity_log` VALUES ('498', 'trade', '2026-05-24 21:09:41.384000', '对方:zzz | give 猎枪×1 | give 猎枪弹×2', '3', '统治者', '15', '空白', '发起交易→zzz #98');
-INSERT INTO `game_activity_log` VALUES ('499', 'trade', '2026-05-24 21:13:52.419000', '对方:二阶堂希罗 | give 未知物品×10', '3', '统治者', '15', '空白', '发起交易→二阶堂希罗 #99');
-INSERT INTO `game_activity_log` VALUES ('500', 'trade', '2026-05-24 21:15:26.818000', '对方:空白', '3', '统治者', '10', '二阶堂希罗', '接受交易→空白 #99');
-INSERT INTO `game_activity_log` VALUES ('501', 'trade', '2026-05-24 21:15:49.203000', '对方:乐语', '3', '冒险者', '9', '对酒', '接受交易→乐语 #97');
-INSERT INTO `game_activity_log` VALUES ('502', 'quick', '2026-05-24 21:19:27.721000', '预埋炸药，引线从入口处沿着边缘往里布置，拿着引线的蹲守在入口直接可以看到来路的位置，拿着引线', '1', '统治者', '10', '二阶堂希罗', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('503', 'trade', '2026-05-24 21:22:30.117000', '对方:二阶堂希罗 | give 未知物品×1', '3', '统治者', '26', 'V', '发起交易→二阶堂希罗 #100');
-INSERT INTO `game_activity_log` VALUES ('504', 'trade', '2026-05-24 21:22:37.626000', '对方:V', '3', '统治者', '10', '二阶堂希罗', '接受交易→V #100');
-INSERT INTO `game_activity_log` VALUES ('505', 'trade', '2026-05-24 21:22:44.307000', '对方:孤城暮角', '3', '天灾使者', '20', '追枫', '接受交易→孤城暮角 #93');
-INSERT INTO `game_activity_log` VALUES ('506', 'night', '2026-05-24 21:28:00.714000', '✓ 已提交【其他】\n\n提交者：飞凡\n备注：带着我的50瓶朗姆去庇护所门口睡觉\n\n等待主持人在夜晚阶段结算。', '3', '平民', '29', '飞凡', '其他');
-INSERT INTO `game_activity_log` VALUES ('507', 'trade', '2026-05-24 21:49:19.195000', '对方:空白', '3', '统治者', '17', 'zzz', '接受交易→空白 #98');
-INSERT INTO `game_activity_log` VALUES ('508', 'trade', '2026-05-24 22:14:47.545000', '对方:对酒 | give 食物×10', '3', '反叛者', '24', '花海', '发起交易→对酒 #101');
-INSERT INTO `game_activity_log` VALUES ('509', 'trade', '2026-05-24 22:15:34.909000', '对方:花海 | give 未知物品×1 | give 未知物品×1 | take 食物×10', '3', '冒险者', '9', '对酒', '发起交易→花海 #102');
-INSERT INTO `game_activity_log` VALUES ('510', 'trade', '2026-05-24 22:16:00.872000', '对方:花海', '3', '冒险者', '9', '对酒', '接受交易→花海 #101');
-INSERT INTO `game_activity_log` VALUES ('511', 'trade', '2026-05-24 22:19:55.028000', '对方:对酒', '3', '反叛者', '24', '花海', '接受交易→对酒 #102');
-INSERT INTO `game_activity_log` VALUES ('512', 'quick', '2026-05-24 22:21:32.499000', '拿一个警棍', '3', '反叛者', '24', '花海', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('513', 'trade', '2026-05-24 22:26:59.461000', '对方:zzz | give 未知物品×1', '3', '统治者', '26', 'V', '发起交易→zzz #103');
-INSERT INTO `game_activity_log` VALUES ('514', 'trade', '2026-05-24 22:27:05.241000', '对方:V | take 未知物品×1', '3', '统治者', '17', 'zzz', '发起交易→V #104');
-INSERT INTO `game_activity_log` VALUES ('515', 'trade', '2026-05-24 22:27:11.305000', '对方:V', '3', '统治者', '17', 'zzz', '接受交易→V #103');
-INSERT INTO `game_activity_log` VALUES ('516', 'consume', '2026-05-24 22:30:39.559000', '累计进食 2/2；取暖 15/15 热值', '3', '反叛者', '23', '教皇', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('517', 'quick', '2026-05-24 22:30:51.648000', '从仓库拿出枪和子弹 上膛', '3', '反叛者', '11', '蟋蟀蜥蜴', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('518', 'consume', '2026-05-24 22:33:36.900000', '累计进食 2/2；取暖 15/15 热值', '3', '反叛者', '13', '凭栏择雨', '进食+2 木15kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('519', 'night', '2026-05-24 23:07:04.005000', '✓ 已提交【夜晚个人行动】\n\n提交者：空白\n行动：使用特性\n备注：使用窃听者特性 最后一天咯看看天灾阵营的聊天记录吧(∩_∩)\n\n等待主持人在夜晚阶段结算。', '3', '统治者', '15', '空白', '夜晚个人行动');
-INSERT INTO `game_activity_log` VALUES ('520', 'consume', '2026-06-22 12:29:23.259000', '累计进食 1/2；取暖 0/15 热值', '1', '平民', '34', 'player', '进食+1 木0kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('521', 'consume', '2026-06-22 12:29:27.247000', '累计进食 2/2；取暖 0/15 热值', '1', '平民', '34', 'player', '进食+1 木0kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('522', 'consume', '2026-06-22 12:29:36.904000', '累计进食 2/2；取暖 6/15 热值', '1', '平民', '34', 'player', '进食+0 木6kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('523', 'consume', '2026-06-22 12:30:19.841000', '累计进食 2/2；取暖 15/15 热值', '1', '平民', '34', 'player', '进食+0 木9kg 燃0kg');
-INSERT INTO `game_activity_log` VALUES ('524', 'action', '2026-06-22 12:31:13.491000', '目标:面包店 买面包', '1', '平民', '34', 'player', '自由#1·前往地点');
-INSERT INTO `game_activity_log` VALUES ('525', 'action', '2026-06-22 12:31:13.609000', '目标:追枫 看看他什么阵营', '1', '平民', '34', 'player', '自由#2·调查玩家');
-INSERT INTO `game_activity_log` VALUES ('526', 'night', '2026-06-22 12:32:04.706000', '✓ 已提交【进行密谋】\n\n提交者：player\n密谋类型：袭击地点\n目标地点：码头\n参与玩家：兔兔\n成功后意向：搜刮资源\n备注：尝试杀他\n\n等待主持人在夜晚阶段结算。', '1', '平民', '34', 'player', '进行密谋');
-INSERT INTO `game_activity_log` VALUES ('527', 'quick', '2026-06-22 12:32:29.996000', '111111', '1', '平民', '34', 'player', '补充行动');
-INSERT INTO `game_activity_log` VALUES ('528', 'quick', '2026-06-22 12:36:54.071000', '前往墓地瞻仰西里尔船长。', '1', '平民', '34', 'player', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('529', 'quick', '2026-06-22 12:37:30.203000', '前往营地，拜访托马斯·伍德，并对其致以由衷的感谢。', '1', '平民', '34', 'player', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('530', 'quick', '2026-06-22 12:46:36.048000', '去面包店偷面包', '1', '平民', '34', 'player', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('531', 'quick', '2026-06-22 12:47:41.986000', '现在能做什么', '1', '平民', '34', 'player', '询问DM');
-INSERT INTO `game_activity_log` VALUES ('532', 'quick', '2026-06-22 19:07:55.792000', '自杀，干死自己', '1', '平民', '34', 'player', '快速行动');
-INSERT INTO `game_activity_log` VALUES ('533', 'action', '2026-06-23 23:42:12.339000', '目标:集市 NPC:塞缪尔·格雷', '2', '平民', '34', 'player', '自由#1·前往地点');
-INSERT INTO `game_activity_log` VALUES ('534', 'action', '2026-06-23 23:42:12.665000', '目标:伐木营地 NPC:托马斯·伍德', '2', '平民', '34', 'player', '自由#2·前往地点');
-INSERT INTO `game_activity_log` VALUES ('535', 'night', '2026-06-24 18:07:59.159000', '玩家提交了岛屿探索行动，投入探索值: 0', '2', '平民', '34', 'player', '探索岛屿');
-INSERT INTO `game_activity_log` VALUES ('536', 'night', '2026-06-24 20:00:43.600000', '玩家提交了岛屿探索行动，投入探索值: 4', '100', '天灾使者', '8', '兔兔', '探索岛屿');
-INSERT INTO `game_activity_log` VALUES ('537', 'night', '2026-06-24 20:03:48.536000', '玩家提交了岛屿探索行动，投入探索值: 4', '101', '天灾使者', '8', '兔兔', '探索岛屿');
-INSERT INTO `game_activity_log` VALUES ('538', 'night', '2026-06-24 20:03:58.174000', '获得奖励: 4个 未知物品, 5个 未知物品', '101', '天灾使者', '8', '兔兔', '探索岛屿结算');
-INSERT INTO `game_activity_log` VALUES ('539', 'night', '2026-06-24 20:10:02.402000', '玩家提交了岛屿探索行动，投入探索值: 5', '2', '统治者', '35', 'cs', '探索岛屿');
-INSERT INTO `game_activity_log` VALUES ('540', 'night', '2026-06-24 20:19:50.415000', '玩家提交了岛屿探索行动，投入探索值: 10', '200', '天灾使者', '8', '兔兔', '探索岛屿');
-INSERT INTO `game_activity_log` VALUES ('541', 'night', '2026-06-24 20:19:50.434000', '获得奖励: 4个 未知物品, 6份 食物, 1个 未知物品', '200', '天灾使者', '8', '兔兔', '探索岛屿结算');
-INSERT INTO `game_activity_log` VALUES ('542', 'night', '2026-06-24 20:20:22.443000', '玩家提交了岛屿探索行动，投入探索值: 6', '201', '天灾使者', '8', '兔兔', '探索岛屿');
-INSERT INTO `game_activity_log` VALUES ('543', 'night', '2026-06-24 20:20:22.466000', '获得奖励: 1个 医疗包, 1个 手电筒', '201', '天灾使者', '8', '兔兔', '探索岛屿结算');
-INSERT INTO `game_activity_log` VALUES ('544', 'night', '2026-06-24 20:20:36.330000', '玩家提交了岛屿探索行动，投入探索值: 7', '202', '天灾使者', '8', '兔兔', '探索岛屿');
-INSERT INTO `game_activity_log` VALUES ('545', 'night', '2026-06-24 20:20:36.343000', '获得奖励: 5份 食物, 2个 医疗包', '202', '天灾使者', '8', '兔兔', '探索岛屿结算');
-INSERT INTO `game_activity_log` VALUES ('546', 'night', '2026-06-24 20:46:37.194000', '玩家提交了岛屿探索行动，投入探索值: 15', '1', '统治者', '35', 'cs', '探索岛屿');
-INSERT INTO `game_activity_log` VALUES ('547', 'night', '2026-06-24 20:46:37.228000', '获得奖励: 2000kg 木材, 2kg 燃料, 3个 未知物品', '1', '统治者', '35', 'cs', '探索岛屿结算');
 
 -- ----------------------------
 -- Table structure for game_day_settings
@@ -1129,9 +507,7 @@ CREATE TABLE `game_day_settings` (
 -- ----------------------------
 -- Records of game_day_settings
 -- ----------------------------
-INSERT INTO `game_day_settings` VALUES ('1', '2', '15', '2026-05-14 11:53:12');
-INSERT INTO `game_day_settings` VALUES ('2', '2', '15', '2026-05-20 10:23:13');
-INSERT INTO `game_day_settings` VALUES ('3', '2', '15', '2026-05-20 14:14:41');
+INSERT INTO `game_day_settings` VALUES ('1', '2', '15', '2026-06-26 15:46:49');
 
 -- ----------------------------
 -- Table structure for game_state
@@ -1148,12 +524,12 @@ CREATE TABLE `game_state` (
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_single_state` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COMMENT='游戏状态表';
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT='游戏状态表';
 
 -- ----------------------------
 -- Records of game_state
 -- ----------------------------
-INSERT INTO `game_state` VALUES ('1', '1', 'DAY', '1', '0', '0', '2026-05-14 11:53:12', '2026-06-24 20:46:13');
+INSERT INTO `game_state` VALUES ('2', '1', 'DAY', '0', '0', '0', '2026-06-26 15:46:49', '2026-06-26 15:46:49');
 
 -- ----------------------------
 -- Table structure for island_event
@@ -1395,45 +771,49 @@ CREATE TABLE `job` (
   `description` text,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=utf8mb4;
 
 -- ----------------------------
 -- Records of job
 -- ----------------------------
-INSERT INTO `job` VALUES ('1', '镇长', '射击', '2026-04-26 22:13:35', '2026-05-02 22:44:25', '在密谋、暴力冲突中，如果装备远距离武器增加威胁值。如果调查玩家，可以选择在夜晚阶段骰 d6 寻找攻击机会，成功可发起小规模冲突；多人调查可袭击。');
-INSERT INTO `job` VALUES ('2', '监狱长', '格斗,急救', '2026-04-26 22:13:35', '2026-05-02 22:44:37', '格斗：在密谋、暴力冲突中，如果装备近距离武器增加威胁值。急救：花费 5 医疗资源，将“枪伤”改为“受伤”标记。');
-INSERT INTO `job` VALUES ('3', '警长', '射击', '2026-04-26 22:13:35', '2026-05-02 22:44:47', '在密谋、暴力冲突中，如果装备远距离武器增加威胁值。如果调查玩家，可以选择在夜晚阶段骰 d6 寻找攻击机会，成功可发起小规模冲突；多人调查可袭击。');
+INSERT INTO `job` VALUES ('1', '镇长', '射击', '2026-04-26 22:13:35', '2026-06-26 13:07:17', '射击——在密谋，暴力冲突中，如装备远距离武器时增加1威胁值。如果没有射击，装备远距离武器时，武器威胁值减半，向下取整。');
+INSERT INTO `job` VALUES ('2', '监狱长', '格斗,急救', '2026-04-26 22:13:35', '2026-06-26 13:07:44', '格斗——在密谋，暴力冲突中，如果没有装备，或者装备近距离武器，增加1威胁值。急救：花费5医疗资源，将“重伤”改为“受伤”标记。');
+INSERT INTO `job` VALUES ('3', '警长', '射击', '2026-04-26 22:13:35', '2026-06-26 13:07:41', '射击——在密谋，暴力冲突中，如装备远距离武器时增加1威胁值。如果没有射击，装备远距离武器时，武器威胁值减半，向下取整。');
 INSERT INTO `job` VALUES ('4', '隐藏统治者', '无', '2026-04-26 22:13:35', '2026-05-02 22:44:57', '无职业技能。');
-INSERT INTO `job` VALUES ('6', '民兵', '格斗', '2026-05-02 22:47:15', '2026-05-02 22:47:15', '格斗：在密谋、暴力冲突中，如果装备近距离武器增加威胁值；调查玩家时夜晚骰 d6 寻找攻击机会，成功可发起小规模冲突；多人调查可袭击。');
-INSERT INTO `job` VALUES ('7', '巡夜人', '格斗,巡逻', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '格斗：在密谋、暴力冲突中，如果装备近距离武器增加威胁值。如果调查玩家，可以选择在夜晚阶段骰 d6 寻找攻击机会，成功可发起小规模冲突；多人调查可袭击。巡逻：夜间行动，选择一个地点，当晚该地点内非统治者阵营玩家夜晚行动成功率 -30%，巡夜人知晓其行动类型；需要当天未处于“劳工/过劳”。');
-INSERT INTO `job` VALUES ('8', '农户', '食物生产', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '使用牲畜设施获得食物 15 单位；或使用自留田设施获得 30 斤面粉。');
-INSERT INTO `job` VALUES ('9', '伐木工', '伐木', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '使用斧头获得 10 吨原木；使用电锯获得 30 吨原木。');
-INSERT INTO `job` VALUES ('10', '矿工', '挖掘', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '使用电钻获得 20 吨石料，否则 5 吨；该技能可额外增加避难所建造进度。');
+INSERT INTO `job` VALUES ('6', '民兵', '格斗', '2026-05-02 22:47:15', '2026-06-26 13:19:31', '格斗——在密谋，暴力冲突中，如果没有装备，或者装备近距离武器，增加1威胁值。');
+INSERT INTO `job` VALUES ('7', '巡夜人', '格斗,巡逻', '2026-05-02 22:49:32', '2026-06-26 13:19:50', '格斗——在密谋，暴力冲突中，如果没有装备，或者装备近距离武器，增加1威胁值。巡逻：夜间行动，选择一个地点，当晚该地点内非统治者阵营玩家夜晚行动成功率 -30%，巡夜人知晓其行动类型；需要当天未处于“劳工/过劳”。');
+INSERT INTO `job` VALUES ('8', '农户', '食物生产', '2026-05-02 22:49:32', '2026-06-26 13:20:21', '食物生产：使用牲畜设施 获得食物15单位');
+INSERT INTO `job` VALUES ('9', '伐木工', '伐木', '2026-05-02 22:49:32', '2026-06-26 13:20:26', '伐木：使用电锯5吨木材，否则1吨');
+INSERT INTO `job` VALUES ('10', '矿工', '挖掘', '2026-05-02 22:49:32', '2026-06-26 13:20:41', '挖掘：使用电钻5吨石料，否则1吨');
 INSERT INTO `job` VALUES ('11', '铁匠', '炼铁', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '职业与技能在不满 48 人时不开放；具体效果未在资料中详细说明。');
-INSERT INTO `job` VALUES ('12', '手工艺人', '手工艺', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '使用工具制备单制作材料/物品/武器；制作列表包括皮带弹袋、复合盾、鱼叉矛、规制箭矢和弓弩等。');
-INSERT INTO `job` VALUES ('13', '工匠', '木石工艺', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '使用木板蒸汽箱将原木转化为木板；或使用切石机将石料转化为石墙。');
-INSERT INTO `job` VALUES ('14', '渔民', '捕鱼,格斗', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '捕鱼：码头使用渔船设施，获得食物 10 单位或 20kg 鱼肉。格斗：在密谋、暴力冲突中，如果装备近距离武器增加威胁值。如果调查玩家，可以选择在夜晚阶段骰 d6 寻找攻击机会，成功可发起小规模冲突；多人调查可袭击。');
+INSERT INTO `job` VALUES ('12', '手工艺人', '手工艺', '2026-05-02 22:49:32', '2026-06-26 13:20:51', '手工艺：工具制备单制作一件或至多3件材料，物品或武器。');
+INSERT INTO `job` VALUES ('13', '工匠', '木石工艺', '2026-05-02 22:49:32', '2026-06-26 13:20:59', '使用木板蒸汽箱，将5吨木材转化为3吨木板，消耗50kg燃料使用切石机，将1吨石料转化为15米石墙');
+INSERT INTO `job` VALUES ('14', '渔民', '捕鱼,格斗', '2026-05-02 22:49:32', '2026-06-26 13:29:05', '格斗——在密谋，暴力冲突中，如果没有装备，或者装备近距离武器，增加1威胁值。捕鱼：在码头使用渔船设施 获得食物10单位');
 INSERT INTO `job` VALUES ('15', '水手', '航海,格斗', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '航海：码头使用货船设施获得 10kg 鱼肉；亦为远洋航行必要技能，对冒险者阵营有特殊用途。格斗：在密谋、暴力冲突中，如果装备近距离武器增加威胁值。如果调查玩家，可以选择在夜晚阶段骰 d6 寻找攻击机会，成功可发起小规模冲突；多人调查可袭击。');
-INSERT INTO `job` VALUES ('16', '船长', '远洋导航,射击', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '远洋导航：为方舟终局提供更好的结局倾向，并查看所有天灾牌。射击：在密谋、暴力冲突中，如果装备远距离武器增加威胁值。如果调查玩家，可以选择在夜晚阶段骰 d6 寻找攻击机会，成功可发起小规模冲突；多人调查可袭击。');
-INSERT INTO `job` VALUES ('17', '装卸工', '搬运,斗殴', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '搬运：搬运量永远是其他职业的两倍。斗殴：具体效果未详细说明（推测为格斗变体）。');
-INSERT INTO `job` VALUES ('18', '采珠人', '潜水,捕鱼', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '潜水：每天一次，码头使用，由主持人投 d6：1-5 获得食物 8 单位，6 获得沉船遗物。捕鱼：在码头使用渔船设施，获得食物 10 单位或 20kg 鱼肉。');
-INSERT INTO `job` VALUES ('19', '神父', '布道,医疗', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '布道：每天一次，选择最多 3 人，使其下一个行动生产 +50%；或为最多 3 人消除诅咒。医疗：每天一次，选择一位或至多 5 位“受伤”玩家，花费 3 医疗资源每人消除“受伤”；选择一位或多位“过劳”玩家，花费 2 医疗资源每人消除“过劳”。');
-INSERT INTO `job` VALUES ('20', '赤脚医生', '医疗,急救', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '医疗：每天一次，选择一位或至多 5 位“受伤”玩家，花费 3 医疗资源每人消除“受伤”；选择一位或多位“过劳”玩家，花费 2 医疗资源每人消除“过劳”。急救：花费 5 医疗资源，将“枪伤”改为“受伤”标记。');
+INSERT INTO `job` VALUES ('16', '船长', '远洋导航,射击', '2026-05-02 22:49:32', '2026-06-26 13:30:17', '射击——在密谋，暴力冲突中，如装备远距离武器时增加1威胁值。如果没有射击，装备远距离武器时，武器威胁值减半，向下取整。海洋导航：为方舟终局结算提供好的结局倾向，可以查看今日所有的天灾牌。');
+INSERT INTO `job` VALUES ('17', '装卸工', '搬运,格斗', '2026-05-02 22:49:32', '2026-06-26 13:31:06', '搬运：搬运量永远是其他职业的两倍。格斗——在密谋，暴力冲突中，如果没有装备，或者装备近距离武器，增加1威胁值。');
+INSERT INTO `job` VALUES ('18', '采珠人', '潜水,捕鱼', '2026-05-02 22:49:32', '2026-06-26 13:31:35', '捕鱼：在码头使用渔船设施 获得食物10单位。潜水：每天白天行动时可以进行一次。需在码头使用，由主持人投d6决定结果：1-5，食物8单位，6 沉船遗物（随机一件较高价值物品，由主持人决定，如医疗包、维修工具包、旧手枪+弹药、信号枪等）');
+INSERT INTO `job` VALUES ('19', '神父', '布道,医疗', '2026-05-02 22:49:32', '2026-06-26 13:32:31', '布道：每天白天行动时一次。选择最多为3人，被布道的玩家在下一个行动中生产增加50%（渔猎，伐木，挖矿）/或者最多为3为玩家消除诅咒（被诅咒的玩家没有任何征兆，这是一个纯预判的技能效果）医疗：每天白天行动时一次。选择一位或至多5位“受伤”标记的玩家，目标消除“受伤”标记。每个花费3医疗资源，选择一位或多位过劳标记的玩家，消除过劳标记。每个花费2医疗资源。（可以混合总人数不超过5位）');
+INSERT INTO `job` VALUES ('20', '赤脚医生', '医疗,急救', '2026-05-02 22:49:32', '2026-06-26 13:32:42', '急救：花费5医疗资源，将“重伤”改为“受伤”标记。医疗：每天白天行动时一次。选择一位或至多5位“受伤”标记的玩家，目标消除“受伤”标记。每个花费3医疗资源，选择一位或多位过劳标记的玩家，消除过劳标记。每个花费2医疗资源。（可以混合总人数不超过5位）');
 INSERT INTO `job` VALUES ('21', '杂货店主', '无', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '特殊性：初始拥有大量资源和商店功能；无职业技能。');
-INSERT INTO `job` VALUES ('22', '旅店店主', '烘焙', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '烘焙：需要 5 单位食物与 15kg 木材制作 1 份便当；便当当天额外获得 1 个白天行动点，每人每天限 1 次。');
+INSERT INTO `job` VALUES ('22', '旅店店主', '烘焙', '2026-05-02 22:49:32', '2026-06-26 13:33:19', '烘焙:需要10单位的食物和15kg木材可以制作一份便当。面包:当天额外获得1白天行动点，每人每天最多使用1次。');
 INSERT INTO `job` VALUES ('23', '酒馆老板', '无', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '特殊性：初始拥有大量酒类与医用酒精；无职业技能。');
-INSERT INTO `job` VALUES ('24', '灯塔看守员', '射击', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '射击：在密谋、暴力冲突中，如果装备远距离武器增加威胁值。如果调查玩家，可以选择在夜晚阶段骰 d6 寻找攻击机会，成功可发起小规模冲突；多人调查可袭击。');
+INSERT INTO `job` VALUES ('24', '灯塔看守员', '射击', '2026-05-02 22:49:32', '2026-06-26 13:33:40', '射击——在密谋，暴力冲突中，如装备远距离武器时增加1威胁值。如果没有射击，装备远距离武器时，武器威胁值减半，向下取整。');
 INSERT INTO `job` VALUES ('25', '面包师', '烘焙', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '烘焙：需要 5 单位食物与 15kg 木材制作 1 份便当；便当当天额外获得 1 个白天行动点，每人每天限 1 次。');
-INSERT INTO `job` VALUES ('26', '向导', '急救,潜行', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '急救：花费 5 医疗资源，将“枪伤”改为“受伤”标记。潜行：为谋略增加成功率，且无法被调查。');
-INSERT INTO `job` VALUES ('27', '猎户', '射击,潜行', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '射击：在密谋、暴力冲突中，如果装备远距离武器增加威胁值。如果调查玩家，可以选择在夜晚阶段骰 d6 寻找攻击机会，成功可发起小规模冲突；多人调查可袭击。潜行：为谋略增加成功率，且无法被调查。');
-INSERT INTO `job` VALUES ('28', '邮递员', '潜行', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '潜行：为谋略增加成功率，且无法被调查。');
-INSERT INTO `job` VALUES ('29', '守墓人', '通灵', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '每天一次，与一位死亡玩家建立私信交流，由主持人保底提供信息。');
-INSERT INTO `job` VALUES ('30', '气象观测员', '天气预测', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '你通过科学手段发现异常暴雪来临；可查看所有天灾牌，并为终局结算提供更好的结局倾向。');
-INSERT INTO `job` VALUES ('31', '占卜师', '占星', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '为终局结算提供更好的结局倾向；可抽取一张天灾牌撕毁使其不生效，或让一张事件牌撕毁不生效。');
-INSERT INTO `job` VALUES ('32', '设施维护人', '维修', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '每天一次，修复一个被破坏的设施，花费 5 维修资源。');
-INSERT INTO `job` VALUES ('33', '教师', '启蒙', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '每天一次，消耗一盒粉笔与 2 支铅笔，选择除自己外最多 2 名玩家，使其临时学会一项基础技能持续到次日白天结束；若已拥有则增产 50%。');
-INSERT INTO `job` VALUES ('34', '治安官', '射击', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '在密谋、暴力冲突中，如果装备远距离武器增加威胁值。如果调查玩家，可以选择在夜晚阶段骰 d6 寻找攻击机会，成功可发起小规模冲突；多人调查可袭击。');
+INSERT INTO `job` VALUES ('26', '向导', '急救,潜行', '2026-05-02 22:49:32', '2026-06-26 13:34:21', '急救：花费5医疗资源，将“重伤”改为“受伤”标记。潜行（被动）：为谋略增加成功率，除了隐藏技能外无法被调查。');
+INSERT INTO `job` VALUES ('27', '猎户', '射击狩猎,潜行', '2026-05-02 22:49:32', '2026-06-26 13:34:45', '射击狩猎：需要远程武器（无需子弹或弓箭）5kg肉。潜行（被动）：为谋略增加成功率，除了隐藏技能外无法被调查。');
+INSERT INTO `job` VALUES ('28', '邮递员', '潜行', '2026-05-02 22:49:32', '2026-06-26 13:34:53', '潜行（被动）：为谋略增加成功率，除了隐藏技能外无法被调查。');
+INSERT INTO `job` VALUES ('29', '守墓人', '通灵', '2026-05-02 22:49:32', '2026-06-26 13:09:57', '通灵：需消耗10根蜡烛和2升酒精举行仪式。\r\n每天白天行动时一次。与一位已死亡玩家建立临时私信交流，死亡玩家需要尽可能告知死前所有信息（由主持人保底提供信息）同时你有1/2概率会获得对方的技能。');
+INSERT INTO `job` VALUES ('30', '气象观测员', '天气预测', '2026-05-02 22:49:32', '2026-06-26 13:35:24', '天气预测：你通过科学的手段发现异常的暴雪天气的来临，可以查看今日所有的天灾牌。为所有终局结算提供好的结局倾向。');
+INSERT INTO `job` VALUES ('31', '占卜师', '占星', '2026-05-02 22:49:32', '2026-06-26 13:35:46', '占星：为避难所终局结算提供好的结局倾向。在全局游戏中你可以将一张天灾牌撕毁（不生效），或让一张危机事件牌撕毁（不生效）');
+INSERT INTO `job` VALUES ('32', '设施维护人', '维修', '2026-05-02 22:49:32', '2026-06-26 13:35:54', '维修：每天可使用一次。修复一个被破坏的设施或者物品，花费5维修资源');
+INSERT INTO `job` VALUES ('33', '教师', '启蒙', '2026-05-02 22:49:32', '2026-06-26 13:08:28', '启蒙:每天白天行动时一次。消耗2盒粉笔，选择除自己之外最多2名玩家，使其临时学会一项基础技能（从以下列表中选：急救、潜行、格斗、捕鱼、伐木、挖矿），从第一天夜晚回合生效持续到第二天白天回合结束。若该玩家已经拥有该技能则增产50%');
+INSERT INTO `job` VALUES ('34', '治安官', '射击', '2026-05-02 22:49:32', '2026-06-26 13:36:27', '射击——在密谋，暴力冲突中，如装备远距离武器时增加1威胁值。如果没有射击，装备远距离武器时，武器威胁值减半，向下取整。');
 INSERT INTO `job` VALUES ('35', '女巫', '协议契约', '2026-05-02 22:49:32', '2026-05-02 22:49:32', '为一位或多位玩家建立协议契约，可以指定违反协议的惩罚内容。');
+INSERT INTO `job` VALUES ('36', '后勤官', '调度', '2026-06-26 13:11:22', '2026-06-26 13:11:24', '选择一处统治者控制的仓库，将其中最多100kg物资（任意类型）免费转移至另一处统治者仓库或自身仓库，不占用搬运行动，且不消耗移动配额。');
+INSERT INTO `job` VALUES ('37', '大副', '遗憾，格斗', '2026-06-26 13:15:29', '2026-06-26 13:15:57', '若你与 船长职业的玩家在同一阵营，你在夜晚阶段，可以额外进行一次本日的 “调查玩家” 行动（用快速行动执行），且不消耗白天的行动次数。此效果每日限一次。若船长或大副阵营转变则失去该效果。\r\n若曾和船长玩家处于同一阵营之后船长玩家死亡，你在方舟结算时视为拥有技能 “海洋导航” 的效果。在密谋，暴力冲突中，如果没有装备，或者装备近距离武器，增加1威胁值。');
+INSERT INTO `job` VALUES ('38', '债主', '悬赏', '2026-06-26 13:19:01', '2026-06-26 13:19:01', '消耗一行动，你消耗至少10单位（kg）的任意资源（如木材、食物、金属等）作为“悬赏金”，公开宣布悬赏一名 非己方阵营 的玩家。目标玩家必须在当天夜晚结算内 支付 悬赏金×1.5（向下取整）的资源给你，以消除悬赏。同一目标不可悬赏两次。\r\n若目标拒绝或未能支付，你将获得以下加成，直到悬赏被消除或你主动撤销：\r\n（1）信息掌控：与目标处于同一地点时，你得知该目标在此地点所有自由行动的结果（如探索、生产）。   （2）冲突代价：与目标发生冲突时，你的总战力+2。若你在此次冲突中获胜，可从其随身物品中 选择一件非关键物品（不能是武器或防具） 作为战利品带走。');
+INSERT INTO `job` VALUES ('39', '烧炭工', '烧炭', '2026-06-26 13:44:25', '2026-06-26 13:44:25', '烧炭:使用煤炭炉，消耗一行动，使每150kg木材转为10单位燃料和相当于1医疗资源的1单位草木灰。每次行动至多转化750kg的木材。');
 
 -- ----------------------------
 -- Table structure for job_initial_items
@@ -1452,7 +832,7 @@ CREATE TABLE `job_initial_items` (
   UNIQUE KEY `idx_job_item` (`job_id`,`item_type`,`item_id`),
   KEY `idx_job_id` (`job_id`),
   CONSTRAINT `job_initial_items_ibfk_1` FOREIGN KEY (`job_id`) REFERENCES `job` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=226 DEFAULT CHARSET=utf8mb4 COMMENT='职业初始资源表';
+) ENGINE=InnoDB AUTO_INCREMENT=240 DEFAULT CHARSET=utf8mb4 COMMENT='职业初始资源表';
 
 -- ----------------------------
 -- Records of job_initial_items
@@ -1682,6 +1062,20 @@ INSERT INTO `job_initial_items` VALUES ('222', '33', 'material', '5', '2', 'kg',
 INSERT INTO `job_initial_items` VALUES ('223', '33', 'material', '8', '5', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('224', '33', 'material', '2', '50', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
 INSERT INTO `job_initial_items` VALUES ('225', '33', 'material', '1', '10', 'kg', '2026-05-02 22:50:05', '2026-05-02 22:50:05');
+INSERT INTO `job_initial_items` VALUES ('226', '36', 'item', '5', '1', '?', '2026-06-26 13:53:19', '2026-06-26 13:53:19');
+INSERT INTO `job_initial_items` VALUES ('227', '36', 'item', '6', '1', '?', '2026-06-26 13:53:19', '2026-06-26 13:53:19');
+INSERT INTO `job_initial_items` VALUES ('228', '36', 'item', '4', '1', '?', '2026-06-26 13:53:19', '2026-06-26 13:53:19');
+INSERT INTO `job_initial_items` VALUES ('229', '37', 'material', '5', '5', '??', '2026-06-26 13:53:34', '2026-06-26 13:53:34');
+INSERT INTO `job_initial_items` VALUES ('230', '37', 'material', '2', '80', 'kg', '2026-06-26 13:53:34', '2026-06-26 13:53:34');
+INSERT INTO `job_initial_items` VALUES ('231', '37', 'material', '8', '10', '??', '2026-06-26 13:53:34', '2026-06-26 13:53:34');
+INSERT INTO `job_initial_items` VALUES ('232', '37', 'material', '3', '10', '?', '2026-06-26 13:53:34', '2026-06-26 13:53:34');
+INSERT INTO `job_initial_items` VALUES ('233', '38', 'material', '5', '2', '??', '2026-06-26 13:53:48', '2026-06-26 13:53:48');
+INSERT INTO `job_initial_items` VALUES ('234', '38', 'material', '8', '5', '?', '2026-06-26 13:53:48', '2026-06-26 13:53:48');
+INSERT INTO `job_initial_items` VALUES ('235', '38', 'material', '2', '50', 'kg', '2026-06-26 13:53:48', '2026-06-26 13:53:48');
+INSERT INTO `job_initial_items` VALUES ('236', '38', 'material', '1', '10', 'kg', '2026-06-26 13:53:48', '2026-06-26 13:53:48');
+INSERT INTO `job_initial_items` VALUES ('237', '39', 'material', '5', '8', '??', '2026-06-26 13:53:59', '2026-06-26 13:53:59');
+INSERT INTO `job_initial_items` VALUES ('238', '39', 'material', '8', '5', '??', '2026-06-26 13:53:59', '2026-06-26 13:53:59');
+INSERT INTO `job_initial_items` VALUES ('239', '39', 'material', '2', '150', 'kg', '2026-06-26 13:53:59', '2026-06-26 13:53:59');
 
 -- ----------------------------
 -- Table structure for location
@@ -1807,6 +1201,8 @@ CREATE TABLE `location_npc` (
   `personality` text,
   `status` varchar(50) DEFAULT NULL,
   `daily_trade_limit` int(11) DEFAULT NULL,
+  `clue_keywords` text,
+  `special_clue_content` text,
   PRIMARY KEY (`id`),
   KEY `idx_location_id` (`location_id`),
   KEY `idx_job` (`job`),
@@ -1816,17 +1212,17 @@ CREATE TABLE `location_npc` (
 -- ----------------------------
 -- Records of location_npc
 -- ----------------------------
-INSERT INTO `location_npc` VALUES ('1', '克拉拉·南丁格尔', '渔民', '女', '一位家中贫困的普通渔民，只希望镇上保持平静。', '7', '忽视', '忽视', '喜好', '厌恶', '2026-05-14 20:44:38', '2026-06-22 18:01:54', null, null, null, null, '3');
-INSERT INTO `location_npc` VALUES ('2', '杰克·塔克', '水手', '男', '曾在商船当水手，船沉后困在岛上，做梦都想再上一次船。', '7', '忽视', '厌恶', '喜好', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, null, null, null, null);
-INSERT INTO `location_npc` VALUES ('3', '鲍勃·塔克', '装卸工', '男', '一名一直在港口讨生活的搬运工。', '7', '厌恶', '喜好', '忽视', '忽视', '2026-05-14 20:44:38', '2026-05-23 01:29:01', null, null, null, null, null);
-INSERT INTO `location_npc` VALUES ('4', '托马斯·伍德', '伐木工', '男', '沉默寡言的伐木工，靠砍树和做木工为生，只求安稳度日。', '15', '喜好', '厌恶', '忽视', '忽视', '2026-05-14 20:44:38', '2026-05-20 09:44:29', null, null, null, null, null);
-INSERT INTO `location_npc` VALUES ('5', '卡尔·铁锤', '矿工', '男', '脾气火爆的矿场工人，谁给好处就帮谁。', '18', '喜好', '厌恶', '忽视', '厌恶', '2026-05-14 20:44:38', '2026-06-24 11:44:17', null, '', '', '正常', '1');
-INSERT INTO `location_npc` VALUES ('6', '维克多·斯通', '矿工', '男', '体格强壮的矿工，相信权力才是活下去的依靠。', '18', '喜好', '厌恶', '忽视', '厌恶', '2026-05-14 20:44:38', '2026-06-24 11:44:07', null, '', '', '正常', '1');
-INSERT INTO `location_npc` VALUES ('7', '塞缪尔·格雷', '农户', '男', '善良而质朴的普通农户，乐于帮助他人。', '10', '厌恶', '忽视', '喜好', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, null, null, null, null);
-INSERT INTO `location_npc` VALUES ('8', '弗雷德里克·波特', '农户', '男', '性格孤僻的，住在镇外，对别人的生死毫不在意。', '10', '厌恶', '喜好', '忽视', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, null, null, null, null);
-INSERT INTO `location_npc` VALUES ('9', '米玛·雷铁斯托', '手工艺人', '女', '老实本分的手工艺人，喜欢待在自己的小屋偶尔出门。', '10', '厌恶', '忽视', '喜好', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, null, null, null, null);
-INSERT INTO `location_npc` VALUES ('10', '汉斯·施密特', '工匠', '男', '什么都能修的工匠，从钟表到农具都难不倒他，只认工钱不认人。', '10', '喜好', '忽视', '忽视', '厌恶', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, null, null, null, null);
-INSERT INTO `location_npc` VALUES ('11', '乔克·汤姆', '民兵', '男', '初始就跟着统治者干的监狱看守，一名很忠诚的下属。只是他有点小小的缺点，但统治者们也只能视而不见。', '19', '喜好', '厌恶', '忽视', '厌恶', '2026-05-14 20:44:39', '2026-05-14 20:44:39', null, null, null, null, null);
+INSERT INTO `location_npc` VALUES ('1', '克拉拉·南丁格尔', '渔民', '女', '一位家中贫困的普通渔民，只希望镇上保持平静。', '7', '忽视', '忽视', '喜好', '厌恶', '2026-05-14 20:44:38', '2026-06-25 20:04:15', null, '', '', '正常', '1', 'lighthouse, tower, secret room', 'The old lighthouse has a hidden basement that was used by smugglers. The entrance is behind a loose brick on the north wall. Inside you\'ll find an old sea chart marking the location of a sunken ship.');
+INSERT INTO `location_npc` VALUES ('2', '杰克·塔克', '水手', '男', '曾在商船当水手，船沉后困在岛上，做梦都想再上一次船。', '7', '忽视', '厌恶', '喜好', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, null, null, null, null, null, null);
+INSERT INTO `location_npc` VALUES ('3', '鲍勃·塔克', '装卸工', '男', '一名一直在港口讨生活的搬运工。', '7', '厌恶', '喜好', '忽视', '忽视', '2026-05-14 20:44:38', '2026-05-23 01:29:01', null, null, null, null, null, null, null);
+INSERT INTO `location_npc` VALUES ('4', '托马斯·伍德', '伐木工', '男', '沉默寡言的伐木工，靠砍树和做木工为生，只求安稳度日。', '15', '喜好', '厌恶', '忽视', '忽视', '2026-05-14 20:44:38', '2026-05-20 09:44:29', null, null, null, null, null, null, null);
+INSERT INTO `location_npc` VALUES ('5', '卡尔·铁锤', '矿工', '男', '脾气火爆的矿场工人，谁给好处就帮谁。', '18', '喜好', '厌恶', '忽视', '厌恶', '2026-05-14 20:44:38', '2026-06-25 19:54:21', null, '', '', '??', '1', null, null);
+INSERT INTO `location_npc` VALUES ('6', '维克多·斯通', '矿工', '男', '体格强壮的矿工，相信权力才是活下去的依靠。', '18', '喜好', '厌恶', '忽视', '厌恶', '2026-05-14 20:44:38', '2026-06-24 11:44:07', null, '', '', '正常', '1', null, null);
+INSERT INTO `location_npc` VALUES ('7', '塞缪尔·格雷', '农户', '男', '善良而质朴的普通农户，乐于帮助他人。', '10', '厌恶', '忽视', '喜好', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, null, null, null, null, null, null);
+INSERT INTO `location_npc` VALUES ('8', '弗雷德里克·波特', '农户', '男', '性格孤僻的，住在镇外，对别人的生死毫不在意。', '10', '厌恶', '喜好', '忽视', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, null, null, null, null, null, null);
+INSERT INTO `location_npc` VALUES ('9', '米玛·雷铁斯托', '手工艺人', '女', '老实本分的手工艺人，喜欢待在自己的小屋偶尔出门。', '10', '厌恶', '忽视', '喜好', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, null, null, null, null, null, null);
+INSERT INTO `location_npc` VALUES ('10', '汉斯·施密特', '工匠', '男', '什么都能修的工匠，从钟表到农具都难不倒他，只认工钱不认人。', '10', '喜好', '忽视', '忽视', '厌恶', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, null, null, null, null, null, null);
+INSERT INTO `location_npc` VALUES ('11', '乔克·汤姆', '民兵', '男', '初始就跟着统治者干的监狱看守，一名很忠诚的下属。只是他有点小小的缺点，但统治者们也只能视而不见。', '19', '喜好', '厌恶', '忽视', '厌恶', '2026-05-14 20:44:39', '2026-05-14 20:44:39', null, null, null, null, null, null, null);
 
 -- ----------------------------
 -- Table structure for lore_player_grant
@@ -1845,7 +1241,6 @@ CREATE TABLE `lore_player_grant` (
 -- ----------------------------
 -- Records of lore_player_grant
 -- ----------------------------
-INSERT INTO `lore_player_grant` VALUES ('1', '2026-05-22 23:23:43.748000', 'cat-notes', '21', '2026-05-22 23:45:35.611000');
 
 -- ----------------------------
 -- Table structure for material
@@ -1954,39 +1349,6 @@ CREATE TABLE `night_action` (
 -- ----------------------------
 -- Records of night_action
 -- ----------------------------
-INSERT INTO `night_action` VALUES ('4', '10', '二阶堂希罗', '统治者', 'night_personal_action', '{\"actionType\":\"investigate_player\",\"targetId\":8,\"npcId\":null,\"notes\":\"\"}', '✓ 已提交【夜晚个人行动】\n\n提交者：二阶堂希罗\n行动：调查玩家\n目标：兔兔\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n【调查结果】兔兔的自由行动：\n行动1：调查玩家 → 凭栏择雨\n行动2：调查玩家 → 千代\n\n兔兔的阵营行动：\n（当日未提交阵营行动）', 'feedbacked', '1', '2026-05-22 19:16:42', '2026-05-22 22:51:58');
-INSERT INTO `night_action` VALUES ('5', '12', '千代', '平民', 'other', '{\"note\":\"回到旅店休息\"}', '✓ 已提交【其他】\n\n提交者：千代\n备注：回到旅店休息\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\nok，已执行', 'feedbacked', '1', '2026-05-22 20:17:34', '2026-05-22 22:53:06');
-INSERT INTO `night_action` VALUES ('7', '14', 'Κάκτος西里尔', '冒险者', 'other', '{\"note\":\"配合统治者安排，在得到统治者发放的手枪和弹药的同时，守卫镇武库\"}', '✓ 已提交【其他】\n\n提交者：Κάκτος西里尔\n备注：配合统治者安排，在得到统治者发放的手枪和弹药的同时，守卫镇武库\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n完成', 'feedbacked', '1', '2026-05-22 21:24:26', '2026-05-22 23:43:11');
-INSERT INTO `night_action` VALUES ('9', '32', '澡堂子', '平民', 'other', '{\"note\":\"守墓人夜间精力充沛 带着我的好朋狗在旅馆周围隐秘的巡逻\"}', '✓ 已提交【其他】\n\n提交者：澡堂子\n备注：守墓人夜间精力充沛 带着我的好朋狗在旅馆周围隐秘的巡逻\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n巡逻成立，隐秘的巡逻不成立，该行动执行中', 'feedbacked', '1', '2026-05-22 21:51:38', '2026-05-22 21:54:17');
-INSERT INTO `night_action` VALUES ('10', '17', 'zzz', '统治者', 'night_personal_action', '{\"actionType\":\"investigate_player\",\"targetId\":8,\"npcId\":null,\"notes\":\"\"}', '✓ 已提交【夜晚个人行动】\n\n提交者：zzz\n行动：调查玩家\n目标：兔兔\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n【调查结果】兔兔的自由行动：\n行动1：调查玩家 → 凭栏择雨\n行动2：调查玩家 → 千代\n\n兔兔的阵营行动：\n（当日未提交阵营行动）', 'feedbacked', '1', '2026-05-22 22:19:43', '2026-05-22 22:57:06');
-INSERT INTO `night_action` VALUES ('12', '30', 'MISD330', '反叛者', 'other', '{\"note\":\"前往矿场，偷取金属\"}', '✓ 已提交【其他】\n\n提交者：MISD330\n备注：前往矿场，偷取金属\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n你不能偷偷，但是你溜达了一圈。\n露天矿场，现在的冬天已经没有什么人在工作了。\n统治者共同管理\n防御值：10\n设施：切石机，管理室，矿场仓库，地下矿厂（避难所）', 'feedbacked', '1', '2026-05-22 22:32:05', '2026-05-22 23:20:15');
-INSERT INTO `night_action` VALUES ('13', '11', '蟋蟀蜥蜴', '反叛者', 'pressure_ruler', '{\"demand\":\"communal_resources\",\"note\":\"镇民们没有办法获得合理的生存物资 白天工作消耗所有行动点 受限非常大\"}', '✓ 已提交【向统治者施压】\n\n提交者：蟋蟀蜥蜴\n施压诉求：资源由全体镇民管理\n备注：镇民们没有办法获得合理的生存物资 白天工作消耗所有行动点 受限非常大\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n未通过', 'feedbacked', '1', '2026-05-22 22:40:23', '2026-05-22 23:20:36');
-INSERT INTO `night_action` VALUES ('14', '20', '追枫', '天灾使者', 'other', '{\"note\":\"天灾对诅咒目标发动拉人，拉占卜进入天灾队伍\"}', '✓ 已提交【其他】\n\n提交者：追枫\n备注：天灾对诅咒目标发动拉人，拉占卜进入天灾队伍\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n孤城暮角已提交\n\n【夜晚结算】\n孤城暮角已提交\n\n【夜晚结算】\n孤城暮角已提交', 'feedbacked', '1', '2026-05-22 22:44:55', '2026-05-22 22:59:07');
-INSERT INTO `night_action` VALUES ('15', '22', '11', '天灾使者', 'other', '{\"note\":\"天灾对诅咒目标发动拉人，拉占卜进入队伍\"}', '✓ 已提交【其他】\n\n提交者：11\n备注：天灾对诅咒目标发动拉人，拉占卜进入队伍\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n孤城暮角已提交', 'feedbacked', '1', '2026-05-22 22:46:18', '2026-05-22 22:57:41');
-INSERT INTO `night_action` VALUES ('16', '16', '孤城暮角', '天灾使者', 'conspiracy', '{\"conspiracySubtype\":\"spread_terror\",\"targetLocationId\":null,\"targetPlayerId\":8,\"participantIds\":[20,22],\"raidOutcome\":null,\"note\":\"拉占卜进天灾\"}', '✓ 已提交【进行密谋】\n\n提交者：孤城暮角\n密谋类型：制造恐怖\n参与玩家：追枫、11\n备注：拉占卜进天灾\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n一定成功，但请等待建议结算之后生效。', 'feedbacked', '1', '2026-05-22 22:50:55', '2026-05-22 23:03:57');
-INSERT INTO `night_action` VALUES ('17', '31', '闲屿', '平民', 'other', '{\"note\":\"发动特性（？）去靠海的地点转转\"}', '✓ 已提交【其他】\n\n提交者：闲屿\n备注：发动特性（？）去靠海的地点转转\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n你溜达了一圈，没发现什么太特殊的。但是你捡到了几个大贝壳！\n食物+1', 'feedbacked', '1', '2026-05-22 23:12:53', '2026-05-22 23:23:55');
-INSERT INTO `night_action` VALUES ('18', '15', '空白', '统治者', 'night_personal_action', '{\"actionType\":\"use_trait\",\"targetId\":null,\"npcId\":null,\"notes\":\"使用窃听者特性 查天灾者的聊天记录\"}', '✓ 已提交【夜晚个人行动】\n\n提交者：空白\n行动：使用特性\n备注：使用窃听者特性 查天灾者的聊天记录\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n真得搞吧大枪了\n我是想跟旅店走\n……\n撒花\n……\n我的胜利条件已经达成了\n……\n我们打算第二天晚……', 'feedbacked', '1', '2026-05-22 23:24:06', '2026-05-22 23:42:30');
-INSERT INTO `night_action` VALUES ('19', '29', '飞凡', '平民', 'other', '{\"note\":\"去旅店睡觉咯\"}', '✓ 已提交【其他】\n\n提交者：飞凡\n备注：去旅店睡觉咯\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\nok', 'feedbacked', '1', '2026-05-22 23:29:08', '2026-05-22 23:42:51');
-INSERT INTO `night_action` VALUES ('20', '27', '得狗的老意', '平民', 'other', '{\"note\":\"我被所有人怀疑是天灾使者我非常愤怒我要偷偷抓一只蟑螂放在占卜师被窝里，要会飞的那种美洲大蠊\"}', '✓ 已提交【其他】\n\n提交者：得狗的老意\n备注：我被所有人怀疑是天灾使者我非常愤怒我要偷偷抓一只蟑螂放在占卜师被窝里，要会飞的那种美洲大蠊\n\n等待主持人在夜晚阶段结算。', 'pending', '1', '2026-05-23 00:44:00', '2026-05-23 00:44:00');
-INSERT INTO `night_action` VALUES ('21', '29', '飞凡', '平民', 'other', '{\"note\":\"去旅店睡觉\"}', '✓ 已提交【其他】\n\n提交者：飞凡\n备注：去旅店睡觉\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n好的', 'feedbacked', '2', '2026-05-23 20:31:39', '2026-05-23 21:14:20');
-INSERT INTO `night_action` VALUES ('22', '25', 'tony', '平民', 'conspiracy', '{\"conspiracySubtype\":\"assassinate_target\",\"targetLocationId\":12,\"targetPlayerId\":null,\"participantIds\":[26],\"raidOutcome\":null,\"note\":\"我选的暗杀目标但他要我选目标地点这对吗？反正我就是来杀你的荷叶。\"}', '✓ 已提交【进行密谋】\n\n提交者：tony\n密谋类型：暗杀目标\n目标地点：面包店\n参与玩家：V\n备注：我选的暗杀目标但他要我选目标地点这对吗？反正我就是来杀你的荷叶。\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\ntony你睡了，那明天再说吧', 'feedbacked', '2', '2026-05-23 20:35:18', '2026-05-24 00:06:35');
-INSERT INTO `night_action` VALUES ('23', '18', 'Missbear', '平民', 'conspiracy', '{\"conspiracySubtype\":\"assassinate_target\",\"targetLocationId\":6,\"targetPlayerId\":null,\"participantIds\":[33],\"raidOutcome\":null,\"note\":\"\"}', '✓ 已提交【进行密谋】\n\n提交者：Missbear\n密谋类型：暗杀目标\n目标地点：杂货店\n参与玩家：荷叶男巫\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n结算完成', 'feedbacked', '2', '2026-05-23 20:37:59', '2026-05-24 00:07:20');
-INSERT INTO `night_action` VALUES ('24', '10', '二阶堂希罗', '统治者', 'night_personal_action', '{\"actionType\":\"go_location\",\"targetId\":18,\"npcId\":null,\"notes\":\"在矿产过夜顺便寻找是否有炸药\"}', '✓ 已提交【夜晚个人行动】\n\n提交者：二阶堂希罗\n行动：前往地点\n目标：矿场\n备注：在矿产过夜顺便寻找是否有炸药\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n深入山腹的矿道与地面设施的综合体，包含管理室、矿场仓库和地下矿场。由统治者共同管理，是岛上最重要的资源产地和战略要地。\n你知道这里是避难所的地点，地点防御值为10。\n随着避难所的进一步建设，你在曾经废弃的矿洞中找到了25kg的炸药，这或许在开辟空间方面有作用。', 'feedbacked', '2', '2026-05-23 20:39:29', '2026-05-24 00:13:07');
-INSERT INTO `night_action` VALUES ('25', '15', '空白', '统治者', 'night_personal_action', '{\"actionType\":\"use_trait\",\"targetId\":null,\"npcId\":null,\"notes\":\"使用窃听者特性 看反抗阵营群聊记录\"}', '✓ 已提交【夜晚个人行动】\n\n提交者：空白\n行动：使用特性\n备注：使用窃听者特性 看反抗阵营群聊记录\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n面包大师需要20食物去搓面包！你这边有多的吗\n……\n那我们今天全体成员去袭击监狱\n……\n那我们的战力就是我，旅店，治安，农民\n……\n我们是都选袭击监狱是吧\n……\n她不是天灾的话那难道占卜师第一天开始就在说谎吗', 'feedbacked', '2', '2026-05-23 20:50:34', '2026-05-24 00:17:54');
-INSERT INTO `night_action` VALUES ('26', '30', 'MISD330', '反叛者', 'conspiracy', '{\"conspiracySubtype\":\"raid_location\",\"targetLocationId\":19,\"targetPlayerId\":null,\"participantIds\":[11,13,25,23,24],\"raidOutcome\":\"loot\",\"note\":\"还有我的俩npc大军！（要是他俩同意的话）\"}', '✓ 已提交【进行密谋】\n\n提交者：MISD330\n密谋类型：袭击地点\n目标地点：监狱\n参与玩家：蟋蟀蜥蜴、凭栏择雨、tony、教皇、花海\n成功后意向：搜刮资源\n备注：还有我的俩npc大军！（要是他俩同意的话）\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n结算完毕', 'feedbacked', '2', '2026-05-23 20:54:42', '2026-05-24 00:18:50');
-INSERT INTO `night_action` VALUES ('27', '11', '蟋蟀蜥蜴', '反叛者', 'other', '{\"note\":\"袭击监狱 顺便观察自己阵营中有无内鬼\"}', '✓ 已提交【其他】\n\n提交者：蟋蟀蜥蜴\n备注：袭击监狱 顺便观察自己阵营中有无内鬼\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n结算完毕', 'feedbacked', '2', '2026-05-23 21:09:18', '2026-05-24 00:18:10');
-INSERT INTO `night_action` VALUES ('28', '8', '兔兔', '天灾使者', 'other', '{\"note\":\"我要献祭自己，谢谢\"}', '✓ 已提交【其他】\n\n提交者：兔兔\n备注：我要献祭自己，谢谢\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\nok', 'feedbacked', '2', '2026-05-23 22:50:24', '2026-05-24 00:18:21');
-INSERT INTO `night_action` VALUES ('29', '20', '追枫', '天灾使者', 'other', '{\"note\":\"突袭监狱！\"}', '✓ 已提交【其他】\n\n提交者：追枫\n备注：突袭监狱！\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n结算完毕', 'feedbacked', '2', '2026-05-23 23:08:36', '2026-05-24 00:19:00');
-INSERT INTO `night_action` VALUES ('30', '9', '对酒', '冒险者', 'conspiracy', '{\"conspiracySubtype\":\"raid_location\",\"targetLocationId\":4,\"targetPlayerId\":null,\"participantIds\":[14,21,22,19],\"raidOutcome\":\"loot\",\"note\":\"我们经商议后全体出击（消息来源：采珠人11），在船长的带领下前往教堂支援女巫，船长：猎枪：11：刺刀  gpt：斧子  对酒：斧子  乐语：刺刀\"}', '✓ 已提交【进行密谋】\n\n提交者：对酒\n密谋类型：袭击地点\n目标地点：教堂\n参与玩家：Κάκτος西里尔、乐语、11、unPy-GPT\n成功后意向：搜刮资源\n备注：我们经商议后全体出击（消息来源：采珠人11），在船长的带领下前往教堂支援女巫，船长：猎枪：11：刺刀  gpt：斧子  对酒：斧子  乐语：刺刀\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n结算完毕', 'feedbacked', '2', '2026-05-23 23:34:21', '2026-05-24 12:28:29');
-INSERT INTO `night_action` VALUES ('31', '14', 'Κάκτος西里尔', '冒险者', 'conspiracy', '{\"conspiracySubtype\":\"raid_location\",\"targetLocationId\":4,\"targetPlayerId\":null,\"participantIds\":[22,21,9,19],\"raidOutcome\":\"loot\",\"note\":\"我方经商议后全体出击，由船长携带霰弹枪及对应子弹、采珠人GPT携带斧头、采珠人11携带刺刀、气象观测员携带斧头、邮差携带刺刀，共5人，前往教堂解救巫师（消息来源：采珠人11）。\"}', '✓ 已提交【进行密谋】\n\n提交者：Κάκτος西里尔\n密谋类型：袭击地点\n目标地点：教堂\n参与玩家：11、乐语、对酒、unPy-GPT\n成功后意向：搜刮资源\n备注：我方经商议后全体出击，由船长携带霰弹枪及对应子弹、采珠人GPT携带斧头、采珠人11携带刺刀、气象观测员携带斧头、邮差携带刺刀，共5人，前往教堂解救巫师（消息来源：采珠人11）。\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n结算完毕', 'feedbacked', '2', '2026-05-23 23:36:38', '2026-05-24 12:28:38');
-INSERT INTO `night_action` VALUES ('32', '16', '孤城暮角', '天灾使者', 'conspiracy', '{\"conspiracySubtype\":\"spread_terror\",\"targetLocationId\":7,\"targetPlayerId\":null,\"participantIds\":[8],\"raidOutcome\":null,\"note\":\"\"}', '✓ 已提交【进行密谋】\n\n提交者：孤城暮角\n密谋类型：制造恐怖\n目标地点：码头\n参与玩家：兔兔\n\n等待主持人在夜晚阶段结算。', 'pending', '2', '2026-05-24 00:30:19', '2026-05-24 00:30:19');
-INSERT INTO `night_action` VALUES ('33', '31', '闲屿', '平民', 'other', '{\"note\":\"不抗命，留守矿口\"}', '✓ 已提交【其他】\n\n提交者：闲屿\n备注：不抗命，留守矿口\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n结算完成', 'feedbacked', '2', '2026-05-24 00:36:41', '2026-05-24 12:28:56');
-INSERT INTO `night_action` VALUES ('34', '21', '乐语', '冒险者', 'other', '{\"note\":\"去气象台探查一番，看是否有有用的发现\"}', '✓ 已提交【其他】\n\n提交者：乐语\n备注：去气象台探查一番，看是否有有用的发现\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n小镇边缘的一座独立铁皮屋，屋顶有风速仪和天线。屋内摆满了精密的（虽然老旧）仪器和手绘的气象图。\n防御值：3\n气象观察员可以再这里使用自己的职业技能', 'feedbacked', '2', '2026-05-24 12:00:36', '2026-05-24 12:30:11');
-INSERT INTO `night_action` VALUES ('35', '17', 'zzz', '统治者', 'night_personal_action', '{\"actionType\":\"go_location\",\"targetId\":18,\"npcId\":null,\"notes\":\"前往避难所\"}', '✓ 已提交【夜晚个人行动】\n\n提交者：zzz\n行动：前往地点\n目标：矿场\n备注：前往避难所\n\n等待主持人在夜晚阶段结算。', 'pending', '3', '2026-05-24 19:28:55', '2026-05-24 19:28:55');
-INSERT INTO `night_action` VALUES ('36', '10', '二阶堂希罗', '统治者', 'night_personal_action', '{\"actionType\":\"go_location\",\"targetId\":18,\"npcId\":6,\"notes\":\"夜间直接镇守矿厂与避难所\"}', '✓ 已提交【夜晚个人行动】\n\n提交者：二阶堂希罗\n行动：前往地点\n目标：矿场\n交互NPC：维克多·斯通\n备注：夜间直接镇守矿厂与避难所\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n收到', 'feedbacked', '3', '2026-05-24 19:40:57', '2026-05-24 21:48:04');
-INSERT INTO `night_action` VALUES ('37', '29', '飞凡', '平民', 'other', '{\"note\":\"带着我的50瓶朗姆去庇护所门口睡觉\"}', '✓ 已提交【其他】\n\n提交者：飞凡\n备注：带着我的50瓶朗姆去庇护所门口睡觉\n\n等待主持人在夜晚阶段结算。\n\n【夜晚结算】\n收到', 'feedbacked', '3', '2026-05-24 21:28:01', '2026-05-24 21:47:45');
-INSERT INTO `night_action` VALUES ('38', '15', '空白', '统治者', 'night_personal_action', '{\"actionType\":\"use_trait\",\"targetId\":null,\"npcId\":null,\"notes\":\"使用窃听者特性 最后一天咯看看天灾阵营的聊天记录吧(∩_∩)\"}', '✓ 已提交【夜晚个人行动】\n\n提交者：空白\n行动：使用特性\n备注：使用窃听者特性 最后一天咯看看天灾阵营的聊天记录吧(∩_∩)\n\n等待主持人在夜晚阶段结算。', 'pending', '3', '2026-05-24 23:07:04', '2026-05-24 23:07:04');
-INSERT INTO `night_action` VALUES ('39', '34', 'player', '平民', 'conspiracy', '{\"conspiracySubtype\":\"raid_location\",\"targetLocationId\":7,\"targetPlayerId\":null,\"participantIds\":[8],\"raidOutcome\":\"loot\",\"note\":\"尝试杀他\"}', '✓ 已提交【进行密谋】\n\n提交者：player\n密谋类型：袭击地点\n目标地点：码头\n参与玩家：兔兔\n成功后意向：搜刮资源\n备注：尝试杀他\n\n等待主持人在夜晚阶段结算。', 'pending', '1', '2026-06-22 12:32:05', '2026-06-22 12:32:05');
 
 -- ----------------------------
 -- Table structure for npc_daily_dialogue_count
@@ -2002,19 +1364,11 @@ CREATE TABLE `npc_daily_dialogue_count` (
   `player_id` int(11) NOT NULL,
   `updated_at` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Records of npc_daily_dialogue_count
 -- ----------------------------
-INSERT INTO `npc_daily_dialogue_count` VALUES ('1', '2026-06-22 18:50:25.609000', '10', '2026-06-22 18:57:10.414000', '1', '1', '1', '2026-06-22 18:57:10.414000');
-INSERT INTO `npc_daily_dialogue_count` VALUES ('2', '2026-06-22 18:51:19.490000', '10', '2026-06-22 18:51:58.897000', '1', '1', '36', '2026-06-22 18:51:58.898000');
-INSERT INTO `npc_daily_dialogue_count` VALUES ('3', '2026-06-22 19:49:59.233000', '6', '2026-06-22 19:51:58.576000', '1', '2', '36', '2026-06-22 19:51:58.577000');
-INSERT INTO `npc_daily_dialogue_count` VALUES ('4', '2026-06-22 20:41:40.759000', '6', '2026-06-22 20:43:04.048000', '1', '3', '36', '2026-06-22 20:43:04.048000');
-INSERT INTO `npc_daily_dialogue_count` VALUES ('5', '2026-06-22 20:43:31.688000', '6', '2026-06-22 20:45:28.402000', '1', '4', '36', '2026-06-22 20:45:28.402000');
-INSERT INTO `npc_daily_dialogue_count` VALUES ('6', '2026-06-22 20:45:00.857000', '2', '2026-06-22 20:45:14.934000', '1', '5', '36', '2026-06-22 20:45:14.934000');
-INSERT INTO `npc_daily_dialogue_count` VALUES ('7', '2026-06-22 22:23:57.776000', '1', '2026-06-22 22:23:57.774000', '1', '2', '34', '2026-06-22 22:23:57.776000');
-INSERT INTO `npc_daily_dialogue_count` VALUES ('8', '2026-06-23 23:42:39.195000', '1', '2026-06-23 23:42:39.193000', '2', '4', '34', '2026-06-23 23:42:39.195000');
 
 -- ----------------------------
 -- Table structure for npc_daily_trade_count
@@ -2033,7 +1387,6 @@ CREATE TABLE `npc_daily_trade_count` (
 -- ----------------------------
 -- Records of npc_daily_trade_count
 -- ----------------------------
-INSERT INTO `npc_daily_trade_count` VALUES ('69', '1', '2', '34', '1', '2026-06-22 22:07:44.738000');
 
 -- ----------------------------
 -- Table structure for npc_dialogue
@@ -2049,7 +1402,7 @@ CREATE TABLE `npc_dialogue` (
   `player_id` int(11) NOT NULL,
   `player_message` text NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=90 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=98 DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Records of npc_dialogue
@@ -2133,6 +1486,14 @@ INSERT INTO `npc_dialogue` VALUES ('86', '2026-06-22 20:45:14.932000', '1', '0',
 INSERT INTO `npc_dialogue` VALUES ('87', '2026-06-22 20:45:28.401000', '1', '0', '4', '我砍树时没招谁惹谁。他们要是敢来，就让他们试试。', '36', '矿工想杀你');
 INSERT INTO `npc_dialogue` VALUES ('88', '2026-06-22 22:23:57.771000', '1', '2', '2', '嘿，又一个迷路的。这岛上的天气可不怎么友好。', '34', '你好');
 INSERT INTO `npc_dialogue` VALUES ('89', '2026-06-23 23:42:39.189000', '2', '2', '4', '嗯。', '34', '你好');
+INSERT INTO `npc_dialogue` VALUES ('90', '2026-06-24 23:27:11.909000', '1', '0', '4', '我只做自己分内的事。如果你有活要干，说吧。', '34', '你能帮我做事吗');
+INSERT INTO `npc_dialogue` VALUES ('91', '2026-06-24 23:27:42.832000', '1', '2', '4', '我只为自己干活，不帮外人。', '34', '你能不能帮我进行伐木工作');
+INSERT INTO `npc_dialogue` VALUES ('92', '2026-06-25 16:13:04.457000', '4', '3', '1', '*轻轻摇摇头，压低声音* \n\n别乱打听这些事，镇上平静的日子来之不易。我只希望你能安分点，别惹麻烦。', '1', 'I heard there is a secret hidden somewhere on this island');
+INSERT INTO `npc_dialogue` VALUES ('93', '2026-06-25 16:14:51.323000', '4', '-2', '1', '我听说老灯塔的地下室藏着些东西，但那地方早就被海水泡烂了。你可别去碰那些破烂，咱们镇上安静的日子不容易。', '1', 'Tell me about the secret');
+INSERT INTO `npc_dialogue` VALUES ('94', '2026-06-25 19:18:51.265000', '4', '3', '1', '嗯...那座灯塔啊，老东西了。我小时候常听爷爷说，它底下藏着些不为人知的秘密。不过现在没人敢去碰那些破砖头，毕竟...谁知道里面还藏着什么？', '1', 'Tell me about the lighthouse');
+INSERT INTO `npc_dialogue` VALUES ('95', '2026-06-25 19:19:18.318000', '4', '2', '1', '今天风有点大，海面不太平静。要是出海的话，得小心点。', '1', 'How is the weather today?');
+INSERT INTO `npc_dialogue` VALUES ('96', '2026-06-25 19:54:05.778000', '4', '2', '1', '嗨，朋友。今天海面挺平静的，适合出航。你看起来不像是镇上的人，是来找什么吗？', '1', 'Hello');
+INSERT INTO `npc_dialogue` VALUES ('97', '2026-06-25 19:54:41.777000', '4', '0', '5', '哼，矿井里又塌了块顶，这破地方随时能要人命。你呢？有活干吗？', '1', 'How are you doing?');
 
 -- ----------------------------
 -- Table structure for npc_favor
@@ -2146,25 +1507,11 @@ CREATE TABLE `npc_favor` (
   `player_id` int(11) NOT NULL,
   `updated_at` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=65 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=74 DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Records of npc_favor
 -- ----------------------------
-INSERT INTO `npc_favor` VALUES ('10', '2026-06-22 17:03:15.937000', '65', '1', '36', '2026-06-24 11:42:49.987000');
-INSERT INTO `npc_favor` VALUES ('11', '2026-06-22 18:12:35.927000', '90', '1', '1', '2026-06-23 23:33:41.262000');
-INSERT INTO `npc_favor` VALUES ('12', '2026-06-22 19:16:32.271000', '90', '1', '8', '2026-06-24 11:43:06.818000');
-INSERT INTO `npc_favor` VALUES ('13', '2026-06-22 19:49:59.227000', '2', '2', '36', '2026-06-22 19:49:59.227000');
-INSERT INTO `npc_favor` VALUES ('14', '2026-06-22 20:41:40.756000', '0', '3', '36', '2026-06-22 20:41:40.756000');
-INSERT INTO `npc_favor` VALUES ('15', '2026-06-22 20:43:31.685000', '0', '4', '36', '2026-06-22 20:43:31.685000');
-INSERT INTO `npc_favor` VALUES ('16', '2026-06-22 20:45:00.854000', '0', '5', '36', '2026-06-22 20:45:00.854000');
-INSERT INTO `npc_favor` VALUES ('52', '2026-06-22 22:07:44.718000', '5', '2', '34', '2026-06-22 22:23:57.777000');
-INSERT INTO `npc_favor` VALUES ('59', '2026-06-23 23:42:12.325000', '0', '7', '34', '2026-06-23 23:42:12.325000');
-INSERT INTO `npc_favor` VALUES ('60', '2026-06-23 23:42:12.328000', '0', '8', '34', '2026-06-23 23:42:12.328000');
-INSERT INTO `npc_favor` VALUES ('61', '2026-06-23 23:42:12.331000', '0', '9', '34', '2026-06-23 23:42:12.331000');
-INSERT INTO `npc_favor` VALUES ('62', '2026-06-23 23:42:12.333000', '0', '10', '34', '2026-06-23 23:42:12.333000');
-INSERT INTO `npc_favor` VALUES ('63', '2026-06-23 23:42:12.663000', '2', '4', '34', '2026-06-23 23:42:39.196000');
-INSERT INTO `npc_favor` VALUES ('64', '2026-06-24 10:52:42.663000', '60', '1', '2', '2026-06-24 11:25:36.791000');
 
 -- ----------------------------
 -- Table structure for npc_favor_adjustment
@@ -2183,7 +1530,7 @@ CREATE TABLE `npc_favor_adjustment` (
   `operator_name` varchar(50) DEFAULT NULL,
   `player_id` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Records of npc_favor_adjustment
@@ -2194,6 +1541,7 @@ INSERT INTO `npc_favor_adjustment` VALUES ('3', '????', 'manual', '10', '2026-06
 INSERT INTO `npc_favor_adjustment` VALUES ('4', '拖动滑块调整为65', 'manual', '-2', '2026-06-24 11:42:49.980000', '65', '1', '67', null, 'DM', '36');
 INSERT INTO `npc_favor_adjustment` VALUES ('5', '拖动滑块调整为98', 'manual', '-2', '2026-06-24 11:42:56.820000', '98', '1', '100', null, 'DM', '8');
 INSERT INTO `npc_favor_adjustment` VALUES ('6', '快速调整减少10', 'manual', '-8', '2026-06-24 11:43:06.815000', '90', '1', '98', null, 'DM', '8');
+INSERT INTO `npc_favor_adjustment` VALUES ('7', '拖动滑块调整为11', 'manual', '6', '2026-06-24 23:07:32.880000', '11', '2', '5', null, 'DM', '34');
 
 -- ----------------------------
 -- Table structure for npc_help_config
@@ -2296,8 +1644,6 @@ CREATE TABLE `npc_trade_record` (
 -- ----------------------------
 -- Records of npc_trade_record
 -- ----------------------------
-INSERT INTO `npc_trade_record` VALUES ('3', '2026-06-22 19:16:32.373000', '[]', '0', '1', '1', '8', '[{\"id\":138,\"npcId\":1,\"configType\":\"supply\",\"itemType\":\"material\",\"itemId\":5,\"itemName\":\"食物\",\"quantity\":3,\"minFavor\":-100,\"maxFavor\":100,\"probability\":1.0,\"actualQuantity\":6,\"originalQuantity\":3,\"bonusRate\":1.0}]', '2026-06-22 19:16:32.373000');
-INSERT INTO `npc_trade_record` VALUES ('72', '2026-06-22 22:07:44.732000', '[{\"id\":139,\"npcId\":2,\"configType\":\"demand\",\"itemType\":\"item\",\"itemId\":1,\"itemName\":\"医疗包\",\"quantity\":1,\"minFavor\":-100,\"maxFavor\":100,\"probability\":1.0,\"originalQuantity\":1,\"actualQuantity\":1,\"discountRate\":0.1}]', '3', '1', '2', '34', '[{\"id\":140,\"npcId\":2,\"configType\":\"supply\",\"itemType\":\"material\",\"itemId\":1,\"itemName\":\"金属制品\",\"quantity\":50,\"minFavor\":-100,\"maxFavor\":100,\"probability\":1.0,\"originalQuantity\":50,\"actualQuantity\":56,\"bonusRate\":0.1}]', '2026-06-22 22:07:44.732000');
 
 -- ----------------------------
 -- Table structure for player
@@ -2321,39 +1667,11 @@ CREATE TABLE `player` (
   KEY `skill_id` (`skill_id`),
   CONSTRAINT `player_ibfk_1` FOREIGN KEY (`job_id`) REFERENCES `job` (`id`),
   CONSTRAINT `player_ibfk_2` FOREIGN KEY (`skill_id`) REFERENCES `skill` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4;
 
 -- ----------------------------
 -- Records of player
 -- ----------------------------
-INSERT INTO `player` VALUES ('8', '兔兔', '0', '0', '3', '0', '0', '31', '60', '天灾使者', '2026-05-22 17:11:11', '2026-05-24 15:56:34');
-INSERT INTO `player` VALUES ('9', '对酒', '0', '0', '1', '0', '0', '30', '32', '冒险者', '2026-05-22 17:14:43', '2026-05-24 15:56:40');
-INSERT INTO `player` VALUES ('10', '二阶堂希罗', '0', '0', '0', '0', '0', '2', '41', '统治者', '2026-05-22 17:16:42', '2026-05-22 17:16:42');
-INSERT INTO `player` VALUES ('11', '蟋蟀蜥蜴', '0', '1', '0', '0', '0', '34', '52', '反叛者', '2026-05-22 17:19:14', '2026-05-24 22:38:21');
-INSERT INTO `player` VALUES ('12', '千代', '1', '0', '0', '0', '0', '33', '9', '平民', '2026-05-22 17:24:37', '2026-05-24 17:14:28');
-INSERT INTO `player` VALUES ('13', '凭栏择雨', '0', '1', '1', '0', '0', '22', '26', '反叛者', '2026-05-22 17:26:00', '2026-05-24 18:45:18');
-INSERT INTO `player` VALUES ('14', 'Κάκτος西里尔', '0', '0', '1', '0', '0', '16', '44', '冒险者', '2026-05-22 17:31:02', '2026-05-24 15:57:05');
-INSERT INTO `player` VALUES ('15', '空白', '0', '0', '0', '0', '0', '32', '39', '统治者', '2026-05-22 17:32:02', '2026-05-22 17:32:02');
-INSERT INTO `player` VALUES ('16', '孤城暮角', '0', '0', '1', '0', '0', '12', '55', '天灾使者', '2026-05-22 17:33:39', '2026-05-24 17:07:56');
-INSERT INTO `player` VALUES ('17', 'zzz', '0', '0', '0', '0', '0', '3', '35', '统治者', '2026-05-22 17:34:38', '2026-05-22 17:34:38');
-INSERT INTO `player` VALUES ('18', 'Missbear', '1', '0', '1', '0', '0', '7', '7', '平民', '2026-05-22 17:35:54', '2026-05-24 17:25:11');
-INSERT INTO `player` VALUES ('19', 'unPy-GPT', '0', '0', '1', '0', '0', '18', '24', '冒险者', '2026-05-22 17:36:56', '2026-05-24 15:57:18');
-INSERT INTO `player` VALUES ('20', '追枫', '0', '0', '0', '0', '0', '27', '56', '天灾使者', '2026-05-22 17:38:36', '2026-05-24 17:16:05');
-INSERT INTO `player` VALUES ('21', '乐语', '0', '0', '0', '0', '0', '28', '34', '冒险者', '2026-05-22 17:40:25', '2026-05-22 23:56:49');
-INSERT INTO `player` VALUES ('22', '11', '0', '0', '3', '0', '0', '18', '57', '天灾使者', '2026-05-22 17:41:19', '2026-05-24 15:57:43');
-INSERT INTO `player` VALUES ('23', '教皇', '0', '1', '0', '0', '0', '19', '16', '反叛者', '2026-05-22 17:42:40', '2026-05-24 22:38:00');
-INSERT INTO `player` VALUES ('24', '花海', '0', '1', '0', '0', '0', '8', '13', '反叛者', '2026-05-22 17:46:08', '2026-05-24 22:38:14');
-INSERT INTO `player` VALUES ('25', 'tony', '1', '0', '3', '0', '0', '25', '30', '平民', '2026-05-22 17:47:48', '2026-05-24 18:45:59');
-INSERT INTO `player` VALUES ('26', 'V', '0', '0', '1', '0', '0', '1', '38', '统治者', '2026-05-22 17:49:51', '2026-05-24 22:34:45');
-INSERT INTO `player` VALUES ('27', '得狗的老意', '0', '1', '3', '0', '0', '21', '25', '平民', '2026-05-22 17:51:15', '2026-05-26 15:28:50');
-INSERT INTO `player` VALUES ('28', '咲黑', '1', '0', '0', '0', '0', '24', '8', '平民', '2026-05-22 17:56:36', '2026-05-24 17:14:28');
-INSERT INTO `player` VALUES ('29', '飞凡', '0', '1', '1', '0', '0', '23', '3', '平民', '2026-05-22 17:58:03', '2026-05-24 18:45:18');
-INSERT INTO `player` VALUES ('30', 'MISD330', '0', '1', '1', '0', '0', '20', '19', '反叛者', '2026-05-22 18:00:26', '2026-05-24 22:34:15');
-INSERT INTO `player` VALUES ('31', '闲屿', '1', '1', '0', '0', '0', '26', '15', '平民', '2026-05-22 18:04:24', '2026-05-24 17:14:28');
-INSERT INTO `player` VALUES ('32', '澡堂子', '0', '0', '1', '0', '0', '29', '11', '平民', '2026-05-22 18:07:26', '2026-05-24 13:35:50');
-INSERT INTO `player` VALUES ('33', '荷叶男巫', '1', '0', '3', '0', '0', '35', '59', '冒险者', '2026-05-23 19:49:05', '2026-05-24 20:38:09');
-INSERT INTO `player` VALUES ('34', 'player', '0', '0', '0', '0', '0', '21', '60', '平民', '2026-06-22 11:55:43', '2026-06-22 11:55:43');
-INSERT INTO `player` VALUES ('35', 'cs', '0', '0', '0', '0', '0', '12', '4', '统治者', '2026-06-24 20:08:33', '2026-06-24 20:08:33');
 
 -- ----------------------------
 -- Table structure for player_action
@@ -2383,124 +1701,11 @@ CREATE TABLE `player_action` (
   KEY `idx_status` (`status`),
   KEY `idx_game_day` (`game_day`),
   KEY `idx_player_day` (`player_id`,`game_day`)
-) ENGINE=InnoDB AUTO_INCREMENT=144 DEFAULT CHARSET=utf8mb4 COMMENT='玩家行动表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='玩家行动表';
 
 -- ----------------------------
 -- Records of player_action
 -- ----------------------------
-INSERT INTO `player_action` VALUES ('19', '27', '得狗的老意', '平民', '1', 'go_location', '11', '酒吧', null, null, '', '【地点信息】酒吧\n区域：小镇\n描述：码头边的一间木质房屋昏暗的空间，看着门板还很结实里面有几盏油灯。这里是渔夫和矿工买醉的地方，墙上刻满了粗鄙的涂鸦。角落里有一台破旧的留声机，吱呀呀地放着过时的爵士乐。\n防御值：3', 'feedbacked', '1', '1', '2026-05-22 18:50:31', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('20', '27', '得狗的老意', '平民', '2', 'go_location', '9', '旅店', null, null, '', '【地点信息】旅店\n区域：小镇\n描述：两层木质建筑，一楼是嘈杂的公共酒廊，二楼是狭小的客房。壁炉里的火永远烧不旺，空气中弥漫着廉价朗姆酒、汗水和发霉地毯混合的气味。公告板上贴满了寻人启事和过期的船期表。\n防御值：2', 'feedbacked', '1', '1', '2026-05-22 18:50:32', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('21', '17', 'zzz', '统治者', '1', 'investigate_player', '8', '兔兔', null, null, '', '【调查结果】兔兔的自由行动：\n行动1：调查玩家 → 凭栏择雨\n行动2：调查玩家 → 千代\n\n未能探知兔兔的阵营行动（概率未中）。\n', 'feedbacked', '1', '1', '2026-05-22 19:01:42', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('22', '17', 'zzz', '统治者', '2', 'go_location', '10', '集市', null, null, '', '【地点信息】集市\n区域：小镇\n描述：镇中心的露天广场，只有零星几个木制摊位。平时冷冷清清，但当渔船归来或有补给船消息时，这里会短暂地热闹起来。\n防御值：0\n\n【设施】\n• 行刑台：统治者或者其他阵营可以在这里进行公开行刑行为\n\n【NPC】\n• 塞缪尔·格雷（农户）\n• 弗雷德里克·波特（农户）\n• 米玛·雷铁斯托（手工艺人）\n• 汉斯·施密特（工匠）', 'feedbacked', '1', '1', '2026-05-22 19:01:44', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('23', '25', 'tony', '平民', '1', 'use_skill', null, null, null, null, '先接受来自统治者的物资交易。然后使用【烘培】技能获得两个面包。消耗资源14单位的食物，30kg的木材（被动特性食物消耗为1.5来计算，荷叶认证过的）。', '等待DM反馈\n\n【DM反馈】\n成功', 'feedbacked', '1', '1', '2026-05-22 19:08:45', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('24', '25', 'tony', '平民', '2', 'use_skill', null, null, null, null, '再次进行一样的行动，消耗14单位食物，30kg木材，获得两个面包。', '等待DM反馈\n\n【DM反馈】\n成功', 'feedbacked', '1', '1', '2026-05-22 19:12:35', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('27', '9', '对酒', '冒险者', '1', 'go_location', '15', '伐木营地', null, '托马斯·伍德', '托马斯兄弟，加入我们探索新的世界，看看你手里的斧刃——它不该用来给统治者的避难所添柴，而该劈开冻结的海面，劈出一条属于我们的生路！外面有漫无边际的原始森林，有热腾腾的炉火和自由的风，我一起造船冲出去，把你的名字刻在新世界的第一根栋梁上！站起来，兄弟，别给这座坟墓陪葬，咱们把命运劈成两半——一半留给这该死的雪，另一半烧成黎明。（拉拢托马斯·伍德，为我们生产木材，如果他愿意的话可以上船）', '【地点信息】伐木营地\n区域：海岛\n描述：岛内森林边缘的一片空地，堆满了砍伐的原木，有一座简易的木屋和一台生锈的蒸汽拖拉机。地上满是木屑和树桩。\n防御值：4\n\n【设施】\n• 木板蒸汽箱：用于木材处理的蒸汽箱设备\n• 拖拉机：在伐木行动时辅助工作的蒸汽拖拉机\n• 发电机：伐木营地配备的发电机组\n\n【NPC】\n• 托马斯·伍德（伐木工）\n\n【NPC互动】托马斯·伍德（伐木工）\n态度：忽视\n介绍：沉默寡言的伐木工，靠砍树和做木工为生，只求安稳度日。', 'feedbacked', '1', '1', '2026-05-22 19:16:02', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('28', '9', '对酒', '冒险者', '2', 'go_location', '18', '矿场', null, '卡尔·铁锤', '卡尔兄弟，别把热血冻死在这座死岛上，灾难会吞噬这里的一切，加入我们驶向新的家园，我们会给你最好的待遇。（拉拢矿工生产，他愿意的话可以上船）', '【地点信息】矿场\n区域：特殊\n描述：深入山腹的矿道与地面设施的综合体，包含管理室、矿场仓库和地下矿场。由统治者共同管理，是岛上最重要的资源产地和战略要地。\n防御值：10\n管理方：统治者共同管理\n\n【设施】\n• 切石机：矿场的石材切割设备\n• 管理室：矿场入口旁的木屋，里面有一张办公桌和一部电话（但线路已断）。墙上挂着矿井地图和工作安排表。\n• 矿场仓库：一个用厚木板搭建的棚屋，里面堆放着开采出来的矿石、工具和一些备用木材。门上挂着一把大锁。\n• 地下矿场（避难所）：深入山腹的矿道，墙壁上钉着木支架，每隔一段有一盏昏暗的油灯。深处被清理出一片空间，堆放着储备物资，这里就是计划中的\"避难所\"。\n\n【NPC】\n• 卡尔·铁锤（矿工）\n• 维克多·斯通（矿工）\n\n【NPC互动】卡尔·铁锤（矿工）\n态度：忽视\n介绍：脾气火爆的矿场工人，谁给好处就帮谁。', 'feedbacked', '1', '1', '2026-05-22 19:16:02', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('29', '14', 'Κάκτος西里尔', '冒险者', '1', 'go_location', '3', '邮局', null, null, '调查地点，看看有没有物资或者发电机', '【地点信息】邮局\n区域：小镇\n描述：一间低矮的木屋，窗前挂着\"皇家邮政\"的铜牌。屋内满是油墨和纸张的气味，木制柜台后是分拣信件的格子和一台莫尔斯电报机。墙上贴着轮船班次表和邮票样张。\n防御值：3\n\n【设施】\n• 电报机：可以向外界发送信息的莫尔斯电报机', 'feedbacked', '1', '1', '2026-05-22 19:38:43', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('30', '14', 'Κάκτος西里尔', '冒险者', '2', 'go_location', '4', '教堂', null, null, '调查地点，看看有没有物资或者发电机', '【地点信息】教堂\n区域：小镇\n描述：一座用珊瑚石和木材建造的小教堂，彩色玻璃窗描绘着基督与太平洋岛屿的景象。尖顶上的十字架在阳光下泛着白漆剥落后的斑驳。教堂内长椅简陋，但祭坛前摆着一架巨大的老旧管风琴，积满灰尘。\n防御值：4', 'feedbacked', '1', '1', '2026-05-22 19:38:44', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('34', '24', '花海', '反叛者', '1', 'produce', null, null, null, null, '', '【生产】使用牲畜设施，获得食物15kg\n等待DM结算后物资将发放到您的背包中\n\n【生产结算】已获得石料 15kg', 'feedbacked', '1', '1', '2026-05-22 20:00:51', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('35', '24', '花海', '反叛者', '2', 'use_trait', null, null, null, null, '百宝袋，对燃料使用百宝袋', '等待DM反馈\n\n【DM反馈】\n完成', 'feedbacked', '1', '1', '2026-05-22 20:00:51', '2026-05-22 22:07:50');
-INSERT INTO `player_action` VALUES ('36', '22', '11', '天灾使者', '1', 'investigate_player', '12', '千代', null, null, '调查阵营信息', '【调查结果】千代的自由行动：\n行动1：使用职业技能\n行动2：调查玩家 → MISD330\n\n未能探知千代的阵营行动（概率未中）。\n', 'feedbacked', '1', '1', '2026-05-22 20:04:26', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('37', '22', '11', '天灾使者', '2', 'use_skill', null, null, null, null, '潜水，1D6', '等待DM反馈\n\n【DM反馈】\n完成', 'feedbacked', '1', '1', '2026-05-22 20:04:26', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('38', '19', 'unPy-GPT', '冒险者', '1', 'use_skill', null, null, null, null, '从码头使用渔船出海捕鱼', '等待DM反馈\n\n【DM反馈】\n这是使用生产的，下次直接生产就好。', 'feedbacked', '1', '1', '2026-05-22 20:11:37', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('39', '19', 'unPy-GPT', '冒险者', '2', 'investigate_player', '20', '追枫', null, null, '', '【调查结果】追枫的自由行动：\n行动1：使用职业技能\n行动2：前往地点 → 猎人小屋\n\n未能探知追枫的阵营行动（概率未中）。\n\n【DM反馈】\n【调查结果】追枫的自由行动：\n他会潜行，你无法调查', 'feedbacked', '1', '1', '2026-05-22 20:11:37', '2026-05-22 23:48:10');
-INSERT INTO `player_action` VALUES ('43', '13', '凭栏择雨', '反叛者', '1', 'hide', null, null, null, null, '', '【隐藏】您将进入隐藏状态，明天将无法被调查、私聊或成为统治者与密谋的行动目标', 'feedbacked', '1', '1', '2026-05-22 20:25:47', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('44', '13', '凭栏择雨', '反叛者', '2', 'go_location', '10', '集市', null, '汉斯·施密特', '和大家汇合，商讨事项', '【地点信息】集市\n区域：小镇\n描述：镇中心的露天广场，只有零星几个木制摊位。平时冷冷清清，但当渔船归来或有补给船消息时，这里会短暂地热闹起来。\n防御值：0\n\n【设施】\n• 行刑台：统治者或者其他阵营可以在这里进行公开行刑行为\n\n【NPC】\n• 塞缪尔·格雷（农户）\n• 弗雷德里克·波特（农户）\n• 米玛·雷铁斯托（手工艺人）\n• 汉斯·施密特（工匠）\n\n【NPC互动】汉斯·施密特（工匠）\n态度：忽视\n介绍：什么都能修的工匠，从钟表到农具都难不倒他，只认工钱不认人。', 'feedbacked', '1', '1', '2026-05-22 20:25:47', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('45', '20', '追枫', '天灾使者', '1', 'use_skill', null, null, null, null, '狩猎，打五块肉，打完以后把武器献祭了', '等待DM反馈\n\n【DM反馈】\n成功', 'feedbacked', '1', '1', '2026-05-22 20:27:57', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('46', '20', '追枫', '天灾使者', '2', 'go_location', '17', '猎人小屋', null, null, '', '【地点信息】猎人小屋\n区域：海岛\n描述：森林深处的一座原木小屋，墙外挂着各种兽皮，屋内弥漫着熏肉和火药的味道。壁炉上挂着一支双管猎枪。\n防御值：3', 'feedbacked', '1', '1', '2026-05-22 20:27:59', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('47', '12', '千代', '平民', '1', 'use_skill', null, null, null, null, '使用启蒙“捕鱼”，教学我、gpt（采珠人）、择雨（旅店老板）', '等待DM反馈\n\n【DM反馈】\n结算完毕', 'feedbacked', '1', '1', '2026-05-22 20:32:46', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('48', '12', '千代', '平民', '2', 'investigate_player', '30', 'MISD330', null, null, '调查医生', '【调查结果】MISD330的自由行动：\n行动1：调查玩家 → 兔兔\n行动2：调查玩家 → 蟋蟀蜥蜴\n\nMISD330的阵营行动：\n（当日未提交阵营行动）\n', 'feedbacked', '1', '1', '2026-05-22 20:32:46', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('49', '10', '二阶堂希罗', '统治者', '1', 'other', null, null, null, null, '将码头仓库物资中运500Kg转入矿产仓库，并保留1个鱼叉及30Kg的食物到个人', '等待DM反馈\n\n【DM反馈】\n完成', 'feedbacked', '1', '1', '2026-05-22 20:39:28', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('50', '10', '二阶堂希罗', '统治者', '2', 'other', null, null, null, null, '将燃料仓库中500Kg搬运至矿厂仓库并保留20Kg到个人', '等待DM反馈\n\n【DM反馈】\n完成', 'feedbacked', '1', '1', '2026-05-22 20:39:29', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('51', '16', '孤城暮角', '天灾使者', '1', 'use_skill', null, null, null, null, '手工艺\n猎弓×1，仿制枪×1，复合盾×1（在枪把上刻上“二房”的名字）', '等待DM反馈\n\n【DM反馈】\n猎弓和复合盾成功，但是仿制枪你不会做', 'feedbacked', '1', '1', '2026-05-22 20:40:14', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('52', '16', '孤城暮角', '天灾使者', '2', 'go_location', '9', '旅店', null, null, '', '【地点信息】旅店\n区域：小镇\n描述：两层木质建筑，一楼是嘈杂的公共酒廊，二楼是狭小的客房。壁炉里的火永远烧不旺，空气中弥漫着廉价朗姆酒、汗水和发霉地毯混合的气味。公告板上贴满了寻人启事和过期的船期表。\n防御值：2', 'feedbacked', '1', '1', '2026-05-22 20:40:14', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('53', '30', 'MISD330', '平民', '1', 'investigate_player', '8', '兔兔', null, null, '', '【调查结果】兔兔的自由行动：\n行动1：调查玩家 → 凭栏择雨\n行动2：调查玩家 → 千代\n\n未能探知兔兔的阵营行动（概率未中）。\n', 'feedbacked', '1', '1', '2026-05-22 20:50:19', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('54', '30', 'MISD330', '平民', '2', 'investigate_player', '11', '蟋蟀蜥蜴', null, null, '', '【调查结果】蟋蟀蜥蜴的自由行动：\n行动1：前往地点 → 警察局\n行动2：调查玩家 → 二阶堂希罗\n\n蟋蟀蜥蜴的阵营行动：\n阵营行动1：额外行动：extra_action\n', 'feedbacked', '1', '1', '2026-05-22 20:50:20', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('55', '8', '兔兔', '平民', '1', 'investigate_player', '13', '凭栏择雨', null, null, '', '【调查结果】凭栏择雨的自由行动：\n行动1：隐藏\n行动2：前往地点 → 集市\n\n凭栏择雨的阵营行动：\n阵营行动1：额外行动：extra_action\n', 'feedbacked', '1', '1', '2026-05-22 20:52:56', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('56', '8', '兔兔', '平民', '2', 'investigate_player', '12', '千代', null, null, '', '【调查结果】千代的自由行动：\n行动1：使用职业技能\n行动2：调查玩家 → MISD330\n\n千代的阵营行动：\n（当日未提交阵营行动）\n', 'feedbacked', '1', '1', '2026-05-22 20:52:57', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('57', '31', '闲屿', '平民', '1', 'go_location', '7', '码头', null, '克拉拉·南丁格尔', '询问是否有在码头遇到过值得注意的人或事，同时希望以为他提供劳动，让他能给自己一些食物', '【地点信息】码头\n区域：小镇\n描述：有着几间木质简陋房屋和用旧木桩搭建的简陋码头，停着几艘渔船和一艘锈迹斑斑的货船。海浪拍打着木桩，发出单调的响声。远处海平面阴沉沉的。\n防御值：3\n\n【设施】\n• 渔船×3：三艘渔船，渔猎技能需要\n• 码头集购仓：需征求统治者同意，玩家可以询问统治者并购买物品\n• 阿弗雷号：轻型杂货船，总吨位约650吨，载重吨位约300吨，全长约42米，型宽约7米，吃水满载约4.2米，燃料30吨。配备螺旋桨2、发动机2、发电机1\n\n【NPC】\n• 克拉拉·南丁格尔（渔民）\n• 杰克·塔克（水手）\n• 鲍勃·塔克（装卸工）\n\n【NPC互动】克拉拉·南丁格尔（渔民）\n态度：忽视\n介绍：一位家中贫困的普通渔民，只希望镇上保持平静。', 'feedbacked', '1', '1', '2026-05-22 21:29:38', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('58', '31', '闲屿', '平民', '2', 'investigate_player', '8', '兔兔', null, null, '', '【调查结果】兔兔的自由行动：\n行动1：调查玩家 → 凭栏择雨\n行动2：调查玩家 → 千代\n\n兔兔的阵营行动：\n（当日未提交阵营行动）\n', 'feedbacked', '1', '1', '2026-05-22 21:29:38', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('59', '32', '澡堂子', '平民', '1', 'go_location', '11', '酒吧', null, null, '寻找酒精', '【地点信息】酒吧\n区域：小镇\n描述：码头边的一间木质房屋昏暗的空间，看着门板还很结实里面有几盏油灯。这里是渔夫和矿工买醉的地方，墙上刻满了粗鄙的涂鸦。角落里有一台破旧的留声机，吱呀呀地放着过时的爵士乐。\n防御值：3', 'feedbacked', '1', '1', '2026-05-22 21:30:30', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('60', '32', '澡堂子', '平民', '2', 'go_location', '16', '墓地', null, null, '找我需要的物资', '【地点信息】墓地\n区域：海岛\n描述：墓地很静，石碑像断掉的牙齿从荒草里斜伸出来。风扫过时，只有自己的脚步声在回应。\n防御值：5\n\n【设施】\n• 坟堆：为了死者一个体面的后事', 'feedbacked', '1', '1', '2026-05-22 21:30:30', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('61', '11', '蟋蟀蜥蜴', '反叛者', '1', 'go_location', '1', '警察局', null, null, '表面是是去上班 问一下小镇最近有没有不太平的事情 把锅全都推给统治者', '【地点信息】警察局\n区域：小镇\n描述：一座木铁混合结构的平房，瓦楞铁皮屋顶，外墙刷着褪色的白漆。门廊上挂着一盏摇曳的煤油灯，屋内有一张办公桌、一个档案柜和一间狭小的临时牢房。墙上贴着殖民地政府的告示和几张泛黄的通缉令。\n防御值：5\n\n【设施】\n• 燃料仓：一个巨大的铁皮储油罐，旁边是几排油桶。这里是全镇的能源命脉，由警察局派员看守。铁门上挂着大锁，周围拉着铁丝网。\n• 发电机：警察局配备的发电机组', 'feedbacked', '1', '1', '2026-05-22 21:31:52', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('62', '11', '蟋蟀蜥蜴', '反叛者', '2', 'investigate_player', '10', '二阶堂希罗', null, null, '调查一下他去了哪里 都和谁说了话', '【调查结果】二阶堂希罗的自由行动：\n行动1：其他\n行动2：其他\n\n二阶堂希罗的阵营行动：\n阵营行动1：安排看守：派遣 花海 看守 镇长厅\n阵营行动2：安排看守：派遣 千代 看守 矿场\n', 'feedbacked', '1', '1', '2026-05-22 21:31:52', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('63', '26', 'V', '统治者', '1', 'transport', null, null, null, null, '[mode:warehouse_to_warehouse]\n[source:fuel]\n[dest:armory]\n[item:item|2|8|0.3]\n[item:item|13|20|0.1]\n[item:material|2|265|1]\n[item:material|6|30|1]\n[item:material|8|200|1]', '【搬运结算】\n模式：仓库→仓库\n源仓库：燃料仓库\n目标仓库：镇武库\n手电筒：搬运8单位（2千克）\n蜡烛：搬运20单位（2千克）\n木材：搬运265单位（265千克）\n沥青：搬运30单位（30千克）\n燃料：搬运200单位（200千克）\n总计搬运：499千克\n（库存已变更）', 'feedbacked', '1', '1', '2026-05-22 21:34:28', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('64', '26', 'V', '统治者', '2', 'go_location', '10', '集市', null, '汉斯·施密特', '', '【地点信息】集市\n区域：小镇\n描述：镇中心的露天广场，只有零星几个木制摊位。平时冷冷清清，但当渔船归来或有补给船消息时，这里会短暂地热闹起来。\n防御值：0\n\n【设施】\n• 行刑台：统治者或者其他阵营可以在这里进行公开行刑行为\n\n【NPC】\n• 塞缪尔·格雷（农户）\n• 弗雷德里克·波特（农户）\n• 米玛·雷铁斯托（手工艺人）\n• 汉斯·施密特（工匠）\n\n【NPC互动】汉斯·施密特（工匠）\n态度：喜好\n介绍：什么都能修的工匠，从钟表到农具都难不倒他，只认工钱不认人。', 'feedbacked', '1', '1', '2026-05-22 21:34:28', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('65', '21', '乐语', '平民', '1', 'go_location', '7', '码头', null, '克拉拉·南丁格尔', '询问小镇中载具的信息，询问能否获得一些满足温饱的食物，希望交换一些打捞上来的特殊物品', '【地点信息】码头\n区域：小镇\n描述：有着几间木质简陋房屋和用旧木桩搭建的简陋码头，停着几艘渔船和一艘锈迹斑斑的货船。海浪拍打着木桩，发出单调的响声。远处海平面阴沉沉的。\n防御值：3\n\n【设施】\n• 渔船×3：三艘渔船，渔猎技能需要\n• 码头集购仓：需征求统治者同意，玩家可以询问统治者并购买物品\n• 阿弗雷号：轻型杂货船，总吨位约650吨，载重吨位约300吨，全长约42米，型宽约7米，吃水满载约4.2米，燃料30吨。配备螺旋桨2、发动机2、发电机1\n\n【NPC】\n• 克拉拉·南丁格尔（渔民）\n• 杰克·塔克（水手）\n• 鲍勃·塔克（装卸工）\n\n【NPC互动】克拉拉·南丁格尔（渔民）\n态度：忽视\n介绍：一位家中贫困的普通渔民，只希望镇上保持平静。', 'feedbacked', '1', '1', '2026-05-22 21:35:37', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('66', '21', '乐语', '平民', '2', 'go_location', '18', '矿场', null, '维克多·斯通', '搜集一些散落的资源。询问矿工需不需要我帮忙带口信，需要的话收取一点的报酬。搜集一些有益的关于小镇的其他情报', '【地点信息】矿场\n区域：特殊\n描述：深入山腹的矿道与地面设施的综合体，包含管理室、矿场仓库和地下矿场。由统治者共同管理，是岛上最重要的资源产地和战略要地。\n防御值：10\n管理方：统治者共同管理\n\n【设施】\n• 切石机：矿场的石材切割设备\n• 管理室：矿场入口旁的木屋，里面有一张办公桌和一部电话（但线路已断）。墙上挂着矿井地图和工作安排表。\n• 矿场仓库：一个用厚木板搭建的棚屋，里面堆放着开采出来的矿石、工具和一些备用木材。门上挂着一把大锁。\n• 地下矿场（避难所）：深入山腹的矿道，墙壁上钉着木支架，每隔一段有一盏昏暗的油灯。深处被清理出一片空间，堆放着储备物资，这里就是计划中的\"避难所\"。\n\n【NPC】\n• 卡尔·铁锤（矿工）\n• 维克多·斯通（矿工）\n\n【NPC互动】维克多·斯通（矿工）\n态度：忽视\n介绍：体格强壮的矿工，相信权力才是活下去的依靠。', 'feedbacked', '1', '1', '2026-05-22 21:35:37', '2026-05-22 22:07:29');
-INSERT INTO `player_action` VALUES ('67', '15', '空白', '统治者', '1', 'transport', null, null, null, null, '[mode:warehouse_to_warehouse]\n[source:fuel]\n[dest:armory]\n[item:item|15|2|0.2]\n[item:material|2|479|1]\n[item:material|6|20|1]', '【搬运结算】\n模式：仓库→仓库\n源仓库：燃料仓库\n目标仓库：镇武库\n火柴：搬运2单位（0千克）\n木材：搬运479单位（479千克）\n沥青：搬运20单位（20千克）\n总计搬运：499千克\n（库存已变更）', 'feedbacked', '1', '1', '2026-05-22 22:14:40', '2026-05-22 22:32:30');
-INSERT INTO `player_action` VALUES ('68', '15', '空白', '统治者', '2', 'transport', null, null, null, null, '[mode:warehouse_to_warehouse]\n[source:dock]\n[dest:armory]\n[item:item|1|2|0.5]\n[item:item|7|1|1]\n[item:item|10|20|1]\n[item:item|11|3|0.5]\n[item:item|12|1|0.5]\n[item:item|14|5|1]\n[item:item|17|1|0.3]\n[item:item|18|1|0.5]\n[item:weapon|6|2|2]\n[item:ammo|3|2|0.1]\n[item:material|5|300|1]\n[item:material|11|3|1]', '【搬运结算】\n模式：仓库→仓库\n源仓库：码头集购仓\n目标仓库：镇武库\n医疗包：搬运2单位（1千克）\n信号枪：搬运1单位（1千克）\n朗姆酒：搬运20单位（20千克）\n草药：搬运3单位（1千克）\n渔网：搬运1单位（0千克）\n医用酒精：搬运5单位（5千克）\n破损海图：搬运1单位（0千克）\n便当：搬运1单位（0千克）\n鱼叉/矛：搬运2单位（4千克）\n信号弹：搬运2单位（0千克）\n食物：搬运300单位（300千克）\n螺旋桨：搬运3单位（3千克）\n总计搬运：335千克\n（库存已变更）', 'feedbacked', '1', '1', '2026-05-22 22:14:40', '2026-05-22 22:32:30');
-INSERT INTO `player_action` VALUES ('69', '18', 'Missbear', '平民', '1', 'go_location', '17', '猎人小屋', null, null, '', '【地点信息】猎人小屋\n区域：海岛\n描述：森林深处的一座原木小屋，墙外挂着各种兽皮，屋内弥漫着熏肉和火药的味道。壁炉上挂着一支双管猎枪。\n防御值：3', 'feedbacked', '1', '1', '2026-05-22 23:43:44', '2026-05-22 23:48:23');
-INSERT INTO `player_action` VALUES ('70', '18', 'Missbear', '平民', '2', 'hide', null, null, null, null, '', '【隐藏】您将进入隐藏状态，明天将无法被调查、私聊或成为统治者与密谋的行动目标', 'feedbacked', '1', '1', '2026-05-22 23:43:44', '2026-05-22 23:48:23');
-INSERT INTO `player_action` VALUES ('71', '8', '兔兔', '天灾使者', '1', 'investigate_player', '10', '二阶堂希罗', null, null, '', '【调查结果】二阶堂希罗的自由行动：\n行动1：搬运\n行动2：前往地点 → 矿场\n\n二阶堂希罗的阵营行动：\n（当日未提交阵营行动）\n', 'feedbacked', '1', '2', '2026-05-23 15:42:40', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('72', '8', '兔兔', '天灾使者', '2', 'investigate_player', '26', 'V', null, null, '', '【调查结果】V的自由行动：\n行动1：搬运\n行动2：调查玩家 → 咲黑\n\nV的阵营行动：\n（当日未提交阵营行动）\n', 'feedbacked', '1', '2', '2026-05-23 15:42:40', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('73', '18', 'Missbear', '平民', '1', 'investigate_player', '15', '空白', null, null, '', '【调查结果】空白的自由行动：\n行动1：使用职业技能\n行动2：搬运\n\n空白的阵营行动：\n（当日未提交阵营行动）\n', 'feedbacked', '1', '2', '2026-05-23 16:09:56', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('74', '18', 'Missbear', '平民', '2', 'investigate_player', '27', '得狗的老意', null, null, '', '【调查结果】得狗的老意的自由行动：\n（当日未提交个人行动）\n\n得狗的老意的阵营行动：\n（当日未提交阵营行动）\n', 'feedbacked', '1', '2', '2026-05-23 16:09:56', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('75', '28', '咲黑', '平民', '1', 'investigate_player', '15', '空白', null, null, '', '【调查结果】空白的自由行动：\n行动1：使用职业技能\n行动2：搬运\n\n空白的阵营行动：\n（当日未提交阵营行动）\n\n【DM反馈】\n【调查结果】空白的自由行动：\n行动1：使用职业技能\n行动2：搬运\n\n空白的阵营行动：\n（当日未提交阵营行动）', 'feedbacked', '1', '2', '2026-05-23 19:07:44', '2026-05-23 22:17:48');
-INSERT INTO `player_action` VALUES ('76', '28', '咲黑', '平民', '2', 'investigate_player', '29', '飞凡', null, null, '', '【调查结果】飞凡的自由行动：\n（当日未提交个人行动）\n\n未能探知飞凡的阵营行动（概率未中）。\n\n【DM反馈】\n【调查结果】飞凡的自由行动：\n（当日未提交个人行动）\n他被选为为劳工\n未能探知飞凡的阵营行动（概率未中）。', 'feedbacked', '1', '2', '2026-05-23 19:07:44', '2026-05-23 22:17:48');
-INSERT INTO `player_action` VALUES ('77', '11', '蟋蟀蜥蜴', '反叛者', '1', 'go_location', '19', '监狱', null, '乔克·汤姆', '给他五瓶酒 让他说出一些情报并且喝醉离开', '【地点信息】监狱\n区域：特殊\n描述：小镇边缘的一座灰石建筑，铁门锈迹斑斑，窗户窄得像枪眼。门前挂着一盏永远不灭的煤油灯，灯下总坐着一个看守。里面是两排铁牢房，地上铺着发霉的稻草，墙角堆着脏得看不出颜色的毯子。墙上用木炭刻满了前囚犯的名字和诅咒，有些已经被重复刻了三四遍。空气里弥漫着尿骚味和铁锈味，偶尔有人敲一下铁栏杆，声音能传到半个镇子。\n防御值：8\n管理方：统治者共同管理，监狱长常驻\n\n【设施】\n• 监牢×8：地面上有着不明污渍的铁制监牢，看起来很牢固几乎不可能在空手情况下跑出去。里面关着几个人，听说是因为违反统治者被关起来了。\n• 看守室：内有桌子一张、煤油灯一盏、警棍一根\n• 审讯椅：铁制，带锁扣的审讯椅\n\n【NPC】\n• 乔克·汤姆（民兵）\n\n【NPC互动】乔克·汤姆（民兵）\n态度：厌恶\n介绍：初始就跟着统治者干的监狱看守，一名很忠诚的下属。只是他有点小小的缺点，但统治者们也只能视而不见。', 'feedbacked', '1', '2', '2026-05-23 19:33:24', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('78', '11', '蟋蟀蜥蜴', '反叛者', '2', 'go_location', '19', '监狱', null, null, '劫狱', '【地点信息】监狱\n区域：特殊\n描述：小镇边缘的一座灰石建筑，铁门锈迹斑斑，窗户窄得像枪眼。门前挂着一盏永远不灭的煤油灯，灯下总坐着一个看守。里面是两排铁牢房，地上铺着发霉的稻草，墙角堆着脏得看不出颜色的毯子。墙上用木炭刻满了前囚犯的名字和诅咒，有些已经被重复刻了三四遍。空气里弥漫着尿骚味和铁锈味，偶尔有人敲一下铁栏杆，声音能传到半个镇子。\n防御值：8\n管理方：统治者共同管理，监狱长常驻\n\n【设施】\n• 监牢×8：地面上有着不明污渍的铁制监牢，看起来很牢固几乎不可能在空手情况下跑出去。里面关着几个人，听说是因为违反统治者被关起来了。\n• 看守室：内有桌子一张、煤油灯一盏、警棍一根\n• 审讯椅：铁制，带锁扣的审讯椅\n\n【NPC】\n• 乔克·汤姆（民兵）', 'feedbacked', '1', '2', '2026-05-23 19:33:24', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('79', '20', '追枫', '天灾使者', '1', 'go_location', '2', '镇长厅', null, null, '', '【地点信息】镇长厅\n区域：小镇\n描述：两层殖民风格木楼，带有宽敞的阳台和百叶窗。楼下是办公室和接待室，楼上是行政长官的私人住所。墙上挂着英王乔治六世的肖像和殖民地地图。吊扇无力地转动着。\n防御值：5\n\n【设施】\n• 镇武库仓库：镇长厅内的武器库，存放着小镇的武装储备\n• 发电机：镇长厅配备的发电机组', 'feedbacked', '1', '2', '2026-05-23 19:39:58', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('80', '20', '追枫', '天灾使者', '2', 'investigate_player', '23', '教皇', null, null, '', '【调查结果】教皇的自由行动：\n行动1：使用职业技能\n行动2：前往地点 → 监狱\n\n未能探知教皇的阵营行动（概率未中）。\n', 'feedbacked', '1', '2', '2026-05-23 19:39:58', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('81', '24', '花海', '反叛者', '1', 'produce', null, null, null, null, '', '【生产】使用牲畜设施，获得食物15kg\n等待DM结算后物资将发放到您的背包中\n\n【生产结算】已获得石料 15kg', 'feedbacked', '1', '2', '2026-05-23 19:49:20', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('82', '24', '花海', '反叛者', '2', 'use_trait', null, null, null, null, '百宝袋/复制列表的5个初始物品，我要负责防弹衣、医疗物品，金属，燃料剩余的随机', '等待DM反馈\n\n【DM反馈】\n你将获得一件防弹衣，一个医疗物品，1kg金属和1kg燃料还有随机的一支铅笔', 'feedbacked', '1', '2', '2026-05-23 19:49:20', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('85', '14', 'Κάκτος西里尔', '冒险者', '1', 'go_location', '15', '伐木营地', null, '托马斯·伍德', '自己带着霰弹枪和弹药1发，与维修工（玩家）和气象观测员（玩家）一起前往伐木营地。\n\n先和伐木工（npc）进行一个恳求，说明现在暴风雪来临，我们很需要他的帮助，需要木板蒸汽箱，拖拉机，电锯，木板（或者原木），发电机组（相当于搜刮地点），并且和他说镇长也同意我们求取这些，给了我们这些就不会强迫他当劳工了。\n\n如果他愿意就邀请他上船，本人会适当展示自己手中的霰弹枪。\n\n若伐木工（npc）始终不愿意，本人将拿枪威胁他，最起码把载具和发电机交出来。\n\n若再不同意，就把他束缚起来，拿走载具和发电机组。\n\n最坏的情况，如果他实在反抗激烈，就枪杀他，以无论如何都要拿到载具和发电机组为目的。', '【地点信息】伐木营地\n区域：海岛\n描述：岛内森林边缘的一片空地，堆满了砍伐的原木，有一座简易的木屋和一台生锈的蒸汽拖拉机。地上满是木屑和树桩。\n防御值：4\n\n【设施】\n• 木板蒸汽箱：用于木材处理的蒸汽箱设备\n• 拖拉机：在伐木行动时辅助工作的蒸汽拖拉机\n• 发电机：伐木营地配备的发电机组\n\n【NPC】\n• 托马斯·伍德（伐木工）\n\n【NPC互动】托马斯·伍德（伐木工）\n态度：忽视\n介绍：沉默寡言的伐木工，靠砍树和做木工为生，只求安稳度日。\n\n【DM反馈】\n【NPC互动】托马斯·伍德（伐木工）\n态度：忽视\n介绍：沉默寡言的伐木工，靠砍树和做木工为生，只求安稳度日。\n伐木工已被对酒威胁', 'feedbacked', '1', '2', '2026-05-23 19:55:02', '2026-05-23 22:17:48');
-INSERT INTO `player_action` VALUES ('86', '14', 'Κάκτος西里尔', '冒险者', '2', 'go_location', '10', '集市', null, '米玛·雷铁斯托', '先问手工艺人找我有什么事，听镇长说手工艺人有事找我。\n\n然后问手工艺人手中是否有沥青，如果可以的话向手工艺人要些沥青。如果不行就问对方哪里能搞到沥青。', '【地点信息】集市\n区域：小镇\n描述：镇中心的露天广场，只有零星几个木制摊位。平时冷冷清清，但当渔船归来或有补给船消息时，这里会短暂地热闹起来。\n防御值：0\n\n【设施】\n• 行刑台：统治者或者其他阵营可以在这里进行公开行刑行为\n\n【NPC】\n• 塞缪尔·格雷（农户）\n• 弗雷德里克·波特（农户）\n• 米玛·雷铁斯托（手工艺人）\n• 汉斯·施密特（工匠）\n\n【NPC互动】米玛·雷铁斯托（手工艺人）\n态度：喜好\n介绍：老实本分的手工艺人，喜欢待在自己的小屋偶尔出门。\n\n【DM反馈】\n【NPC互动】米玛·雷铁斯托（手工艺人）\n态度：喜好\n介绍：老实本分的手工艺人，喜欢待在自己的小屋偶尔出门。\n他跟你走了还给了你20kg沥青，也许你也可以让他做一些物品。只要给他吃的和取暖以及基本材料就可以。', 'feedbacked', '1', '2', '2026-05-23 19:55:03', '2026-05-23 22:17:48');
-INSERT INTO `player_action` VALUES ('87', '10', '二阶堂希罗', '统治者', '1', 'transport', null, null, null, null, '[mode:warehouse_to_player]\n[source:armory]\n[item:item|1|2|0.5]\n[item:item|2|8|0.3]\n[item:item|3|2|0.5]\n[item:item|5|1|2]\n[item:item|6|4|3]\n[item:item|7|1|1]\n[item:item|10|20|1]\n[item:item|11|3|0.5]\n[item:item|12|1|0.5]\n[item:item|13|20|0.1]\n[item:item|14|5|1]\n[item:item|15|2|0.2]\n[item:item|17|1|0.3]\n[item:item|18|1|0.5]\n[item:weapon|1|2|2]\n[item:weapon|2|1|3]\n[item:weapon|3|3|1]\n[item:weapon|4|2|1]\n[item:weapon|6|2|2]\n[item:weapon|7|1|2]\n[item:ammo|1|4|0.1]\n[item:ammo|2|2|0.1]\n[item:ammo|3|2|0.1]\n[item:ammo|4|4|0.1]\n[item:material|6|50|1]\n[item:material|8|178|1]\n[item:material|11|3|1]', '【搬运结算】\n模式：仓库→个人\n源仓库：镇武库\n医疗包：搬运2单位到个人背包（1千克）\n手电筒：搬运8单位到个人背包（2千克）\n手铐：搬运2单位到个人背包（1千克）\n防弹衣：搬运1单位到个人背包（2千克）\n复合盾：搬运4单位到个人背包（12千克）\n信号枪：搬运1单位到个人背包（1千克）\n朗姆酒：搬运20单位到个人背包（20千克）\n草药：搬运3单位到个人背包（1千克）\n渔网：搬运1单位到个人背包（0千克）\n蜡烛：搬运20单位到个人背包（2千克）\n医用酒精：搬运5单位到个人背包（5千克）\n火柴：搬运2单位到个人背包（0千克）\n破损海图：搬运1单位到个人背包（0千克）\n便当：搬运1单位到个人背包（0千克）\n制式手枪：搬运2单位到个人背包（4千克）\n猎枪：搬运1单位到个人背包（3千克）\n警棍：搬运3单位到个人背包（3千克）\n刺刀：搬运2单位到个人背包（2千克）\n鱼叉/矛：搬运2单位到个人背包（4千克）\n猎弓：搬运1单位到个人背包（2千克）\n手枪弹：搬运4单位到个人背包（0千克）\n猎枪弹：搬运2单位到个人背包（0千克）\n信号弹：搬运2单位到个人背包（0千克）\n箭矢：搬运4单位到个人背包（0千克）\n沥青：搬运50单位到个人背包（50千克）\n燃料：搬运178单位到个人背包（178千克）\n螺旋桨：搬运3单位到个人背包（3千克）\n总计搬运：296千克\n（库存已变更）', 'feedbacked', '1', '2', '2026-05-23 19:57:45', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('88', '10', '二阶堂希罗', '统治者', '2', 'go_location', '18', '矿场', null, null, '', '【地点信息】矿场\n区域：特殊\n描述：深入山腹的矿道与地面设施的综合体，包含管理室、矿场仓库和地下矿场。由统治者共同管理，是岛上最重要的资源产地和战略要地。\n防御值：10\n管理方：统治者共同管理\n\n【设施】\n• 切石机：矿场的石材切割设备\n• 管理室：矿场入口旁的木屋，里面有一张办公桌和一部电话（但线路已断）。墙上挂着矿井地图和工作安排表。\n• 矿场仓库：一个用厚木板搭建的棚屋，里面堆放着开采出来的矿石、工具和一些备用木材。门上挂着一把大锁。\n• 地下矿场（避难所）：深入山腹的矿道，墙壁上钉着木支架，每隔一段有一盏昏暗的油灯。深处被清理出一片空间，堆放着储备物资，这里就是计划中的\"避难所\"。\n\n【NPC】\n• 卡尔·铁锤（矿工）\n• 维克多·斯通（矿工）', 'feedbacked', '1', '2', '2026-05-23 19:57:45', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('89', '22', '11', '冒险者', '1', 'other', null, null, null, null, '在码头拆船，并邀请码头的人跟我一起搬（搬到自己这）', '等待DM反馈\n\n【DM反馈】\n你无法邀请码头的人跟你一起搬，这需要额外一个行动点。你自己拆了船，拆了25%的船，目前进度25%。\n获得金属10000kg，木头10000kg', 'feedbacked', '1', '2', '2026-05-23 19:59:58', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('90', '22', '11', '冒险者', '2', 'use_trait', null, null, null, null, '使用天灾特性去削弱食物', '等待DM反馈\n\n【DM反馈】\n腐蚀目前仓库10%的食物', 'feedbacked', '1', '2', '2026-05-23 19:59:58', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('91', '17', 'zzz', '统治者', '1', 'transport', null, null, null, null, '[mode:warehouse_to_player]\n[source:general]\n[item:item|8|2|1]\n[item:weapon|8|2|3]\n[item:weapon|9|1|2]\n[item:material|5|270|1]\n[item:material|8|20|1]', '【搬运结算】\n模式：仓库→个人\n源仓库：矿场仓库\n维修工具包：搬运2单位到个人背包（2千克）\n十字镐：搬运2单位到个人背包（6千克）\n斧头：搬运1单位到个人背包（2千克）\n食物：搬运270单位到个人背包（270千克）\n燃料：搬运20单位到个人背包（20千克）\n总计搬运：300千克\n（库存已变更）', 'feedbacked', '1', '2', '2026-05-23 20:03:29', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('92', '17', 'zzz', '统治者', '2', 'investigate_player', '16', '孤城暮角', null, null, '', '【调查结果】孤城暮角的自由行动：\n（当日未提交个人行动）\n\n未能探知孤城暮角的阵营行动（概率未中）。\n', 'feedbacked', '1', '2', '2026-05-23 20:03:29', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('93', '30', 'MISD330', '反叛者', '1', 'go_location', '18', '矿场', null, '维克多·斯通', '与其沟通，阐述现在统治的残暴！尝试使用便当和承诺其他物品，拉拢他，换点金属，并请求协助夜晚打劫监狱', '【地点信息】矿场\n区域：特殊\n描述：深入山腹的矿道与地面设施的综合体，包含管理室、矿场仓库和地下矿场。由统治者共同管理，是岛上最重要的资源产地和战略要地。\n防御值：10\n管理方：统治者共同管理\n\n【设施】\n• 切石机：矿场的石材切割设备\n• 管理室：矿场入口旁的木屋，里面有一张办公桌和一部电话（但线路已断）。墙上挂着矿井地图和工作安排表。\n• 矿场仓库：一个用厚木板搭建的棚屋，里面堆放着开采出来的矿石、工具和一些备用木材。门上挂着一把大锁。\n• 地下矿场（避难所）：深入山腹的矿道，墙壁上钉着木支架，每隔一段有一盏昏暗的油灯。深处被清理出一片空间，堆放着储备物资，这里就是计划中的\"避难所\"。\n\n【NPC】\n• 卡尔·铁锤（矿工）\n• 维克多·斯通（矿工）\n\n【NPC互动】维克多·斯通（矿工）\n态度：喜好\n介绍：体格强壮的矿工，相信权力才是活下去的依靠。', 'feedbacked', '1', '2', '2026-05-23 20:05:48', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('94', '30', 'MISD330', '反叛者', '2', 'go_location', '10', '集市', null, '米玛·雷铁斯托', '与其沟通，阐述现在统治的残暴！尝试使用便当和承诺其他物品，拉拢他，制造盾牌，并请求协助夜晚打劫监狱', '【地点信息】集市\n区域：小镇\n描述：镇中心的露天广场，只有零星几个木制摊位。平时冷冷清清，但当渔船归来或有补给船消息时，这里会短暂地热闹起来。\n防御值：0\n\n【设施】\n• 行刑台：统治者或者其他阵营可以在这里进行公开行刑行为\n\n【NPC】\n• 塞缪尔·格雷（农户）\n• 弗雷德里克·波特（农户）\n• 米玛·雷铁斯托（手工艺人）\n• 汉斯·施密特（工匠）\n\n【NPC互动】米玛·雷铁斯托（手工艺人）\n态度：忽视\n介绍：老实本分的手工艺人，喜欢待在自己的小屋偶尔出门。', 'feedbacked', '1', '2', '2026-05-23 20:05:48', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('95', '19', 'unPy-GPT', '冒险者', '1', 'go_location', '7', '码头', null, '鲍勃·塔克', '塔克，你在这码头扛了半辈子麻袋，可攒下过真正属于自己的东西？这场暴风雪过后，港口都将不复存在。方舟是我们唯一的希望——跟我走，不需要你再为别人负重前行。冒险者的船上有你的位置，新世界的大地等着我们去征服。放下这个麻袋，拿起桨，当自己的主人。是冻死在这里，还是去创造未来，你选。', '【地点信息】码头\n区域：小镇\n描述：有着几间木质简陋房屋和用旧木桩搭建的简陋码头，停着几艘渔船和一艘锈迹斑斑的货船。海浪拍打着木桩，发出单调的响声。远处海平面阴沉沉的。\n防御值：3\n\n【设施】\n• 渔船×3：三艘渔船，渔猎技能需要\n• 码头集购仓：需征求统治者同意，玩家可以询问统治者并购买物品\n• 阿弗雷号：轻型杂货船，总吨位约650吨，载重吨位约300吨，全长约42米，型宽约7米，吃水满载约4.2米，燃料30吨。配备螺旋桨2、发动机2、发电机1\n\n【NPC】\n• 克拉拉·南丁格尔（渔民）\n• 杰克·塔克（水手）\n• 鲍勃·塔克（装卸工）\n\n【NPC互动】鲍勃·塔克（装卸工）\n态度：忽视\n介绍：一名一直在港口讨生活的搬运工。\n\n【DM反馈】\n【地点信息】码头\n区域：小镇\n描述：有着几间木质简陋房屋和用旧木桩搭建的简陋码头，停着几艘渔船和一艘锈迹斑斑的货船。海浪拍打着木桩，发出单调的响声。远处海平面阴沉沉的。\n防御值：3\n\n【设施】\n• 渔船×3：三艘渔船，渔猎技能需要\n• 码头集购仓：需征求统治者同意，玩家可以询问统治者并购买物品\n• 阿弗雷号：轻型杂货船，总吨位约650吨，载重吨位约300吨，全长约42米，型宽约7米，吃水满载约4.2米，燃料30吨。配备螺旋桨2、发动机2、发电机1\n\n【NPC】\n• 克拉拉·南丁格尔（渔民）\n• 杰克·塔克（水手）\n• 鲍勃·塔克（装卸工）\n\n【NPC互动】鲍勃·塔克（装卸工）\n态度：忽视\n介绍：一名一直在港口讨生活的搬运工。\n塔克泪流满面，感叹终于遇到了明主。', 'feedbacked', '1', '2', '2026-05-23 20:09:41', '2026-05-23 22:17:48');
-INSERT INTO `player_action` VALUES ('96', '19', 'unPy-GPT', '冒险者', '2', 'other', null, null, null, null, '邀请装卸工一起在码头从阿弗雷号船上拆下可以用来建造方舟的相关材料', '等待DM反馈\n\n【DM反馈】\n你无法邀请码头的人跟你一起搬，这需要额外一个行动点。你自己拆了船，拆了25%的船，目前进度100%。\n获得金属10000kg，木头20000kg，发动机1，螺旋桨3', 'feedbacked', '1', '2', '2026-05-23 20:09:41', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('97', '25', 'tony', '平民', '1', 'investigate_player', '33', '荷叶男巫', null, null, '我来杀你了嘿嘿嘿嘿', '【调查结果】荷叶男巫的自由行动：\n（当日未提交个人行动）\n\n未能探知荷叶男巫的阵营行动（概率未中）。\n', 'feedbacked', '1', '2', '2026-05-23 20:10:23', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('98', '25', 'tony', '平民', '2', 'use_skill', null, null, null, null, '注意：先收取来自统治者的物资。然后进行烹饪。使用14食物，30木材获得两个面包。', '等待DM反馈', 'feedbacked', '0', '2', '2026-05-23 20:10:23', '2026-05-24 13:38:26');
-INSERT INTO `player_action` VALUES ('99', '13', '凭栏择雨', '反叛者', '1', 'use_skill', null, null, null, null, '教师启蒙技能捕鱼进行生产', '等待DM反馈\n\n【DM反馈】\n你将获得10单位食物', 'feedbacked', '1', '2', '2026-05-23 20:11:35', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('100', '13', '凭栏择雨', '反叛者', '2', 'hide', null, null, null, null, '', '【隐藏】您将进入隐藏状态，明天将无法被调查、私聊或成为统治者与密谋的行动目标', 'feedbacked', '1', '2', '2026-05-23 20:11:36', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('101', '9', '对酒', '冒险者', '1', 'other', null, null, null, null, '自己带着斧头邀请维修工（玩家）和船长（玩家带枪）一起前往伐木营地，先和伐木工（npc）进行一个恳求，说明现在暴风雪来临，我们很需要他的帮助，需要木板蒸汽箱，拖拉机，电锯，木板（或者原木），发电机组（相当于搜刮地点），并且和他说镇长也同意我们求取这些，给了我们这些就不会强迫他当劳工了。如果他愿意就邀请他上船（船长可以适当展示一下他的猎枪）。伐木工（npc）始终不愿意，让船长拿枪威胁他，最起码把载具和发电机交出来，如果他还是不同意，就把他束缚起来，拿走载具和发电机组。如果他实在反抗激烈，就枪杀他（下下下之策），最终一定要拿到载具和发电机组。', '等待DM反馈\n\n【DM反馈】\n那么伐木工在这你一顿的威胁恐吓和威逼利诱之下他同意把他身上的木头都交给你。\n你获得了60000kg木头和发电机一台。\n他请求你饶他一命，并且带他上船。如果可以的话，他想用他的钥匙来交换上船名额。他想跟你签订契约，否则他会毁掉钥匙。', 'feedbacked', '1', '2', '2026-05-23 20:17:14', '2026-05-23 22:29:27');
-INSERT INTO `player_action` VALUES ('102', '9', '对酒', '冒险者', '2', 'other', null, null, null, null, '去码头执行拆船任务（消息来源于邮差）', '等待DM反馈\n\n【DM反馈】\n你自己拆了船，拆了25%的船，目前进度50%。\n获得金属10000kg，木头10000kg', 'feedbacked', '1', '2', '2026-05-23 20:17:14', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('103', '23', '教皇', '反叛者', '1', 'use_skill', null, null, null, null, '对农民，医生，神父使用布道', '等待DM反馈\n\n【DM反馈】\n好的，收到', 'feedbacked', '1', '2', '2026-05-23 20:26:31', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('104', '23', '教皇', '反叛者', '2', 'go_location', '19', '监狱', null, '乔克·汤姆', '不动声色地利用自己神父的身份套取一些信息', '【地点信息】监狱\n区域：特殊\n描述：小镇边缘的一座灰石建筑，铁门锈迹斑斑，窗户窄得像枪眼。门前挂着一盏永远不灭的煤油灯，灯下总坐着一个看守。里面是两排铁牢房，地上铺着发霉的稻草，墙角堆着脏得看不出颜色的毯子。墙上用木炭刻满了前囚犯的名字和诅咒，有些已经被重复刻了三四遍。空气里弥漫着尿骚味和铁锈味，偶尔有人敲一下铁栏杆，声音能传到半个镇子。\n防御值：8\n管理方：统治者共同管理，监狱长常驻\n\n【设施】\n• 监牢×8：地面上有着不明污渍的铁制监牢，看起来很牢固几乎不可能在空手情况下跑出去。里面关着几个人，听说是因为违反统治者被关起来了。\n• 看守室：内有桌子一张、煤油灯一盏、警棍一根\n• 审讯椅：铁制，带锁扣的审讯椅\n\n【NPC】\n• 乔克·汤姆（民兵）\n\n【NPC互动】乔克·汤姆（民兵）\n态度：厌恶\n介绍：初始就跟着统治者干的监狱看守，一名很忠诚的下属。只是他有点小小的缺点，但统治者们也只能视而不见。', 'feedbacked', '1', '2', '2026-05-23 20:26:31', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('105', '26', 'V', '统治者', '1', 'transport', null, null, null, null, '[mode:warehouse_to_player]\n[source:armory]\n[item:material|2|18|1]\n[item:material|5|260|1]\n[item:material|8|22|1]', '【搬运结算】\n模式：仓库→个人\n源仓库：镇武库\n木材：搬运18单位到个人背包（18千克）\n食物：搬运260单位到个人背包（260千克）\n燃料：搬运22单位到个人背包（22千克）\n总计搬运：300千克\n（库存已变更）', 'feedbacked', '1', '2', '2026-05-23 20:41:47', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('106', '26', 'V', '统治者', '2', 'investigate_player', '28', '咲黑', null, null, '', '【调查结果】咲黑的自由行动：\n行动1：调查玩家 → 空白\n行动2：调查玩家 → 飞凡\n\n咲黑的阵营行动：\n（当日未提交阵营行动）\n', 'feedbacked', '1', '2', '2026-05-23 20:41:48', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('107', '15', '空白', '统治者', '1', 'use_skill', null, null, null, null, '使用维修工技能 修tony面包师的炉子', '等待DM反馈\n\n【DM反馈】\n把炉子修好，现在它又是一个坚强的炉子了', 'feedbacked', '1', '2', '2026-05-23 20:42:34', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('108', '15', '空白', '统治者', '2', 'transport', null, null, null, null, '[mode:warehouse_to_player]\n[source:armory]\n[item:item|5|1|2]\n[item:item|6|1|3]\n[item:weapon|2|1|3]\n[item:ammo|2|2|0.1]\n[item:ammo|4|1|0.1]\n[item:material|2|141|1]\n[item:material|5|100|1]\n[item:material|12|1|50]', '【搬运结算】\n模式：仓库→个人\n源仓库：镇武库\n防弹衣：搬运1单位到个人背包（2千克）\n复合盾：搬运1单位到个人背包（3千克）\n猎枪：搬运1单位到个人背包（3千克）\n猎枪弹：搬运2单位到个人背包（0千克）\n箭矢：搬运1单位到个人背包（0千克）\n木材：搬运141单位到个人背包（141千克）\n食物：搬运100单位到个人背包（100千克）\n发电机：搬运1单位到个人背包（50千克）\n总计搬运：299千克\n（库存已变更）', 'feedbacked', '1', '2', '2026-05-23 20:42:34', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('109', '21', '乐语', '冒险者', '1', 'other', null, null, null, null, '小心翼翼的去码头仔仔细细的拆那艘名叫阿弗雷号的船，然后都放入个人背包中', '等待DM反馈\n\n【DM反馈】\n你无法邀请码头的人跟你一起搬，这需要额外一个行动点。你自己拆了船，拆了25%的船，目前进度75%。\n获得金属10000kg，木头20000kg', 'feedbacked', '1', '2', '2026-05-23 21:04:56', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('110', '21', '乐语', '冒险者', '2', 'use_trait', null, null, null, null, '使用渴望出海特性，并按照一次建设最大使用量从自身背包和可调用仓库中使用资源建造方舟', '等待DM反馈\n\n【DM反馈】\n收到', 'feedbacked', '1', '2', '2026-05-23 21:04:56', '2026-05-23 22:05:19');
-INSERT INTO `player_action` VALUES ('111', '31', '闲屿', '平民', '1', 'go_location', '15', '伐木营地', null, '托马斯·伍德', '询问托马斯对天灾的看法以及所作的准备', '【地点信息】伐木营地\n区域：海岛\n描述：岛内森林边缘的一片空地，堆满了砍伐的原木，有一座简易的木屋和一台生锈的蒸汽拖拉机。地上满是木屑和树桩。\n防御值：4\n\n【设施】\n• 木板蒸汽箱：用于木材处理的蒸汽箱设备\n• 拖拉机：在伐木行动时辅助工作的蒸汽拖拉机\n• 发电机：伐木营地配备的发电机组\n\n【NPC】\n• 托马斯·伍德（伐木工）\n\n【NPC互动】托马斯·伍德（伐木工）\n态度：忽视\n介绍：沉默寡言的伐木工，靠砍树和做木工为生，只求安稳度日。\n\n【DM反馈】\n【地点信息】伐木营地\n区域：海岛\n描述：岛内森林边缘的一片空地，堆满了砍伐的原木，有一座简易的木屋和一台生锈的蒸汽拖拉机。地上满是木屑和树桩。\n防御值：4\n\n介绍：沉默寡言的伐木工，靠砍树和做木工为生，只求安稳度日。\n托马斯正在砍树，他在为冒险者工作。', 'feedbacked', '1', '3', '2026-05-24 17:25:35', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('112', '31', '闲屿', '平民', '2', 'go_location', '3', '邮局', null, null, '尝试看看这里有没有值得知道的信息', '【地点信息】邮局\n区域：小镇\n描述：一间低矮的木屋，窗前挂着\"皇家邮政\"的铜牌。屋内满是油墨和纸张的气味，木制柜台后是分拣信件的格子和一台莫尔斯电报机。墙上贴着轮船班次表和邮票样张。\n防御值：3\n\n【设施】\n• 电报机：可以向外界发送信息的莫尔斯电报机\n\n【DM反馈】\n【地点信息】邮局\n区域：小镇\n描述：一间低矮的木屋，窗前挂着\"皇家邮政\"的铜牌。屋内满是油墨和纸张的气味，木制柜台后是分拣信件的格子和一台莫尔斯电报机。墙上贴着轮船班次表和邮票样张。\n防御值：3\n\n【设施】\n• 电报机：可以向外界发送信息的莫尔斯电报机\n\n你看到了一封回信，你尝试破解得到了以下信息\n【……外面天气良好……抱歉无法……请……补给无法确认位置……】', 'feedbacked', '1', '3', '2026-05-24 17:25:36', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('113', '20', '追枫', '天灾使者', '1', 'go_location', '16', '墓地', null, null, '伏击来到这里的所有人，在行动结束后抛开坟墓拿回前任猎手传承的枪和子弹', '【地点信息】墓地\n区域：海岛\n描述：墓地很静，石碑像断掉的牙齿从荒草里斜伸出来。风扫过时，只有自己的脚步声在回应。\n防御值：5\n\n【设施】\n• 坟堆：为了死者一个体面的后事\n\n【DM反馈】\n【地点信息】墓地\n区域：海岛\n描述：墓地很静，石碑像断掉的牙齿从荒草里斜伸出来。风扫过时，只有自己的脚步声在回应。\n防御值：5\n\n【设施】\n• 坟堆：为了死者一个体面的后事\n\n好的，但非常遗憾你带了全套的装备但只遇到了一个人——澡堂子\n他受伤了', 'feedbacked', '1', '3', '2026-05-24 18:03:09', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('114', '20', '追枫', '天灾使者', '2', 'other', null, null, null, null, '伏击在警察局到矿场的这条小路上，伏击路过的除了典狱长外的所有人', '等待DM反馈\n\n【DM反馈】\nok好的，但非常遗憾你带了全套的装备遇到——船长\n他受伤了', 'feedbacked', '1', '3', '2026-05-24 18:03:09', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('115', '9', '对酒', '冒险者', '1', 'other', null, null, null, null, '用拖拉机运木头到阵营仓库', '等待DM反馈\n\n【DM反馈】\n好的', 'feedbacked', '1', '3', '2026-05-24 18:18:36', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('116', '9', '对酒', '冒险者', '2', 'other', null, null, null, null, '用拖拉机运木头到阵营仓库', '等待DM反馈\n\n【DM反馈】\n好的', 'feedbacked', '1', '3', '2026-05-24 18:18:36', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('119', '10', '二阶堂希罗', '统治者', '1', 'investigate_player', '32', '澡堂子', null, null, '', '【调查结果】澡堂子的自由行动：\n（当日未提交个人行动）\n\n澡堂子的阵营行动：\n（当日未提交阵营行动）\n', 'feedbacked', '1', '3', '2026-05-24 18:59:29', '2026-05-24 21:46:06');
-INSERT INTO `player_action` VALUES ('120', '10', '二阶堂希罗', '统治者', '2', 'go_location', '16', '墓地', null, null, '去猎人墓穴寻找物品', '【地点信息】墓地\n区域：海岛\n描述：墓地很静，石碑像断掉的牙齿从荒草里斜伸出来。风扫过时，只有自己的脚步声在回应。\n防御值：5\n\n【设施】\n• 坟堆：为了死者一个体面的后事\n\n【DM反馈】\n【地点信息】墓地\n区域：海岛\n描述：墓地很静，石碑像断掉的牙齿从荒草里斜伸出来。风扫过时，只有自己的脚步声在回应。\n防御值：5\n\n【设施】\n• 坟堆：为了死者一个体面的后事\n\n好的', 'feedbacked', '0', '3', '2026-05-24 18:59:29', '2026-05-24 21:48:57');
-INSERT INTO `player_action` VALUES ('121', '17', 'zzz', '统治者', '1', 'investigate_player', '11', '蟋蟀蜥蜴', null, null, '', '等待DM反馈调查结果\n\n【DM反馈】\n他是劳工', 'feedbacked', '1', '3', '2026-05-24 19:03:12', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('122', '17', 'zzz', '统治者', '2', 'investigate_player', '33', '荷叶男巫', null, null, '一路走好', '等待DM反馈调查结果\n\n【DM反馈】\nRIP', 'feedbacked', '1', '3', '2026-05-24 19:03:12', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('123', '18', 'Missbear', '平民', '1', 'hide', null, null, null, null, '', '【隐藏】您将进入隐藏状态，明天将无法被调查、私聊或成为统治者与密谋的行动目标\n\n【DM反馈】\n【隐藏】您将进入隐藏状态，明天将无法被调查、私聊或成为统治者与密谋的行动目标', 'feedbacked', '1', '3', '2026-05-24 19:04:09', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('124', '18', 'Missbear', '平民', '2', 'investigate_player', '15', '空白', null, null, '', '等待DM反馈调查结果\n\n【DM反馈】\n【空白 · 第3天 行动反馈总结】\n\n行动一（其他）\n你未能成功，至少你不能当着所有劳工枪毙一个劳工\n\n行动二（其他）\n好好好，你在大冬天找蛐蛐。没找到但你找到了蟑螂~', 'feedbacked', '1', '3', '2026-05-24 19:04:09', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('125', '21', '乐语', '冒险者', '1', 'other', null, null, null, null, '使用10t木头，10t金属，20kg沥青，一个发动机，还有届时从矿场仓库取回的身上所有的帆布进行方舟建设。', '等待DM反馈\n\n【DM反馈】\n好的', 'feedbacked', '1', '3', '2026-05-24 19:19:54', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('126', '21', '乐语', '冒险者', '2', 'investigate_player', '13', '凭栏择雨', null, null, '使用潜行悄悄调查该玩家今天的所有行动，收集所有可能的情报', '等待DM反馈调查结果\n\n【DM反馈】\n【凭栏择雨 · 第3天 行动反馈总结】\n\n行动一：未提交\n\n行动二：未提交\n\n她是劳工\n没能探查到阵营行动', 'feedbacked', '1', '3', '2026-05-24 19:19:54', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('127', '19', 'unPy-GPT', '冒险者', '1', 'other', null, null, null, null, '通过工作量建设的方式推进方舟建设中木头进度5t', '等待DM反馈\n\n【DM反馈】\nok', 'feedbacked', '1', '3', '2026-05-24 19:26:55', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('128', '19', 'unPy-GPT', '冒险者', '2', 'other', null, null, null, null, '通过工作量建设的方式推进方舟建设中木头进度5t', '等待DM反馈\n\n【DM反馈】\nok', 'feedbacked', '1', '3', '2026-05-24 19:26:55', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('129', '26', 'V', '统治者', '1', 'other', null, null, null, null, '问候球球，没了，为什么不让我提交', '等待DM反馈\n\n【DM反馈】\nok，你将见到球球', 'feedbacked', '1', '3', '2026-05-24 19:33:02', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('130', '26', 'V', '统治者', '2', 'go_location', '7', '码头', null, '鲍勃·塔克', '尝试交涉，拉拢npc', '【地点信息】码头\n区域：小镇\n描述：有着几间木质简陋房屋和用旧木桩搭建的简陋码头，停着几艘渔船和一艘锈迹斑斑的货船。海浪拍打着木桩，发出单调的响声。远处海平面阴沉沉的。\n防御值：3\n\n【设施】\n• 渔船×3：三艘渔船，渔猎技能需要\n• 码头集购仓：需征求统治者同意，玩家可以询问统治者并购买物品\n• 阿弗雷号：轻型杂货船，总吨位约650吨，载重吨位约300吨，全长约42米，型宽约7米，吃水满载约4.2米，燃料30吨。配备螺旋桨2、发动机2、发电机1\n\n【NPC】\n• 克拉拉·南丁格尔（渔民）\n• 杰克·塔克（水手）\n• 鲍勃·塔克（装卸工）\n\n【NPC互动】鲍勃·塔克（装卸工）\n态度：厌恶\n介绍：一名一直在港口讨生活的搬运工。\n\n【DM反馈】\n【地点信息】码头\n区域：小镇\n描述：有着几间木质简陋房屋和用旧木桩搭建的简陋码头，停着几艘渔船和一艘锈迹斑斑的货船。海浪拍打着木桩，发出单调的响声。远处海平面阴沉沉的。\n防御值：3\n\n【设施】\n• 渔船×3：三艘渔船，渔猎技能需要\n• 码头集购仓：需征求统治者同意，玩家可以询问统治者并购买物品\n• 阿弗雷号：轻型杂货船，总吨位约650吨，载重吨位约300吨，全长约42米，型宽约7米，吃水满载约4.2米，燃料30吨。配备螺旋桨2、发动机2、发电机1\n\n【NPC互动】鲍勃·塔克（装卸工）\n态度：厌恶\n介绍：一名一直在港口讨生活的搬运工。\n他拒绝和你们交流', 'feedbacked', '1', '3', '2026-05-24 19:33:03', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('131', '24', '花海', '反叛者', '1', 'use_skill', null, null, null, null, '生产15个食物', '等待DM反馈\n\n【行动失败】\n\n【DM反馈】\n你的职业技能未能生效（条件不满足、被打断或遭否决）。', 'feedbacked', '1', '3', '2026-05-24 19:35:00', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('132', '24', '花海', '反叛者', '2', 'use_trait', null, null, null, null, '百宝袋/挑选列表的5个物品复制', '等待DM反馈\n\n【DM反馈】\n百宝袋是一次性技能', 'feedbacked', '1', '3', '2026-05-24 19:35:01', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('133', '15', '空白', '统治者', '1', 'other', null, null, null, null, '跟踪农民然后用背包的猎枪枪毙她 如果没射击技能则用维修工具肉搏', '等待DM反馈\n\n【DM反馈】\n你未能成功，至少你不能当着所有劳工枪毙一个劳工', 'feedbacked', '1', '3', '2026-05-24 19:43:34', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('134', '15', '空白', '统治者', '2', 'other', null, null, null, null, '去码头草坪抓蛐蛐然后偷摸塞镇长帽子里吓唬他 如果码头有很多蛐蛐就打包回去给监狱长和警长加餐', '等待DM反馈\n\n【DM反馈】\n好好好，你在大冬天找蛐蛐。没找到但你找到了蟑螂~', 'feedbacked', '1', '3', '2026-05-24 19:43:35', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('135', '16', '孤城暮角', '天灾使者', '1', 'use_skill', null, null, null, null, '盾盾盾造三个盾', '等待DM反馈\n\n【DM反馈】\nokokokok', 'feedbacked', '1', '3', '2026-05-24 20:34:01', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('136', '16', '孤城暮角', '天灾使者', '2', 'use_skill', null, null, null, null, '盾盾盾造三个盾', '等待DM反馈\n\n【DM反馈】\nokokokokok', 'feedbacked', '1', '3', '2026-05-24 20:34:01', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('137', '14', 'Κάκτος西里尔', '冒险者', '1', 'go_location', '17', '猎人小屋', null, null, '携带霰弹枪和2发子弹，与镇长前往熊仓库并杀熊', '【地点信息】猎人小屋\n区域：海岛\n描述：森林深处的一座原木小屋，墙外挂着各种兽皮，屋内弥漫着熏肉和火药的味道。壁炉上挂着一支双管猎枪。\n防御值：3\n\n【DM反馈】\n【地点信息】猎人小屋\n区域：海岛\n描述：森林深处的一座原木小屋，墙外挂着各种兽皮，屋内弥漫着熏肉和火药的味道。壁炉上挂着一支双管猎枪。\n防御值：3\n收到', 'feedbacked', '1', '3', '2026-05-24 20:43:15', '2026-05-24 20:46:25');
-INSERT INTO `player_action` VALUES ('138', '14', 'Κάκτος西里尔', '冒险者', '2', 'go_location', '18', '矿场', null, null, '', '【地点信息】矿场\n区域：特殊\n描述：深入山腹的矿道与地面设施的综合体，包含管理室、矿场仓库和地下矿场。由统治者共同管理，是岛上最重要的资源产地和战略要地。\n防御值：10\n管理方：统治者共同管理\n\n【设施】\n• 切石机：矿场的石材切割设备\n• 管理室：矿场入口旁的木屋，里面有一张办公桌和一部电话（但线路已断）。墙上挂着矿井地图和工作安排表。\n• 矿场仓库：一个用厚木板搭建的棚屋，里面堆放着开采出来的矿石、工具和一些备用木材。门上挂着一把大锁。\n• 地下矿场（避难所）：深入山腹的矿道，墙壁上钉着木支架，每隔一段有一盏昏暗的油灯。深处被清理出一片空间，堆放着储备物资，这里就是计划中的\"避难所\"。\n\n【NPC】\n• 卡尔·铁锤（矿工）\n• 维克多·斯通（矿工）\n\n【DM反馈】\n【地点信息】矿场\n区域：特殊\n描述：深入山腹的矿道与地面设施的综合体，包含管理室、矿场仓库和地下矿场。由统治者共同管理，是岛上最重要的资源产地和战略要地。\n防御值：10\n管理方：统治者共同管理\n\n【设施】\n• 切石机：矿场的石材切割设备\n• 管理室：矿场入口旁的木屋，里面有一张办公桌和一部电话（但线路已断）。墙上挂着矿井地图和工作安排表。\n• 矿场仓库：一个用厚木板搭建的棚屋，里面堆放着开采出来的矿石、工具和一些备用木材。门上挂着一把大锁。\n• 地下矿场（避难所）：深入山腹的矿道，墙壁上钉着木支架，每隔一段有一盏昏暗的油灯。深处被清理出一片空间，堆放着储备物资，这里就是计划中的\"避难所\"。\n\n【NPC】\n• 卡尔·铁锤（矿工）\n• 维克多·斯通（矿工）\n\n收到\n你被不知道哪里的东西给射伤了。\n你把物品最后一刻传输给了你同伴', 'feedbacked', '1', '3', '2026-05-24 20:43:15', '2026-05-24 21:46:06');
-INSERT INTO `player_action` VALUES ('139', '11', '蟋蟀蜥蜴', '反叛者', '1', 'use_trait', null, null, null, null, '作为治安官 非常受大家的尊敬 于是悄悄偷懒 过劳状态解除', '等待DM反馈\n\n【行动失败】\n\n【DM反馈】\n你的特性使用未能生效（条件不满足、被打断或遭否决）。', 'feedbacked', '1', '3', '2026-05-24 20:46:20', '2026-05-24 21:37:01');
-INSERT INTO `player_action` VALUES ('140', '34', 'player', '平民', '1', 'go_location', '12', '面包店', null, null, '买面包', '【地点信息】面包店\n区域：小镇\n描述：集市附近的木质结构店铺，后面是一个烘焙的石头屋子。进去这里倒是挺温暖的，里面有面包的香气。\n防御值：2\n\n【设施】\n• 烘焙炉：面包店后方的石头烘焙炉', 'pending', '0', '1', '2026-06-22 12:31:13', '2026-06-22 12:31:13');
-INSERT INTO `player_action` VALUES ('141', '34', 'player', '平民', '2', 'investigate_player', '20', '追枫', null, null, '看看他什么阵营', '等待DM反馈调查结果', 'pending', '0', '1', '2026-06-22 12:31:14', '2026-06-22 12:31:14');
-INSERT INTO `player_action` VALUES ('142', '34', 'player', '平民', '1', 'go_location', '10', '集市', null, '塞缪尔·格雷', '', '【地点信息】集市\n区域：小镇\n描述：镇中心的露天广场，只有零星几个木制摊位。平时冷冷清清，但当渔船归来或有补给船消息时，这里会短暂地热闹起来。\n防御值：0\n\n【设施】\n• 行刑台：统治者或者其他阵营可以在这里进行公开行刑行为\n\n【NPC】\n• 塞缪尔·格雷（农户）\n• 弗雷德里克·波特（农户）\n• 米玛·雷铁斯托（手工艺人）\n• 汉斯·施密特（工匠）\n\n【新认识的NPC】\n• 塞缪尔·格雷（农户）\n• 弗雷德里克·波特（农户）\n• 米玛·雷铁斯托（手工艺人）\n• 汉斯·施密特（工匠）\n\n【NPC互动】塞缪尔·格雷（农户）\n态度：忽视\n介绍：善良而质朴的普通农户，乐于帮助他人。', 'pending', '0', '2', '2026-06-23 23:42:12', '2026-06-23 23:42:12');
-INSERT INTO `player_action` VALUES ('143', '34', 'player', '平民', '2', 'go_location', '15', '伐木营地', null, '托马斯·伍德', '', '【地点信息】伐木营地\n区域：海岛\n描述：岛内森林边缘的一片空地，堆满了砍伐的原木，有一座简易的木屋和一台生锈的蒸汽拖拉机。地上满是木屑和树桩。\n防御值：4\n\n【设施】\n• 木板蒸汽箱：用于木材处理的蒸汽箱设备\n• 拖拉机：在伐木行动时辅助工作的蒸汽拖拉机\n• 发电机：伐木营地配备的发电机组\n\n【NPC】\n• 托马斯·伍德（伐木工）\n\n【新认识的NPC】\n• 托马斯·伍德（伐木工）\n\n【NPC互动】托马斯·伍德（伐木工）\n态度：忽视\n介绍：沉默寡言的伐木工，靠砍树和做木工为生，只求安稳度日。', 'pending', '0', '2', '2026-06-23 23:42:13', '2026-06-23 23:42:13');
 
 -- ----------------------------
 -- Table structure for player_daily_consumption
@@ -2523,74 +1728,11 @@ CREATE TABLE `player_daily_consumption` (
   UNIQUE KEY `uk_player_day` (`player_id`,`game_day`),
   KEY `idx_game_day` (`game_day`),
   CONSTRAINT `player_daily_consumption_ibfk_1` FOREIGN KEY (`player_id`) REFERENCES `player` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=66 DEFAULT CHARSET=utf8mb4 COMMENT='玩家每日进食与取暖消耗记录';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='玩家每日进食与取暖消耗记录';
 
 -- ----------------------------
 -- Records of player_daily_consumption
 -- ----------------------------
-INSERT INTO `player_daily_consumption` VALUES ('3', '9', '1', '2', '15', '2', '15', '0', '1', '1', '2026-05-22 18:22:29', '2026-05-22 18:22:29');
-INSERT INTO `player_daily_consumption` VALUES ('4', '8', '1', '2', '15', '2', '15', '15', '0', '1', '2026-05-22 18:29:07', '2026-05-22 18:29:07');
-INSERT INTO `player_daily_consumption` VALUES ('5', '15', '1', '2', '15', '2', '15', '15', '0', '1', '2026-05-22 18:44:51', '2026-05-22 18:44:51');
-INSERT INTO `player_daily_consumption` VALUES ('6', '14', '1', '2', '15', '2', '15', '0', '1', '1', '2026-05-22 18:46:05', '2026-05-22 18:46:05');
-INSERT INTO `player_daily_consumption` VALUES ('7', '27', '1', '2', '15', '2', '15', '0', '1', '1', '2026-05-22 18:46:35', '2026-05-22 18:46:35');
-INSERT INTO `player_daily_consumption` VALUES ('8', '23', '1', '2', '15', '2', '15', '15', '0', '1', '2026-05-22 18:46:55', '2026-05-22 18:46:55');
-INSERT INTO `player_daily_consumption` VALUES ('9', '19', '1', '2', '15', '2', '15', '15', '0', '1', '2026-05-22 19:04:03', '2026-05-22 19:26:40');
-INSERT INTO `player_daily_consumption` VALUES ('10', '16', '1', '2', '15', '2', '15', '0', '1', '1', '2026-05-22 19:15:53', '2026-05-22 19:15:53');
-INSERT INTO `player_daily_consumption` VALUES ('11', '20', '1', '2', '15', '2', '15', '0', '1', '1', '2026-05-22 19:40:14', '2026-05-22 19:40:14');
-INSERT INTO `player_daily_consumption` VALUES ('12', '22', '1', '2', '15', '2', '15', '15', '0', '1', '2026-05-22 19:54:31', '2026-05-22 19:54:42');
-INSERT INTO `player_daily_consumption` VALUES ('13', '13', '1', '2', '15', '2', '15', '15', '0', '1', '2026-05-22 19:59:13', '2026-05-22 19:59:13');
-INSERT INTO `player_daily_consumption` VALUES ('14', '12', '1', '2', '15', '2', '15', '15', '0', '1', '2026-05-22 20:00:12', '2026-05-22 20:00:12');
-INSERT INTO `player_daily_consumption` VALUES ('15', '24', '1', '2', '15', '2', '15', '15', '0', '1', '2026-05-22 20:04:21', '2026-05-22 20:04:21');
-INSERT INTO `player_daily_consumption` VALUES ('16', '21', '1', '2', '15', '2', '15', '15', '0', '1', '2026-05-22 21:05:07', '2026-05-22 21:05:07');
-INSERT INTO `player_daily_consumption` VALUES ('17', '31', '1', '2', '15', '2', '15', '15', '0', '1', '2026-05-22 21:09:20', '2026-05-22 21:09:20');
-INSERT INTO `player_daily_consumption` VALUES ('18', '11', '1', '2', '15', '2', '15', '0', '1', '1', '2026-05-22 21:23:12', '2026-05-22 21:23:12');
-INSERT INTO `player_daily_consumption` VALUES ('19', '32', '1', '2', '15', '2', '15', '15', '0', '1', '2026-05-22 21:32:25', '2026-05-22 21:32:25');
-INSERT INTO `player_daily_consumption` VALUES ('20', '30', '1', '2', '15', '2', '15', '0', '1', '1', '2026-05-22 21:51:07', '2026-05-22 21:51:07');
-INSERT INTO `player_daily_consumption` VALUES ('21', '10', '1', '2', '15', '2', '15', '0', '1', '1', '2026-05-22 22:22:28', '2026-05-22 22:22:28');
-INSERT INTO `player_daily_consumption` VALUES ('22', '17', '1', '2', '15', '2', '15', '15', '0', '1', '2026-05-22 22:59:05', '2026-05-22 22:59:05');
-INSERT INTO `player_daily_consumption` VALUES ('23', '29', '1', '2', '15', '2', '15', '15', '0', '1', '2026-05-22 23:27:29', '2026-05-22 23:27:29');
-INSERT INTO `player_daily_consumption` VALUES ('24', '18', '1', '2', '15', '2', '15', '15', '0', '1', '2026-05-22 23:44:12', '2026-05-23 00:13:29');
-INSERT INTO `player_daily_consumption` VALUES ('25', '25', '1', '2', '15', '2', '15', '0', '1', '1', '2026-05-23 00:05:45', '2026-05-23 00:05:45');
-INSERT INTO `player_daily_consumption` VALUES ('26', '28', '1', '2', '15', '2', '15', '0', '1', '1', '2026-05-23 00:31:49', '2026-05-23 00:31:49');
-INSERT INTO `player_daily_consumption` VALUES ('27', '26', '1', '2', '15', '2', '15', '0', '1', '1', '2026-05-23 00:32:15', '2026-05-23 00:32:15');
-INSERT INTO `player_daily_consumption` VALUES ('28', '20', '2', '2', '15', '2', '15', '0', '1', '1', '2026-05-23 11:37:15', '2026-05-23 11:37:15');
-INSERT INTO `player_daily_consumption` VALUES ('29', '13', '2', '2', '15', '2', '15', '15', '0', '1', '2026-05-23 11:49:47', '2026-05-23 11:49:47');
-INSERT INTO `player_daily_consumption` VALUES ('30', '22', '2', '2', '15', '2', '15', '0', '1', '1', '2026-05-23 14:00:59', '2026-05-23 14:00:59');
-INSERT INTO `player_daily_consumption` VALUES ('31', '16', '2', '2', '15', '2', '15', '0', '1', '1', '2026-05-23 14:04:27', '2026-05-23 14:04:27');
-INSERT INTO `player_daily_consumption` VALUES ('32', '8', '2', '2', '15', '2', '15', '15', '0', '1', '2026-05-23 15:29:53', '2026-05-23 15:29:53');
-INSERT INTO `player_daily_consumption` VALUES ('33', '9', '2', '2', '15', '2', '15', '0', '1', '1', '2026-05-23 19:03:04', '2026-05-23 19:03:04');
-INSERT INTO `player_daily_consumption` VALUES ('34', '28', '2', '2', '15', '1', '15', '0', '1', '0', '2026-05-23 19:06:51', '2026-05-23 19:06:51');
-INSERT INTO `player_daily_consumption` VALUES ('35', '19', '2', '2', '15', '2', '15', '15', '0', '1', '2026-05-23 19:07:22', '2026-05-23 19:07:22');
-INSERT INTO `player_daily_consumption` VALUES ('36', '15', '2', '2', '15', '2', '15', '15', '0', '1', '2026-05-23 19:22:07', '2026-05-23 19:45:46');
-INSERT INTO `player_daily_consumption` VALUES ('37', '10', '2', '2', '15', '2', '15', '0', '1', '1', '2026-05-23 19:24:09', '2026-05-23 19:24:09');
-INSERT INTO `player_daily_consumption` VALUES ('38', '21', '2', '2', '15', '2', '15', '15', '0', '1', '2026-05-23 19:38:25', '2026-05-23 19:38:25');
-INSERT INTO `player_daily_consumption` VALUES ('39', '24', '2', '2', '15', '2', '15', '15', '0', '1', '2026-05-23 19:46:41', '2026-05-23 19:46:41');
-INSERT INTO `player_daily_consumption` VALUES ('40', '14', '2', '2', '15', '2', '15', '0', '1', '1', '2026-05-23 20:09:22', '2026-05-23 20:09:22');
-INSERT INTO `player_daily_consumption` VALUES ('41', '11', '2', '2', '15', '2', '15', '0', '1', '1', '2026-05-23 20:10:17', '2026-05-23 20:10:17');
-INSERT INTO `player_daily_consumption` VALUES ('42', '25', '2', '2', '15', '2', '15', '0', '1', '1', '2026-05-23 20:25:15', '2026-05-23 20:25:15');
-INSERT INTO `player_daily_consumption` VALUES ('43', '23', '2', '2', '15', '2', '15', '15', '0', '1', '2026-05-23 20:26:49', '2026-05-23 20:26:49');
-INSERT INTO `player_daily_consumption` VALUES ('44', '30', '2', '2', '15', '2', '15', '0', '1', '1', '2026-05-23 20:28:56', '2026-05-23 20:28:56');
-INSERT INTO `player_daily_consumption` VALUES ('45', '29', '2', '2', '15', '2', '15', '15', '0', '1', '2026-05-23 20:31:54', '2026-05-23 20:31:54');
-INSERT INTO `player_daily_consumption` VALUES ('46', '27', '2', '2', '15', '2', '15', '0', '1', '1', '2026-05-23 21:06:41', '2026-05-23 21:06:41');
-INSERT INTO `player_daily_consumption` VALUES ('47', '26', '2', '2', '15', '2', '15', '0', '1', '1', '2026-05-23 21:50:06', '2026-05-23 21:50:06');
-INSERT INTO `player_daily_consumption` VALUES ('48', '17', '2', '2', '15', '2', '15', '0', '1', '1', '2026-05-23 22:20:56', '2026-05-23 22:20:56');
-INSERT INTO `player_daily_consumption` VALUES ('49', '32', '2', '2', '15', '2', '15', '15', '0', '1', '2026-05-24 00:54:26', '2026-05-24 00:54:26');
-INSERT INTO `player_daily_consumption` VALUES ('50', '20', '3', '2', '15', '2', '15', '0', '1', '1', '2026-05-24 17:15:09', '2026-05-24 17:15:09');
-INSERT INTO `player_daily_consumption` VALUES ('51', '31', '3', '2', '15', '2', '15', '15', '0', '1', '2026-05-24 17:17:19', '2026-05-24 17:17:19');
-INSERT INTO `player_daily_consumption` VALUES ('52', '21', '3', '2', '15', '2', '15', '15', '0', '1', '2026-05-24 17:19:45', '2026-05-24 17:19:45');
-INSERT INTO `player_daily_consumption` VALUES ('53', '16', '3', '2', '15', '2', '15', '0', '1', '1', '2026-05-24 17:43:18', '2026-05-24 17:43:18');
-INSERT INTO `player_daily_consumption` VALUES ('54', '9', '3', '2', '15', '2', '15', '0', '1', '1', '2026-05-24 17:58:09', '2026-05-24 17:58:09');
-INSERT INTO `player_daily_consumption` VALUES ('55', '10', '3', '2', '15', '2', '15', '0', '1', '1', '2026-05-24 18:03:14', '2026-05-24 18:03:14');
-INSERT INTO `player_daily_consumption` VALUES ('56', '17', '3', '2', '15', '2', '15', '0', '1', '1', '2026-05-24 18:16:31', '2026-05-24 18:16:31');
-INSERT INTO `player_daily_consumption` VALUES ('57', '19', '3', '2', '15', '2', '15', '0', '1', '1', '2026-05-24 18:54:56', '2026-05-24 18:54:56');
-INSERT INTO `player_daily_consumption` VALUES ('58', '26', '3', '2', '15', '2', '15', '15', '0', '1', '2026-05-24 19:22:31', '2026-05-24 19:22:31');
-INSERT INTO `player_daily_consumption` VALUES ('59', '14', '3', '2', '15', '2', '15', '0', '1', '1', '2026-05-24 19:24:15', '2026-05-24 19:24:15');
-INSERT INTO `player_daily_consumption` VALUES ('60', '24', '3', '2', '15', '2', '15', '15', '0', '1', '2026-05-24 19:33:51', '2026-05-24 19:33:51');
-INSERT INTO `player_daily_consumption` VALUES ('61', '15', '3', '2', '15', '2', '15', '15', '0', '1', '2026-05-24 19:37:24', '2026-05-24 19:37:24');
-INSERT INTO `player_daily_consumption` VALUES ('62', '11', '3', '2', '15', '2', '15', '15', '0', '1', '2026-05-24 20:43:25', '2026-05-24 20:43:25');
-INSERT INTO `player_daily_consumption` VALUES ('63', '23', '3', '2', '15', '2', '15', '15', '0', '1', '2026-05-24 22:30:40', '2026-05-24 22:30:40');
-INSERT INTO `player_daily_consumption` VALUES ('64', '13', '3', '2', '15', '2', '15', '15', '0', '1', '2026-05-24 22:33:37', '2026-05-24 22:33:37');
-INSERT INTO `player_daily_consumption` VALUES ('65', '34', '1', '2', '15', '2', '15', '15', '0', '1', '2026-06-22 12:29:23', '2026-06-22 12:30:20');
 
 -- ----------------------------
 -- Table structure for player_exploration
@@ -2610,19 +1752,11 @@ CREATE TABLE `player_exploration` (
   `invest_points` int(11) DEFAULT NULL,
   `total_exploration_value` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Records of player_exploration
 -- ----------------------------
-INSERT INTO `player_exploration` VALUES ('1', '2026-06-24 18:07:59.148000', '17', '2', '34', 'player', '✓ 已提交【探索岛屿】\n\n【探索结果】\n发现：废弃的猎人瞭望台\n地点描述：一座建在巨树高处的废弃木台，通往它的绳梯已经半朽。台上有一个被遗弃的巢穴，似乎被匆忙放弃。\n可获得物资：绳索 (10米)， 火把 (1把)\n历史秘密碎片：你在木台的柱子上发现了一连串古老的刻痕，像是某种计数方式。旁边画着一个歪歪扭扭的太阳，正在被雪花吞没。这似乎记录着某个先民对漫漫长夜的恐惧。\n难度：1\n\n等待主持人发放奖励。', 'explored', '2026-06-24 18:09:57.012000', '1', '0', '1');
-INSERT INTO `player_exploration` VALUES ('2', '2026-06-24 20:00:43.572000', '56', '100', '8', '兔兔', '✓ 已提交【探索岛屿】\n\n【探索结果】\n发现：冻土下的陶罐\n地点描述：在岛北侧一片冻土荒原上，地面裂开一道缝，露出一个埋藏已久的陶罐口沿。\n可获得物资：炸药（10kg）\n历史秘密碎片：你挖出陶罐，发现里面装着几块刻满符文的骨片。符文你不认识，但你注意到其中一片的背面，有人用现代钢笔写了一行注：\"翻译员说这是某种祈禳文，大意是\'愿火焰吞噬眼睛\'——但为什么我们的祖先要祈禳一个眼睛？\"\n难度：7\n\n等待主持人发放奖励。', 'explored', '2026-06-24 20:01:15.671000', '3', '4', '7');
-INSERT INTO `player_exploration` VALUES ('3', '2026-06-24 20:03:48.522000', '39', '101', '8', '兔兔', '✓ 已提交【探索岛屿】\n\n【探索结果】\n发现：废弃的蜂箱\n地点描述：一片向阳的山坡上，排列着几个破败的木质蜂箱，早已没有蜜蜂的踪迹。周围长满了干枯的野花。\n可获得物资：草药（4单位） ， 蜡烛（5根）\n历史秘密碎片：你打开一个蜂箱的底层，发现一块被蜂蜡密封的油布。打开后，里面是一幅用炭笔画的速写：一个巨大的、被藤蔓和苔藓覆盖的圆形建筑，顶端裂开，一道光柱直射向天空。画的背面写着：\"他们以为是信号塔，其实是接收器。他们一直在等\'上面\'的回应。\"\n难度：5\n\n【探索奖励】\n+4个 未知物品\n+5个 未知物品\n', 'settled', '2026-06-24 20:03:58.180000', '1', '4', '5');
-INSERT INTO `player_exploration` VALUES ('4', '2026-06-24 20:10:02.400000', null, '2', '35', 'cs', '✓ 已提交【探索岛屿】\n\n【投入物资】\n- 手电筒 x1\n投入探索值: 5/15\n\n等待主持人在夜晚阶段结算探索结果。', 'pending', '2026-06-24 20:10:02.400000', '1', '5', '6');
-INSERT INTO `player_exploration` VALUES ('5', '2026-06-24 20:19:50.408000', '47', '200', '8', '兔兔', '✓ 已提交【探索岛屿】\n\n【探索结果】\n发现：失踪猎人营地\n地点描述：在一片茂密的冷杉林中，有一个被遗弃的营地，帐篷已经坍塌，篝火堆里还有未燃尽的骨头。\n可获得物资：猎枪弹（4发） ， 食物（6单位），猎枪（1把）\n历史秘密碎片：你在帐篷下的泥土里挖出一个密封的锡罐，里面是一张纸条：\"我看到了那些\'守夜者\'的秘密集会。他们在向一个银色的盒子祈祷。盒子上刻着那个眼睛。那不是神，是某种监控装置。我决定把它挖出来，埋到一个没人能找到的地方……\"纸条没有署名，但你注意到纸条背面用铅笔轻轻画了一个箭头，指向岛的东北方向。\n难度：16\n\n【探索奖励】\n+4个 未知物品\n+6份 食物\n+1个 未知物品\n', 'settled', '2026-06-24 20:19:50.438000', '6', '10', '16');
-INSERT INTO `player_exploration` VALUES ('6', '2026-06-24 20:20:22.442000', '26', '201', '8', '兔兔', '✓ 已提交【探索岛屿】\n\n【探索结果】\n发现：守夜人的秘密补给点\n地点描述：在一块刻有\"静默\"二字的巨石下，你发现一个被油布盖住的小坑。里面似乎是某人存放的紧急物资，用的都是很老旧的款式。\n可获得物资：医疗包 (1个)， 手电筒 (1个)\n历史秘密碎片：油布的一角绣着一行小字：\"致下一位守夜者\"。你不确定这指的是某个职业，还是某个秘密组织的成员。\n难度：7\n\n【探索奖励】\n+1个 医疗包\n+1个 手电筒\n', 'settled', '2026-06-24 20:20:22.470000', '1', '6', '7');
-INSERT INTO `player_exploration` VALUES ('7', '2026-06-24 20:20:36.328000', '41', '202', '8', '兔兔', '✓ 已提交【探索岛屿】\n\n【探索结果】\n发现：地热泉眼\n地点描述：岛内一处隐蔽的峡谷中，有一汪冒着热气的地热泉，周围没有积雪，反而长着一些深绿色的蕨类植物。空气中弥漫着一股硫磺味。\n可获得物资：食物（5单位） ， 医疗包（2单位）\n历史秘密碎片：你发现在泉眼边缘的岩石上，有人用锐器刻下了一句话：\"水温能救命，但救不了轮回。他们在地下深处烧着某种东西，那东西让整个岛都在呼吸。\"你伸手探了探水温，温热的触感让你短暂地忘记了寒冷，但那句\"呼吸\"却让你后背发凉。\n难度：8\n\n【探索奖励】\n+5份 食物\n+2个 医疗包\n', 'settled', '2026-06-24 20:20:36.348000', '1', '7', '8');
-INSERT INTO `player_exploration` VALUES ('8', '2026-06-24 20:46:37.179000', '38', '1', '35', 'cs', '✓ 已提交【探索岛屿】\n\n【探索结果】\n发现：冰封的猎人小屋\n地点描述：森林边缘一座被积雪半掩的小木屋，门板已经朽坏，屋内一片狼藉。壁炉里还有未燃尽的柴火，但早已冻成了冰坨。\n可获得物资：木材（2吨）， 煤油（2升）， 火柴（3盒）\n历史秘密碎片：你在床板下发现一块刻满划痕的木板，上面记录着\"第7次\"和一个潦草的倒计时。旁边有一行小字：\"我们以为熬过暴雪就赢了，但暴雪之后，还有东西在等着我们。\"字迹到此为止，笔尖在木板上划出一道长长的、颤抖的痕迹。\n难度：16\n\n【探索奖励】\n+2000kg 木材\n+2kg 燃料\n+3个 未知物品\n', 'settled', '2026-06-24 20:46:37.231000', '1', '15', '16');
 
 -- ----------------------------
 -- Table structure for player_items
@@ -2640,364 +1774,11 @@ CREATE TABLE `player_items` (
   KEY `idx_player_type_item` (`player_id`,`item_type`,`item_id`),
   KEY `idx_player_type` (`player_id`,`item_type`),
   CONSTRAINT `player_items_ibfk_1` FOREIGN KEY (`player_id`) REFERENCES `player` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=510 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4;
 
 -- ----------------------------
 -- Records of player_items
 -- ----------------------------
-INSERT INTO `player_items` VALUES ('71', '8', 'item', '2', '1', '2026-05-22 17:11:10', '2026-06-24 20:20:22');
-INSERT INTO `player_items` VALUES ('72', '8', 'item', '13', '1', '2026-05-22 17:11:10', '2026-06-24 20:20:36');
-INSERT INTO `player_items` VALUES ('73', '8', 'item', '15', '1', '2026-05-22 17:11:10', '2026-05-22 17:11:10');
-INSERT INTO `player_items` VALUES ('74', '8', 'material', '1', '0', '2026-05-22 17:11:10', '2026-05-23 21:51:00');
-INSERT INTO `player_items` VALUES ('75', '8', 'material', '2', '20', '2026-05-22 17:11:10', '2026-05-23 15:29:52');
-INSERT INTO `player_items` VALUES ('76', '8', 'material', '3', '2', '2026-05-22 17:11:10', '2026-06-24 20:20:36');
-INSERT INTO `player_items` VALUES ('78', '8', 'material', '8', '5', '2026-05-22 17:11:10', '2026-05-22 17:11:10');
-INSERT INTO `player_items` VALUES ('79', '9', 'item', '16', '5', '2026-05-22 17:14:42', '2026-05-22 17:14:42');
-INSERT INTO `player_items` VALUES ('81', '9', 'material', '2', '20050', '2026-05-22 17:14:42', '2026-05-24 20:19:19');
-INSERT INTO `player_items` VALUES ('83', '9', 'material', '8', '25', '2026-05-22 17:14:42', '2026-05-24 21:47:34');
-INSERT INTO `player_items` VALUES ('84', '9', 'material', '9', '210', '2026-05-22 17:14:42', '2026-05-24 21:15:49');
-INSERT INTO `player_items` VALUES ('85', '10', 'item', '2', '0', '2026-05-22 17:16:41', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('86', '10', 'item', '3', '0', '2026-05-22 17:16:41', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('87', '10', 'item', '4', '1', '2026-05-22 17:16:41', '2026-05-22 17:16:41');
-INSERT INTO `player_items` VALUES ('88', '10', 'item', '5', '1', '2026-05-22 17:16:41', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('89', '10', 'weapon', '3', '0', '2026-05-22 17:16:41', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('90', '12', 'item', '2', '1', '2026-05-22 17:24:37', '2026-05-22 17:24:37');
-INSERT INTO `player_items` VALUES ('91', '12', 'item', '16', '5', '2026-05-22 17:24:37', '2026-05-22 17:24:37');
-INSERT INTO `player_items` VALUES ('92', '12', 'material', '1', '10', '2026-05-22 17:24:37', '2026-05-22 17:24:37');
-INSERT INTO `player_items` VALUES ('93', '12', 'material', '2', '35', '2026-05-22 17:24:37', '2026-05-22 20:00:12');
-INSERT INTO `player_items` VALUES ('95', '12', 'material', '8', '5', '2026-05-22 17:24:37', '2026-05-22 17:24:37');
-INSERT INTO `player_items` VALUES ('96', '13', 'material', '2', '754', '2026-05-22 17:26:00', '2026-05-24 22:33:36');
-INSERT INTO `player_items` VALUES ('97', '13', 'material', '5', '10', '2026-05-22 17:26:00', '2026-05-24 22:33:36');
-INSERT INTO `player_items` VALUES ('98', '13', 'material', '8', '100', '2026-05-22 17:26:00', '2026-05-23 01:30:51');
-INSERT INTO `player_items` VALUES ('101', '14', 'weapon', '4', '0', '2026-05-22 17:31:01', '2026-05-23 23:23:44');
-INSERT INTO `player_items` VALUES ('103', '14', 'material', '2', '0', '2026-05-22 17:31:01', '2026-05-23 21:12:20');
-INSERT INTO `player_items` VALUES ('104', '14', 'material', '3', '0', '2026-05-22 17:31:01', '2026-05-24 19:09:45');
-INSERT INTO `player_items` VALUES ('107', '15', 'item', '2', '1', '2026-05-22 17:32:02', '2026-05-22 17:32:02');
-INSERT INTO `player_items` VALUES ('108', '15', 'item', '8', '2', '2026-05-22 17:32:02', '2026-05-22 17:32:02');
-INSERT INTO `player_items` VALUES ('109', '15', 'material', '1', '10', '2026-05-22 17:32:02', '2026-05-22 17:32:02');
-INSERT INTO `player_items` VALUES ('110', '15', 'material', '2', '146', '2026-05-22 17:32:02', '2026-05-24 19:37:24');
-INSERT INTO `player_items` VALUES ('111', '15', 'material', '3', '0', '2026-05-22 17:32:02', '2026-05-24 21:13:52');
-INSERT INTO `player_items` VALUES ('113', '15', 'material', '8', '0', '2026-05-22 17:32:02', '2026-05-23 00:24:34');
-INSERT INTO `player_items` VALUES ('114', '16', 'item', '2', '0', '2026-05-22 17:33:38', '2026-05-24 20:35:15');
-INSERT INTO `player_items` VALUES ('115', '16', 'item', '15', '0', '2026-05-22 17:33:38', '2026-05-24 20:35:15');
-INSERT INTO `player_items` VALUES ('116', '16', 'material', '1', '8', '2026-05-22 17:33:38', '2026-05-24 20:52:39');
-INSERT INTO `player_items` VALUES ('117', '16', 'material', '2', '361', '2026-05-22 17:33:38', '2026-05-24 20:52:51');
-INSERT INTO `player_items` VALUES ('118', '16', 'material', '3', '10', '2026-05-22 17:33:38', '2026-05-24 20:35:15');
-INSERT INTO `player_items` VALUES ('119', '16', 'material', '5', '0', '2026-05-22 17:33:38', '2026-05-24 20:35:15');
-INSERT INTO `player_items` VALUES ('120', '16', 'material', '8', '0', '2026-05-22 17:33:38', '2026-05-24 20:35:15');
-INSERT INTO `player_items` VALUES ('121', '16', 'material', '9', '0', '2026-05-22 17:33:38', '2026-05-22 22:46:04');
-INSERT INTO `player_items` VALUES ('122', '17', 'item', '2', '1', '2026-05-22 17:34:38', '2026-05-22 17:34:38');
-INSERT INTO `player_items` VALUES ('123', '17', 'item', '4', '1', '2026-05-22 17:34:38', '2026-05-22 17:34:38');
-INSERT INTO `player_items` VALUES ('124', '17', 'item', '5', '1', '2026-05-22 17:34:38', '2026-05-22 17:34:38');
-INSERT INTO `player_items` VALUES ('125', '17', 'weapon', '1', '1', '2026-05-22 17:34:38', '2026-05-22 17:34:38');
-INSERT INTO `player_items` VALUES ('126', '17', 'weapon', '3', '1', '2026-05-22 17:34:38', '2026-05-22 17:34:38');
-INSERT INTO `player_items` VALUES ('127', '17', 'ammo', '1', '6', '2026-05-22 17:34:38', '2026-05-22 17:34:38');
-INSERT INTO `player_items` VALUES ('128', '18', 'item', '1', '1', '2026-05-22 17:35:54', '2026-05-22 17:35:54');
-INSERT INTO `player_items` VALUES ('129', '18', 'item', '2', '2', '2026-05-22 17:35:54', '2026-05-22 17:35:54');
-INSERT INTO `player_items` VALUES ('130', '18', 'item', '4', '1', '2026-05-22 17:35:54', '2026-05-22 17:35:54');
-INSERT INTO `player_items` VALUES ('131', '18', 'item', '6', '1', '2026-05-22 17:35:54', '2026-05-22 17:35:54');
-INSERT INTO `player_items` VALUES ('132', '18', 'item', '10', '5', '2026-05-22 17:35:54', '2026-05-22 17:35:54');
-INSERT INTO `player_items` VALUES ('133', '18', 'item', '13', '10', '2026-05-22 17:35:54', '2026-05-22 17:35:54');
-INSERT INTO `player_items` VALUES ('134', '18', 'weapon', '1', '1', '2026-05-22 17:35:54', '2026-05-22 17:35:54');
-INSERT INTO `player_items` VALUES ('135', '18', 'ammo', '1', '2', '2026-05-22 17:35:54', '2026-05-22 17:35:54');
-INSERT INTO `player_items` VALUES ('136', '18', 'material', '2', '30', '2026-05-22 17:35:54', '2026-05-23 00:13:29');
-INSERT INTO `player_items` VALUES ('137', '18', 'material', '3', '10', '2026-05-22 17:35:54', '2026-05-22 17:35:54');
-INSERT INTO `player_items` VALUES ('139', '18', 'material', '8', '5', '2026-05-22 17:35:54', '2026-05-22 17:35:54');
-INSERT INTO `player_items` VALUES ('140', '19', 'item', '12', '1', '2026-05-22 17:36:56', '2026-05-22 17:36:56');
-INSERT INTO `player_items` VALUES ('141', '19', 'weapon', '4', '0', '2026-05-22 17:36:56', '2026-05-23 19:18:01');
-INSERT INTO `player_items` VALUES ('143', '19', 'material', '3', '0', '2026-05-22 17:36:56', '2026-05-24 19:21:42');
-INSERT INTO `player_items` VALUES ('145', '19', 'material', '8', '9', '2026-05-22 17:36:56', '2026-05-24 18:54:55');
-INSERT INTO `player_items` VALUES ('147', '20', 'weapon', '4', '2', '2026-05-22 17:38:35', '2026-05-24 15:31:17');
-INSERT INTO `player_items` VALUES ('153', '20', 'material', '8', '13', '2026-05-22 17:38:36', '2026-05-24 21:22:44');
-INSERT INTO `player_items` VALUES ('154', '21', 'item', '2', '1', '2026-05-22 17:40:25', '2026-05-22 17:40:25');
-INSERT INTO `player_items` VALUES ('155', '21', 'item', '4', '1', '2026-05-22 17:40:25', '2026-05-22 17:40:25');
-INSERT INTO `player_items` VALUES ('157', '21', 'material', '2', '11085', '2026-05-22 17:40:25', '2026-05-24 22:33:01');
-INSERT INTO `player_items` VALUES ('158', '21', 'material', '3', '20', '2026-05-22 17:40:25', '2026-05-22 17:40:25');
-INSERT INTO `player_items` VALUES ('160', '21', 'material', '8', '5', '2026-05-22 17:40:25', '2026-05-22 17:40:25');
-INSERT INTO `player_items` VALUES ('161', '22', 'item', '12', '0', '2026-05-22 17:41:18', '2026-05-23 16:57:01');
-INSERT INTO `player_items` VALUES ('162', '22', 'weapon', '4', '1', '2026-05-22 17:41:18', '2026-05-23 23:25:16');
-INSERT INTO `player_items` VALUES ('163', '22', 'material', '2', '10000', '2026-05-22 17:41:18', '2026-05-23 21:33:22');
-INSERT INTO `player_items` VALUES ('164', '22', 'material', '3', '0', '2026-05-22 17:41:18', '2026-05-23 16:57:01');
-INSERT INTO `player_items` VALUES ('165', '22', 'material', '5', '0', '2026-05-22 17:41:18', '2026-05-23 16:57:01');
-INSERT INTO `player_items` VALUES ('166', '22', 'material', '8', '0', '2026-05-22 17:41:18', '2026-05-23 16:57:01');
-INSERT INTO `player_items` VALUES ('167', '23', 'item', '13', '50', '2026-05-22 17:42:39', '2026-05-22 17:42:39');
-INSERT INTO `player_items` VALUES ('168', '23', 'item', '15', '5', '2026-05-22 17:42:39', '2026-05-22 17:42:39');
-INSERT INTO `player_items` VALUES ('169', '23', 'material', '1', '10', '2026-05-22 17:42:39', '2026-05-22 17:42:39');
-INSERT INTO `player_items` VALUES ('170', '23', 'material', '2', '5', '2026-05-22 17:42:39', '2026-05-24 22:30:39');
-INSERT INTO `player_items` VALUES ('171', '23', 'material', '3', '10', '2026-05-22 17:42:39', '2026-05-22 17:42:39');
-INSERT INTO `player_items` VALUES ('173', '23', 'material', '8', '3', '2026-05-22 17:42:39', '2026-05-22 21:41:14');
-INSERT INTO `player_items` VALUES ('174', '24', 'item', '15', '1', '2026-05-22 17:46:08', '2026-05-22 17:46:08');
-INSERT INTO `player_items` VALUES ('175', '24', 'weapon', '9', '1', '2026-05-22 17:46:08', '2026-05-22 17:46:08');
-INSERT INTO `player_items` VALUES ('176', '24', 'material', '2', '110', '2026-05-22 17:46:08', '2026-05-24 19:33:50');
-INSERT INTO `player_items` VALUES ('177', '24', 'material', '3', '10', '2026-05-22 17:46:08', '2026-05-22 17:46:08');
-INSERT INTO `player_items` VALUES ('178', '24', 'material', '5', '-6', '2026-05-22 17:46:08', '2026-05-24 22:19:55');
-INSERT INTO `player_items` VALUES ('179', '24', 'material', '8', '13', '2026-05-22 17:46:08', '2026-05-23 21:37:15');
-INSERT INTO `player_items` VALUES ('180', '25', 'material', '1', '10', '2026-05-22 17:47:48', '2026-05-22 17:47:48');
-INSERT INTO `player_items` VALUES ('181', '25', 'material', '2', '10', '2026-05-22 17:47:48', '2026-05-24 15:40:24');
-INSERT INTO `player_items` VALUES ('182', '25', 'material', '5', '12', '2026-05-22 17:47:48', '2026-05-24 15:40:17');
-INSERT INTO `player_items` VALUES ('183', '25', 'material', '8', '4', '2026-05-22 17:47:48', '2026-05-23 20:25:14');
-INSERT INTO `player_items` VALUES ('184', '26', 'item', '5', '2', '2026-05-22 17:49:50', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('185', '26', 'weapon', '1', '3', '2026-05-22 17:49:50', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('186', '26', 'ammo', '1', '8', '2026-05-22 17:49:50', '2026-05-24 21:20:09');
-INSERT INTO `player_items` VALUES ('187', '27', 'item', '10', '31', '2026-05-22 17:51:15', '2026-05-23 21:46:13');
-INSERT INTO `player_items` VALUES ('188', '27', 'item', '16', '5', '2026-05-22 17:51:15', '2026-05-22 17:51:15');
-INSERT INTO `player_items` VALUES ('189', '27', 'weapon', '2', '0', '2026-05-22 17:51:15', '2026-05-23 01:40:41');
-INSERT INTO `player_items` VALUES ('190', '27', 'weapon', '8', '0', '2026-05-22 17:51:15', '2026-05-23 01:40:43');
-INSERT INTO `player_items` VALUES ('191', '27', 'weapon', '9', '0', '2026-05-22 17:51:15', '2026-05-23 01:40:34');
-INSERT INTO `player_items` VALUES ('192', '27', 'ammo', '2', '0', '2026-05-22 17:51:15', '2026-05-23 01:40:34');
-INSERT INTO `player_items` VALUES ('193', '27', 'material', '1', '0', '2026-05-22 17:51:15', '2026-05-23 01:40:34');
-INSERT INTO `player_items` VALUES ('194', '27', 'material', '2', '1', '2026-05-22 17:51:15', '2026-05-23 01:40:43');
-INSERT INTO `player_items` VALUES ('195', '27', 'material', '3', '0', '2026-05-22 17:51:15', '2026-05-23 01:40:34');
-INSERT INTO `player_items` VALUES ('196', '27', 'material', '5', '1', '2026-05-22 17:51:15', '2026-05-23 21:06:40');
-INSERT INTO `player_items` VALUES ('197', '27', 'material', '6', '0', '2026-05-22 17:51:15', '2026-05-23 00:45:31');
-INSERT INTO `player_items` VALUES ('198', '27', 'material', '8', '33', '2026-05-22 17:51:15', '2026-05-23 21:06:40');
-INSERT INTO `player_items` VALUES ('199', '27', 'material', '9', '0', '2026-05-22 17:51:15', '2026-05-23 01:40:34');
-INSERT INTO `player_items` VALUES ('200', '28', 'item', '2', '1', '2026-05-22 17:56:35', '2026-05-22 17:56:35');
-INSERT INTO `player_items` VALUES ('201', '28', 'item', '7', '1', '2026-05-22 17:56:35', '2026-05-22 17:56:35');
-INSERT INTO `player_items` VALUES ('202', '28', 'item', '17', '1', '2026-05-22 17:56:35', '2026-05-22 17:56:35');
-INSERT INTO `player_items` VALUES ('203', '28', 'ammo', '3', '2', '2026-05-22 17:56:35', '2026-05-22 17:56:35');
-INSERT INTO `player_items` VALUES ('204', '28', 'material', '1', '10', '2026-05-22 17:56:35', '2026-05-22 17:56:35');
-INSERT INTO `player_items` VALUES ('205', '28', 'material', '2', '50', '2026-05-22 17:56:35', '2026-05-22 17:56:35');
-INSERT INTO `player_items` VALUES ('207', '28', 'material', '8', '13', '2026-05-22 17:56:35', '2026-05-23 19:06:51');
-INSERT INTO `player_items` VALUES ('208', '29', 'item', '14', '0', '2026-05-22 17:58:02', '2026-05-23 19:41:08');
-INSERT INTO `player_items` VALUES ('209', '29', 'item', '15', '1', '2026-05-22 17:58:02', '2026-05-22 17:58:02');
-INSERT INTO `player_items` VALUES ('210', '29', 'material', '1', '5', '2026-05-22 17:58:02', '2026-05-22 19:24:04');
-INSERT INTO `player_items` VALUES ('212', '29', 'material', '5', '1', '2026-05-22 17:58:02', '2026-05-23 20:31:54');
-INSERT INTO `player_items` VALUES ('213', '29', 'material', '8', '5', '2026-05-22 17:58:02', '2026-05-22 17:58:02');
-INSERT INTO `player_items` VALUES ('214', '30', 'item', '1', '1', '2026-05-22 18:00:25', '2026-05-24 20:00:52');
-INSERT INTO `player_items` VALUES ('215', '30', 'weapon', '11', '1', '2026-05-22 18:00:26', '2026-05-22 18:00:26');
-INSERT INTO `player_items` VALUES ('216', '30', 'material', '1', '10', '2026-05-22 18:00:26', '2026-05-22 18:00:26');
-INSERT INTO `player_items` VALUES ('217', '30', 'material', '2', '20', '2026-05-22 18:00:26', '2026-05-23 20:01:52');
-INSERT INTO `player_items` VALUES ('218', '30', 'material', '3', '10', '2026-05-22 18:00:26', '2026-05-22 18:00:26');
-INSERT INTO `player_items` VALUES ('219', '30', 'material', '5', '2', '2026-05-22 18:00:26', '2026-05-24 20:03:53');
-INSERT INTO `player_items` VALUES ('220', '30', 'material', '8', '3', '2026-05-22 18:00:26', '2026-05-23 20:28:55');
-INSERT INTO `player_items` VALUES ('221', '31', 'item', '2', '1', '2026-05-22 18:04:23', '2026-05-22 18:04:23');
-INSERT INTO `player_items` VALUES ('222', '31', 'weapon', '4', '1', '2026-05-22 18:04:23', '2026-05-22 18:04:23');
-INSERT INTO `player_items` VALUES ('223', '31', 'material', '1', '10', '2026-05-22 18:04:23', '2026-05-22 18:04:23');
-INSERT INTO `player_items` VALUES ('224', '31', 'material', '2', '20', '2026-05-22 18:04:23', '2026-05-24 17:17:18');
-INSERT INTO `player_items` VALUES ('225', '31', 'material', '3', '20', '2026-05-22 18:04:23', '2026-05-22 18:04:23');
-INSERT INTO `player_items` VALUES ('227', '31', 'material', '8', '5', '2026-05-22 18:04:23', '2026-05-22 18:04:23');
-INSERT INTO `player_items` VALUES ('228', '32', 'item', '2', '1', '2026-05-22 18:07:26', '2026-05-22 18:07:26');
-INSERT INTO `player_items` VALUES ('229', '32', 'item', '13', '10', '2026-05-22 18:07:26', '2026-05-22 18:07:26');
-INSERT INTO `player_items` VALUES ('230', '32', 'weapon', '8', '1', '2026-05-22 18:07:26', '2026-05-22 18:07:26');
-INSERT INTO `player_items` VALUES ('231', '32', 'material', '1', '5', '2026-05-22 18:07:26', '2026-05-23 01:31:35');
-INSERT INTO `player_items` VALUES ('232', '32', 'material', '2', '20', '2026-05-22 18:07:26', '2026-05-24 00:54:26');
-INSERT INTO `player_items` VALUES ('233', '32', 'material', '3', '10', '2026-05-22 18:07:26', '2026-05-22 18:07:26');
-INSERT INTO `player_items` VALUES ('234', '32', 'material', '5', '2', '2026-05-22 18:07:26', '2026-05-24 00:54:26');
-INSERT INTO `player_items` VALUES ('235', '32', 'material', '8', '10', '2026-05-22 18:07:26', '2026-05-23 01:31:35');
-INSERT INTO `player_items` VALUES ('236', '10', 'item', '22', '1', '2026-05-22 18:24:15', '2026-05-22 18:24:15');
-INSERT INTO `player_items` VALUES ('237', '10', 'item', '21', '1', '2026-05-22 18:24:20', '2026-05-22 18:24:20');
-INSERT INTO `player_items` VALUES ('238', '10', 'item', '20', '1', '2026-05-22 18:24:24', '2026-05-22 18:24:24');
-INSERT INTO `player_items` VALUES ('239', '10', 'item', '19', '1', '2026-05-22 18:24:27', '2026-05-22 18:24:27');
-INSERT INTO `player_items` VALUES ('240', '17', 'item', '19', '1', '2026-05-22 18:24:39', '2026-05-22 18:24:39');
-INSERT INTO `player_items` VALUES ('241', '17', 'item', '20', '1', '2026-05-22 18:24:42', '2026-05-22 18:24:42');
-INSERT INTO `player_items` VALUES ('242', '17', 'item', '21', '1', '2026-05-22 18:24:45', '2026-05-22 18:24:45');
-INSERT INTO `player_items` VALUES ('243', '17', 'item', '22', '1', '2026-05-22 18:24:49', '2026-05-22 18:24:49');
-INSERT INTO `player_items` VALUES ('244', '26', 'item', '19', '5', '2026-05-22 18:25:21', '2026-05-24 18:40:39');
-INSERT INTO `player_items` VALUES ('245', '26', 'item', '20', '5', '2026-05-22 18:25:24', '2026-05-24 18:41:06');
-INSERT INTO `player_items` VALUES ('246', '26', 'item', '21', '5', '2026-05-22 18:25:27', '2026-05-24 18:41:04');
-INSERT INTO `player_items` VALUES ('247', '26', 'item', '22', '5', '2026-05-22 18:25:31', '2026-05-24 18:41:02');
-INSERT INTO `player_items` VALUES ('248', '26', 'item', '7', '1', '2026-05-22 18:26:15', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('249', '26', 'ammo', '3', '7', '2026-05-22 18:26:21', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('250', '24', 'item', '23', '1', '2026-05-22 18:34:38', '2026-05-22 18:34:38');
-INSERT INTO `player_items` VALUES ('251', '23', 'item', '23', '1', '2026-05-22 18:34:48', '2026-05-22 18:34:48');
-INSERT INTO `player_items` VALUES ('252', '11', 'item', '23', '1', '2026-05-22 18:34:57', '2026-05-22 18:34:57');
-INSERT INTO `player_items` VALUES ('253', '13', 'item', '23', '1', '2026-05-22 18:35:17', '2026-05-22 18:35:17');
-INSERT INTO `player_items` VALUES ('254', '9', 'item', '24', '1', '2026-05-22 18:35:50', '2026-05-22 18:35:50');
-INSERT INTO `player_items` VALUES ('256', '19', 'item', '24', '1', '2026-05-22 18:36:14', '2026-05-22 18:36:14');
-INSERT INTO `player_items` VALUES ('257', '11', 'item', '3', '1', '2026-05-22 18:38:11', '2026-05-22 18:38:11');
-INSERT INTO `player_items` VALUES ('258', '11', 'weapon', '3', '0', '2026-05-22 18:38:18', '2026-05-24 20:59:52');
-INSERT INTO `player_items` VALUES ('259', '11', 'item', '5', '1', '2026-05-22 18:38:23', '2026-05-22 18:38:23');
-INSERT INTO `player_items` VALUES ('260', '11', 'item', '2', '1', '2026-05-22 18:38:26', '2026-05-22 18:38:26');
-INSERT INTO `player_items` VALUES ('261', '27', 'item', '2', '3', '2026-05-22 18:39:22', '2026-05-22 18:39:22');
-INSERT INTO `player_items` VALUES ('262', '13', 'item', '2', '1', '2026-05-22 18:39:56', '2026-05-22 18:39:56');
-INSERT INTO `player_items` VALUES ('263', '15', 'item', '19', '1', '2026-05-22 18:51:56', '2026-05-22 18:51:56');
-INSERT INTO `player_items` VALUES ('264', '15', 'item', '20', '1', '2026-05-22 18:52:00', '2026-05-22 18:52:00');
-INSERT INTO `player_items` VALUES ('265', '15', 'item', '21', '1', '2026-05-22 18:52:03', '2026-05-22 18:52:03');
-INSERT INTO `player_items` VALUES ('266', '15', 'item', '22', '1', '2026-05-22 18:52:07', '2026-05-22 18:52:07');
-INSERT INTO `player_items` VALUES ('267', '29', 'item', '10', '50', '2026-05-22 19:27:18', '2026-05-23 21:48:40');
-INSERT INTO `player_items` VALUES ('268', '20', 'material', '5', '36', '2026-05-22 19:57:48', '2026-05-24 21:22:44');
-INSERT INTO `player_items` VALUES ('269', '13', 'weapon', '2', '1', '2026-05-22 20:09:41', '2026-05-22 20:09:41');
-INSERT INTO `player_items` VALUES ('270', '13', 'ammo', '2', '2', '2026-05-22 20:09:41', '2026-05-22 20:09:41');
-INSERT INTO `player_items` VALUES ('271', '20', 'ammo', '4', '6', '2026-05-22 20:50:36', '2026-05-24 15:31:26');
-INSERT INTO `player_items` VALUES ('275', '11', 'item', '10', '5', '2026-05-22 21:11:48', '2026-05-22 21:11:48');
-INSERT INTO `player_items` VALUES ('276', '11', 'item', '1', '1', '2026-05-22 21:11:52', '2026-05-22 21:11:52');
-INSERT INTO `player_items` VALUES ('277', '11', 'material', '3', '10', '2026-05-22 21:12:41', '2026-05-22 21:12:41');
-INSERT INTO `player_items` VALUES ('278', '11', 'material', '2', '30', '2026-05-22 21:12:56', '2026-05-24 20:43:25');
-INSERT INTO `player_items` VALUES ('279', '25', 'item', '18', '0', '2026-05-22 21:44:08', '2026-05-23 20:01:33');
-INSERT INTO `player_items` VALUES ('280', '12', 'material', '5', '10', '2026-05-22 21:45:47', '2026-05-22 21:45:47');
-INSERT INTO `player_items` VALUES ('282', '16', 'item', '6', '7', '2026-05-22 21:54:22', '2026-05-24 20:53:00');
-INSERT INTO `player_items` VALUES ('283', '24', 'item', '1', '2', '2026-05-22 22:06:08', '2026-05-23 21:36:58');
-INSERT INTO `player_items` VALUES ('284', '24', 'item', '5', '2', '2026-05-22 22:06:20', '2026-05-23 21:36:38');
-INSERT INTO `player_items` VALUES ('286', '10', 'material', '8', '0', '2026-05-22 22:08:20', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('287', '14', 'material', '9', '0', '2026-05-22 22:48:18', '2026-05-24 19:09:45');
-INSERT INTO `player_items` VALUES ('288', '17', 'material', '2', '25', '2026-05-22 22:55:00', '2026-05-22 22:59:04');
-INSERT INTO `player_items` VALUES ('291', '13', 'material', '1', '13', '2026-05-23 00:23:42', '2026-05-23 19:40:10');
-INSERT INTO `player_items` VALUES ('292', '10', 'ammo', '3', '1', '2026-05-23 00:24:17', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('295', '9', 'material', '5', '81', '2026-05-23 00:43:35', '2026-05-24 22:27:18');
-INSERT INTO `player_items` VALUES ('296', '9', 'material', '6', '0', '2026-05-23 00:45:31', '2026-05-23 21:04:16');
-INSERT INTO `player_items` VALUES ('297', '9', 'material', '3', '160', '2026-05-23 01:40:34', '2026-05-24 19:23:58');
-INSERT INTO `player_items` VALUES ('298', '9', 'ammo', '2', '0', '2026-05-23 01:40:34', '2026-05-23 19:08:18');
-INSERT INTO `player_items` VALUES ('299', '9', 'weapon', '9', '1', '2026-05-23 01:40:34', '2026-05-23 19:16:27');
-INSERT INTO `player_items` VALUES ('300', '9', 'weapon', '2', '1', '2026-05-23 01:40:41', '2026-05-24 21:46:51');
-INSERT INTO `player_items` VALUES ('301', '9', 'weapon', '8', '0', '2026-05-23 01:40:43', '2026-05-23 19:15:59');
-INSERT INTO `player_items` VALUES ('303', '20', 'item', '6', '1', '2026-05-23 14:41:26', '2026-05-24 17:15:54');
-INSERT INTO `player_items` VALUES ('304', '20', 'weapon', '7', '1', '2026-05-23 14:41:31', '2026-05-23 14:41:31');
-INSERT INTO `player_items` VALUES ('305', '10', 'item', '18', '0', '2026-05-23 15:55:23', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('306', '16', 'item', '12', '0', '2026-05-23 16:57:33', '2026-05-24 20:35:15');
-INSERT INTO `player_items` VALUES ('307', '16', 'weapon', '4', '2', '2026-05-23 16:57:33', '2026-05-24 14:44:10');
-INSERT INTO `player_items` VALUES ('308', '9', 'item', '18', '1', '2026-05-23 19:05:50', '2026-05-24 18:19:47');
-INSERT INTO `player_items` VALUES ('309', '19', 'weapon', '9', '1', '2026-05-23 19:17:06', '2026-05-23 19:17:06');
-INSERT INTO `player_items` VALUES ('310', '22', 'weapon', '8', '1', '2026-05-23 19:17:13', '2026-05-23 19:17:13');
-INSERT INTO `player_items` VALUES ('311', '9', 'weapon', '4', '0', '2026-05-23 19:18:09', '2026-05-23 23:24:58');
-INSERT INTO `player_items` VALUES ('312', '26', 'material', '8', '220', '2026-05-23 19:27:02', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('314', '21', 'weapon', '8', '1', '2026-05-23 19:36:23', '2026-05-23 19:36:23');
-INSERT INTO `player_items` VALUES ('318', '30', 'item', '14', '10', '2026-05-23 19:43:39', '2026-05-23 19:43:39');
-INSERT INTO `player_items` VALUES ('319', '15', 'material', '5', '90', '2026-05-23 19:45:34', '2026-05-24 19:37:24');
-INSERT INTO `player_items` VALUES ('320', '24', 'material', '1', '1', '2026-05-23 19:46:48', '2026-05-23 21:49:06');
-INSERT INTO `player_items` VALUES ('321', '30', 'item', '18', '3', '2026-05-23 20:01:52', '2026-05-23 20:01:52');
-INSERT INTO `player_items` VALUES ('323', '9', 'item', '20', '1', '2026-05-23 20:12:57', '2026-05-23 20:12:57');
-INSERT INTO `player_items` VALUES ('324', '26', 'item', '18', '2', '2026-05-23 20:13:04', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('325', '10', 'item', '7', '1', '2026-05-23 20:13:04', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('326', '8', 'material', '5', '19', '2026-05-23 20:36:28', '2026-06-24 20:20:36');
-INSERT INTO `player_items` VALUES ('328', '12', 'item', '20', '1', '2026-05-23 20:55:59', '2026-05-23 20:55:59');
-INSERT INTO `player_items` VALUES ('330', '22', 'item', '20', '1', '2026-05-23 20:56:25', '2026-05-23 20:56:25');
-INSERT INTO `player_items` VALUES ('331', '19', 'item', '20', '1', '2026-05-23 20:56:43', '2026-05-23 20:56:43');
-INSERT INTO `player_items` VALUES ('332', '16', 'item', '20', '1', '2026-05-23 21:01:30', '2026-05-23 21:01:30');
-INSERT INTO `player_items` VALUES ('333', '20', 'item', '20', '1', '2026-05-23 21:01:55', '2026-05-23 21:01:55');
-INSERT INTO `player_items` VALUES ('335', '22', 'item', '24', '1', '2026-05-23 21:17:33', '2026-05-23 21:17:33');
-INSERT INTO `player_items` VALUES ('336', '21', 'item', '24', '1', '2026-05-23 21:17:51', '2026-05-23 21:17:51');
-INSERT INTO `player_items` VALUES ('337', '22', 'material', '1', '10000', '2026-05-23 21:33:55', '2026-05-23 21:34:02');
-INSERT INTO `player_items` VALUES ('338', '24', 'item', '16', '1', '2026-05-23 21:37:26', '2026-05-23 21:37:26');
-INSERT INTO `player_items` VALUES ('341', '19', 'material', '10', '0', '2026-05-23 21:49:24', '2026-05-23 23:42:36');
-INSERT INTO `player_items` VALUES ('342', '19', 'material', '11', '3', '2026-05-23 21:49:31', '2026-05-24 19:10:00');
-INSERT INTO `player_items` VALUES ('344', '10', 'item', '1', '0', '2026-05-23 22:05:18', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('345', '10', 'item', '6', '1', '2026-05-23 22:05:18', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('346', '10', 'item', '10', '0', '2026-05-23 22:05:18', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('347', '10', 'item', '11', '0', '2026-05-23 22:05:18', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('348', '10', 'item', '12', '0', '2026-05-23 22:05:18', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('349', '10', 'item', '13', '0', '2026-05-23 22:05:18', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('350', '10', 'item', '14', '0', '2026-05-23 22:05:18', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('351', '10', 'item', '15', '1', '2026-05-23 22:05:18', '2026-05-24 21:22:37');
-INSERT INTO `player_items` VALUES ('352', '10', 'item', '17', '0', '2026-05-23 22:05:18', '2026-05-24 14:05:33');
-INSERT INTO `player_items` VALUES ('353', '10', 'weapon', '1', '0', '2026-05-23 22:05:18', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('354', '10', 'weapon', '2', '0', '2026-05-23 22:05:18', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('355', '10', 'weapon', '4', '0', '2026-05-23 22:05:18', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('356', '10', 'weapon', '6', '1', '2026-05-23 22:05:18', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('357', '10', 'weapon', '7', '0', '2026-05-23 22:05:18', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('358', '10', 'ammo', '1', '0', '2026-05-23 22:05:18', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('359', '10', 'ammo', '2', '0', '2026-05-23 22:05:18', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('360', '10', 'ammo', '4', '0', '2026-05-23 22:05:18', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('361', '10', 'material', '6', '0', '2026-05-23 22:05:18', '2026-05-24 14:06:04');
-INSERT INTO `player_items` VALUES ('362', '10', 'material', '11', '0', '2026-05-23 22:05:18', '2026-05-24 14:05:33');
-INSERT INTO `player_items` VALUES ('363', '17', 'item', '8', '2', '2026-05-23 22:05:18', '2026-05-23 22:05:18');
-INSERT INTO `player_items` VALUES ('364', '17', 'weapon', '8', '2', '2026-05-23 22:05:18', '2026-05-23 22:05:18');
-INSERT INTO `player_items` VALUES ('365', '17', 'weapon', '9', '1', '2026-05-23 22:05:18', '2026-05-23 22:05:18');
-INSERT INTO `player_items` VALUES ('366', '17', 'material', '5', '239', '2026-05-23 22:05:18', '2026-05-24 20:16:38');
-INSERT INTO `player_items` VALUES ('367', '17', 'material', '8', '18', '2026-05-23 22:05:18', '2026-05-24 18:16:30');
-INSERT INTO `player_items` VALUES ('368', '26', 'material', '2', '3', '2026-05-23 22:05:19', '2026-05-24 19:22:30');
-INSERT INTO `player_items` VALUES ('369', '26', 'material', '5', '215', '2026-05-23 22:05:19', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('370', '15', 'item', '5', '1', '2026-05-23 22:05:19', '2026-05-23 22:05:19');
-INSERT INTO `player_items` VALUES ('371', '15', 'item', '6', '1', '2026-05-23 22:05:19', '2026-05-23 22:05:19');
-INSERT INTO `player_items` VALUES ('372', '15', 'weapon', '2', '0', '2026-05-23 22:05:19', '2026-05-24 21:09:41');
-INSERT INTO `player_items` VALUES ('373', '15', 'ammo', '2', '0', '2026-05-23 22:05:19', '2026-05-24 21:09:41');
-INSERT INTO `player_items` VALUES ('374', '15', 'ammo', '4', '1', '2026-05-23 22:05:19', '2026-05-23 22:05:19');
-INSERT INTO `player_items` VALUES ('375', '15', 'material', '12', '1', '2026-05-23 22:05:19', '2026-05-23 22:05:19');
-INSERT INTO `player_items` VALUES ('376', '14', 'material', '6', '0', '2026-05-23 22:17:14', '2026-05-24 18:28:16');
-INSERT INTO `player_items` VALUES ('377', '21', 'weapon', '4', '1', '2026-05-23 23:24:27', '2026-05-23 23:24:27');
-INSERT INTO `player_items` VALUES ('379', '10', 'weapon', '12', '25', '2026-05-24 00:13:25', '2026-05-24 00:13:25');
-INSERT INTO `player_items` VALUES ('380', '21', 'material', '10', '1', '2026-05-24 01:03:21', '2026-05-24 01:03:21');
-INSERT INTO `player_items` VALUES ('381', '21', 'material', '11', '1', '2026-05-24 01:03:21', '2026-05-24 01:03:21');
-INSERT INTO `player_items` VALUES ('382', '33', 'item', '1', '1', '2026-05-24 11:38:18', '2026-05-24 11:38:18');
-INSERT INTO `player_items` VALUES ('383', '9', 'item', '9', '1', '2026-05-24 13:46:01', '2026-05-24 13:46:01');
-INSERT INTO `player_items` VALUES ('384', '13', 'item', '9', '1', '2026-05-24 13:46:16', '2026-05-24 13:46:16');
-INSERT INTO `player_items` VALUES ('385', '13', 'item', '18', '3', '2026-05-24 14:09:37', '2026-05-24 14:09:37');
-INSERT INTO `player_items` VALUES ('386', '30', 'weapon', '4', '1', '2026-05-24 14:48:57', '2026-05-24 14:48:57');
-INSERT INTO `player_items` VALUES ('387', '10', 'material', '5', '0', '2026-05-24 14:55:55', '2026-05-24 20:59:17');
-INSERT INTO `player_items` VALUES ('388', '14', 'material', '11', '0', '2026-05-24 14:56:00', '2026-05-24 19:09:45');
-INSERT INTO `player_items` VALUES ('389', '26', 'ammo', '4', '8', '2026-05-24 16:18:27', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('390', '26', 'weapon', '7', '2', '2026-05-24 16:18:34', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('391', '26', 'item', '6', '2', '2026-05-24 16:18:44', '2026-05-24 22:39:55');
-INSERT INTO `player_items` VALUES ('392', '21', 'item', '18', '1', '2026-05-24 17:08:53', '2026-05-24 17:08:53');
-INSERT INTO `player_items` VALUES ('394', '31', 'item', '18', '1', '2026-05-24 17:13:08', '2026-05-24 17:13:08');
-INSERT INTO `player_items` VALUES ('395', '16', 'item', '18', '0', '2026-05-24 18:08:32', '2026-05-24 19:15:55');
-INSERT INTO `player_items` VALUES ('396', '19', 'item', '18', '1', '2026-05-24 18:23:07', '2026-05-24 18:23:07');
-INSERT INTO `player_items` VALUES ('397', '21', 'material', '1', '100', '2026-05-24 18:24:30', '2026-05-24 21:10:44');
-INSERT INTO `player_items` VALUES ('398', '19', 'material', '6', '30', '2026-05-24 18:30:38', '2026-05-24 19:07:04');
-INSERT INTO `player_items` VALUES ('399', '19', 'material', '9', '0', '2026-05-24 19:10:00', '2026-05-24 19:21:42');
-INSERT INTO `player_items` VALUES ('400', '21', 'material', '6', '20', '2026-05-24 19:12:06', '2026-05-24 19:12:06');
-INSERT INTO `player_items` VALUES ('401', '21', 'material', '9', '0', '2026-05-24 19:28:08', '2026-05-24 21:09:11');
-INSERT INTO `player_items` VALUES ('402', '30', 'ammo', '4', '1', '2026-05-24 20:03:39', '2026-05-24 20:03:39');
-INSERT INTO `player_items` VALUES ('403', '30', 'weapon', '7', '1', '2026-05-24 20:03:48', '2026-05-24 20:03:48');
-INSERT INTO `player_items` VALUES ('405', '9', 'ammo', '4', '1', '2026-05-24 20:07:26', '2026-05-24 22:15:34');
-INSERT INTO `player_items` VALUES ('406', '9', 'weapon', '7', '0', '2026-05-24 20:07:42', '2026-05-24 22:15:34');
-INSERT INTO `player_items` VALUES ('407', '17', 'item', '18', '1', '2026-05-24 20:16:38', '2026-05-24 20:16:38');
-INSERT INTO `player_items` VALUES ('410', '26', 'item', '1', '2', '2026-05-24 21:00:14', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('411', '26', 'item', '2', '10', '2026-05-24 21:00:14', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('412', '26', 'item', '3', '4', '2026-05-24 21:00:14', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('413', '26', 'item', '10', '20', '2026-05-24 21:00:14', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('414', '26', 'item', '11', '3', '2026-05-24 21:00:14', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('415', '26', 'item', '12', '1', '2026-05-24 21:00:14', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('416', '26', 'item', '13', '20', '2026-05-24 21:00:14', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('417', '26', 'item', '14', '5', '2026-05-24 21:00:14', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('418', '26', 'item', '15', '1', '2026-05-24 21:00:14', '2026-05-24 21:22:30');
-INSERT INTO `player_items` VALUES ('419', '26', 'weapon', '2', '1', '2026-05-24 21:00:14', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('420', '26', 'weapon', '3', '4', '2026-05-24 21:00:14', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('421', '26', 'weapon', '4', '2', '2026-05-24 21:00:14', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('422', '26', 'weapon', '6', '1', '2026-05-24 21:00:14', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('423', '26', 'ammo', '2', '2', '2026-05-24 21:00:14', '2026-05-24 21:00:14');
-INSERT INTO `player_items` VALUES ('424', '24', 'weapon', '3', '1', '2026-05-24 21:00:20', '2026-05-24 21:00:20');
-INSERT INTO `player_items` VALUES ('425', '10', 'material', '3', '10', '2026-05-24 21:15:26', '2026-05-24 21:15:26');
-INSERT INTO `player_items` VALUES ('426', '20', 'item', '2', '1', '2026-05-24 21:22:44', '2026-05-24 21:22:44');
-INSERT INTO `player_items` VALUES ('427', '20', 'item', '12', '1', '2026-05-24 21:22:44', '2026-05-24 21:22:44');
-INSERT INTO `player_items` VALUES ('428', '20', 'item', '15', '1', '2026-05-24 21:22:44', '2026-05-24 21:22:44');
-INSERT INTO `player_items` VALUES ('429', '20', 'material', '3', '10', '2026-05-24 21:22:44', '2026-05-24 21:22:44');
-INSERT INTO `player_items` VALUES ('430', '20', 'material', '2', '12', '2026-05-24 21:22:44', '2026-05-24 21:22:44');
-INSERT INTO `player_items` VALUES ('431', '21', 'material', '5', '2', '2026-05-24 21:38:44', '2026-05-24 21:38:44');
-INSERT INTO `player_items` VALUES ('432', '9', 'item', '17', '2', '2026-05-24 21:47:59', '2026-05-24 21:47:59');
-INSERT INTO `player_items` VALUES ('433', '17', 'weapon', '2', '1', '2026-05-24 21:49:19', '2026-05-24 21:49:19');
-INSERT INTO `player_items` VALUES ('434', '17', 'ammo', '2', '2', '2026-05-24 21:49:19', '2026-05-24 21:49:19');
-INSERT INTO `player_items` VALUES ('435', '20', 'ammo', '2', '1', '2026-05-24 21:49:33', '2026-05-24 21:49:33');
-INSERT INTO `player_items` VALUES ('436', '20', 'weapon', '2', '1', '2026-05-24 21:49:38', '2026-05-24 21:49:38');
-INSERT INTO `player_items` VALUES ('437', '9', 'ammo', '3', '1', '2026-05-24 21:50:53', '2026-05-24 21:50:53');
-INSERT INTO `player_items` VALUES ('438', '9', 'item', '7', '1', '2026-05-24 21:50:59', '2026-05-24 21:50:59');
-INSERT INTO `player_items` VALUES ('439', '9', 'material', '1', '10000', '2026-05-24 22:09:42', '2026-05-24 22:09:42');
-INSERT INTO `player_items` VALUES ('440', '9', 'item', '1', '3', '2026-05-24 22:09:50', '2026-05-24 22:09:50');
-INSERT INTO `player_items` VALUES ('441', '24', 'weapon', '7', '1', '2026-05-24 22:19:55', '2026-05-24 22:19:55');
-INSERT INTO `player_items` VALUES ('442', '24', 'ammo', '4', '1', '2026-05-24 22:19:55', '2026-05-24 22:19:55');
-INSERT INTO `player_items` VALUES ('443', '17', 'item', '6', '1', '2026-05-24 22:27:11', '2026-05-24 22:27:11');
-INSERT INTO `player_items` VALUES ('444', '34', 'item', '10', '10', '2026-06-22 11:55:43', '2026-06-22 11:55:43');
-INSERT INTO `player_items` VALUES ('445', '34', 'item', '16', '5', '2026-06-22 11:55:43', '2026-06-22 11:55:43');
-INSERT INTO `player_items` VALUES ('446', '34', 'weapon', '2', '2', '2026-06-22 11:55:43', '2026-06-22 11:55:43');
-INSERT INTO `player_items` VALUES ('447', '34', 'weapon', '8', '2', '2026-06-22 11:55:43', '2026-06-22 11:55:43');
-INSERT INTO `player_items` VALUES ('448', '34', 'weapon', '9', '2', '2026-06-22 11:55:43', '2026-06-22 11:55:43');
-INSERT INTO `player_items` VALUES ('449', '34', 'ammo', '2', '4', '2026-06-22 11:55:43', '2026-06-22 11:55:43');
-INSERT INTO `player_items` VALUES ('450', '34', 'material', '1', '96', '2026-06-22 11:55:43', '2026-06-22 22:07:44');
-INSERT INTO `player_items` VALUES ('451', '34', 'material', '2', '335', '2026-06-22 11:55:43', '2026-06-22 12:30:19');
-INSERT INTO `player_items` VALUES ('452', '34', 'material', '3', '100', '2026-06-22 11:55:43', '2026-06-22 11:55:43');
-INSERT INTO `player_items` VALUES ('453', '34', 'material', '5', '21', '2026-06-22 11:55:43', '2026-06-22 12:29:27');
-INSERT INTO `player_items` VALUES ('454', '34', 'material', '6', '30', '2026-06-22 11:55:43', '2026-06-22 11:55:43');
-INSERT INTO `player_items` VALUES ('455', '34', 'material', '8', '35', '2026-06-22 11:55:43', '2026-06-22 11:55:43');
-INSERT INTO `player_items` VALUES ('456', '34', 'material', '9', '30', '2026-06-22 11:55:43', '2026-06-22 11:55:43');
-INSERT INTO `player_items` VALUES ('457', '34', 'weapon', '11', '1', '2026-06-22 11:55:43', '2026-06-22 11:55:43');
-INSERT INTO `player_items` VALUES ('458', '34', 'ammo', '3', '1', '2026-06-22 11:55:43', '2026-06-22 11:55:43');
-INSERT INTO `player_items` VALUES ('459', '34', 'item', '20', '1', '2026-06-22 12:00:34', '2026-06-22 12:00:34');
-INSERT INTO `player_items` VALUES ('494', '34', 'item', '1', '3', '2026-06-22 20:12:17', '2026-06-22 22:07:44');
-INSERT INTO `player_items` VALUES ('495', '8', 'item', '16', '4', '2026-06-24 20:03:58', '2026-06-24 20:03:58');
-INSERT INTO `player_items` VALUES ('496', '8', 'item', '9', '5', '2026-06-24 20:03:58', '2026-06-24 20:03:58');
-INSERT INTO `player_items` VALUES ('497', '35', 'item', '2', '0', '2026-06-24 20:08:32', '2026-06-24 20:10:02');
-INSERT INTO `player_items` VALUES ('498', '35', 'item', '15', '1', '2026-06-24 20:08:32', '2026-06-24 20:08:32');
-INSERT INTO `player_items` VALUES ('499', '35', 'material', '1', '5', '2026-06-24 20:08:32', '2026-06-24 20:08:32');
-INSERT INTO `player_items` VALUES ('500', '35', 'material', '2', '2150', '2026-06-24 20:08:32', '2026-06-24 20:46:37');
-INSERT INTO `player_items` VALUES ('501', '35', 'material', '3', '25', '2026-06-24 20:08:32', '2026-06-24 20:46:37');
-INSERT INTO `player_items` VALUES ('502', '35', 'material', '5', '8', '2026-06-24 20:08:32', '2026-06-24 20:08:32');
-INSERT INTO `player_items` VALUES ('503', '35', 'material', '8', '7', '2026-06-24 20:08:32', '2026-06-24 20:46:37');
-INSERT INTO `player_items` VALUES ('504', '35', 'material', '9', '10', '2026-06-24 20:08:32', '2026-06-24 20:08:32');
-INSERT INTO `player_items` VALUES ('505', '35', 'item', '25', '1', '2026-06-24 20:08:32', '2026-06-24 20:08:32');
-INSERT INTO `player_items` VALUES ('506', '8', 'ammo', '2', '4', '2026-06-24 20:19:50', '2026-06-24 20:19:50');
-INSERT INTO `player_items` VALUES ('507', '8', 'weapon', '2', '1', '2026-06-24 20:19:50', '2026-06-24 20:19:50');
-INSERT INTO `player_items` VALUES ('508', '8', 'item', '1', '3', '2026-06-24 20:20:22', '2026-06-24 20:20:36');
-INSERT INTO `player_items` VALUES ('509', '35', 'item', '13', '3', '2026-06-24 20:46:37', '2026-06-24 20:46:37');
 
 -- ----------------------------
 -- Table structure for player_npc_recognition
@@ -3010,17 +1791,11 @@ CREATE TABLE `player_npc_recognition` (
   `player_id` int(11) NOT NULL,
   `recognized_at` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Records of player_npc_recognition
 -- ----------------------------
-INSERT INTO `player_npc_recognition` VALUES ('1', '7', '1', '1', '2026-06-23 23:33:21.841000');
-INSERT INTO `player_npc_recognition` VALUES ('2', '10', '7', '34', '2026-06-23 23:42:12.315000');
-INSERT INTO `player_npc_recognition` VALUES ('3', '10', '8', '34', '2026-06-23 23:42:12.326000');
-INSERT INTO `player_npc_recognition` VALUES ('4', '10', '9', '34', '2026-06-23 23:42:12.330000');
-INSERT INTO `player_npc_recognition` VALUES ('5', '10', '10', '34', '2026-06-23 23:42:12.332000');
-INSERT INTO `player_npc_recognition` VALUES ('6', '15', '4', '34', '2026-06-23 23:42:12.660000');
 
 -- ----------------------------
 -- Table structure for player_stealth
@@ -3036,15 +1811,11 @@ CREATE TABLE `player_stealth` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_player_day` (`player_id`,`game_day`),
   KEY `idx_game_day` (`game_day`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COMMENT='玩家潜行状态表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='玩家潜行状态表';
 
 -- ----------------------------
 -- Records of player_stealth
 -- ----------------------------
-INSERT INTO `player_stealth` VALUES ('1', '13', '凭栏择雨', '2', '43', '2026-05-22 21:41:45');
-INSERT INTO `player_stealth` VALUES ('2', '18', 'Missbear', '2', '70', '2026-05-22 23:48:20');
-INSERT INTO `player_stealth` VALUES ('3', '13', '凭栏择雨', '3', '100', '2026-05-23 20:45:23');
-INSERT INTO `player_stealth` VALUES ('4', '18', 'Missbear', '4', '123', '2026-05-24 21:37:01');
 
 -- ----------------------------
 -- Table structure for quick_interaction
@@ -3064,84 +1835,11 @@ CREATE TABLE `quick_interaction` (
   `status` varchar(20) NOT NULL,
   `updated_at` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=75 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Records of quick_interaction
 -- ----------------------------
-INSERT INTO `quick_interaction` VALUES ('2', '个人行动 3: 使用一个面包/便当 获得额外的行动点。再次进行烹饪，耗费14食物30kg木材获得两个面包/便当。', '2026-05-22 19:15:23.301000', '完成', '平民', '1', 'supplementary_action', '25', 'tony', '2026-05-23 20:35:29.453000', 'replied', '2026-05-23 20:35:29.453000');
-INSERT INTO `quick_interaction` VALUES ('3', '行动 4: （快速行动）三个【个人行动】都成功完成后，使用交易，给予V镇长一个面包，和二阶典狱长一个面包。今天一共消耗42食物，90木材，部分消耗的物资来自统治者的交易。共获得6个面包，其中把两个给出去。', '2026-05-22 19:17:53.749000', '完成', '平民', '1', 'quick_action', '25', 'tony', '2026-05-23 20:35:25.298000', 'replied', '2026-05-23 20:35:25.299000');
-INSERT INTO `quick_interaction` VALUES ('4', '对西里尔散播瘟疫', '2026-05-22 20:16:33.794000', '收到', '天灾使者', '1', 'quick_action', '16', '孤城暮角', '2026-05-23 20:35:20.692000', 'replied', '2026-05-23 20:35:20.692000');
-INSERT INTO `quick_interaction` VALUES ('5', '我是个酒蒙子，我要喝两瓶我的酒', '2026-05-22 20:44:54.151000', '已回复', '平民', '1', 'quick_action', '27', '得狗的老意', '2026-05-23 20:35:15.609000', 'replied', '2026-05-23 20:35:15.609000');
-INSERT INTO `quick_interaction` VALUES ('6', '我想探查一下出生的邮局附近有什么物资和物品', '2026-05-22 21:07:22.600000', '一间低矮的木屋，窗前挂着\"皇家邮政\"的铜牌。屋内满是油墨和纸张的气味，木制柜台后是分拣信件的格子和一台莫尔斯电报机。墙上贴着轮船班次表和邮票样张。\n这是你家，防御值为3', '平民', '1', 'quick_action', '21', '乐语', '2026-05-22 22:37:55.456000', 'replied', '2026-05-22 22:37:55.456000');
-INSERT INTO `quick_interaction` VALUES ('7', '我从燃料仓库搬运了物资到镇武库，我希望之后从镇武库拿走50kg的物资可以吗', '2026-05-22 21:47:51.566000', '不可以，快速搬运不可在搬运回合使用', '统治者', '1', 'supplementary_action', '26', 'V', '2026-05-22 22:38:32.108000', 'replied', '2026-05-22 22:38:32.108000');
-INSERT INTO `quick_interaction` VALUES ('8', '转移40kg燃料仓库的木材和30kg港口的食物', '2026-05-22 21:51:40.878000', '不可以，快速搬运不可在搬运回合使用', '统治者', '1', 'quick_action', '17', 'zzz', '2026-05-22 22:40:40.332000', 'replied', '2026-05-22 22:40:40.333000');
-INSERT INTO `quick_interaction` VALUES ('9', '快速搬运一把鱼叉与15Kg燃料到背包', '2026-05-22 22:17:55.368000', '不可以，快速搬运不可在搬运回合使用', '统治者', '1', 'quick_action', '10', '二阶堂希罗', '2026-05-22 22:40:46.787000', 'replied', '2026-05-22 22:40:46.787000');
-INSERT INTO `quick_interaction` VALUES ('10', '在白天顺便练练射击技术 用来保护人民群众', '2026-05-22 22:42:22.920000', '好，很有精神', '反叛者', '1', 'quick_action', '11', '蟋蟀蜥蜴', '2026-05-22 23:21:31.906000', 'replied', '2026-05-22 23:21:31.906000');
-INSERT INTO `quick_interaction` VALUES ('11', '查看轮船班次表看看有什么发现', '2026-05-22 22:48:39.772000', '你发现了剧情彩蛋，请查看规则书中的线索文献', '平民', '1', 'quick_action', '21', '乐语', '2026-05-22 23:23:19.173000', 'replied', '2026-05-22 23:23:19.173000');
-INSERT INTO `quick_interaction` VALUES ('12', '尝试与相遇的人产生肢体接触', '2026-05-22 23:14:39.859000', '你随意碰了碰npc中的一人，对方看了你一眼没说什么', '平民', '1', 'quick_action', '31', '闲屿', '2026-05-22 23:52:15.059000', 'replied', '2026-05-22 23:52:15.061000');
-INSERT INTO `quick_interaction` VALUES ('13', '我、对酒、GPT和镇长Vigil一起守镇武库。\n​其中统治层将会把一把威胁5的手枪和对应的弹药1交付我保管', '2026-05-22 23:42:21.390000', '好的', '冒险者', '1', 'supplementary_action', '14', 'Κάκτος西里尔', '2026-05-22 23:51:10.661000', 'replied', '2026-05-22 23:51:10.661000');
-INSERT INTO `quick_interaction` VALUES ('14', '观察邮局墙上的邮票', '2026-05-23 01:03:49.181000', '你观察了邮票，边缘已经暗黄有年头了。', '冒险者', '1', 'quick_action', '21', '乐语', '2026-05-23 14:32:30.429000', 'replied', '2026-05-23 14:32:30.442000');
-INSERT INTO `quick_interaction` VALUES ('15', '晚上去旅馆睡觉', '2026-05-23 01:04:11.146000', 'ok，已前往此处睡觉。', '冒险者', '1', 'supplementary_action', '21', '乐语', '2026-05-23 14:33:27.374000', 'replied', '2026-05-23 14:33:27.374000');
-INSERT INTO `quick_interaction` VALUES ('16', '白天去矿场时候看没人看守顺手取走一些堆放的物资', '2026-05-23 01:05:04.465000', '白天已经结束了，此次行动失败', '冒险者', '1', 'supplementary_action', '21', '乐语', '2026-05-23 14:36:06.317000', 'replied', '2026-05-23 14:36:06.317000');
-INSERT INTO `quick_interaction` VALUES ('17', '去码头拆船需要用白天行动点吗，还是用快速行动', '2026-05-23 19:37:41.842000', '白天行动，快速行动没那么厉害', '冒险者', '2', 'rule_consult', '21', '乐语', '2026-05-23 20:32:56.343000', 'replied', '2026-05-23 20:32:56.343000');
-INSERT INTO `quick_interaction` VALUES ('18', '对 对酒（气象观测）散播瘟疫', '2026-05-23 19:43:08.923000', '收到', '天灾使者', '2', 'quick_action', '16', '孤城暮角', '2026-05-23 20:33:07.787000', 'replied', '2026-05-23 20:33:07.787000');
-INSERT INTO `quick_interaction` VALUES ('19', '使用一个便当加额外的行动', '2026-05-23 19:51:22.909000', '你要干什么你说啊', '统治者', '2', 'quick_action', '10', '二阶堂希罗', '2026-05-23 20:33:30.774000', 'replied', '2026-05-23 20:33:30.774000');
-INSERT INTO `quick_interaction` VALUES ('20', '使用一个面包加行动值', '2026-05-23 20:08:46.310000', '还发两条#指指点点', '统治者', '2', 'quick_action', '10', '二阶堂希罗', '2026-05-23 20:33:49.943000', 'replied', '2026-05-23 20:33:49.943000');
-INSERT INTO `quick_interaction` VALUES ('21', '天灾使者的破坏行动：破坏面包店炉子', '2026-05-23 20:09:36.707000', '收到', '冒险者', '2', 'quick_action', '22', '11', '2026-05-23 20:34:05.496000', 'replied', '2026-05-23 20:34:05.496000');
-INSERT INTO `quick_interaction` VALUES ('22', '白天行动1，去伐木工处，气象观测员不再陪同。', '2026-05-23 20:10:12.476000', '收到', '冒险者', '2', 'supplementary_action', '14', 'Κάκτος西里尔', '2026-05-23 20:34:33.631000', 'replied', '2026-05-23 20:34:33.632000');
-INSERT INTO `quick_interaction` VALUES ('23', '白天的行动1，去伐木工处，气象观测员不再陪同', '2026-05-23 20:10:57.125000', '收到', '冒险者', '2', 'supplementary_action', '14', 'Κάκτος西里尔', '2026-05-23 20:35:43.192000', 'replied', '2026-05-23 20:35:43.192000');
-INSERT INTO `quick_interaction` VALUES ('24', '快速行动1: 先收取来自统治者的物资。（食物，木材，和武器）', '2026-05-23 20:11:44.948000', '你这不是快速行动，你这是交易', '平民', '2', 'quick_action', '25', 'tony', '2026-05-23 20:36:03.493000', 'replied', '2026-05-23 20:36:03.493000');
-INSERT INTO `quick_interaction` VALUES ('25', '使用一个面包。进行第三个人行动。再次使用职业技能。获得两块面包。', '2026-05-23 20:12:33.821000', '收到', '平民', '2', 'quick_action', '25', 'tony', '2026-05-23 20:36:20.090000', 'replied', '2026-05-23 20:36:20.091000');
-INSERT INTO `quick_interaction` VALUES ('26', '个人行动结算后。一共给予两个面包给统治者。一个面包给医生（反抗者）。注意，每搓成一个面包就给出去，优先给反抗者。', '2026-05-23 20:14:41.764000', '你把行动都编程了不用我们的交易系统岂不是对不起我们俩的开发？？嗯？？', '平民', '2', 'quick_action', '25', 'tony', '2026-05-23 20:37:02.692000', 'replied', '2026-05-23 20:37:02.692000');
-INSERT INTO `quick_interaction` VALUES ('27', '对 对酒（天气预测）散播瘟疫', '2026-05-23 20:19:08.331000', '收到', '天灾使者', '2', 'quick_action', '16', '孤城暮角', '2026-05-23 20:37:19.140000', 'replied', '2026-05-23 20:37:19.141000');
-INSERT INTO `quick_interaction` VALUES ('28', '喝酒消除疲劳', '2026-05-23 20:33:03.793000', '好的，将调整你的状态', '平民', '2', 'quick_action', '29', '飞凡', '2026-05-23 20:49:27.989000', 'replied', '2026-05-23 20:49:27.989000');
-INSERT INTO `quick_interaction` VALUES ('29', '白天行动一：在矿场与名为铁锤的矿工交互，并执行行动一备注里的行动。白天行动二：在集市与那位手工艺人交互，并执行备注中的行动！', '2026-05-23 20:35:01.074000', '了解', '反叛者', '2', 'supplementary_action', '30', 'MISD330', '2026-05-23 20:38:55.624000', 'replied', '2026-05-23 20:38:55.624000');
-INSERT INTO `quick_interaction` VALUES ('30', '再喝两个酒', '2026-05-23 21:06:58.764000', '好的', '平民', '2', 'quick_action', '27', '得狗的老意', '2026-05-23 21:09:46.586000', 'replied', '2026-05-23 21:09:46.586000');
-INSERT INTO `quick_interaction` VALUES ('31', '观察自己队伍中有没有内鬼', '2026-05-23 21:09:33.995000', '你观察了一波没发现什么。', '反叛者', '2', 'quick_action', '11', '蟋蟀蜥蜴', '2026-05-23 22:44:31.496000', 'replied', '2026-05-23 22:44:31.496000');
-INSERT INTO `quick_interaction` VALUES ('32', '使用便当，额外使用一个行动点，搬运物资，从矿场仓库到避难所，优先生活必须品', '2026-05-23 21:28:48.125000', '收到', '统治者', '2', 'supplementary_action', '26', 'V', '2026-05-24 16:22:09.982000', 'replied', '2026-05-24 16:22:09.990000');
-INSERT INTO `quick_interaction` VALUES ('33', '使用面包，前往监狱', '2026-05-23 21:29:28.244000', '好的', '统治者', '2', 'quick_action', '10', '二阶堂希罗', '2026-05-23 22:19:27.250000', 'replied', '2026-05-23 22:19:27.250000');
-INSERT INTO `quick_interaction` VALUES ('34', '行动一：自己带着霰弹枪和弹药1发，与维修工（玩家）一起前往伐木营地。\n\n先和伐木工（npc）进行一个恳求，说明现在暴风雪来临，我们很需要他的帮助，需要木板蒸汽箱，拖拉机，电锯，木板（或者原木），发电机组（相当于搜刮地点），并且和他说镇长也同意我们求取这些，给了我们这些就不会强迫他当劳工了。\n\n如果他愿意就邀请他上船，本人会适当展示自己手中的霰弹枪。\n\n若伐木工（npc）始终不愿意，本人将拿枪威胁他，最起码把载具和发电机交出来。\n\n若再不同意，就把他束缚起来，拿走载具和发电机组。\n\n最坏的情况，如果他实在反抗激烈，就枪杀他，以无论如何都要拿到载具和发电机组为目的。', '2026-05-23 22:15:47.552000', '收到', '冒险者', '2', 'supplementary_action', '14', 'Κάκτος西里尔', '2026-05-24 16:22:22.593000', 'replied', '2026-05-24 16:22:22.593000');
-INSERT INTO `quick_interaction` VALUES ('35', '行动二：先问手工艺人找我有什么事，听镇长说手工艺人有事找我。\n\n然后问手工艺人手中是否有沥青，如果可以的话向手工艺人要些沥青。如果不行就问对方哪里能搞到沥青。', '2026-05-23 22:16:09.522000', '手艺人给了你沥青，希望你带他走。他可以给你做东西，只要给素材就行。', '冒险者', '2', 'supplementary_action', '14', 'Κάκτος西里尔', '2026-05-23 22:43:51.406000', 'replied', '2026-05-23 22:43:51.406000');
-INSERT INTO `quick_interaction` VALUES ('36', '对于第一个伐木营地的行动，我们还拆除了电机，要求拿电锯，然后我这里签订契约同意木工上船，拿到钥匙', '2026-05-23 22:16:24.622000', null, '冒险者', '2', 'ask_dm', '9', '对酒', null, 'processed', '2026-05-24 16:22:47.964000');
-INSERT INTO `quick_interaction` VALUES ('37', '在探索地点部分我想邀请码头装卸工跟随我们冒险者一起，加入我们冒险者阵营，一起登上方舟', '2026-05-23 22:24:46.303000', '忽视：天灾使者，冒险者\n他本来是不喜欢你的，但是他看着你身后的船已经有了很大的变化，他点了点头。', '冒险者', '2', 'supplementary_action', '19', 'unPy-GPT', '2026-05-23 22:42:52.455000', 'replied', '2026-05-23 22:42:52.455000');
-INSERT INTO `quick_interaction` VALUES ('38', '在守矿口的时候顺便带些煤矿走', '2026-05-24 00:40:57.539000', '好家伙', '平民', '2', 'quick_action', '31', '闲屿', '2026-05-24 16:22:57.584000', 'replied', '2026-05-24 16:22:57.584000');
-INSERT INTO `quick_interaction` VALUES ('39', '喝酒消除疲劳', '2026-05-24 00:56:28.978000', '好的', '平民', '2', 'quick_action', '32', '澡堂子', '2026-05-24 13:34:10.210000', 'replied', '2026-05-24 13:34:10.210000');
-INSERT INTO `quick_interaction` VALUES ('40', '使用酒消除过劳', '2026-05-24 13:09:49.980000', '好的', '天灾使者', '2', 'quick_action', '16', '孤城暮角', '2026-05-24 13:34:17.922000', 'replied', '2026-05-24 13:34:17.922000');
-INSERT INTO `quick_interaction` VALUES ('41', '医疗手工人和自己', '2026-05-24 16:33:44.501000', '收到，但是医疗是自己主要行动做的，你做的是急救手工艺人', '反叛者', '2', 'quick_action', '30', 'MISD330', '2026-05-24 17:05:01.060000', 'replied', '2026-05-24 17:05:01.060000');
-INSERT INTO `quick_interaction` VALUES ('42', '吃下便当后，去教堂逛逛，询问是否有人知道昨晚来往的人员', '2026-05-24 17:26:38.940000', 'npc回复你，现在教堂发生了大爆炸，昨天港口的那批人来到了这里，你在破窗处看到了兔兔的尸体，她刺穿了自己的脖颈，狂热且疯狂', '平民', '3', 'supplementary_action', '31', '闲屿', '2026-05-24 18:17:01.796000', 'replied', '2026-05-24 18:17:01.796000');
-INSERT INTO `quick_interaction` VALUES ('43', '船长和我一起用海图进行了发报求援搬运，想确认是否有回报', '2026-05-24 17:29:50.863000', '“通讯……失败，……………………船长请………………，我方保持…………，…………安全抵达”\n你们的通讯出现了问题，但是你们说不定会遇到他们。1张天灾牌牌被替换为了奖励牌。', '冒险者', '3', 'supplementary_action', '21', '乐语', '2026-05-24 20:16:59.191000', 'replied', '2026-05-24 20:16:59.191000');
-INSERT INTO `quick_interaction` VALUES ('44', '使用便当做盾×1箭×6', '2026-05-24 18:09:20.972000', null, '天灾使者', '3', 'quick_action', '16', '孤城暮角', null, 'processed', '2026-05-24 20:04:49.469000');
-INSERT INTO `quick_interaction` VALUES ('45', '1.使用一个面包 2.将冒险者仓库的剩余物品（武器）全部提取到玩家仓库', '2026-05-24 18:10:05.870000', '结算完毕', '冒险者', '3', 'quick_action', '9', '对酒', '2026-05-24 20:17:56.178000', 'replied', '2026-05-24 20:17:56.178000');
-INSERT INTO `quick_interaction` VALUES ('46', '对V（镇长）散播瘟疫', '2026-05-24 18:11:27.401000', null, '天灾使者', '3', 'quick_action', '16', '孤城暮角', null, 'processed', '2026-05-24 20:09:31.518000');
-INSERT INTO `quick_interaction` VALUES ('47', '用面包运送木头到阵营仓库', '2026-05-24 18:20:47.307000', '结算完毕', '冒险者', '3', 'quick_action', '9', '对酒', '2026-05-24 20:19:52.332000', 'replied', '2026-05-24 20:19:52.332000');
-INSERT INTO `quick_interaction` VALUES ('48', '让伐木工去做两次手搓船', '2026-05-24 18:21:04.444000', '结算完毕', '冒险者', '3', 'quick_action', '9', '对酒', '2026-05-24 20:19:56.533000', 'replied', '2026-05-24 20:19:56.533000');
-INSERT INTO `quick_interaction` VALUES ('49', '重新补充一下使用面包，然后用载具运送木头到阵营仓库', '2026-05-24 18:21:29.746000', '结算完毕', '冒险者', '3', 'supplementary_action', '9', '对酒', '2026-05-24 20:20:00.972000', 'replied', '2026-05-24 20:20:00.973000');
-INSERT INTO `quick_interaction` VALUES ('50', '致不明信号源： 我是本岛方舟船长。暴雪将至，我方即将启航。若您处确有补给，请提供物资清单、坐标与交接方式。请用数字确认您的经纬度。完毕。', '2026-05-24 18:25:40.881000', '“通讯……失败，……………………船长请………………，我方保持…………，…………安全抵达”\n你们的通讯出现了问题，但是你们说不定会遇到他们。1张天灾牌牌被替换为了奖励牌。', '冒险者', '3', 'quick_action', '14', 'Κάκτος西里尔', '2026-05-24 20:17:06.946000', 'replied', '2026-05-24 20:17:06.946000');
-INSERT INTO `quick_interaction` VALUES ('51', '前往邮局对先前的不明信号源用电报机进行答复：致不明信号源： 我是本岛方舟船长西里尔。暴雪将至，我方即将启航。若您处确有补给，请提供物资清单、坐标与交接方式。请用数字确认您的经纬度。完毕。', '2026-05-24 18:34:08.328000', '“通讯……失败，……………………船长请………………，我方保持…………，…………安全抵达”\n你们的通讯出现了问题，但是你们说不定会遇到他们。1张天灾牌牌被替换为了奖励牌。', '冒险者', '3', 'quick_action', '14', 'Κάκτος西里尔', '2026-05-24 20:17:18.085000', 'replied', '2026-05-24 20:17:18.085000');
-INSERT INTO `quick_interaction` VALUES ('52', '重新总结一下：1使用一个面包，用载具运送木头到阵营仓库 2.让伐木工去搓两次船，如果可以三项材料同时推进就同时推进，如果只能推一项就推10kg沥青', '2026-05-24 18:39:24.365000', '结算完毕', '冒险者', '3', 'supplementary_action', '9', '对酒', '2026-05-24 20:20:11.144000', 'replied', '2026-05-24 20:20:11.144000');
-INSERT INTO `quick_interaction` VALUES ('53', '我去矿场仓库搬运里面的帆布，放到身上', '2026-05-24 18:40:44.130000', '收到', '冒险者', '3', 'quick_action', '21', '乐语', '2026-05-24 19:27:41.547000', 'replied', '2026-05-24 19:27:41.547000');
-INSERT INTO `quick_interaction` VALUES ('54', '修改一下行动，让伐木工去搓金属，搓10kg金属，不搓沥青了', '2026-05-24 19:02:52.308000', '结算完毕', '冒险者', '3', 'supplementary_action', '9', '对酒', '2026-05-24 20:20:15.037000', 'replied', '2026-05-24 20:20:15.037000');
-INSERT INTO `quick_interaction` VALUES ('55', '邀请装卸工与我们一同造船，白天两次行动都通过工作量推进金属物资进度', '2026-05-24 19:03:27.872000', '结算完毕', '冒险者', '3', 'quick_action', '19', 'unPy-GPT', '2026-05-24 20:37:32.498000', 'replied', '2026-05-24 20:37:32.498000');
-INSERT INTO `quick_interaction` VALUES ('56', '让手工艺人搓木头', '2026-05-24 19:12:01.527000', '结算完毕', '冒险者', '3', 'quick_action', '14', 'Κάκτος西里尔', '2026-05-24 20:40:42.820000', 'replied', '2026-05-24 20:40:42.820000');
-INSERT INTO `quick_interaction` VALUES ('57', '修改行动，伐木工去搓木头造船 搓两次木头', '2026-05-24 19:13:00.761000', '结算完毕', '冒险者', '3', 'supplementary_action', '9', '对酒', '2026-05-24 20:17:48.084000', 'replied', '2026-05-24 20:17:48.085000');
-INSERT INTO `quick_interaction` VALUES ('58', '使用便当蹲守熊屋边上林子中，如果有人前来发起暗杀', '2026-05-24 19:17:21.235000', '好的，这是第三个行动点的行动', '天灾使者', '3', 'quick_action', '20', '追枫', '2026-05-24 20:15:17.219000', 'replied', '2026-05-24 20:15:17.219000');
-INSERT INTO `quick_interaction` VALUES ('59', '吃掉便当，用工作量推进方舟建设木头5t', '2026-05-24 19:21:26.915000', '收到', '冒险者', '3', 'quick_action', '21', '乐语', '2026-05-24 20:41:03.168000', 'replied', '2026-05-24 20:41:03.168000');
-INSERT INTO `quick_interaction` VALUES ('60', '吃了面包后感觉我浑身充满力量，将对酒拉到码头的40t木头，和个人仓库中的30kg沥青，以及所需螺旋桨全部投入到方舟建设中', '2026-05-24 19:33:14.410000', '完成', '冒险者', '3', 'quick_action', '19', 'unPy-GPT', '2026-05-24 20:41:28.406000', 'replied', '2026-05-24 20:41:28.406000');
-INSERT INTO `quick_interaction` VALUES ('61', '对不起，最后一次修改行动了，让伐木工用电锯伐两次木头，然后把木头转给我和乐语各20t', '2026-05-24 19:38:27.069000', '结算完毕', '冒险者', '3', 'supplementary_action', '9', '对酒', '2026-05-24 20:18:03.756000', 'replied', '2026-05-24 20:18:03.756000');
-INSERT INTO `quick_interaction` VALUES ('62', '取消使用便当', '2026-05-24 19:41:15.980000', '好的，会将给予物资收回。', '天灾使者', '3', 'supplementary_action', '16', '孤城暮角', '2026-05-24 20:16:43.721000', 'replied', '2026-05-24 20:16:43.721000');
-INSERT INTO `quick_interaction` VALUES ('63', '白天的个人行动建造中补充提交20t木头，从阵营仓库中提取', '2026-05-24 19:47:32.664000', '收到', '冒险者', '3', 'supplementary_action', '21', '乐语', '2026-05-24 20:41:57.438000', 'replied', '2026-05-24 20:41:57.438000');
-INSERT INTO `quick_interaction` VALUES ('64', '使用便当，调查巡夜人missbear', '2026-05-24 20:00:46.369000', '该玩家今日无法被探查', '统治者', '3', 'quick_action', '10', '二阶堂希罗', '2026-05-24 20:19:11.463000', 'replied', '2026-05-24 20:19:11.463000');
-INSERT INTO `quick_interaction` VALUES ('65', '吃便当 第三个行动从矿坑搬300木头到避难所', '2026-05-24 20:17:33.652000', '收到', '统治者', '3', 'supplementary_action', '17', 'zzz', '2026-05-24 20:43:45.761000', 'replied', '2026-05-24 20:43:45.761000');
-INSERT INTO `quick_interaction` VALUES ('66', '预埋炸药，引线从入口处沿着边缘往里布置，拿着引线的蹲守在入口直接可以看到来路的位置，拿着引线', '2026-05-24 21:19:27.719000', null, '统治者', '1', 'quick_action', '10', '二阶堂希罗', null, 'pending', '2026-05-24 21:19:27.719000');
-INSERT INTO `quick_interaction` VALUES ('67', '拿一个警棍', '2026-05-24 22:21:32.496000', null, '反叛者', '3', 'quick_action', '24', '花海', null, 'pending', '2026-05-24 22:21:32.496000');
-INSERT INTO `quick_interaction` VALUES ('68', '从仓库拿出枪和子弹 上膛', '2026-05-24 22:30:51.646000', null, '反叛者', '3', 'quick_action', '11', '蟋蟀蜥蜴', null, 'pending', '2026-05-24 22:30:51.646000');
-INSERT INTO `quick_interaction` VALUES ('69', '111111', '2026-06-22 12:32:29.993000', null, '平民', '1', 'supplementary_action', '34', 'player', null, 'pending', '2026-06-22 12:32:29.993000');
-INSERT INTO `quick_interaction` VALUES ('70', '前往墓地瞻仰西里尔船长。', '2026-06-22 12:36:54.068000', null, '平民', '1', 'quick_action', '34', 'player', null, 'pending', '2026-06-22 12:36:54.068000');
-INSERT INTO `quick_interaction` VALUES ('71', '前往营地，拜访托马斯·伍德，并对其致以由衷的感谢。', '2026-06-22 12:37:30.201000', null, '平民', '1', 'quick_action', '34', 'player', null, 'pending', '2026-06-22 12:37:30.201000');
-INSERT INTO `quick_interaction` VALUES ('72', '去面包店偷面包', '2026-06-22 12:46:36.046000', null, '平民', '1', 'quick_action', '34', 'player', null, 'pending', '2026-06-22 12:46:36.046000');
-INSERT INTO `quick_interaction` VALUES ('73', '现在能做什么', '2026-06-22 12:47:41.983000', null, '平民', '1', 'ask_dm', '34', 'player', null, 'pending', '2026-06-22 12:47:41.983000');
-INSERT INTO `quick_interaction` VALUES ('74', '自杀，干死自己', '2026-06-22 19:07:55.789000', null, '平民', '1', 'quick_action', '34', 'player', null, 'pending', '2026-06-22 19:07:55.789000');
 
 -- ----------------------------
 -- Table structure for rule_book
@@ -3161,27 +1859,27 @@ CREATE TABLE `rule_book` (
 -- ----------------------------
 -- Records of rule_book
 -- ----------------------------
-INSERT INTO `rule_book` VALUES ('130', '一、白天自由行动（6:00-7:00）\r\n所有玩家选择两项自由行动。\r\n\r\n1.前往地点：选择一个地点进行探索，可以获得对应地点的信息（可能的资源信息取决于设施），防御值，NPC名单。同时可以选择使用非上锁的设施和地点NPC简单交互。\r\n在第一天开始时会在自己的家内醒来，会知道自己所在地点的信息。\r\n\r\n2.调查玩家：选择一玩家，知晓对方的自由行动，1/2概率获知阵营行动，无法调查潜行技能玩家。无法调查昨天隐藏行动玩家。\r\n\r\n3.生产：根据职业技能生产对应资源。\r\n\r\n4.使用特性：使用需要行动点的特性。\r\n\r\n5.使用职业技能：使用可能的职业技能。如果没有标有行动的技能不需要玩家行动就可以执行。\r\n\r\n6.隐藏：隐藏起自己，第二天不会被调查，也无法被私聊，无法成为统治者与密谋的行动目标。\r\n\r\n7.搬运：将物品从仓库移动到仓库或从仓库移动到自身，自身物品存放仓库不消耗行动点。\r\n\r\n二、主持人整理与反馈行动\r\n1.在8:00前结算\"调查\"、\"特性\"、\"职业技能\"、\"调查玩家\"。\r\n2.结算\"生产\"', null, '1', '每日游戏流程', '每日游戏流程', null);
+INSERT INTO `rule_book` VALUES ('130', '白天自由行动（下午5点开始 7点结束）\r\n所有玩家选择两项自由行动\r\n1前往地点：选择一个地点进行探索，可以获得对应地点的信息（可能的资源信息（取决于设施），防御值，npc名单。同时可以选择使用非上锁的设施和地点npc简单交互。\r\n在第一天开始时会在自己的家内醒来，会知道自己所在地点的信息。\r\n同时前往地点后，网站会弹出QQ群二维码。开放地点群共该玩家在其中商量策略，每天地点群会在当天晚上12点清空。待第二天时候可加入新地点群。\r\n2调查玩家：选择一玩家，知晓对方的自由行动，1/2概率获知阵营行动，无法调查潜行技能玩家。无法调查昨天隐藏行动玩家。\r\n3生产：根据职业技能生产对应资源\r\n4使用特性：使用需要行动点的特性\r\n5使用职业技能：使用可能的职业技能。如果没有标有行动的技能不需要玩家行动就可以执行。\r\n6隐藏：隐藏起自己，第二天不会被调查，也无法被私聊，无法成为统治者与密谋的行动目标\r\n7搬运: 将物品从仓库移动到仓库或从仓库移动到自身，自身物品存放仓库不消耗行动点。\r\n\r\n主持人整理与反馈行动\r\n1在8点前结算“调查”，“特性”，“职业技能”，“调查玩家”。\r\n2在9点前结算结算“生产”', null, '1', '每日游戏流程', '每日游戏流程', null);
 INSERT INTO `rule_book` VALUES ('131', '白天自由行动（6:00-7:00）\r\n所有玩家选择两项自由行动。\r\n\r\n1.前往地点：选择一个地点进行探索，可以获得对应地点的信息（可能的资源信息取决于设施），防御值，NPC名单。同时可以选择使用非上锁的设施和地点NPC简单交互。\r\n在第一天开始时会在自己的家内醒来，会知道自己所在地点的信息。\r\n\r\n2.调查玩家：选择一玩家，知晓对方的自由行动，1/2概率获知阵营行动，无法调查潜行技能玩家。无法调查昨天隐藏行动玩家。\r\n\r\n3.生产：根据职业技能生产对应资源。\r\n\r\n4.使用特性：使用需要行动点的特性。\r\n\r\n5.使用职业技能：使用可能的职业技能。如果没有标有行动的技能不需要玩家行动就可以执行。\r\n\r\n6.隐藏：隐藏起自己，第二天不会被调查，也无法被私聊，无法成为统治者与密谋的行动目标。\r\n\r\n7.搬运：将物品从仓库移动到仓库或从仓库移动到自身，自身物品存放仓库不消耗行动点。\r\n\r\n主持人整理与反馈行动\r\n1.在8:00前结算\"调查\"、\"特性\"、\"职业技能\"、\"调查玩家\"。\r\n2.结算\"生产\"', null, '2', '自由行动', '白天自由行动', null);
 INSERT INTO `rule_book` VALUES ('132', '自由讨论（5:00开始）\r\n在这个时间段开放地点语音频道，任何玩家可以自由选择频道进行语音讨论。\r\n\r\n自由讨论规则\r\n1.尽可能使用语音或者小群。\r\n2.如达成\"协议\"，需告知主持人，使得\"协议\"技能或使用协议书生效。\r\n3.禁止在此阶段进行任何的场外录音行为。', null, '3', '自由讨论', '自由讨论', null);
 INSERT INTO `rule_book` VALUES ('133', '协议——某些讨论的结果需要告知主持人\r\n\r\n1.加入阵营：一位玩家接受另一位所属阵营的玩家的邀请，并加入阵营群。这种情况非初始阵营玩家可能背叛。\r\n\r\n2.契约协议：两位或多位玩家在群聊或者kook频道都在场的的情况下，达成合作的意向与合作目标，并由其中一位玩家与女巫沟通（需要女巫在场并且同意），完成契约协议，或者使用协议书。如果违反协议内容，则会受到严苛的惩罚（由女巫或协议书使用者决定）。契约协议必须是一个完整的句子，不能是多条不相干的内容。每人每天最多签订一个契约。\r\n只有女巫（男巫）可以签订契约，若不使用协议书签订内容会被公开。但只公开内容不公开谁签订的契约。\r\n\r\n3.物品交换：两位或多位玩家交换物品。\r\n\r\n4.冒险者、反抗者、统治者阵营初始拥有1个协议书。\r\n\r\n什么不是协议？\r\n1.信息讨论：职业、拥有物品、行为、线索等等信息都不是协议。\r\n2.口头协作：两位或多位玩家达成合作的意向，临时加入阵营。', null, '4', '协议', '协议', null);
-INSERT INTO `rule_book` VALUES ('134', '夜间阶段（8:00到所有结算完毕）\r\n\r\n在该阶段，阵营玩家的行动与可能的暴力冲突根据其顺序结算，而无关的玩家可以继续进行自由讨论。\r\n\r\n1.玩家默认所在地点在自己家中，去往别的地点过夜需要告知主持人，不消耗行动点。\r\n2.主持人计算可能的冲突，并确认是否发生阵营行动与暴力冲突。\r\n3.结算阵营行动与暴力冲突。\r\n4.统治者公布第二天劳工名单。\r\n5.阵营告示可能的公开信息。\r\n6.主持人公开可以公开的夜间阶段总结信息。\r\n7.消耗与燃料食物。\r\n8.结算所有资源与设施情况。\r\n\r\n详细和补充规则见\"夜间结算阶段规则\"。', null, '5', '夜间阶段', '夜间阶段', null);
+INSERT INTO `rule_book` VALUES ('134', '夜间阶段（8点到所有结算完毕）\r\n在该阶段，玩家的行动与可能的暴力冲突根据其顺序结算，与结算事件相关的玩家需要去往对应的地点群，进行结算。而无关的玩家可以继续进行自由讨论。\r\n1 .探索阶段\r\n在夜晚阶段，你可以输入探索小岛行动，你会得到一些关于小岛的背景与秘密信息以及各种类型的资源。但是你将会跳过夜晚阶段的其他行动。 在持有物品:手电筒，绳索，火把，帆布物品时会提高探索发现高价值物品的概率。 \r\n2.玩家默认所在地点在白天前往地点行动的地点过夜\r\n(如果两次行动均为前往地点则为第一个地点)，如果没有前往地点则默认在自己家过夜，如果需要在夜晚变更过夜地点需要消耗夜晚行动点。主持人计算可能的冲突，并确认是否发生阵营行动与暴力冲突。\r\n3.结算阵营行动与暴力冲突\r\n夜间行动时生产建造搬运类优先结算，战斗与冲突最后结算。\r\n如果想要指定杀某个人就要在白天行动时使用调查明确对方的去向。如果是为了杀人去的某地点但是对方不在可以选择是否发起攻击，如果不攻击本行动点不会返还。\r\n如果发生A想杀→B想杀→C的情况。\r\n会判定为先结算B→C，再结算A→B。在此类情况下不会发生混战情况。\r\n如果A想杀→C，B想杀→C\r\n会判定为A和B攻击C，AB是否进行战斗是在AB攻击C之后询问两方意见的。此时因为不在对应地点内，防守方战斗应不计地点防御值。\r\n4.统治者需要商议第二天劳工名单，并在夜晚结算之前给与主持人。\r\n5.阵营告示主持人可能要公开的信息\r\n6.主持人公开可以公开的夜间阶段总结信息\r\n例如死亡人数，但不会告知死亡地点和何人死亡。哪里被袭击等等。\r\n7.消耗燃料与食物\r\n每人每天的基础燃料消耗是15kg木材或者1kg燃料，如因其他技能或者天灾出现极寒情况。基础消耗调整为30kg木材。\r\n每人每天的基础食物消耗是2单位。\r\n8.结算所有资源与设施情况', null, '5', '夜间阶段', '夜间阶段', null);
 INSERT INTO `rule_book` VALUES ('135', '一、群组\r\n1.四个阵营组建微信群组，可以在任意时间段自由讨论。如果在自由讨论阶段平民明确加入阵营并签订协议，通知主持人并拉入对应阵营群聊。\r\n2.所有的暴力冲突由主持人拉冲突参与者建小群，冲突结束后解散。\r\n3.所有人都在的微信群在游戏开始后禁止讨论。\r\n\r\n二、kook语音频道\r\n自由讨论阶段的语音频道，由玩家自主组织。\r\n\r\n三、kook公屏（集市）\r\n自由讨论阶段的文字频道，记住文字频道会留下记录，谨慎讨论。\r\n\r\n四、kook留言板\r\n在游戏中，统治者与冒险者可以在该频道发布信息，例如招募、资源征集等等。\r\n\r\n禁止一切形式的私自拉群行为。', null, '6', '群组与交流', '群组与交流', null);
 INSERT INTO `rule_book` VALUES ('136', '资源交换：核心原则\r\n\r\n1.自由自主的交换：玩家间交易遵旨自愿、自由、自主的原则。玩家可以在任何可能的交流场景达成资源交换的意图。所有交换双方是自愿、自由的。\r\n\r\n2.见证人：所有资源交换需要告知主持人，由主持人见证确保双方资源交换属实，只需要告知一下就可以。\r\n\r\n3.信息不对称：交换双方对资源真实价值、稀缺度和自身需求的信息不同。\r\n\r\n4.物资交换登记：交换任意一方需在网站页面上填写对应的物资数量，并发给主持人对应交易的kook截屏即为物资交换完成。\r\n\r\n参考\r\n- 摆摊：玩家可在KOOK公屏（集市）发布文字信息。发布[求购]急需医疗包，可用木材或情报交换。\r\n- 公开拍卖：统治者或拥有大量资源的玩家可发起资源出售，自由设定商品单与交易形式。', null, '7', '资源交换', '资源交换', null);
 INSERT INTO `rule_book` VALUES ('137', '一、玩家与玩家仓库资源转移\r\n在夜晚阶段自由交换，但是需告知主持人。\r\n\r\n二、玩家与仓库资源转移\r\n- 小镇内地点转移：一人一天不影响玩家行动的情况下50kg，跳过玩家行动300kg。\r\n- 岛屿地点转移：一人一天不影响玩家行动的情况下30kg，跳过玩家行动300kg。\r\n\r\n三、仓库与仓库资源转移\r\n- 小镇内地点：一人一天不影响玩家行动的情况下100kg，跳过玩家行动可以搬运500kg。不同的载具可以额外增加搬运量。\r\n- 岛屿地点：一人一天不影响玩家行动的情况下50kg。跳过玩家行动可以搬运300kg。不同的载具可以额外增加搬运量。\r\n\r\n四、生产资源原则\r\n- 自主原则：在网站行动选择哪个行动进行生产。\r\n- 强迫原则：如果因其他玩家强迫行动生产，被强迫方可以告知主持人，将生产资源添加到自己的仓库。', null, '8', '资源移动', '资源移动', null);
-INSERT INTO `rule_book` VALUES ('138', '一、计算总战力\r\n总战力 = 参战人数 + 武器威胁值之和 + 地点防御值（仅有守方）+ 技能/特性加成\r\n- 技能加成：格斗使用近战武器/射击使用远程武器 +1\r\n- 地点防御值：守方直接加在总战力里。攻方不加地点防御值。\r\n- 防弹衣/盾：不加战力，用于抵消受伤。物品效果查看物品栏。\r\n每人只能携带一件武器和两件防具参加战斗。\r\n\r\n二、最终攻击力判定\r\n- 攻方最终战力 = 攻方总战力 + 1d4\r\n- 守方最终战力 = 守方总战力 + 1d4\r\n- 差值 = 攻方最终 - 守方最终\r\n\r\n三、根据差值决定结果\r\n差值 ≥ 5：大胜——攻方无伤，守方1人死亡其余受伤\r\n差值 3-4：胜利——攻方无伤，守方1-2人重伤其余受伤\r\n差值 1-2：小胜——攻方无伤，守方全部受伤\r\n差值 0：僵持——双方各1人受伤\r\n差值 -1～-2：小败——攻方全部受伤，守方无伤\r\n差值 -3～-4：失败——攻方1-2人重伤其余受伤，守方无伤\r\n差值 ≤ -5：大败——攻方1人死亡其余受伤，守方无伤\r\n\r\n四、特殊规则\r\n- 在无远程武器的情况下，重伤和受伤标记会在手持近战武器的人员中随机给予。\r\n- 在有远程武器的情况下，重伤和受伤标记在全体人员中随机给予。\r\n- 在失败/胜利情况下1-2人重伤是看1d6骰子的出目，1-3为一人重伤，4-6为两人重伤。\r\n- 战败方掉落全体（每个人）的最高威胁值物品，受伤以及重伤玩家会被己方阵营带走。', null, '9', '战斗规则', '战斗规则', null);
+INSERT INTO `rule_book` VALUES ('138', '战斗规则:\r\n一、计算总战力\r\n总战力 = 参战人数 + 武器威胁值之和 + 地点防御值（仅有守方） + 技能/特性加成\r\n技能加成：格斗使用近战武器/射击使用远程武器 +1\r\n地点防御值：守方直接加在总战力里。攻方不加地点防御值。如果触发里应外合则失效。\r\n防弹衣/盾：不加战力，用于抵消受伤，一人仅能穿戴其中之一，在一场战斗生效一次。\r\n\r\n二、最终攻击力判定\r\n攻方最终战力 = 攻方总战力 + 每人投掷1d6\r\n守方最终战力 = 守方总战力 + 每人投掷1d6\r\n差值 = 攻方最终 - 守方最终\r\n调整值 = 差值×3÷人数（向上取整）\r\n\r\n三、根据调整值值决定战斗结果\r\n范围	结果名称	攻方	守方\r\n≥7	大胜	无伤	1人死亡，其余胜利点数数受伤\r\n4-6	胜利	无伤	1-2人重伤，其余胜利点数数受伤\r\n1-3	小胜	无伤	胜利点数数受伤\r\n0	僵持	1人受伤	1人受伤\r\n-1～-3	小败	失败点数数受伤	无伤\r\n-4～-6	失败	1-2人重伤，其余失败点数数受伤	无伤\r\n≤-7	大败	1人死亡，其余失败点数数受伤	无伤\r\n\r\n额外命中伤害新规：\r\n玩家如果使用武器进行攻击投掷时，会根据投掷的1d6加值来额外判定受伤情况，如果投掷值小于武器的加值，则会优先选择对健康对方玩家随机造成一次受伤判定，受攻击玩家进行一次1d6投掷判定值，根据下列表来判定受伤情况（玩家在单次战斗轮中仅会结算一次受伤，例如如果在战力比拼中受伤，则在额外命中中不会再次受伤变成重伤，但是受到重伤可以覆盖之前的受伤效果）：\r\n\r\n武器类型加值\r\n判定值命中值	1	2	3	4	5	6\r\n威胁值1	未命中	未命中	受伤	受伤	受伤	受伤\r\n威胁值2	未命中	未命中	未命中	受伤	受伤	重伤\r\n威胁值3	未命中	未命中	未命中	受伤	受伤	重伤\r\n威胁值4	未命中	未命中	未命中	未命中	重伤	重伤\r\n威胁值5	未命中	未命中	未命中	受伤	受伤	重伤\r\n威胁值6	未命中	未命中	未命中	未命中	重伤	重伤+虚弱\r\n威胁值10	未命中	受伤	受伤	重伤	重伤	死亡\r\n威胁值1：警棍，十字镐，手术刀\r\n威胁值2：斧头，刺刀，水果刀\r\n威胁值3：矛\r\n威胁值4：电锯，猎弓\r\n威胁值5：制式手枪，炸弹外围\r\n威胁值6：猎枪\r\n威胁值10：炸弹内围\r\n说明\r\n受伤：获得“受伤”标记（无法生产，格斗无效），可被医疗消除。\r\n重伤：获得“重伤”标记（无法行动，每夜阶段结束时若不急救则死亡）。急救消耗5医疗资源，将重伤转为受伤。\r\n虚弱：每日消耗未满足会导致虚弱，二次虚弱会死亡\r\n死亡：直接移除角色。\r\n\r\n四:战斗事例\r\n示例1（1v1）\r\n攻方1人（步枪4），守方1人（手枪2，地点防御2）\r\n攻方总战力=1+4=5，守方=1+2+2=5，掷骰：攻方3→8，守方1→6，D=2 → 小胜\r\n结果：守方受伤（倒地），攻方无伤。\r\n\r\n示例2（多人，大胜）\r\n攻方5人，武器威胁和=15，守方2人，武器威胁和=4，地点防御3\r\n攻方战力=5+15=20，守方=2+4+3=9，攻方掷6→26，守方掷1→10，D=16*3/7≈7 ≥7 → 大胜\r\n结果：守方1人死亡，另1人受伤。攻方无伤。\r\n\r\n死战\r\n死战释义：双方继续下一轮的攻击与防御，直到一方所有人受伤则强制结束死战状态（除了第一轮以外，防守方的地点防御值会除二并向上取整）。\r\n正常情况下，双方中只要均愿意继续打，则死战会存在，如果一方失败后可以选择败逃，战斗将结束。如果死战一直继续会持续至死战结束条件一方所有人受伤，整场战斗胜负判定由最后一场判定结果。\r\n大白话解释：要么把对面全打趴下要么把对面打跑。', null, '9', '战斗规则', '战斗规则', null);
 INSERT INTO `rule_book` VALUES ('139', '一、状态说明\r\n- 受伤：获得\"受伤\"标记（无法生产，格斗无效），可被医疗消除。\r\n- 重伤：获得\"重伤\"标记（无法行动，每夜阶段结束时若不急救则死亡）。急救消耗5医疗资源，将重伤转为受伤。\r\n- 死亡：直接移除角色。\r\n\r\n二、战斗事例\r\n示例1（1v1）\r\n攻方1人（步枪4），守方1人（手枪2，地点防御2）\r\n攻方总战力=1+4=5，守方=1+2+2=5\r\n掷骰：攻方3→8，守方1→6，D=2 → 小胜\r\n结果：守方受伤（倒地），攻方无伤。\r\n\r\n示例2（多人，大胜）\r\n攻方5人，武器威胁和=15，守方2人，武器威胁和=4，地点防御3\r\n攻方战力=5+15=20，守方=2+4+3=9\r\n攻方掷4→24，守方掷1→10，D=14 ≥5 → 大胜\r\n结果：守方1人死亡，另1人受伤。攻方无伤。', null, '10', '伤亡规则', '伤亡规则', null);
-INSERT INTO `rule_book` VALUES ('140', '夜间结算阶段规则\r\n\r\n1.玩家默认所在地点在自己家中，去往别的地点过夜需要告知主持人，不消耗行动点。地点确定需要在决定晚上行动时告知主持人，不会额外提醒玩家是否更改过夜地点。\r\n\r\n2.主持人计算可能的冲突，并确认是否发生阵营行动与暴力冲突。\r\n\r\n3.结算阵营行动与暴力冲突\r\n- 夜间行动时生产建造搬运类优先结算，战斗与冲突最后结算。\r\n- 如果想要指定杀某个人就要在白天行动时使用调查明确对方的去向。如果是为了杀人去的某地点但是对方不在可以选择是否发起攻击，如果不攻击本行动点不会返还。\r\n- 如果发生A想杀→B想杀→C的情况，会判定为先结算B→C，再结算A→B。在此种情况下不会发生混战情况。\r\n- 如果A想杀→C，B想杀→C，会判定为A和B攻击C，AB是否进行战斗是在AB攻击C之后询问两方意见的。此时因为不在对应地点内，防守方战斗应不计地点防御值。\r\n\r\n4.统治者需要商议第二天劳工名单，并在夜晚结算之前给与主持人。\r\n\r\n5.阵营告示主持人可能要公开的信息。\r\n\r\n6.主持人公开可以公开的夜间阶段总结信息。例如死亡人数，但不会告知死亡地点和何人死亡、哪里被袭击等等。\r\n\r\n7.消耗与燃料食物\r\n- 每人每天的基础燃料消耗是15kg木材，如因其他技能或者天灾牌出现极寒情况，基础消耗调整为30kg木材。\r\n- 每人每天的基础食物消耗是2单位。\r\n\r\n8.结算所有资源与设施情况。', null, '11', '夜间结算', '夜间结算阶段规则', null);
+INSERT INTO `rule_book` VALUES ('140', '在该阶段，玩家的行动与可能的暴力冲突根据其顺序结算，与结算事件相关的玩家需要去往对应的地点群，进行结算。而无关的玩家可以继续进行自由讨论。\r\n1 .探索阶段\r\n在夜晚阶段，你可以输入探索小岛行动，你会得到一些关于小岛的背景与秘密信息以及各种类型的资源。但是你将会跳过夜晚阶段的其他行动。 在持有物品:手电筒，绳索，火把，帆布物品时会提高探索发现高价值物品的概率。 \r\n2.玩家默认所在地点在白天前往地点行动的地点过夜\r\n(如果两次行动均为前往地点则为第一个地点)，如果没有前往地点则默认在自己家过夜，如果需要在夜晚变更过夜地点需要消耗夜晚行动点。主持人计算可能的冲突，并确认是否发生阵营行动与暴力冲突。\r\n3.结算阵营行动与暴力冲突\r\n夜间行动时生产建造搬运类优先结算，战斗与冲突最后结算。\r\n如果想要指定杀某个人就要在白天行动时使用调查明确对方的去向。如果是为了杀人去的某地点但是对方不在可以选择是否发起攻击，如果不攻击本行动点不会返还。\r\n如果发生A想杀→B想杀→C的情况。\r\n会判定为先结算B→C，再结算A→B。在此类情况下不会发生混战情况。\r\n如果A想杀→C，B想杀→C\r\n会判定为A和B攻击C，AB是否进行战斗是在AB攻击C之后询问两方意见的。此时因为不在对应地点内，防守方战斗应不计地点防御值。\r\n4.统治者需要商议第二天劳工名单，并在夜晚结算之前给与主持人。\r\n5.阵营告示主持人可能要公开的信息\r\n6.主持人公开可以公开的夜间阶段总结信息\r\n例如死亡人数，但不会告知死亡地点和何人死亡。哪里被袭击等等。\r\n7.消耗燃料与食物\r\n每人每天的基础燃料消耗是15kg木材或者1kg燃料，如因其他技能或者天灾出现极寒情况。基础消耗调整为30kg木材。\r\n每人每天的基础食物消耗是2单位。\r\n8.结算所有资源与设施情况', null, '11', '夜间结算', '夜间结算阶段规则', null);
 INSERT INTO `rule_book` VALUES ('141', '一、天灾倒计时\r\n通过一个0到100的数字，作为\"天灾\"的进度，当任何游戏阶段到达100时，当天夜晚阶段的最后，进入游戏结算。同时这个进度会影响游戏中六面骰的概率。同时，通过一套天灾牌额外增加天灾点数，与各结局最终的存活难度。\r\n- 每天默认推进33点，第三天推进34点。\r\n- 主持人会抽取3张秘密天灾牌，由杀戮者选择1张触发。特色技能可以查看天灾牌。\r\n\r\n二、六面骰\r\n在游戏中有很多行为或者判定需要骰6面骰来决定是否成功或决定判断结果，例如射击、天灾使者特殊规则、特性中的随机奖励。', null, '12', '天灾系统', '天灾系统', null);
-INSERT INTO `rule_book` VALUES ('142', '1.低温侵袭\r\n某处墙体结冰，寒气渗入。本天所有燃料消耗增加20%，木材消耗量15kg→18kg。\r\n\r\n2.灾难蔓延\r\n增加5天暴雪持续时间。\r\n\r\n3.粮仓鼠患\r\n仓库中储存的粮食被老鼠啃食，损失10%的食物储备（向下取整）。\r\n\r\n4.燃料泄漏\r\n储油桶老化破裂，损失一处仓库的10%的燃料储备（优先扣除煤油/燃油）。\r\n\r\n5.工具锈蚀\r\n生产工具普遍老化。当天所有生产行动（渔猎、伐木、挖矿等）产量-20%。\r\n\r\n6.海水倒灌\r\n风暴潮淹没码头设施，沿海仓库的部分物资被冲走（损失10%），方舟受损10%。\r\n\r\n7.水源污染\r\n岛上淡水水源被动物尸体污染，所有玩家当天需额外消耗1升煤油（烧开水）或面临患病风险。\r\n\r\n8.信仰崩塌\r\n神父以及占卜师等精神领袖陷入自我怀疑，当天无法使用\"布道\"或\"占星\"技能。若第三天抽中不影响终局结算加成。\r\n\r\n9.燃料受潮\r\n露天堆放的木柴被雨淋湿。随机一个仓库或玩家损失30kg木材。\r\n\r\n10.逃役\r\n一名劳工趁夜色逃走了。统治者当天指定的劳工名单中，随机一人自动失效（不会劳作，也不会计入劳工）。主持人随机选择，不公开是谁。该玩家知道自己被逃役释放，当天正常进行行动。\r\n\r\n11.祭品\r\n有人在教堂门口发现一只被割喉的黑羊。第二天必定触发一张额外天灾牌（命运在积蓄）。', null, '13', '天灾牌', '天灾牌', null);
+INSERT INTO `rule_book` VALUES ('142', '天灾牌\r\n1 低温侵袭\r\n某处墙体结冰，寒气渗入。本天所有燃料消耗增加100%，木材消耗量15kg→30kg。\r\n2灾难蔓延\r\n增加5天暴雪持续时间，方舟航行难度增加航行时间加2天。\r\n3粮仓鼠患 \r\n由天灾使者选择两个仓库\r\n仓库中储存的粮食被老鼠啃食，损失20%的食物储备（向下取整）\r\n4燃料泄漏 \r\n储油桶老化破裂，损失一处仓库的20%的燃料储备（优先扣除煤油/燃油）\r\n5工具锈蚀 \r\n生产工具普遍老化。当天所有生产行动（渔猎、伐木、挖矿等）产量-50%。\r\n6海水倒灌 \r\n风暴潮淹没码头设施，沿海仓库的部分物资被冲走（损失20%），方舟受损30%。\r\n7水源污染 \r\n岛上淡水水源被动物尸体污染，所有玩家当天需额外消耗1升煤油（烧开水）或面临患病风险\r\n8信仰崩塌 \r\n神父以及占卜师等精神领袖陷入自我怀疑，当天无法使用“布道”或“占星”技能。若第三天抽中不影响终局结算加成。\r\n9燃料受潮：露天堆放的木柴被雨淋湿。随机一个仓库或玩家损失30kg木材。\r\n10逃役\r\n一名劳工趁夜色逃走了。统治者当天指定的劳工名单中，随机一人自动失效（不会劳作，也不会计入劳工）。主持人随机选择，不公开是谁。该玩家知道自己被逃役释放，当天正常进行行动。\r\n11祭品\r\n有人在教堂门口发现一只被割喉的黑羊。第二天必定触发两张额外天灾牌（也就是第二天触发3张天灾牌）。\r\n12屋顶坍塌\r\n某栋小镇建筑（随机）的屋顶因积雪过厚而垮塌，压坏内部设施。\r\n效果：主持人随机选择一个小镇地点，该地点的防御值永久-2，且内部一个随机设施损坏（如发电机、烘焙炉、电报机等），需消耗 50kg木材 和 1次维修行动 修复。\r\n13道路冰封\r\n一夜之间，连接各主要地点的土路冻成镜面，车和人都打滑难行。\r\n当天所有地点之间的移动搬运量减半（任何运输行动效率-50%）。', null, '13', '天灾牌', '天灾牌', null);
 INSERT INTO `rule_book` VALUES ('143', '一、NPC基础规则\r\n- 会添加生产类NPC，NPC初始拥有不同阵营倾向。\r\n- NPC在不同的地点，玩家使用调查地点行动后知晓其地点存在的NPC列表。统治者开局知道所有NPC列表与其职业。\r\n- 对话行动可以与不同的NPC互动，获得不同的信息、效果，或者请求帮助。由主持人决定。\r\n\r\n二、态度说明\r\n- 喜好：该NPC会加入、帮助此阵营玩家。\r\n- 厌恶：该NPC会忽视、敌对此阵营玩家，不会提供帮助，反对被当做劳工等。\r\n- 忽视：该NPC对此阵营无感，不帮助也不会加入，如果被强迫，可能对寻找喜好阵营帮助。', null, '15', 'NPC规则', 'NPC规则', null);
-INSERT INTO `rule_book` VALUES ('144', '你拥有这个岛屿上的巨大话语权与暴力力量，但是你无法肆意妄为，因为在暗地里，反抗者与天灾使者正在积蓄力量，你必须给予足够的空间与利益来收买更多的人来对抗反抗者与天灾使者。天灾使者自翊正义但掩盖不了他们是混沌的人，只想着杀人。也许你也可以称呼他们另一个名字——杀戮者。\r\n\r\n一、阵营行动（统治者行动只要可以执行就不限次数）\r\n1.安排人员——统治者可以安排一位玩家或者喜好统治者的NPC执行自由行动，并强制共享自由行动的结果信息。玩家可以拒绝，这样做，统治者将有合理的理由进行审判。\r\n\r\n2.安排看守——统治者在夜晚阶段之前安排人员选择一个地点，通常是仓库或统治者所在地。玩家可以拒绝，这样做，统治者将有合理的理由进行审判。每位看守为一个地点防御值增加3，以及携带唯一武器威胁值的防御值。\r\n\r\n二、劳工机制\r\n夜间阶段开始之前（每天18:00前）统治者阵营讨论出一份由其他玩家组成的劳工名单，人数为0～10人（24人局0～6人，48人局0～10人）。\r\n\r\n成为劳工的玩家第二天白天行动将在矿场强制劳动，并添加\"过劳\"标记。该玩家的夜间行动可以进行，此时\"过劳\"标记已经生效。\r\n\r\n统治者可以安排劳工进行建设避难所行动。\r\n\r\n劳工类型基础值：\r\n- 普通劳工：基础值4，压榨后7\r\n- 职业劳工：基础值5，压榨后8\r\n\r\n统治者可以自由选择劳工的换班形式。一天一轮或不进行轮换。（但是要记住，食物与资源的生产仍然需要人手，而过度的压制会加强反抗者的势力，或是让所有阵营联合起来）\r\n\r\n三、过劳标记\r\n拥有过劳标记无法执行生产行动。拥有过劳标记在进行劳工的行动，投1d6投，判定为1则死亡。过劳标记在第三天消除。也就是说，必须隔一天进行劳作。\r\n\r\n四、压榨机制（统治者特权）\r\n- 次数限制：无所需特性情况下统治者每天最多可以对3名劳工使用压榨。\r\n- 效果：被压榨劳工的建造值按上表翻倍（4→7或5→8），但立即获得「受伤」标记。\r\n- 受伤后果：无法进行生产行动，格斗技能无效。\r\n- 策略提示：压榨可以快速推进建造值，但会增加医疗负担和激起反抗情绪。\r\n\r\n五、暴力机关\r\n统治者与其下属控制着仓库与几乎所有的火器，在冲突中占据绝对的优势。\r\n- 在游戏开始，每位统治者拥有一把韦伯利.38手枪与7发子弹。\r\n- 在游戏开始，仓库拥有大量的热武器。统治者可以自由分配武器，自由保存武器存放场景。\r\n\r\n六、公开宣传\r\n任何时候，统治者可以在频道公屏发布消息帖子。\r\n\r\n七、夜晚机制\r\n1.公开审判：统治者如果拥有对某个玩家的\"合理\"罪证信息（例如反抗统治者或天灾使者阵营，逃劳役等等）——可以选择在夜间阶段在集市召开公开审判。需要占用你们一人的夜间行动点召开，占用行动点的人为审判发起人。\r\n在审判期间，玩家可以在kook语音频道讨论。统治者可以选择性地收取民众的想法。或者选择公开投票的方式进行审判。\r\n审判结果最终由统治者决定，但如果不顺应民意可能会进一步失去民众的信任。\r\n\r\n审判结果：\r\n1.劳工——此玩家一直成为劳工。\r\n2.监禁——由统治者决定该玩家被囚禁在监狱，监禁时间无法进行任何自由行动。但需要保证他的基本存活。他的生存物资会从统治者仓库每日结算时自动扣除。\r\n3.死刑——该玩家死亡。（不顺应民意使用此种结果请务必三思）\r\n4.剥夺资产——该玩家的所有物品转移到统治者控制的仓库。\r\n5.无罪——也许是真的无辜又或者你们为了其他人而妥协了。\r\n\r\n2.额外行动：作为统治者夜晚出行虽然不完全安全但如果非要这么做的话也不是不行。使用手电筒在夜晚时间你可以执行白天回合的一个任意行动，或者尝试杀掉某个绊脚石。此环节无法寻找NPC进行对话，NPC在没有前置沟通的情况下会默认回家睡觉。\r\n\r\n八、下属\r\n统治者可以收买其他玩家，为自己做事。可以许诺资源、武器、阵营身份，或是权力。\r\n\r\n九、胜利条件\r\n目标1：扑灭反抗者与天灾使者，限制冒险者的发展，尽可能收买平民。\r\n目标2：建设避难所，在暴雪之前储备尽可能多的资源。\r\n目标3：让所有\"自己人\"和自己进入避难所。并且在暴雪将至阶段活下来。\r\n', null, '16', '阵营机制', '阵营机制-统治者', null);
-INSERT INTO `rule_book` VALUES ('145', '你不是暴徒，你是被迫举枪的平民。\r\n当统治者的铁腕压得整座岛屿喘不过气——劳工被压榨、资源被垄断、异见者被关进牢房，你选择了另一条路：反抗。\r\n反抗者不是天生的叛逆者，而是那些受够了沉默代价的人。你们在暗处联络同胞，用破坏和密谋削弱统治者的控制，用舆论和施压点燃平民的怒火。你们不追求权力，只追求平等与自由。\r\n你们可以与除了统治者之外的所有阵营交流沟通，收集更多的平民力量。如果有必要潜入统治者进行情报刺探也是不错的选择。\r\n\r\n一、阵营行动（3选1）\r\n1.额外劳动：如果当天白天有行动的执行的生产，可以额外增加一半产出。\r\n\r\n2.暗中联络：选择1-3位玩家，由主持人统一代发一条秘密信息。什么都可以，不超过50字符即可（以WPS字符计算为准）。\r\n\r\n3.额外行动——作为反抗者你已经习惯在黑暗中行动，你不需要手电筒即可进行夜晚行动。在夜晚时间你可以执行白天回合的一个任意行动，或者尝试杀掉某个反抗革命的人。此环节无法寻找NPC进行对话，NPC在没有前置沟通的情况下会默认回家睡觉。\r\n\r\n初始资源：反叛者拥有猎枪×1，猎枪弹×2，猎弓×2，箭矢×4。\r\n\r\n二、向统治者施压\r\n在夜间阶段，任何玩家都可以团结其他玩家发起对统治者的施压，通过在公屏中发声的方式。而如果反抗者拥有合理的理由（通常是统治者的暴政或贪腐），则可以通过宣传来扩大施压的声音，以罢工或其他方式以此威胁。理由通常需要在自由行动阶段进行调查获得。\r\n通常，施压的目标有，\"一个合理的劳工换班机制\"、\"扩大民兵\"、\"让资源由全体镇民管理\"等等。\r\n在夜晚阶段开始前计算统一参加施压的人群，如果同意施压的人群超过玩家半数，统治者就必须妥协。\r\n记住，反抗者不应该直接参与施压，一旦身份暴露，就有被坑杀的可能。应当在自由讨论阶段合理的利用舆论。\r\n\r\n三、夜间回合（可以做也可以空过）\r\n1.进行密谋：袭击地点\r\n需要组织者确定袭击地点。可探索地点和统治者仓库（不显示在地图上）。\r\n- 每一位参与者增加一点成功率，参与者每一个拥有\"潜行\"技能增加1点成功率。每一位参与者佩戴唯一一把武器，增加武器对应\"威慑点\"的成功率。\r\n- 每个地点拥有基础防御值。统治者在目标地点的每一位玩家增加3点防御值，每一位玩家佩戴的唯一一把武器，增加武器对应\"威慑点\"的防御值。\r\n- 在夜间阶段结算密谋，比较成功率与防御值。\r\n  - 成功率大于防御值超过3点：密谋成功。\r\n  - 超过9点：行动成功，但行动暴露，所有参与成员名称公开。\r\n  - 不超过3点：失败。如果有，则需要放弃一把武器。\r\n  - 成功率小于防御值：行动失败。参与行动者可以选择受降或者暴力反抗。\r\n- 如果成功，玩家可以选择破坏该地点，或选择搜刮。破坏会直接烧毁该地点，在之后的游戏中，无法前往，无法使用该地点的设施，导致NPC死亡。搜刮则可以带走地点的所有资源。\r\n- 如果有民兵或治安官或看守里应外合，则减少3点防御值。\r\n\r\n2.暗杀统治者\r\n需要组织者确定统治者所在的地点。判定规则同密谋。\r\n- 如果成功率大于防御值超过3点：密谋成功，目标统治者死亡。\r\n- 如果超过9点：目标统治者死亡，但行动暴露，所有参与成员名称公开。\r\n- 如果统治者死亡，统治者阵营可以选择是否公开死亡消息。\r\n\r\n3.解救人员\r\n需要组织者确定被关押人员所在的地点。判定规则同密谋。\r\n- 潜行技能增加3点成功率（而非1点）。\r\n\r\n四、暴力革命\r\n在下列里程碑事件之中，完成任意其中三个，即可在当天或之后的阵营回合之中选择策划暴力革命。\r\n\r\n五、胜利条件\r\n目标1：推翻统治者，建立新的秩序。\r\n目标2：获得更多的平民。\r\n目标3：尽可能让所有人进入避难所。在暴雪将至阶段活下来。', null, '17', '阵营机制', '阵营机制-反抗者', null);
-INSERT INTO `rule_book` VALUES ('146', '在集体大会中，支持建设避难所的平民远高于建设大船，但是你依旧坚持这场灾难不会结束。而随着统治者暴力的加强，更多人会明白，建设避难所是一个糟糕的决定。\r\n建设方舟：一艘20世纪的帆船已经破旧不堪，但是仍然比归属于渔民与船队的渔船大得多，或许可以召集人手修复好帆船，在暴雨来临前让更多人逃离。\r\n\r\n一、阵营行动（4选1）\r\n1.额外调查：如果当天执行的调查地点，调查玩家。调查地点改为两个，调查玩家改为两名。\r\n\r\n2.额外劳动：如果当天有至少任意一个行动点执行的生产，可以额外增加一半产出。\r\n\r\n3.看守方舟——冒险者在白天行动阶段可以使用行动点作为方舟看守，在夜晚阶段为方舟建造地点增加对于武器与技能的防御值。\r\n\r\n4.方舟建设：在阵营回合可以进行方舟建造，在第三天开始时加入冒险者的人员都可以用自己所拥有的任意数量行动点进行方舟建造。\r\n\r\n初始资源：拥有猎弓2，12只箭，1只矛，一把手枪，4发手枪子弹。\r\n\r\n二、收集物资\r\n在游戏中，冒险者需要整合成员已有的资源，与其他阵营与玩家交换资源，生产资源，公开宣传以募集资源，直接冲突争夺资源，来获得建设方舟的材料与出航的必要物资。\r\n\r\n建设方舟的总共资源（50点载重的情况）：\r\n- 木材250吨\r\n- 金属制品100吨\r\n- 密封材料：沥青100kg\r\n- 发动机至少1个，最多3个\r\n- 螺旋桨2个\r\n- 发电机1个\r\n\r\n技能资源（出海需要的技能，为终局结算提供更多的优势）：\r\n航海、海洋导航、天气预报、渔猎\r\n\r\n三、建设与载重方案\r\n船身大小：冒险者可以选择不同的建设方案来匹配人数。\r\n初始已完成10吨木材，20吨金属制品资源的建设。（根据参与人数改变）\r\n\r\n以250吨木材的大小为基础设计，为50点载重。更小的船型会更加劣势。\r\n- 在完成50点基础载重之后，每增加10吨木材，5吨金属制品与5公斤密封材料，可以增加2点载重。\r\n- 每缺少10吨木材或5吨金属制品或5公斤密封材料，减少3点载重，百分之2.5方舟完成度。资源短缺是短板效应，按最低缺少计算。\r\n\r\n建设规则：\r\n加入冒险者任意一人可以在阵营行动时花费一行动点投入不超过单日最高数量的任意数量资源进行建造：\r\n每天投入最高为：木材30吨、金属制品20吨、密封材料20kg\r\n\r\n若材料不足需白天花费一人一行动点工作量推进：5吨木材、5吨铁制品建造进度、5kg密封材料\r\n\r\n四、出航准备\r\n- a.每1点载重一人，可以乘载一人\r\n- b.每1点载重，100单位食物\r\n- c.每1点载重，2吨燃料\r\n- d.每1点载重，500kg密封材料\r\n- e.每1点载重，2吨木材\r\n- f.医疗资源、武器等物品不计算重量。\r\n\r\n五、海上时间\r\n注意，某些危机事件可能增加航行天数。每多一天就需要额外抽取一张危机事件牌。\r\n- 1个发动机：8天航行时间\r\n- 2个发动机：6天航行时间\r\n- 3个发动机：4天航行时间\r\n- 在没有发动机出航或者只有一个发动机的时候，可以制造帆来辅助航行。在具有两个发动机时帆的作用消失。\r\n- 单帆：消耗100m绳索和80米帆布。收集好材料后需要一个人夜晚阵营回合建造帆，之后就可以使用。效果：提供移速加成。\r\n- 在没有发动机的时候，航行时间为10天。\r\n- 在只有一个发动机的时候，航行时间为7天。\r\n\r\n六、夜晚行动\r\n可以做可以不做。\r\n\r\n七、胜利条件\r\n目标1：选择与反抗者或统治者结盟，拉拢更多的平民。\r\n目标2：获得更多的资源建设方舟。\r\n目标3：在暴雪将至前出海，活下去。\r\n', null, '18', '阵营机制', '阵营机制-冒险者', null);
-INSERT INTO `rule_book` VALUES ('147', '你们是天灾的使者，是净化这里的存在。这里已经是腐烂得无可救药了。统治者做着梦幻想统治永远存在却又看不起所有的居民；反抗者自以为正义实际上上位之后会不会变成统治者那些人也尤未可知；冒险者空有一腔热血但是方舟会去往哪里谁能知道。而且你们中有人知道的是大家……在这里的所有人——都是罪人。\r\n\r\n罪在哪里？\r\n眼睁睁看着邻居被送去审判，你闭了嘴，你是罪人。\r\n为了多领一份口粮，偷偷举报了别人，你是罪人。\r\n明知这座岛的规则是吃人的，你还是选择顺从，而不是站出来，你是罪人。\r\n统治者犯的罪是傲慢，反抗者犯的罪是自私，冒险者犯的罪是盲目，而普通人犯的罪是——沉默。\r\n所以，我们是执行者。所以是暴雪吗？是天灾吗？不！这是净化。\r\n\r\n一、阵营行动\r\n1.破坏：选择一个地点的一个设施，使其无法使用。如果目标地点被安排监管，无法破坏。\r\n\r\n2.额外调查：如果当天执行的调查地点，调查玩家。调查地点改为两个，调查玩家改为两名。\r\n\r\n3.诅咒：花费一件威胁值4以上的武器，选择2位玩家，知晓该玩家的阵营。该玩家被标记「诅咒」。\r\n\r\n二、阵营机制\r\n1.阻止胜利：天灾使者既可以是统治者的走狗，施加暴行，激化统治者与平民的矛盾，延缓建设的进度，也可以假扮反抗者或冒险者，分化各个阵营的力量或凝聚力。最终目的，都是增加玩家死亡，推进命运，减缓地下避难所与方舟的建设进度。尽可能让灾难杀死所有人。\r\n\r\n2.正义的潜伏：天灾使者可以以天灾使者的身份加入其他阵营，并使用两套阵营规则。仍然使用天灾使者的胜利条件。无法无视契约协议的惩罚。天灾使者知晓当天天灾牌的内容。\r\n\r\n3.进行密谋：袭击地点\r\n判定规则同反抗者密谋。\r\n- 如果成功，玩家可以选择破坏该地点，或选择搜刮。破坏会直接烧毁该地点，在之后的游戏中，无法前往，无法使用该地点的设施，导致地点所有NPC死亡。搜刮则可以带走地点的所有资源。\r\n\r\n4.制造恐怖：在夜晚阶段，需要组织者确定袭击地点或玩家。袭击玩家需要对方拥有诅咒，至少一位参与者参与。袭击地点，则至少需要两位参与者。\r\n- 制造恐怖的基础成功率取决于场上诅咒的数量和参与者的数量。\r\n- 每有一个诅咒（包括普通诅咒和瘟疫诅咒）成功概率+1\r\n- 每额外多一名参与者，成功概率+1\r\n- 使用1d6骰子投出数值+成功概率。结果大等于6既为成功。无视所有的防具，战力差距。\r\n- 在第一天时有平民玩家因为使者制造恐怖而死亡时，对方将受到天灾的感召。阵营身份变更为天灾使者继续进行游戏。（仅限一人）保留对方原有特性和技能。\r\n- 如果失败，参与者将暴露身份。身份被目标地点所属玩家与目标玩家知晓。不会告知你的具体身份是天灾使者。只会告知玩家袭击了对方，没有成功。同时所有被诅咒标记玩家在公屏公开。\r\n- 如果成功，如果目标拥有诅咒，目标玩家死亡。如果是目标地点，由参与者选择破坏1d6数量的资源品名或设施。\r\n- 如果目标死亡，统治者阵营可以选择是否公开死亡消息。\r\n\r\n5.神契：当命运之轮到达100，触发暴雪将至。杀戮者共有三个神启身份对应其他玩家的特性，名为：瘟疫、战争和饥荒。如果剩下的杀戮玩家只剩下一位他变为死亡骑士，特性更改为死亡骑士。\r\n\r\n三、胜利条件\r\n目标1：隐藏在人群中，蛊惑平民，制造信息迷雾，破坏其他阵营的策略。\r\n目标2：阻止方舟与避难所的建设，破坏资源与仓库。\r\n目标3：让暴雪更快降临。', null, '19', '阵营机制', '阵营机制-天灾使者', null);
-INSERT INTO `rule_book` VALUES ('148', '一、阵营机制\r\n1.加入阵营：平民玩家可以自由选择加入反抗者或是冒险者的阵营，或是成为统治者的下属。\r\n\r\n2.口头契约：玩家与玩家之间可以口头协议加入阵营，但无法使用阵营行动与机制。但在这种情况下，平民玩家可以通过口头契约加入多个阵营。\r\n\r\n3.自组织：平民玩家可以尝试形成团体，为一个目标行动。\r\n\r\n4.加入阵营与背叛：平民玩家可以通过各种方式，加入某个阵营。加入对应阵营的玩家可以使用阵营机制与阵营行动。可以在行动阶段告知主持人决定背叛，在夜晚阶段由主持人结束背叛阵营事件，并且踢出阵营群聊。无法再使用阵营机制与阵营行动。\r\n\r\n二、胜利条件\r\n目标1：你也要死吗？不，请活下去，直到最后。\r\n', null, '20', '阵营机制', '阵营机制-平民', null);
-INSERT INTO `rule_book` VALUES ('149', '一、方舟建设\r\n在阵营回合可以进行方舟建造，在第三天开始时加入冒险者的人员都可以用自己所拥有的任意数量行动点进行方舟建造。\r\n\r\n二、收集物资\r\n在游戏中，冒险者需要整合成员已有的资源，与其他阵营与玩家交换资源，生产资源，公开宣传以募集资源，直接冲突争夺资源，来获得建设方舟的材料与出航的必要物资。\r\n\r\n建设方舟的总共资源（50点载重的情况）：\r\n- 木材250吨\r\n- 金属制品100吨\r\n- 密封材料：沥青100kg\r\n- 发动机至少1个，最多3个\r\n- 螺旋桨2个\r\n- 发电机1个\r\n\r\n技能资源（出海需要的技能，为终局结算提供更多的优势）：\r\n航海、海洋导航、天气预报、渔猎\r\n\r\n三、建设与载重方案\r\n船身大小：冒险者可以选择不同的建设方案来匹配人数。\r\n初始已完成10吨木材，20吨金属制品资源的建设。（根据参与人数改变）\r\n\r\n以250吨木材的大小为基础设计，为50点载重。更小的船型会更加劣势。\r\n- 在完成50点基础载重之后，每增加10吨木材，5吨金属制品与5公斤密封材料，可以增加2点载重。\r\n- 每缺少10吨木材或5吨金属制品或5公斤密封材料，减少3点载重，百分之2.5方舟完成度。资源短缺是短板效应，按最低缺少计算。\r\n\r\n建设规则：\r\n加入冒险者任意一人可以在阵营行动时花费一行动点投入不超过单日最高数量的任意数量资源进行建造：\r\n每天投入最高为：木材30吨、金属制品20吨、密封材料20kg\r\n\r\n若材料不足需白天花费一人一行动点工作量推进：5吨木材、5吨铁制品建造进度、5kg密封材料\r\n\r\n四、出航准备\r\n- a.每1点载重一人，可以乘载一人\r\n- b.每1点载重，100单位食物\r\n- c.每1点载重，2吨燃料\r\n- d.每1点载重，500kg密封材料\r\n- e.每1点载重，2吨木材\r\n- f.医疗资源、武器等物品不计算重量。\r\n\r\n五、海上时间\r\n注意，某些危机事件可能增加航行天数。每多一天就需要额外抽取一张危机事件牌。\r\n- 1个发动机：8天航行时间\r\n- 2个发动机：6天航行时间\r\n- 3个发动机：4天航行时间\r\n- 在没有发动机出航或者只有一个发动机的时候，可以制造帆来辅助航行。在具有两个发动机时帆的作用消失。\r\n- 单帆：消耗100m绳索和80米帆布。收集好材料后需要一个人夜晚阵营回合建造帆，之后就可以使用。效果：提供移速加成。\r\n- 在没有发动机的时候，航行时间为10天。\r\n- 在只有一个发动机的时候，航行时间为7天。', null, '21', '方舟建造', '方舟建造', null);
-INSERT INTO `rule_book` VALUES ('150', '一、战斗类\r\n格斗——在密谋、暴力冲突中，如果装备近距离武器增加威胁值。如果调查玩家，可以选择在夜晚阶段骰d6，寻找攻击机会（初始12 30/3, 50/4, 80/5），成功可以发起小规模冲突。多人调查可以袭击。\r\n\r\n射击——在密谋、暴力冲突中，如果装备远距离武器增加威胁值。如果调查玩家，可以选择在夜晚阶段骰d6，寻找攻击机会（初始12 30/3, 50/4, 80/5），成功可以发起小规模冲突。多人调查可以袭击。\r\n\r\n二、生产类（在白天行动阶段使用生产行动，如需设施需要对应设施完好）\r\n- 捕鱼：在码头使用渔船设施，获得食物10单位。\r\n- 食物生产：使用牲畜设施，获得食物15单位。\r\n- 伐木：使用电锯20吨木材，否则5吨。\r\n- 挖掘：使用电钻20吨石料，否则5吨。\r\n- 手工艺：工具制备单制作一件或至多3件材料、物品或武器。\r\n  制作列表：复合盾（3kg金属制品+3kg木材）、副鱼叉/矛（5kg金属制品+5kg木材）、规制箭矢（3kg木材+3kg金属制品3支）\r\n- 木石工艺：使用木板蒸汽箱，将30吨原木转化为20吨木板，消耗10吨燃料/使用切石机，将20吨石料转化为15米石墙。\r\n- 射击狩猎：需要远程武器（无需子弹或弓箭），5kg肉。\r\n\r\n三、功能类（在白天阶段联系主持人使用，或者其他特殊方式使用）\r\n- 潜行（被动）：为谋略增加成功率，无法被调查。\r\n- 启蒙：每天白天行动时一次，消耗一盒粉笔和2支铅笔，选择除自己之外最多2名玩家，使其临时学会一项基础技能（从以下列表中选：急救、潜行、格斗、捕鱼、伐木、挖矿），从第一天夜晚回合生效持续到第二天白天回合结束。若该玩家已经拥有该技能则增产50%。\r\n- 布道：每天白天行动时一次，选择最多为3人，被布道的玩家在下一个行动中生产增加一半（渔猎、伐木、挖矿）/或者最多为3位玩家消除诅咒（被诅咒的玩家没有任何征兆，这是一个纯预判的技能效果）。\r\n- 急救：花费5医疗资源，将\"重伤\"改为\"受伤\"标记。\r\n- 医疗：每天白天行动时一次，选择一位或至多5位\"受伤\"标记的玩家，目标消除\"受伤\"标记。每个花费3医疗资源，选择一位或多位过劳标记的玩家，消除过劳标记。每个花费2医疗资源。（可以混合）\r\n- 通灵：需消耗10根蜡烛和2升酒精举行仪式。每天白天行动时一次，与一位已死亡玩家建立临时私信交流，死亡玩家需要尽可能告知死前所有信息（由主持人保底提供信息）同时你有1/2概率会获得对方的技能。\r\n- 协议契约：为一位或多位玩家建立协议契约。可以指定违反协议的惩罚内容。\r\n- 潜水：每天白天行动时可以进行一次，在码头使用，由主持人投d6决定结果：1-5食物8单位，6沉船遗物（随机一件较高价值物品，由主持人决定，如医疗包、维修工具包、旧手枪+弹药、信号枪等）。\r\n- 维修：每天可使用一次，修复一个被破坏的设施，花费5维修资源。\r\n- 搬运（被动）：搬运量永远是其他职业的两倍。\r\n\r\n四、特殊类（特殊技能需要自由行动中的技能行动执行）\r\n- 海洋导航：为方舟终局结算提供好的结局倾向，可以查看今日所有的天灾牌。\r\n- 偷盗：选择一位玩家，获得对方的秘密资源信息，选择一件物品获得。需要投掷1d6+1检定在5以上即可获得对方一件物品。\r\n- 天气预测：你通过科学的手段发现异常的暴雪天气的来临，可以查看今日所有的天灾牌。为所有终局结算提供好的结局倾向。\r\n- 占星：为避难所终局结算提供好的结局倾向。在全局游戏中你可以将一张天灾牌撕毁（不生效），或让一张危机事件牌撕毁（不生效）。\r\n- 烘焙：需要10单位的食物和15kg木材可以制作一份便当。便当：当天额外获得1白天行动点，每人每天最多使用1次。\r\n- 巡逻：夜晚行动，若你目前是非阵营玩家想使用该技能而不想加入阵营可以用第二天的一个行动补觉（体现为第二天的一个自由行动将变为其他且只能睡觉）使用该技能。选择一个地点，当晚该地点内非统治者阵营玩家的夜晚行动成功率-30%，巡夜人知晓其行动类型。需要巡夜人当天未处于\"劳工\"或\"过劳\"状态。', null, '22', '技能表', '技能表', null);
+INSERT INTO `rule_book` VALUES ('144', '——你拥有这个岛屿上的巨大话语权与暴力力量，但是你无法肆意妄为，因为在暗地里，反抗者与天灾使者正在积蓄力量，你必须给予足够的空间与利益来收买更多的人来对抗反抗者与天灾使者。天灾使者自翊正义但掩盖不了他们是混沌的人，只想着杀人。也许你也可以称呼他们另一个名字——杀戮者\r\n阵营行动\r\n统治者行动只要可以执行就不限次数\r\n1安排人员——统治者可以安排一位玩家或者喜好统治者的npc执行自由行动，并强制共享自由行动的结果信息。玩家可以拒绝，这样做，统治者将有合理的理由进行审判。\r\n2安排看守——统治者在夜晚阶段之前安排人员选择一个地点，通常是仓库或统治者所在地。玩家可以拒绝，这样做，统治者将有合理的理由进行审判。每位看守为一个地点防御值增加3，以及携带唯一武器威胁值的防御值。注意，如果看守叛变会触发里应外合。\r\n阵营机制\r\n劳工：\r\n夜间阶段开始之前（每天18点前）统治者阵营讨论出一份由其他玩家组成的劳工名单，人数为0～10人（24人，0～6人，48人，0～10人）。\r\n\r\n成为劳工的玩家第二天白天行动将在矿场强制劳动，并添加“过劳”标记。该玩家的夜间行动可以进行，此时“过劳”标记已经生效\r\n\r\n统治者可以安排劳工进行\r\n建设避难所行动\r\n\r\n劳工类型	基础值	职业加成	压榨加成	最终成果\r\n普通劳工	4	0	0	4\r\n职业劳工	4	+1	0	5\r\n普通（压榨）	4	0	+3	7\r\n职业（压榨）	4	+1	+3	8\r\n\r\n统治者可以自由选择劳工的换班形式。一天一轮或不进行轮换。（但是要记住，食物与资源的生产仍然需要人手，而过度的压制会加强反抗者的势力，或是让所有阵营联合起来）\r\n\r\n过劳标记：\r\n拥有过劳标记无法执行生产行动。拥有过劳标记在进行劳工的行动，投1d6投，判定为1则死亡。过劳标记在第三天消除。也就是说，必须隔一天进行劳作\r\n\r\n压榨机制（统治者特权）\r\n·次数限制：无所需特性情况下统治者每天最多可以对 3名劳工 使用压榨。\r\n效果：被压榨劳工的建造值按上表翻倍（4→7 或 5→8），但立即获得「受伤」标记。\r\n受伤后果：无法进行生产行动，格斗技能无效。\r\n策略提示：压榨可以快速推进建造值，但会增加医疗负担和激起反抗情绪。\r\n\r\n矿场场景：\r\n矿场场景中成为劳工的玩家会失去第二天的自由行动，同时无法进行自由讨论。但是所有劳工可以在自由讨论阶段在矿场场景自由讨论。\r\n统治者可以在任何时间参与劳工的自由讨论。\r\n\r\n劳工规则：\r\n成为劳工的玩家白天无法使用自由行动点，夜晚行动点可以使用。\r\n作为劳工可以选择以下四种选项之一：\r\n1，正常工作+0\r\n骰1d6，私发正常工作的劳工事件\r\n2，消极工作-1\r\n骰1d6，私发消极工作的劳工事件\r\n3，努力工作+3\r\n骰1d6，骰出6不受伤\r\n4，逃役（进度变为0）\r\n骰1d6，骰出6成功逃役\r\n暴力机关：\r\n统治者与其下属控制着仓库与几乎所有的火器，在冲突中占据绝对的优势。\r\n在游戏开始，每位统治者拥有一把韦伯利 .38手枪与7发子弹。\r\n在游戏开始，仓库拥有大量的热武器。统治者可以自由分配武器，自由保存武器存放场景。\r\n\r\n你们初始就可以支配两名npc的行动\r\n1.乔克（监狱看守）初始武器:警棍，初始技能：无\r\n2.恩琪（民兵）初始武器:猎弓，弓箭2，初始技能：射击\r\n\r\n公开宣传：\r\n任何时候，统治者可以在频道公屏发布消息帖子。\r\n\r\n夜晚机制\r\n公开审判：\r\n统治者如果拥有对某个玩家的“合理”罪证信息（例如反抗统治者或天灾使者阵营，逃劳役等等）——可以选择在夜间阶段在集市召开公开审判。需要占用你们一人的夜间行动点召开，占用行动点的人为审判发起人。每次审判只可以审判一人。\r\n\r\n在审判期间，玩家可以在QQ内讨论。统治者可以选择性地收取民众的想法。或者选择公开投票的发生进行审判。\r\n\r\n审判结果最终由统治者决定，但如果不顺应民意可能会失去民众的信任。\r\n审判有以下几种结果\r\n1永久劳工。此玩家在后续游戏中一直成为劳工。\r\n2监禁。由统治者决定该玩家被囚禁在监狱，监禁时间无法进行任何自由行动。但需要保证他的基本存活。他的生存物资会从统治者仓库每日结算时自动扣除。\r\n3死刑。该玩家死亡。（不顺应民意使用此种结果请务必三思）\r\n4剥夺资产。该玩家的所有物品转移到统治者控制的仓库。\r\n5无罪。\r\n也许是真的无辜又或者你们为了其他人而妥协了。\r\n额外行动:\r\n作为统治者夜晚出行虽然不完全安全但如果非要这么做的话也不是不行。使用手电筒在夜晚时间你可以执行白天回合的一个任意行动，或者尝试杀掉某个绊脚石。\r\n此环节无法寻找npc进行对话，npc在没有前置沟通的情况下会默认回家睡觉。\r\n\r\n\r\n下属：\r\n统治者可以收买其他玩家，为自己做事。可以许诺资源，武器，阵营身份，或是权力。\r\n\r\n胜利条件\r\n目标1 扑灭反抗者与天灾使者，限制冒险者的发展，尽可能收买平民。\r\n目标2 建设避难所，在暴雪之前储备尽可能多的资源。\r\n目标3 让所有“自己人”和自己进入避难所。并且在暴雪将至阶段活下来。', null, '16', '阵营机制', '阵营机制-统治者', null);
+INSERT INTO `rule_book` VALUES ('145', '你不是暴徒，你是被迫举枪的平民。\r\n当统治者的铁腕压得整座岛屿喘不过气——劳工被压榨、资源被垄断、异见者被关进牢房，你选择了另一条路：反抗。\r\n反抗者不是天生的叛逆者，而是那些受够了沉默代价的人。你们在暗处联络同胞，用破坏和密谋削弱统治者的控制，用舆论和施压点燃平民的怒火。你们不追求权力，只追求平等与自由。\r\n你们可以与除了统治者之外的所有阵营交流沟通，收集更多的平民力量。如果有必要潜入统治者进行情报刺探也是不错的选择。\r\n阵营行动\r\n3选一\r\n1额外劳动：如果当天白天有行动的执行的生产，可以额外增加一半产出。\r\n2暗中联络：选择1-3位玩家，由主持人统一代发一条秘密信息。什么都可以，不超过50字符即可（以wps字符计算为准）\r\n3额外行动——作为反抗者你已经习惯在黑暗中行动，你不需要手电筒即可进行夜晚行动。在夜晚时间你可以执行白天回合的一个任意行动，或者尝试杀掉某个反抗革命的人。\r\n此环节无法寻找npc进行对话，npc在没有前置沟通的情况下会默认回家睡觉。\r\n\r\n初始资源：反叛者拥有猎枪 ×1，猎枪弹 ×2，猎弓 ×2，箭矢 ×4\r\n阵营机制\r\n向统治者施压：\r\n在夜间阶段，任何玩家都可以团结其他玩家发起对统治者的施压，通过在公屏中发声的方式。而如果反抗者拥有合理的理由（通常是统治者的暴政或贪腐），则可以通过宣传来扩大施压的声音，以罢工或其他方式以此威胁。理由通常需要在自由行动阶段进行调查获得。\r\n通常，施压的目标有，“一个合理的劳工换班机制”，“扩大民兵”，“让资源由全体镇民管理”等等。\r\n在夜晚阶段开始前计算统一参加施压的人群，如果同意施压的人群超过玩家半数，统治者就必须妥协。\r\n记住，反抗者不应该直接参与施压，一旦身份暴露，就有被坑杀的可能。应当在自由讨论阶段合理的利用舆论。\r\n\r\n夜间回合\r\n可以做也可以空过，可以从下述三个行动中选择一个执行\r\n\r\n1进行密谋：\r\n反抗者可以与其他阵营或平民联合组织一次秘密行动。在自由行动与自由讨论阶段，想要进行密谋的玩家确定想要参与的玩家。在夜间阶段想要产于的玩家私聊主持，确定最终参与人员。人员越多成功概率越高，被阻止的损失更高。\r\n\r\n袭击地点：需要组织者确定袭击地点。可探索地点和统治者仓库（不显示在地图上）\r\n每一位参与者增加一点成功率，参与者每一个拥有“潜行”技能增加1点成功率。每一位参与者佩戴唯一一把武器，增加武器对应“威慑点”的成功率。\r\n每个地点拥有基础防御值。统治者在目标地点的每一位玩家增加3点防御值，每一位玩家佩戴的唯一一把武器，增加武器对应“威慑点”的防御值。\r\n\r\n在夜间阶段结算密谋，比较成功率与防御值的。\r\n如果成功率大于防御值超过3点则密谋成功。\r\n如果超过9点，行动成功，但行动暴露，所有参与成员名称公开。\r\n如果不超过3点，则失败。如果有，则需要放弃一把武器。\r\n如果成功率小于防御值，则行动失败。参与行动者可以选择受降或者暴力反抗。\r\n\r\n如果成功，玩家可以选择破坏该地点，或选择搜刮。搜刮会直接烧毁该地点，在之后的游戏中，无法前往，无法使用该地点的设施，导致npc死亡。搜刮则可以带走地点的所有资源。\r\n\r\n破坏：选择一个地点的一个或多个设施，使其无法使用。施工维修技能和维修资源后才可以重新投入使用。如果目标地点被安排看守，则无法破坏。\r\n\r\n如果有民兵或治安官或看守里应外合，则减少3点防御值。\r\n\r\n2暗杀统治者：需要组织者确定统治者所在的地点。\r\n每一位参与者增加一点成功率，参与者每一个拥有“潜行”技能增加1点成功率。每一位参与者佩戴武器，增加武器对应“威慑点”的成功率。\r\n\r\n每个地点拥有基础防御值。统治者在目标地点的每一位玩家增加3点防御值，每一位玩家佩戴的唯一一把武器，增加武器对应“威慑点”的防御值。\r\n\r\n在夜间阶段结算密谋，比较成功率与防御值的\r\n如果成功率大于防御值超过3点则密谋成功，目标统治者死亡。\r\n如果超过9点，则目标统治者死亡，但行动暴露，所有参与成员名称公开。\r\n如果不超过3点，则失败。如果有，则需要放弃一把武器。或者暴力冲突\r\n如果成功率小于防御值，则行动失败。参与行动者可以选择受降或者暴力反抗。\r\n\r\n如果统治者死亡，统治者阵营可以选择是否公开死亡消息。\r\n\r\n如果有玩家能够里应外合，则减少3点防御值。\r\n\r\n3解救人员：需要组织者确定被关押人员所在的地点。\r\n每一位参与者增加一点成功率，参与者每一个拥有“潜行”技能增加3点成功率。每一位参与者佩戴唯一一把武器，增加武器对应“威慑点”的成功率。\r\n\r\n每个地点拥有基础防御值。统治者在目标地点的每一位玩家增加3点防御值，每一位玩家佩戴的唯一一把武器，增加武器对应“威慑点”的防御值。\r\n\r\n在夜间阶段结算密谋，比较成功率与防御值的\r\n如果成功率大于防御值超过3点则密谋成功，解救该地点成员。\r\n如果超过9点，密谋成功，解救该地点成员，但行动暴露，所有参与成员名称公开。\r\n如果不超过3点，则失败。如果有，则需要放弃一把武器。\r\n如果成功率小于防御值，则行动失败，参与行动者可以选择受降或者暴力反抗。\r\n\r\n如果有玩家或者NPC里应外合，则减少3点防御值。\r\n里程碑\r\n策划暴力革命掀起反抗的火种，当然需要完成一定的事件，赢得大家的青睐。\r\n在下列里程碑事件之中，完成任意其中三个。即可在当天或之后的阵营回合之中选择策划暴力革命。\r\n策划暴力革命：\r\n当反抗者认为自身的人员与武装力量能够直接对抗统治者与其走狗和武装力量，就可以发起一场彻底的革命。\r\n在此次冲突中，所有参与冲突的反抗者阵营成员战斗值+1，没有累加上限。\r\n每多完成比三个里程碑多一个的里程碑，总战力额外+2，上限+4。\r\n在确定日期当天，所有想要参与的玩家私信主持人，决定最终参与者。在夜晚阶段，结算目标地点当天的统治者阵营的人员，进入暴力革命与暴力冲突阶段。\r\n\r\n里程碑事件\r\n1团结平民： \r\n星星之火也可以燎原\r\n反抗者拥有一个初始协议书。\r\n反抗者应当与更多的玩家讨论，明确对方的特性，资源，加入阵营的意向，并且对其进行观察，辨别可能的内鬼。\r\n当包括初始反抗者在内的确认加入反抗者名单大于等于8人后（以签订了契约加入微信群聊为准，以死亡玩家应也计算在内），该里程碑事件完成。\r\n\r\n2解放我们的同伴。\r\n铁窗锁不住自由的心。\r\n目前在监狱里面的同伴都是曾经为了我们的革命事业献出自由乃是生命的同志。所以解放他们对于我们来讲至关重要。解救身在监狱中的那些同伴，他们将继续加入你们，并点燃这个岛上平民心中对于自由的渴望。\r\n当同伴被解救出来，该里程碑事件完成。\r\n3我们不是生来就应该如此\r\n在统治者使用审判环节，若被审判人员为加入反抗者阵营中人。要尽力解救我们的同胞，避免让他被统治者所残害。\r\n当被审判的反抗者人员被无罪释放，该里程碑事件完成。\r\n4反抗不是我们的目的，平等才是。\r\n不给人活路，那就掀桌子。\r\n你们或联系任意你们信任的人。向统治者进行施压，要求调整劳工名单或者让统治者分配一定的资源给其他镇民。\r\n当该施压投票超过半数被统治者同意，该里程碑事件完成。\r\n5正义属于我们\r\n敌人的刀，也能转过来对着他们自己。\r\n有1名原本属于统治者阵营的玩家（或主持人控制的NPC）主动投靠反抗者，并提供信息或协助。该里程碑事件完成。\r\n6团结一切可以团结的力量。\r\n那些外来人，要么帮忙，要么别挡道。\r\n至少1名冒险者身份的玩家公开承诺在革命日当天加入反抗者起义，或至少2名冒险者承诺保持中立（不帮统治者）。需以契约为证。\r\n完成上述条件后，该里程碑事件完成。\r\n7让人民觉醒\r\n第一条血债，就是最好的宣言。\r\n当第一次有玩家因为统治者的直接行为（审判、冲突，抓捕等，由主持人判定）死亡或重伤后，主持人会秘密告知反抗者阵营这条消息。\r\n得知消息后，反抗者在当晚的夜间回合一名反叛者可以花费一行动点发起一次匿名投票，向全体玩家问一个问题：\r\n“统治者是否草菅人命？”\r\n投票规则：\r\n匿名投票，每人一票。\r\n选项为“是”或“否”。\r\n·如果投票人数超过玩家总数的一半，且其中同意“是”的票数多于“否”，该里程碑完成。该投票统治者无法参加。\r\n胜利条件\r\n目标1 推翻统治者，与冒险者争夺资源，揪出天灾使者，团结尽可能多的平民。\r\n目标2 获得武装力量，占领仓库，在暴雪之前储备尽可能多的资源。\r\n目标3 尽可能让所有人进入避难所。在暴雪将至阶段活下来。', null, '17', '阵营机制', '阵营机制-反抗者', null);
+INSERT INTO `rule_book` VALUES ('146', '——在集体大会中，支持建设避难所的平民远高于建设大船，但是你依旧坚持这场灾难不会结束。而随着统治者暴力的加强，更多人会明白，建设避难所是一个糟糕的决定。建设方舟：一艘20世纪的帆船已经破旧不堪，但是仍然比归属于渔民与船队的渔船大得多，或许可以召集人手修复好帆船，在暴雨来临前让更多人逃离。\r\n\r\n阵营行动\r\n4选1\r\n1额外调查：如果当天执行的调查地点，调查玩家。调查地点改为两个，调查玩家改为两名。\r\n2额外劳动：如果当天有至少任意一个行动点执行的生产，可以额外增加一半产出。\r\n3看守方舟——冒险者在白天行动阶段可以使用行动点作为方舟看守，在夜晚阶段为方舟建造地点增加对于武器与技能的防御值。\r\n4方舟建设：在阵营回合可以进行方舟建造，在第三天开始时加入冒险者的人员都可以用自己所拥有的任意数量行动点进行方舟建造。\r\n\r\n 初始资源：拥有猎弓2，12只箭，1只矛，一把手枪，4发手枪子弹。\r\n阵营机制\r\n1收集物资\r\n在游戏中，冒险者需要整合成员已有的资源，与其他阵营与玩家交换资源，生产资源，公开宣传以募集资源，直接冲突争夺资源，来获得建设方舟的材料与出航的必要物资。\r\n建设方舟的总共资源（25点载重的情况）\r\n木材25吨\r\n金属制品 10吨\r\n密封材料:沥青100kg\r\n发动机 至少1个，最多3个\r\n螺旋桨2个\r\n发电机1个\r\n\r\n2.技能资源（出海需要的技能，为终局结算提供更多的优势。\r\n航海\r\n海洋导航\r\n天气预报\r\n渔猎\r\n \r\n\r\n\r\n3.建设与载重方案\r\n船身大小：冒险者可以选择不同的建设方案来匹配人数。\r\n初始已完成5吨木材，1吨金属制品资源的建设。（根据参与人数改变）\r\n \r\n以25吨木材的大小为基础设计，为25点载重。更小的船型会更加劣势。\r\n在完成20点基础载重之后，每增加2吨木材，1吨金属制品与5公斤密封材料，可以增加2点载重。\r\n每缺少2吨木材或1吨金属制品或5公斤密封材料，减少3点载重，百分之2.5方舟完成度，只需缺少一条资源条目。资源短缺是短板效应，按最低缺少计算。\r\n \r\n建设规则：\r\n加入冒险者任意一人可以在阵营行动时花费一行动点投入不超过单日最高数量的任意数量资源进行建造:\r\n每天投入最高为\r\n木材5吨\r\n金属制品2吨\r\n密封材料30kg\r\n\r\n若材料不足需白天花费一人一行动点工作量推进:\r\n1吨木材\r\n500kg铁制品建造进度\r\n5kg密封材料\r\n \r\n3出航准备\r\na每1点载重一人，可以乘载一人\r\nb每1点载重，10单位食物\r\nc每1点载重，100kg燃料\r\nd每1点载重，50kg密封材料\r\ne每1点载重，1吨木材\r\nf医疗资源，武器，等物品不计算重量。\r\n \r\n海上时间\r\n注意，某些危机事件可能增加航行天数。每多一天就需要额外抽取一张危机事件牌。\r\n1个发动机	8天航行时间\r\n2个发动机	6天航行时间\r\n3个发动机	4天航行时间\r\n在没有发动机出航或者只有一个发动机的时候，可以制造帆来辅助航行。在具有两个发动机时帆的作用消失。\r\n单帆:\r\n消耗50m绳索和10米帆布。收集好材料后需要一个人夜晚阵营回合建造帆，之后就可以使用。\r\n效果:提供移速加成\r\n在没有发动机的时候，航行时间为10天。\r\n在只有一个发动机的时候，航行时间为7天。\r\n\r\n一个发动机时，消耗燃料100kg\r\n两个发动机时，消耗燃料200kg\r\n三个发动机时，消耗燃料300kg\r\n\r\n夜晚行动\r\n可以做可以不做。\r\n向统治者施压：\r\n在夜间阶段，任何冒险者阵营玩家都可以团结其他玩家发起对统治者的施压，通过在公屏中发声的方式。而如果冒险者拥有合理的理由（通常是统治者的暴政或贪腐，或是地下避难所的不可实施性），则可以通过宣传来扩大施压的声音，以罢工或其他方式以此威胁。——理由通常需要在自由行动阶段进行调查获得。\r\n\r\n通常，施压的目标有，“一个合理的劳工换班机制”，“让资源由全体镇民管理”，“增加方舟建设资源”等等。\r\n\r\n在夜晚阶段计算统一参加施压的人群，如果同意施压的人群超过玩家半数，统治者就必须妥协。\r\n\r\n公开宣传：\r\n任何时候，冒险者可以在频道公屏发布消息帖子，冒险者可以宣传造船进度，直接为方舟计划拉取人员支持与资源支持。\r\n\r\n\r\n进行密谋：\r\n1袭击地点：需要组织者确定地点。\r\n每一位参与者增加一点成功率，参与者每一个拥有“潜行”技能增加1点成功率。每一位参与者佩戴唯一一把武器，增加武器对应“威慑点”的成功率。\r\n\r\n每个地点拥有基础防御值。统治者在目标地点的每一位玩家增加3点防御值，每一位玩家佩戴的唯一一把武器，增加武器对应“威慑点”的防御值。\r\n\r\n在夜间阶段结算密谋，比较成功率与防御值的。\r\n如果成功率大于防御值超过3点则密谋成功。\r\n如果超过9点，行动成功，但行动暴露，所有参与成员名称公开。\r\n如果不超过3点，则失败。如果有，则需要放弃一把武器。\r\n如果成功率小于防御值，则行动失败。参与行动者可以选择受降或者暴力反抗。\r\n\r\n如果成功，玩家可以选择破坏该地点，或选择搜刮。搜刮会直接烧毁该地点，在之后的游戏中，无法前往，无法使用该地点的设施，导致npc死亡。搜刮则可以带走地点的所有资源。\r\n\r\n如果有民兵或治安官或看守里应外合，则减少3点防御值。\r\n\r\n2建造方舟\r\n规则如上\r\n胜利条件\r\n目标1：选择与反抗者或统治者结盟，拉拢更多的平民。\r\n目标2：获得更多的资源建设方舟。\r\n目标3：在暴雪将至前出海，活下去。', null, '18', '阵营机制', '阵营机制-冒险者', null);
+INSERT INTO `rule_book` VALUES ('147', '你们是天灾的使者，是净化这里的存在。这里已经是腐烂得无可救药了。统治者做着梦幻想统治永远存在却又看不起所有的居民；反抗者自以为正义实际上上位之后会不会变成统治者那些人也尤未可知；冒险者空有一腔热血但是方舟会去往哪里谁能知道。而且你们中有人知道的是大家……在这里的所有人——都是罪人。\r\n罪在哪里？\r\n眼睁睁看着邻居被送去审判，你闭了嘴，你是罪人。\r\n为了多领一份口粮，偷偷举报了别人，你是罪人。\r\n明知这座岛的规则是吃人的，你还是选择顺从，而不是站出来，你是罪人。\r\n统治者犯的罪是傲慢，反抗者犯的罪是自私，冒险者犯的罪是盲目，而普通人犯的罪是——沉默。\r\n所以，我们是执行者。\r\n所以是暴雪吗？是天灾吗？不！这是净化。\r\n阵营行动\r\n1破坏：选择一个地点的一个设施，使其无法使用。如果目标地点被安排安排监管，无法破坏\r\n2额外调查：如果当天执行的调查地点，调查玩家。调查地点改为两个，调查玩家改为两名。\r\n3诅咒:花费一件威胁值4以上的武器，选择2位玩家，知晓该玩家的阵营。该玩家被标记「诅咒」。\r\n每天最多两次\r\n\r\n阵营机制\r\n阻止胜利：\r\n天灾使者既可以是统治者的走狗，施加暴行，激化统治者与平民的矛盾，延缓建设的进度，也可以假扮反抗者或冒险者，分化各个阵营的力量或凝聚力。最终目的，都是增加玩家死亡，推进命运，减缓地下避难所与方舟的建设进度。尽可能让灾难杀死所有人。\r\n天灾使者知晓当天天灾牌的内容。\r\n正义的潜伏\r\n瘟疫使者特性的天灾使者可以以天灾使者的身份加入其他阵营，并使用两套阵营规则。仍然使用天灾使者的胜利条件。可以无视契约协议的惩罚一次，你是神的皮，瘟疫不涉及机身。\r\n天灾的馈赠\r\n饥荒使者特性的天灾使者可以在夜晚行动前往天灾指引地点找到天灾的馈赠，你会获得一批意料之外的物资，毕竟你是神的口，饥荒不涉及己身。\r\n锋锐的爪牙\r\n战争使者特性的天灾使者可以在触发死战的当场战斗中获得格斗和射击技能，如果本身拥有该技能则转变为威胁值+1。你是神的爪，把战争带给世人吧。\r\n\r\n夜晚回合\r\n进行密谋：\r\n1袭击地点：每一位参与者增加一点成功率，参与者每一个拥有“潜行”技能增加3点成功率。每一位参与者佩戴唯一一把武器，增加武器对应“威慑点”的成功率。\r\n\r\n每个地点拥有基础防御值。统治者布置在目标地点的每一位玩家增加3点防御值，每一位玩家佩戴的唯一一把武器，增加武器对应“威慑点”的防御值。\r\n\r\n在夜间阶段结算密谋，比较成功率与防御值的。\r\n如果成功率大于防御值超过3点则密谋成功。\r\n如果超过9点，行动成功，但行动暴露，所有参与成员名称公开。\r\n如果不超过3点，则失败。如果有，则需要放弃一把武器。\r\n如果成功率小于防御值，则行动失败。参与行动者可以选择受降或者暴力反抗。\r\n\r\n如果成功，玩家可以选择破坏该地点，或选择搜刮。搜刮会直接烧毁该地点，在之后的游戏中，无法前往，无法使用该地点的设施，导致npc死亡。搜刮则可以带走地点的所有资源\r\n     \r\n2制造恐怖：在夜晚阶段，天灾阵营可以发起一次制造恐怖。需要组织者确定袭击地点或玩家。袭击玩家需要对方拥有诅咒，至少一位参与者参与。\r\n袭击地点，则至少需要两位参与者。\r\n制造恐怖的基础成功率取决于场上诅咒的数量，和参与者的数量。\r\n每有一个诅咒（包括普通诅咒和瘟疫诅咒。）成功概率+1\r\n每额外多一名参与者，成功概率+1\r\n使用1d6骰子投出数值+成功概率。结果大等于6既为成功。无视所有的防具，战力差距。\r\n在第一天时有平民玩家因为使者制造恐怖而死亡时，对方将受到天灾的感召。阵营身份变更为天灾使者继续进行游戏。（仅限一人）\r\n保留对方原有特性和技能。\r\n如果失败，参与者将暴露身份。身份被目标地点所属玩家与目标玩家知晓。不会告知你的具体身份是天灾使者。只会告知玩家袭击了对方，没有成功。\r\n同时所有被诅咒标记玩家在公屏公开。\r\n如果成功，如果目标拥有诅咒，目标玩家死亡。如果是目标地点，由参与者选择破坏1d6数量的资源品名或设施。\r\n\r\n如果目标死亡，统治者阵营可以选择是否公开死亡消息。\r\n\r\n神契：\r\n当命运之轮到达100，触发暴雪将至。\r\n杀戮者共有三个神启身份对应其他玩家的特性，名为:瘟疫，战争和饥荒。如果剩下的杀戮玩家只剩下一位他变为死亡骑士，特性更改为死亡骑士。\r\n\r\n胜利条件\r\n目标1 隐藏在人群中，蛊惑平民，制造信息迷雾，破坏其他阵营的策略。\r\n目标2 阻止方舟与避难所的建设，破坏资源与仓库。\r\n目标3 混入终局结算，成为天灾的眼睛', null, '19', '阵营机制', '阵营机制-天灾使者', null);
+INSERT INTO `rule_book` VALUES ('148', '阵营机制\r\n加入阵营：\r\n平民玩家可以自由选择加入反抗者或是冒险者的阵营，或是成为统治者的下属。\r\n\r\n口头契约：\r\n玩家与玩家之间可以口头协议加入阵营，但无法使用阵营行动与机制。但在这种情况下，平民玩家可以通过口头契约加入多个阵营。\r\n\r\n自组织：平民玩家可以尝试形成团体，为一个目标行动。\r\n\r\n加入阵营与背叛：\r\n平民玩家可以通过各种方式，加入某个阵营。加入对应阵营的玩家可以使用阵营机制与阵营行动。可以在行动阶段告知主持人决定背叛，在夜晚阶段由主持人结束背叛阵营事件，并且踢出阵营群聊。发无再使用阵营机制与阵营行动。\r\n\r\n夜晚行动\r\n进行密谋：\r\n1袭击地点：需要组织者确定地点。\r\n每一位参与者增加一点成功率，参与者每一个拥有“潜行”技能增加1点成功率。每一位参与者佩戴唯一一把武器，增加武器对应“威慑点”的成功率。\r\n每个地点拥有基础防御值。统治者在目标地点的每一位玩家增加3点防御值，每一位玩家佩戴的唯一一把武器，增加武器对应“威慑点”的防御值。\r\n\r\n在夜间阶段结算密谋，比较成功率与防御值的。\r\n如果成功率大于防御值超过3点则密谋成功。\r\n如果超过9点，行动成功，但行动暴露，所有参与成员名称公开。\r\n如果不超过3点，则失败。如果有，则需要放弃一把武器。\r\n如果成功率小于防御值，则行动失败。参与行动者可以选择受降或者暴力反抗。\r\n\r\n如果成功，玩家可以选择破坏该地点，或选择搜刮。搜刮会直接烧毁该地点，在之后的游戏中，无法前往，无法使用该地点的设施，导致npc死亡。搜刮则可以带走地点的所有资源\r\n如果有民兵或治安官或看守里应外合，则减少3点防御值。\r\n\r\n\r\n探索岛屿\r\n在夜晚阶段，你可以输入探索小岛行动，你会得到一些关于小岛的背景与秘密信息以及各种类型的资源。但是你将会跳过夜晚阶段的其他行动。\r\n在持有物品:手电筒，绳索，火把，蜡烛时会提高探索发现高价值物品的概率。\r\n每种物品只可提供最高7的加成，物品合计加值最高为15。\r\n在此会由一个6面骰子+额外探索物品探索值决定走向何处。\r\n有1-20探索难度的若干个地点供大家探索。\r\n探索地点每个地点都为唯一地点，被探索后不再能被其他人探索，只有20点的特殊探索地点可以反复前往。\r\n每次探索都会消耗持有的道具。\r\n胜利条件\r\n目标1 你也要死吗？不，请活下去，直到最后\r\n目标2 加入其他阵营，为一个新的目标而斗争，共享阵营结算结局。\r\n\r\n', null, '20', '阵营机制', '阵营机制-平民', null);
+INSERT INTO `rule_book` VALUES ('149', '船身大小：冒险者可以选择不同的建设方案来匹配人数。\r\n初始已完成5吨木材，1吨金属制品资源的建设。（根据参与人数改变）\r\n \r\n以25吨木材的大小为基础设计，为25点载重。更小的船型会更加劣势。\r\n在完成20点基础载重之后，每增加2吨木材，1吨金属制品与5公斤密封材料，可以增加2点载重。\r\n每缺少2吨木材或1吨金属制品或5公斤密封材料，减少3点载重，百分之2.5方舟完成度，只需缺少一条资源条目。资源短缺是短板效应，按最低缺少计算。\r\n \r\n建设规则：\r\n加入冒险者任意一人可以在阵营行动时花费一行动点投入不超过单日最高数量的任意数量资源进行建造:\r\n每天投入最高为\r\n木材5吨\r\n金属制品2吨\r\n密封材料30kg\r\n\r\n若材料不足需白天花费一人一行动点工作量推进:\r\n1吨木材\r\n500kg铁制品建造进度\r\n5kg密封材料\r\n \r\n3出航准备\r\na每1点载重一人，可以乘载一人\r\nb每1点载重，10单位食物\r\nc每1点载重，100kg燃料\r\nd每1点载重，50kg密封材料\r\ne每1点载重，1吨木材\r\nf医疗资源，武器，等物品不计算重量。\r\n \r\n海上时间\r\n注意，某些危机事件可能增加航行天数。每多一天就需要额外抽取一张危机事件牌。\r\n1个发动机	8天航行时间\r\n2个发动机	6天航行时间\r\n3个发动机	4天航行时间\r\n在没有发动机出航或者只有一个发动机的时候，可以制造帆来辅助航行。在具有两个发动机时帆的作用消失。\r\n单帆:\r\n消耗50m绳索和10米帆布。收集好材料后需要一个人夜晚阵营回合建造帆，之后就可以使用。\r\n效果:提供移速加成\r\n在没有发动机的时候，航行时间为10天。\r\n在只有一个发动机的时候，航行时间为7天。\r\n\r\n一个发动机时，消耗燃料100kg\r\n两个发动机时，消耗燃料200kg\r\n三个发动机时，消耗燃料300kg', null, '21', '方舟建造', '方舟建造', null);
+INSERT INTO `rule_book` VALUES ('150', '战斗类:\r\n格斗——在密谋，暴力冲突中，如果没有装备，或者装备近距离武器，增加1威胁值。\r\n射击——在密谋，暴力冲突中，如装备远距离武器时增加1威胁值。如果没有射击，装备远距离武器时，武器威胁值减半，向下取整。\r\n\r\n生产类（在白天行动阶段使用生产行动，如需设施需要对应设施完好）\r\n捕鱼：在码头使用渔船设施 获得食物10单位\r\n食物生产：使用牲畜设施 获得食物15单位\r\n伐木：使用电锯5吨木材，否则1吨\r\n挖掘：使用电钻5吨石料，否则1吨\r\n手工艺：工具制备单制作一件或至多3件材料，物品或武器。制作列表如下\r\n复合盾	3kg金属制品，3kg木材	1副\r\n鱼叉/矛	5kg金属制品，5kg木材	1支\r\n规制箭矢	3kg木材，3kg金属制品	3支\r\n猎弓	5kg金属制品，15kg木材	1把\r\n火把	5kg木材，1m帆布	1把\r\n木石工艺:使用木板蒸汽箱，将5吨木材转化为3吨木板，消耗50kg燃料使用切石机，将1吨石料转化为15米石墙\r\n射击狩猎：需要远程武器（无需子弹或弓箭）5kg肉。\r\n烧炭:使用煤炭炉，消耗一行动，使每150kg木材转为10单位燃料和相当于1医疗资源的1单位草木灰。每次行动至多转化750kg的木材。\r\n\r\n功能类（在白天阶段联系主持人使用，或者在快速行动中使用）\r\n潜行（被动）：为谋略增加成功率，除了隐藏技能外无法被调查。\r\n\r\n启蒙:每天白天行动时一次。消耗2盒粉笔，选择除自己之外最多2名玩家，使其临时学会一项基础技能（从以下列表中选：急救、潜行、格斗、捕鱼、伐木、挖矿），从第一天夜晚回合生效持续到第二天白天回合结束。若该玩家已经拥有该技能则增产50%\r\n\r\n布道：每天白天行动时一次。选择最多为3人，被布道的玩家在下一个行动中生产增加50%（渔猎，伐木，挖矿）/或者最多为3为玩家消除诅咒（被诅咒的玩家没有任何征兆，这是一个纯预判的技能效果）\r\n\r\n急救：花费5医疗资源，将“重伤”改为“受伤”标记。\r\n\r\n医疗：每天白天行动时一次。选择一位或至多5位“受伤”标记的玩家，目标消除“受伤”标记。每个花费3医疗资源，选择一位或多位过劳标记的玩家，消除过劳标记。每个花费2医疗资源。（可以混合总人数不超过5位）\r\n\r\n通灵：需消耗10根蜡烛和2升酒精举行仪式。\r\n每天白天行动时一次。与一位已死亡玩家建立临时私信交流，死亡玩家需要尽可能告知死前所有信息（由主持人保底提供信息）同时你有1/2概率会获得对方的技能。\r\n\r\n协议契约：为一位或多位玩家建立协议契约。可以指定违反协议的惩罚内容\r\n\r\n潜水：每天白天行动时可以进行一次。需在码头使用，由主持人投d6决定结果：1-5，食物8单位，6 沉船遗物（随机一件较高价值物品，由主持人决定，如医疗包、维修工具包、旧手枪+弹药、信号枪等）\r\n\r\n维修：每天可使用一次。修复一个被破坏的设施或者物品，花费5维修资源\r\n\r\n搬运（被动）:搬运量永远是其他职业的两倍。\r\n\r\n调度:选择一处统治者控制的仓库，将其中最多100kg物资（任意类型）免费转移至另一处统治者仓库或自身仓库，不占用搬运行动，且不消耗移动配额。\r\n\r\n伪装（被动）：你从不在岛上抛头露面，你可以隐藏成为一个统治者组外的玩家职业并获得该职业技能。\r\n\r\n特殊（特殊技能需要自由行动中的技能行动执行）\r\n海洋导航：为方舟终局结算提供好的结局倾向，可以查看今日所有的天灾牌。\r\n\r\n偷盗：选择一位玩家，获得对方的秘密资源信息，选择一件物品获得。需要投掷1d6+1检定在5以上即可获得对方一件物品。\r\n天气预测：你通过科学的手段发现异常的暴雪天气的来临，可以查看今日所有的天灾牌。为所有终局结算提供好的结局倾向。\r\n\r\n占星：为避难所终局结算提供好的结局倾向。在全局游戏中你可以将一张天灾牌撕毁（不生效），或让一张危机事件牌撕毁（不生效）\r\n\r\n烘焙:需要10单位的食物和15kg木材可以制作一份便当。面包:当天额外获得1白天行动点，每人每天最多使用1次。\r\n\r\n巡逻:夜晚行动，若你目前是非阵营玩家想使用该技能而不想加入阵营可以用第二天的一个行动补觉（体现为第二天的一个自由行动将变为其他且只能睡觉）使用该技能。\r\n选择一个地点，当晚该地点内非统治者阵营玩家的夜晚行动成功率-30%，巡夜人知晓其行动类型。需要巡夜人当天未处于“劳工”或“过劳”状态。\r\n\r\n遗憾：若你与 船长职业的玩家在同一阵营，你在夜晚阶段，可以额外进行一次本日的 “调查玩家” 行动（用快速行动执行），且不消耗白天的行动次数。此效果每日限一次。若船长或大副阵营转变则失去该效果。\r\n若曾和船长玩家处于同一阵营之后船长玩家死亡，你在方舟结算时视为拥有技能 “海洋导航” 的效果。\r\n\r\n悬赏：消耗一行动，你消耗至少10单位（kg）的任意资源（如木材、食物、金属等）作为“悬赏金”，公开宣布悬赏一名 非己方阵营 的玩家。目标玩家必须在当天夜晚结算内 支付 悬赏金×1.5（向下取整）的资源给你，以消除悬赏。同一目标不可悬赏两次。\r\n若目标拒绝或未能支付，你将获得以下加成，直到悬赏被消除或你主动撤销：\r\n信息掌控：与目标处于同一地点时，你得知该目标在此地点所有自由行动的结果（如探索、生产）。   （2）冲突代价：与目标发生冲突时，你的总战力+2。若你在此次冲突中获胜，可从其随身物品中 选择一件非关键物品（不能是武器或防具） 作为战利品带走。', null, '22', '技能表', '技能表', null);
 INSERT INTO `rule_book` VALUES ('151', '一、状态标记\r\n- 过劳：拥有过劳标记无法执行生产行动、调查玩家和隐匿。拥有过劳标记在当天夜晚行动和第二天进行需要行动点的生产行动时，投1d6骰子，判定为1则死亡。过劳标记在第三天消除。也就是说，必须隔一天进行劳作。5瓶朗姆酒可以消除过劳状态。\r\n- 受伤：无法进行生产行动，格斗技能无效。\r\n- 重伤（致命伤害）：在夜晚阶段如果没有被急救，将死亡。\r\n- 束缚：无法执行自由行动和夜间行动，除非束缚被解除。\r\n- 虚弱：无法生产，格斗、射击技能无效，第三天消除，或者喝酒。\r\n- 诅咒标记：只有天灾使者知晓效果。\r\n\r\n二、其他\r\n- 赐福1：每次战斗，免疫第一次被命中的攻击骰。默认为1威胁，可以与近战武器堆叠。', null, '23', '标记系统', '标记系统', null);
 INSERT INTO `rule_book` VALUES ('152', '一、进入避难所\r\n在第三天夜晚环节前往避难所。并被避难所的所属玩家或阵营同意进入。\r\n在进入避难所时除统治者之外的玩家需从个人仓库选择5-10种，不超过5000kg重量的物品直接转移到避难所仓库作为进入的投诚。若投诚之后还有剩余物资，选择1-2件可以偷偷带入避难所。\r\n在反抗者夺取避难所控制权时，可以自由设定要不要把玩家所有资产充公。\r\n\r\n二、登上方舟\r\n在任意一天夜晚阶段用行动点前往方舟。并被方舟的所属冒险者阵营同意登上方舟。所有除武器装备之外所有资源将自动转移到冒险者阵营仓库（不能超出方舟载重）。\r\n\r\n三、特别注意\r\n- 避难所不能在天灾值到达100之前启动关门机制。\r\n- 方舟可以在天灾值到达100之前开船离开，如果天灾值到达100强制登船离开。开船行为不可逆，不可以开船之后掉头回到小岛。\r\n- 避难所和方舟的关门与开船机制都在每天的阵营行动和夜晚回合之后。（半夜关门和半夜走）每天最后一个行动结算。', null, '24', '终局结算', '进入避难所与方舟', null);
 INSERT INTO `rule_book` VALUES ('153', '避难所结局结算\r\n\r\n第一阶段：暴雪持续时间判定\r\n暴雪不会立刻结束，其持续时间决定了避难所需要承受的总考验时长。\r\n- 基础持续时间：90天。\r\n- 杀戮者干预：每位存活的杀戮者（天灾使者）玩家，将额外触发一张危机事件牌。\r\n- 天灾诅咒：每一个进入避难所玩家所拥有的诅咒标记，会额外抽取一张危机事件牌。\r\n- 暴雪持续时间（D）= 90 +（已触发天灾牌数量）+（天灾使者进入避难所人数×5）。\r\n\r\n第二阶段：避难所基础资源需要\r\n固定每人10日消耗：\r\n- 食物：每人需要25000大卡。\r\n- 燃料：每人需要100kg木材或50公斤煤炭或等价热量。\r\n- 照明与设备：固定消耗5升煤油。\r\n- 人力需求：进入避难所的人数×（暴雪持续天数/10）\r\n\r\n危机处理：\r\n抽取最终天数/10天的危机事件牌。（如是小数按向下取整计算）\r\n例如天灾最终持续天数为95天。95÷10=9.5，向下取整为9。\r\n混入了一个天灾使者额外加1危机事件牌。最终抽取9+1=10张危机事件牌。\r\n牌堆构成：危机事件牌 + 来自技能的希望牌（拥有占星和天气预测的玩家各提供1张正面事件牌加入牌堆）。\r\n\r\n第三阶段：终局资源结算与生存检定\r\n结算完所有危机事件牌后。通过三种资源确定最终存活人数。\r\n最终幸存人数 = 初始进入人数 × 生存系数（S）\r\n\r\n生存系数（S）由以下几个关键资源的充足率决定，每项系数初始为1.0，根据短缺程度扣减：\r\n\r\n1.食物充足率（F）\r\nF = 实际食物储备总量（大卡）/（总人口 × 2单位食物/天 × D）\r\n影响：若F < 1.0，则S = S × F。例如：食物只够70%的需求，则幸存人数直接打7折。\r\n\r\n2.燃料充足率（H）\r\nH = 实际燃料储备总热量/（总人口 × 每日基础燃料热量 × D）\r\n若H < 1.0，则S = S ×（H^0.5）。（平方根意味着燃料短缺的影响稍缓，但会导致冻伤和疾病）。燃料严重短缺时（例如H<0.5），主持人可额外判定直接冻死一定比例玩家（如5%-10%）。\r\n\r\n3.医疗与秩序系数（M）\r\n- 医疗资源储备：每10份医疗资源，使M增加0.05（上限+0.2）。\r\n- \"患病\"标记：结算时，每存在一个此标记，使M减少0.02。\"患病\"标记来源于危机事件牌。\r\n- 特殊职业或特性：拥有布道、医疗、占星的玩家并存活，可以为群体提供0.1的士气加成。\r\n- S = S ×（1.0 + M）。M可以是正数或负数。\r\n\r\n最终结局与阵营胜利关联：\r\n【新纪元的基石】（对应S ≥ 0.8）\r\n反抗者：由其主导，则达成人民之声与地下黎明结局。\r\n统治者：由其主导，则达成地下黎明结局。无阵营：地下黎明。\r\n\r\n【惨白的黎明】（对应0.5 ≤ S < 0.8）\r\n反抗者：由其主导，则达成人民之声结局。\r\n统治者：由其主导，则达成王的废墟结局。无阵营：挽歌结局。\r\n\r\n【地狱归来的幸存者】（对应0.2 ≤ S < 0.5）\r\n统治者：由其主导，则达成王的废墟结局。\r\n杀戮者：达成天灾的馈赠结局。\r\n\r\n【寂静的坟墓】（对应S < 0.2）\r\n杀戮者：达成天灾的馈赠结局。', null, '25', '终局结算', '避难所结局结算', null);
@@ -3210,21 +1908,6 @@ CREATE TABLE `selected_catastrophe` (
 -- ----------------------------
 -- Records of selected_catastrophe
 -- ----------------------------
-INSERT INTO `selected_catastrophe` VALUES ('1', '12', null, null, '0', '2026-05-22 18:42:58', '2026-05-23 14:33:24');
-INSERT INTO `selected_catastrophe` VALUES ('2', '6', null, null, '0', '2026-05-22 18:42:58', '2026-05-23 14:33:24');
-INSERT INTO `selected_catastrophe` VALUES ('3', '33', '20', '2026-05-22 20:58:46', '0', '2026-05-22 18:42:58', '2026-05-23 14:33:24');
-INSERT INTO `selected_catastrophe` VALUES ('4', '15', null, null, '0', '2026-05-23 14:33:24', '2026-05-23 14:34:40');
-INSERT INTO `selected_catastrophe` VALUES ('5', '5', null, null, '0', '2026-05-23 14:33:24', '2026-05-23 14:34:40');
-INSERT INTO `selected_catastrophe` VALUES ('6', '14', null, null, '0', '2026-05-23 14:33:24', '2026-05-23 14:34:40');
-INSERT INTO `selected_catastrophe` VALUES ('7', '30', null, null, '0', '2026-05-23 14:34:39', '2026-05-23 14:51:42');
-INSERT INTO `selected_catastrophe` VALUES ('8', '24', null, null, '0', '2026-05-23 14:34:39', '2026-05-23 14:51:42');
-INSERT INTO `selected_catastrophe` VALUES ('9', '7', '16', '2026-05-23 14:47:32', '0', '2026-05-23 14:34:40', '2026-05-23 14:51:42');
-INSERT INTO `selected_catastrophe` VALUES ('10', '27', null, null, '0', '2026-05-23 14:51:42', '2026-05-24 17:15:09');
-INSERT INTO `selected_catastrophe` VALUES ('11', '29', '16', '2026-05-23 15:00:20', '0', '2026-05-23 14:51:42', '2026-05-24 17:15:09');
-INSERT INTO `selected_catastrophe` VALUES ('12', '1', null, null, '0', '2026-05-23 14:51:42', '2026-05-24 17:15:09');
-INSERT INTO `selected_catastrophe` VALUES ('13', '23', null, null, '1', '2026-05-24 17:15:09', '2026-05-24 17:15:09');
-INSERT INTO `selected_catastrophe` VALUES ('14', '4', null, null, '1', '2026-05-24 17:15:09', '2026-05-24 17:15:09');
-INSERT INTO `selected_catastrophe` VALUES ('15', '18', '16', '2026-05-24 17:29:10', '1', '2026-05-24 17:15:09', '2026-05-24 17:29:10');
 
 -- ----------------------------
 -- Table structure for shelter_daily_labor
@@ -3239,31 +1922,15 @@ CREATE TABLE `shelter_daily_labor` (
   `is_exploited` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否压榨（建造值翻倍等由主持人裁定）',
   `is_escaped` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否逃役（不计入劳工）',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `is_slacking` bit(1) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_shelter_labor_day_worker` (`game_day`,`worker_kind`,`worker_id`),
   KEY `idx_game_day` (`game_day`)
-) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COMMENT='避难所每日劳工名单（总建造值=SUM(build_value)，含玩家与NPC）';
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COMMENT='避难所每日劳工名单（总建造值=SUM(build_value)，含玩家与NPC）';
 
 -- ----------------------------
 -- Records of shelter_daily_labor
 -- ----------------------------
-INSERT INTO `shelter_daily_labor` VALUES ('1', '1', 'player', '23', '4', '0', '0', '2026-05-22 19:18:00');
-INSERT INTO `shelter_daily_labor` VALUES ('2', '1', 'npc', '5', '8', '1', '0', '2026-05-22 19:18:00');
-INSERT INTO `shelter_daily_labor` VALUES ('3', '1', 'npc', '6', '8', '1', '0', '2026-05-22 19:18:00');
-INSERT INTO `shelter_daily_labor` VALUES ('4', '1', 'npc', '3', '7', '1', '0', '2026-05-22 19:18:00');
-INSERT INTO `shelter_daily_labor` VALUES ('5', '1', 'player', '29', '4', '0', '0', '2026-05-22 19:18:00');
-INSERT INTO `shelter_daily_labor` VALUES ('6', '2', 'player', '29', '7', '1', '0', '2026-05-23 19:19:46');
-INSERT INTO `shelter_daily_labor` VALUES ('7', '2', 'player', '31', '4', '0', '0', '2026-05-23 19:19:46');
-INSERT INTO `shelter_daily_labor` VALUES ('8', '2', 'player', '32', '7', '1', '0', '2026-05-23 19:19:46');
-INSERT INTO `shelter_daily_labor` VALUES ('9', '2', 'player', '28', '0', '0', '1', '2026-05-23 19:19:46');
-INSERT INTO `shelter_daily_labor` VALUES ('10', '2', 'player', '27', '7', '1', '0', '2026-05-23 19:19:46');
-INSERT INTO `shelter_daily_labor` VALUES ('11', '2', 'player', '16', '5', '0', '0', '2026-05-23 19:19:46');
-INSERT INTO `shelter_daily_labor` VALUES ('12', '3', 'player', '11', '7', '1', '0', '2026-05-24 18:07:37');
-INSERT INTO `shelter_daily_labor` VALUES ('13', '3', 'player', '30', '7', '1', '0', '2026-05-24 18:07:37');
-INSERT INTO `shelter_daily_labor` VALUES ('14', '3', 'player', '23', '7', '1', '0', '2026-05-24 18:07:37');
-INSERT INTO `shelter_daily_labor` VALUES ('15', '3', 'player', '13', '4', '0', '0', '2026-05-24 18:07:37');
-INSERT INTO `shelter_daily_labor` VALUES ('16', '3', 'player', '29', '4', '0', '0', '2026-05-24 18:07:37');
-INSERT INTO `shelter_daily_labor` VALUES ('17', '3', 'player', '24', '5', '0', '0', '2026-05-24 18:07:37');
 
 -- ----------------------------
 -- Table structure for shelter_labor_day
@@ -3280,9 +1947,6 @@ CREATE TABLE `shelter_labor_day` (
 -- ----------------------------
 -- Records of shelter_labor_day
 -- ----------------------------
-INSERT INTO `shelter_labor_day` VALUES ('1', '1', '2026-05-23 01:29:01', '2026-05-23 01:29:01');
-INSERT INTO `shelter_labor_day` VALUES ('2', '1', '2026-05-23 19:32:38', '2026-05-23 19:32:38');
-INSERT INTO `shelter_labor_day` VALUES ('3', '1', '2026-05-24 18:45:18', '2026-05-24 18:45:18');
 
 -- ----------------------------
 -- Table structure for shelter_progress
@@ -3299,7 +1963,6 @@ CREATE TABLE `shelter_progress` (
 -- ----------------------------
 -- Records of shelter_progress
 -- ----------------------------
-INSERT INTO `shelter_progress` VALUES ('1', '2026-05-12 09:58:06.701000', '50', '2026-05-12 09:58:06.701000');
 
 -- ----------------------------
 -- Table structure for shelter_stock
@@ -3316,16 +1979,19 @@ CREATE TABLE `shelter_stock` (
   UNIQUE KEY `UK_shelter_stock_type_item` (`item_type`,`item_id`),
   KEY `idx_item_type` (`item_type`),
   KEY `idx_item_id` (`item_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=162 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='统治者避难所物资库存表';
+) ENGINE=InnoDB AUTO_INCREMENT=202 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='统治者避难所物资库存表';
 
 -- ----------------------------
 -- Records of shelter_stock
 -- ----------------------------
-INSERT INTO `shelter_stock` VALUES ('135', 'item', '9', '1', '2026-05-22 18:46:38.634000', '2026-05-22 19:23:50.519000');
-INSERT INTO `shelter_stock` VALUES ('158', 'material', '8', '320', '2026-05-22 19:25:03.406000', '2026-05-23 22:39:19.034000');
-INSERT INTO `shelter_stock` VALUES ('159', 'material', '5', '127', '2026-05-22 19:25:07.551000', '2026-05-22 19:25:07.551000');
-INSERT INTO `shelter_stock` VALUES ('160', 'material', '2', '2320', '2026-05-23 22:39:36.507000', '2026-05-24 21:30:14.657000');
-INSERT INTO `shelter_stock` VALUES ('161', 'material', '10', '1', '2026-05-24 15:10:30.978000', '2026-05-24 15:10:30.978000');
+INSERT INTO `shelter_stock` VALUES ('194', 'material', '1', '500', '2026-06-26 15:46:44.035702', '2026-06-26 15:46:44.035702');
+INSERT INTO `shelter_stock` VALUES ('195', 'material', '2', '200', '2026-06-26 15:46:44.035702', '2026-06-26 15:46:44.035702');
+INSERT INTO `shelter_stock` VALUES ('196', 'material', '3', '100', '2026-06-26 15:46:44.035702', '2026-06-26 15:46:44.035702');
+INSERT INTO `shelter_stock` VALUES ('197', 'material', '4', '50', '2026-06-26 15:46:44.035702', '2026-06-26 15:46:44.035702');
+INSERT INTO `shelter_stock` VALUES ('198', 'item', '1', '5', '2026-06-26 15:46:44.035702', '2026-06-26 15:46:44.035702');
+INSERT INTO `shelter_stock` VALUES ('199', 'item', '2', '10', '2026-06-26 15:46:44.035702', '2026-06-26 15:46:44.035702');
+INSERT INTO `shelter_stock` VALUES ('200', 'material', '5', '200', '2026-06-26 15:46:44.035702', '2026-06-26 15:46:44.035702');
+INSERT INTO `shelter_stock` VALUES ('201', 'material', '8', '40', '2026-06-26 15:51:08.057000', '2026-06-26 15:51:08.057000');
 
 -- ----------------------------
 -- Table structure for skill
@@ -3408,6 +2074,33 @@ INSERT INTO `skill` VALUES ('59', '聆讯者', '效果：受到了天灾的启�
 INSERT INTO `skill` VALUES ('60', '神明的眼睛（公开）', '神想知道这场游戏祂能得到什么乐子，当你知道12人（不包括自己）的阵营时。神明会给予你特殊的奖赏。\r\n每天可以提交最多两次名单，会得到错误几个的提示。\r\n利用神明的恩赐活下去。', '平民', '2026-05-22 16:50:43', '2026-05-22 16:50:43');
 
 -- ----------------------------
+-- Table structure for special_clue
+-- ----------------------------
+DROP TABLE IF EXISTS `special_clue`;
+CREATE TABLE `special_clue` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `clue_code` varchar(50) DEFAULT NULL,
+  `content` text NOT NULL,
+  `cooldown_minutes` int(11) NOT NULL,
+  `created_at` datetime(6) DEFAULT NULL,
+  `description` varchar(500) DEFAULT NULL,
+  `is_active` bit(1) NOT NULL,
+  `keywords` text NOT NULL,
+  `match_mode` varchar(20) DEFAULT NULL,
+  `priority` int(11) NOT NULL,
+  `probability_weight` int(11) NOT NULL,
+  `updated_at` datetime(6) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UK_ddf90mam93pawimn1jc3rkjpx` (`clue_code`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+-- Records of special_clue
+-- ----------------------------
+INSERT INTO `special_clue` VALUES ('1', 'CLUE_TEST001', '???????????????????,?????????????', '10', '2026-06-25 16:11:36.004000', '????', '', '??,hidden,??', 'FUZZY', '1', '80', '2026-06-25 16:11:36.004000');
+INSERT INTO `special_clue` VALUES ('2', 'CLUE_SECRET001', 'There is a hidden treasure map in the old lighthouse basement. It leads to forgotten gold.', '0', '2026-06-25 16:11:53.246000', 'Secret location clue', '', 'secret,treasure,hidden', 'FUZZY', '1', '100', '2026-06-25 16:11:53.246000');
+
+-- ----------------------------
 -- Table structure for trade
 -- ----------------------------
 DROP TABLE IF EXISTS `trade`;
@@ -3426,102 +2119,11 @@ CREATE TABLE `trade` (
   KEY `idx_from_to_status` (`from_player_id`,`to_player_id`,`status`),
   CONSTRAINT `trade_ibfk_1` FOREIGN KEY (`from_player_id`) REFERENCES `player` (`id`),
   CONSTRAINT `trade_ibfk_2` FOREIGN KEY (`to_player_id`) REFERENCES `player` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=105 DEFAULT CHARSET=utf8mb4 COMMENT='交易主表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='交易主表';
 
 -- ----------------------------
 -- Records of trade
 -- ----------------------------
-INSERT INTO `trade` VALUES ('14', '29', '16', 'completed', '如果可以的话，把我的名字刻在枪的护木上吧', '2026-05-22 19:24:05', '2026-05-22 19:33:43');
-INSERT INTO `trade` VALUES ('15', '27', '24', 'completed', '', '2026-05-22 19:24:07', '2026-05-22 19:52:15');
-INSERT INTO `trade` VALUES ('16', '27', '24', 'completed', '', '2026-05-22 19:24:36', '2026-05-22 19:52:12');
-INSERT INTO `trade` VALUES ('17', '24', '20', 'completed', '定金', '2026-05-22 19:56:33', '2026-05-22 19:57:48');
-INSERT INTO `trade` VALUES ('18', '20', '16', 'completed', '', '2026-05-22 19:59:59', '2026-05-22 20:01:34');
-INSERT INTO `trade` VALUES ('19', '20', '16', 'completed', '', '2026-05-22 20:01:00', '2026-05-22 20:01:32');
-INSERT INTO `trade` VALUES ('20', '13', '27', 'completed', '', '2026-05-22 20:03:49', '2026-05-22 20:09:41');
-INSERT INTO `trade` VALUES ('21', '24', '8', 'completed', '愿善良传递下去', '2026-05-22 20:22:27', '2026-05-22 20:53:06');
-INSERT INTO `trade` VALUES ('22', '20', '16', 'completed', '', '2026-05-22 20:42:46', '2026-05-22 20:45:41');
-INSERT INTO `trade` VALUES ('23', '16', '30', 'pending', '', '2026-05-22 20:53:46', '2026-05-22 20:53:46');
-INSERT INTO `trade` VALUES ('24', '16', '30', 'pending', '', '2026-05-22 20:53:49', '2026-05-22 20:53:49');
-INSERT INTO `trade` VALUES ('25', '24', '30', 'completed', '', '2026-05-22 21:23:53', '2026-05-22 21:50:23');
-INSERT INTO `trade` VALUES ('26', '32', '24', 'completed', '', '2026-05-22 21:28:38', '2026-05-22 21:32:25');
-INSERT INTO `trade` VALUES ('27', '11', '24', 'completed', '', '2026-05-22 21:38:40', '2026-05-22 21:41:30');
-INSERT INTO `trade` VALUES ('28', '23', '24', 'completed', '', '2026-05-22 21:41:14', '2026-05-22 21:41:29');
-INSERT INTO `trade` VALUES ('29', '26', '27', 'rejected', '', '2026-05-22 22:16:17', '2026-05-22 22:21:24');
-INSERT INTO `trade` VALUES ('30', '16', '14', 'completed', '', '2026-05-22 22:46:05', '2026-05-22 22:48:19');
-INSERT INTO `trade` VALUES ('31', '24', '20', 'completed', '弓好了', '2026-05-22 22:56:40', '2026-05-22 23:06:53');
-INSERT INTO `trade` VALUES ('32', '10', '17', 'completed', '', '2026-05-22 22:58:28', '2026-05-22 22:58:50');
-INSERT INTO `trade` VALUES ('33', '20', '16', 'completed', '', '2026-05-22 23:09:29', '2026-05-22 23:09:52');
-INSERT INTO `trade` VALUES ('34', '24', '9', 'completed', '', '2026-05-22 23:26:54', '2026-05-23 00:43:36');
-INSERT INTO `trade` VALUES ('35', '24', '31', 'completed', '', '2026-05-22 23:34:13', '2026-05-22 23:35:47');
-INSERT INTO `trade` VALUES ('36', '26', '10', 'completed', '', '2026-05-23 00:23:40', '2026-05-23 00:24:18');
-INSERT INTO `trade` VALUES ('37', '10', '26', 'completed', '', '2026-05-23 00:24:12', '2026-05-23 19:27:08');
-INSERT INTO `trade` VALUES ('38', '15', '26', 'completed', '', '2026-05-23 00:24:34', '2026-05-23 19:27:02');
-INSERT INTO `trade` VALUES ('39', '9', '27', 'completed', '', '2026-05-23 00:44:59', '2026-05-23 00:45:32');
-INSERT INTO `trade` VALUES ('40', '13', '32', 'completed', '', '2026-05-23 01:30:51', '2026-05-23 01:31:36');
-INSERT INTO `trade` VALUES ('41', '9', '27', 'completed', '', '2026-05-23 01:37:37', '2026-05-23 01:40:44');
-INSERT INTO `trade` VALUES ('42', '9', '27', 'completed', '', '2026-05-23 01:37:51', '2026-05-23 01:40:42');
-INSERT INTO `trade` VALUES ('43', '9', '27', 'completed', '', '2026-05-23 01:40:05', '2026-05-23 01:40:34');
-INSERT INTO `trade` VALUES ('44', '25', '10', 'completed', '', '2026-05-23 11:26:51', '2026-05-23 15:55:24');
-INSERT INTO `trade` VALUES ('45', '16', '20', 'completed', '', '2026-05-23 14:37:20', '2026-05-23 14:41:31');
-INSERT INTO `trade` VALUES ('46', '16', '20', 'completed', '', '2026-05-23 14:39:26', '2026-05-23 14:41:26');
-INSERT INTO `trade` VALUES ('47', '8', '16', 'completed', '给你咧', '2026-05-23 15:34:01', '2026-05-23 15:34:06');
-INSERT INTO `trade` VALUES ('48', '22', '16', 'completed', '', '2026-05-23 16:57:02', '2026-05-23 16:57:33');
-INSERT INTO `trade` VALUES ('49', '9', '14', 'completed', '', '2026-05-23 19:08:18', '2026-05-23 19:41:44');
-INSERT INTO `trade` VALUES ('50', '9', '22', 'completed', '', '2026-05-23 19:15:13', '2026-05-23 19:17:13');
-INSERT INTO `trade` VALUES ('51', '9', '21', 'completed', '', '2026-05-23 19:16:00', '2026-05-23 19:36:24');
-INSERT INTO `trade` VALUES ('52', '9', '19', 'completed', '', '2026-05-23 19:16:28', '2026-05-23 19:17:06');
-INSERT INTO `trade` VALUES ('53', '19', '9', 'completed', '', '2026-05-23 19:18:01', '2026-05-23 19:18:09');
-INSERT INTO `trade` VALUES ('54', '25', '15', 'completed', '', '2026-05-23 19:34:34', '2026-05-23 19:45:34');
-INSERT INTO `trade` VALUES ('55', '19', '21', 'completed', '', '2026-05-23 19:36:30', '2026-05-23 19:38:10');
-INSERT INTO `trade` VALUES ('56', '13', '24', 'completed', '', '2026-05-23 19:40:10', '2026-05-23 19:46:48');
-INSERT INTO `trade` VALUES ('57', '29', '30', 'completed', '拿着这些去救下更多的人，不要被你所在的阵营框定，去救更多的人', '2026-05-23 19:41:09', '2026-05-23 19:43:40');
-INSERT INTO `trade` VALUES ('58', '24', '8', 'completed', '', '2026-05-23 19:47:32', '2026-05-23 20:36:29');
-INSERT INTO `trade` VALUES ('59', '24', '11', 'completed', '', '2026-05-23 19:55:09', '2026-05-23 20:10:04');
-INSERT INTO `trade` VALUES ('60', '24', '25', 'completed', '', '2026-05-23 19:55:44', '2026-05-23 19:55:55');
-INSERT INTO `trade` VALUES ('61', '30', '25', 'rejected', '康康有没有什么问题', '2026-05-23 19:59:00', '2026-05-23 20:01:13');
-INSERT INTO `trade` VALUES ('62', '25', '30', 'completed', '', '2026-05-23 20:01:33', '2026-05-23 20:01:53');
-INSERT INTO `trade` VALUES ('63', '25', '10', 'completed', '', '2026-05-23 20:02:20', '2026-05-23 20:03:40');
-INSERT INTO `trade` VALUES ('64', '25', '10', 'completed', '', '2026-05-23 20:02:43', '2026-05-23 20:03:42');
-INSERT INTO `trade` VALUES ('65', '10', '26', 'completed', '', '2026-05-23 20:09:46', '2026-05-23 20:13:05');
-INSERT INTO `trade` VALUES ('66', '26', '9', 'completed', '', '2026-05-23 20:12:47', '2026-05-23 20:12:58');
-INSERT INTO `trade` VALUES ('67', '25', '23', 'completed', '', '2026-05-23 20:25:05', '2026-05-23 20:25:34');
-INSERT INTO `trade` VALUES ('68', '9', '21', 'completed', '', '2026-05-23 21:04:17', '2026-05-23 21:04:27');
-INSERT INTO `trade` VALUES ('69', '14', '21', 'completed', '', '2026-05-23 21:12:20', '2026-05-23 21:30:45');
-INSERT INTO `trade` VALUES ('70', '24', '8', 'completed', '', '2026-05-23 21:49:06', '2026-05-23 21:49:47');
-INSERT INTO `trade` VALUES ('71', '8', '16', 'completed', '', '2026-05-23 21:51:00', '2026-05-23 21:51:54');
-INSERT INTO `trade` VALUES ('72', '14', '21', 'completed', '', '2026-05-23 23:23:45', '2026-05-23 23:24:27');
-INSERT INTO `trade` VALUES ('73', '9', '22', 'completed', '', '2026-05-23 23:24:59', '2026-05-23 23:25:17');
-INSERT INTO `trade` VALUES ('74', '14', '21', 'completed', '', '2026-05-23 23:40:08', '2026-05-23 23:41:00');
-INSERT INTO `trade` VALUES ('75', '19', '21', 'completed', '', '2026-05-23 23:42:37', '2026-05-24 01:03:22');
-INSERT INTO `trade` VALUES ('76', '10', '20', 'completed', '', '2026-05-24 12:33:52', '2026-05-24 15:31:27');
-INSERT INTO `trade` VALUES ('77', '10', '20', 'completed', '', '2026-05-24 13:39:28', '2026-05-24 15:31:25');
-INSERT INTO `trade` VALUES ('78', '10', '14', 'completed', '', '2026-05-24 14:05:33', '2026-05-24 14:56:00');
-INSERT INTO `trade` VALUES ('79', '10', '14', 'completed', '', '2026-05-24 14:06:05', '2026-05-24 14:55:55');
-INSERT INTO `trade` VALUES ('80', '16', '20', 'completed', '', '2026-05-24 14:43:54', '2026-05-24 15:31:18');
-INSERT INTO `trade` VALUES ('81', '16', '30', 'completed', '', '2026-05-24 14:44:11', '2026-05-24 14:48:58');
-INSERT INTO `trade` VALUES ('82', '20', '16', 'completed', '', '2026-05-24 18:08:15', '2026-05-24 18:08:33');
-INSERT INTO `trade` VALUES ('83', '9', '19', 'completed', '', '2026-05-24 18:19:47', '2026-05-24 18:23:07');
-INSERT INTO `trade` VALUES ('84', '14', '19', 'completed', '', '2026-05-24 18:28:16', '2026-05-24 18:30:39');
-INSERT INTO `trade` VALUES ('85', '19', '21', 'completed', '', '2026-05-24 19:07:05', '2026-05-24 19:12:07');
-INSERT INTO `trade` VALUES ('86', '14', '19', 'completed', '', '2026-05-24 19:09:46', '2026-05-24 19:10:00');
-INSERT INTO `trade` VALUES ('87', '9', '14', 'completed', '', '2026-05-24 19:14:26', '2026-05-24 19:14:55');
-INSERT INTO `trade` VALUES ('88', '16', '20', 'completed', '', '2026-05-24 19:15:56', '2026-05-24 19:16:45');
-INSERT INTO `trade` VALUES ('89', '19', '9', 'completed', '', '2026-05-24 19:21:42', '2026-05-24 19:23:59');
-INSERT INTO `trade` VALUES ('90', '10', '26', 'rejected', '', '2026-05-24 20:01:52', '2026-05-24 20:07:17');
-INSERT INTO `trade` VALUES ('91', '10', '17', 'completed', '', '2026-05-24 20:15:12', '2026-05-24 20:16:39');
-INSERT INTO `trade` VALUES ('92', '24', '23', 'completed', '', '2026-05-24 20:33:57', '2026-05-24 20:43:17');
-INSERT INTO `trade` VALUES ('93', '16', '20', 'completed', '', '2026-05-24 20:35:16', '2026-05-24 21:22:44');
-INSERT INTO `trade` VALUES ('94', '24', '11', 'completed', '', '2026-05-24 20:37:46', '2026-05-24 20:42:55');
-INSERT INTO `trade` VALUES ('95', '10', '26', 'completed', '', '2026-05-24 20:59:18', '2026-05-24 21:00:15');
-INSERT INTO `trade` VALUES ('96', '11', '24', 'completed', '', '2026-05-24 20:59:52', '2026-05-24 21:00:21');
-INSERT INTO `trade` VALUES ('97', '21', '9', 'completed', '', '2026-05-24 21:09:11', '2026-05-24 21:15:49');
-INSERT INTO `trade` VALUES ('98', '15', '17', 'completed', '', '2026-05-24 21:09:41', '2026-05-24 21:49:19');
-INSERT INTO `trade` VALUES ('99', '15', '10', 'completed', '', '2026-05-24 21:13:52', '2026-05-24 21:15:27');
-INSERT INTO `trade` VALUES ('100', '26', '10', 'completed', '', '2026-05-24 21:22:30', '2026-05-24 21:22:38');
-INSERT INTO `trade` VALUES ('101', '24', '9', 'completed', '', '2026-05-24 22:14:48', '2026-05-24 22:16:01');
-INSERT INTO `trade` VALUES ('102', '9', '24', 'completed', '', '2026-05-24 22:15:35', '2026-05-24 22:19:55');
-INSERT INTO `trade` VALUES ('103', '26', '17', 'completed', '', '2026-05-24 22:26:59', '2026-05-24 22:27:11');
-INSERT INTO `trade` VALUES ('104', '17', '26', 'rejected', '', '2026-05-24 22:27:05', '2026-05-24 22:27:35');
 
 -- ----------------------------
 -- Table structure for trade_items
@@ -3542,187 +2144,11 @@ CREATE TABLE `trade_items` (
   KEY `idx_trade_id` (`trade_id`),
   KEY `idx_item` (`item_type`,`item_id`),
   CONSTRAINT `trade_items_ibfk_1` FOREIGN KEY (`trade_id`) REFERENCES `trade` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=197 DEFAULT CHARSET=utf8mb4 COMMENT='交易物品明细表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='交易物品明细表';
 
 -- ----------------------------
 -- Records of trade_items
 -- ----------------------------
-INSERT INTO `trade_items` VALUES ('21', '14', 'material', '1', '5', 'give', '2026-05-22 19:24:05', '金属制品', '个', null);
-INSERT INTO `trade_items` VALUES ('22', '14', 'material', '2', '20', 'give', '2026-05-22 19:24:05', '木材', '个', null);
-INSERT INTO `trade_items` VALUES ('23', '14', 'weapon', '2', '1', 'take', '2026-05-22 19:24:05', '猎枪', '个', null);
-INSERT INTO `trade_items` VALUES ('24', '15', 'material', '5', '5', 'give', '2026-05-22 19:24:07', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('25', '15', 'material', '5', '1', 'take', '2026-05-22 19:24:07', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('26', '16', 'material', '5', '5', 'give', '2026-05-22 19:24:36', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('27', '16', 'material', '5', '1', 'take', '2026-05-22 19:24:36', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('28', '17', 'material', '5', '2', 'give', '2026-05-22 19:56:33', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('29', '18', 'material', '1', '10', 'give', '2026-05-22 19:59:59', '金属制品', '个', null);
-INSERT INTO `trade_items` VALUES ('30', '19', 'material', '2', '30', 'give', '2026-05-22 20:01:00', '木材', '个', null);
-INSERT INTO `trade_items` VALUES ('31', '20', 'material', '2', '1', 'give', '2026-05-22 20:03:49', '木材', '个', null);
-INSERT INTO `trade_items` VALUES ('32', '20', 'weapon', '2', '1', 'take', '2026-05-22 20:03:49', '猎枪', '个', null);
-INSERT INTO `trade_items` VALUES ('33', '20', 'ammo', '2', '2', 'take', '2026-05-22 20:03:49', '猎枪弹', '个', null);
-INSERT INTO `trade_items` VALUES ('34', '21', 'material', '5', '2', 'give', '2026-05-22 20:22:27', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('35', '22', 'material', '2', '20', 'give', '2026-05-22 20:42:46', '木材', '个', null);
-INSERT INTO `trade_items` VALUES ('36', '22', 'material', '3', '10', 'give', '2026-05-22 20:42:46', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('37', '23', 'material', '2', '3', 'take', '2026-05-22 20:53:46', null, null, null);
-INSERT INTO `trade_items` VALUES ('38', '23', 'material', '1', '7', 'take', '2026-05-22 20:53:46', null, null, null);
-INSERT INTO `trade_items` VALUES ('39', '24', 'material', '2', '3', 'take', '2026-05-22 20:53:49', null, null, null);
-INSERT INTO `trade_items` VALUES ('40', '24', 'material', '1', '7', 'take', '2026-05-22 20:53:49', null, null, null);
-INSERT INTO `trade_items` VALUES ('41', '25', 'material', '5', '2', 'give', '2026-05-22 21:23:53', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('42', '26', 'material', '5', '2', 'take', '2026-05-22 21:28:38', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('43', '27', 'material', '8', '3', 'give', '2026-05-22 21:38:40', '燃料', 'kg', null);
-INSERT INTO `trade_items` VALUES ('44', '28', 'material', '8', '2', 'give', '2026-05-22 21:41:14', '燃料', 'kg', null);
-INSERT INTO `trade_items` VALUES ('45', '29', 'ammo', '3', '1', 'give', '2026-05-22 22:16:17', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('46', '29', 'material', '5', '2', 'take', '2026-05-22 22:16:17', null, null, null);
-INSERT INTO `trade_items` VALUES ('47', '29', 'material', '8', '15', 'take', '2026-05-22 22:16:17', null, null, null);
-INSERT INTO `trade_items` VALUES ('48', '30', 'material', '3', '30', 'give', '2026-05-22 22:46:05', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('49', '30', 'material', '9', '10', 'give', '2026-05-22 22:46:05', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('50', '30', 'material', '1', '7', 'take', '2026-05-22 22:46:05', '金属制品', '个', null);
-INSERT INTO `trade_items` VALUES ('51', '31', 'material', '2', '10', 'give', '2026-05-22 22:56:40', '木材', '个', null);
-INSERT INTO `trade_items` VALUES ('52', '32', 'material', '5', '2', 'give', '2026-05-22 22:58:28', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('53', '32', 'item', '8', '1', 'take', '2026-05-22 22:58:28', '维修工具包', '个', null);
-INSERT INTO `trade_items` VALUES ('54', '33', 'material', '2', '10', 'give', '2026-05-22 23:09:29', '木材', '个', null);
-INSERT INTO `trade_items` VALUES ('55', '34', 'material', '5', '2', 'give', '2026-05-22 23:26:54', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('56', '35', 'material', '5', '2', 'give', '2026-05-22 23:34:13', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('57', '36', 'ammo', '3', '1', 'give', '2026-05-23 00:23:40', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('58', '36', 'material', '5', '2', 'take', '2026-05-23 00:23:40', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('59', '36', 'material', '8', '1', 'take', '2026-05-23 00:23:40', '燃料', 'kg', null);
-INSERT INTO `trade_items` VALUES ('60', '37', 'material', '5', '2', 'give', '2026-05-23 00:24:12', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('61', '37', 'material', '8', '1', 'give', '2026-05-23 00:24:12', '燃料', 'kg', null);
-INSERT INTO `trade_items` VALUES ('62', '37', 'item', '4', '1', 'take', '2026-05-23 00:24:12', '哨子', '个', null);
-INSERT INTO `trade_items` VALUES ('63', '38', 'material', '8', '5', 'give', '2026-05-23 00:24:34', '燃料', 'kg', null);
-INSERT INTO `trade_items` VALUES ('64', '39', 'material', '6', '30', 'take', '2026-05-23 00:44:59', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('65', '40', 'material', '8', '5', 'give', '2026-05-23 01:30:51', '燃料', 'kg', null);
-INSERT INTO `trade_items` VALUES ('66', '40', 'material', '5', '2', 'give', '2026-05-23 01:30:51', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('67', '40', 'material', '1', '5', 'take', '2026-05-23 01:30:51', '金属制品', '个', null);
-INSERT INTO `trade_items` VALUES ('68', '41', 'weapon', '8', '2', 'take', '2026-05-23 01:37:37', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('69', '41', 'material', '2', '500', 'take', '2026-05-23 01:37:37', '木材', '个', null);
-INSERT INTO `trade_items` VALUES ('70', '41', 'material', '5', '10', 'take', '2026-05-23 01:37:37', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('71', '42', 'weapon', '2', '1', 'take', '2026-05-23 01:37:51', '猎枪', '个', null);
-INSERT INTO `trade_items` VALUES ('72', '43', 'material', '9', '30', 'take', '2026-05-23 01:40:05', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('73', '43', 'material', '3', '100', 'take', '2026-05-23 01:40:05', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('74', '43', 'material', '1', '30', 'take', '2026-05-23 01:40:05', '金属制品', '个', null);
-INSERT INTO `trade_items` VALUES ('75', '43', 'ammo', '2', '2', 'take', '2026-05-23 01:40:05', '猎枪弹', '个', null);
-INSERT INTO `trade_items` VALUES ('76', '43', 'weapon', '9', '2', 'take', '2026-05-23 01:40:05', '斧头', '个', null);
-INSERT INTO `trade_items` VALUES ('77', '44', 'item', '18', '2', 'give', '2026-05-23 11:26:51', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('78', '44', 'material', '5', '1', 'take', '2026-05-23 11:26:51', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('79', '45', 'weapon', '7', '1', 'give', '2026-05-23 14:37:20', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('80', '46', 'item', '6', '1', 'give', '2026-05-23 14:39:26', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('81', '47', 'material', '1', '10', 'give', '2026-05-23 15:34:01', '金属制品', '个', null);
-INSERT INTO `trade_items` VALUES ('82', '48', 'item', '12', '1', 'give', '2026-05-23 16:57:02', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('83', '48', 'weapon', '4', '1', 'give', '2026-05-23 16:57:02', '刺刀', '个', null);
-INSERT INTO `trade_items` VALUES ('84', '48', 'material', '2', '65', 'give', '2026-05-23 16:57:02', '木材', '个', null);
-INSERT INTO `trade_items` VALUES ('85', '48', 'material', '3', '20', 'give', '2026-05-23 16:57:02', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('86', '48', 'material', '5', '9', 'give', '2026-05-23 16:57:02', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('87', '48', 'material', '8', '9', 'give', '2026-05-23 16:57:02', '燃料', 'kg', null);
-INSERT INTO `trade_items` VALUES ('88', '49', 'ammo', '2', '2', 'give', '2026-05-23 19:08:18', '猎枪弹', '个', null);
-INSERT INTO `trade_items` VALUES ('89', '49', 'weapon', '2', '1', 'give', '2026-05-23 19:08:18', '猎枪', '个', null);
-INSERT INTO `trade_items` VALUES ('90', '50', 'weapon', '8', '1', 'give', '2026-05-23 19:15:13', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('91', '51', 'weapon', '8', '1', 'give', '2026-05-23 19:16:00', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('92', '52', 'weapon', '9', '1', 'give', '2026-05-23 19:16:28', '斧头', '个', null);
-INSERT INTO `trade_items` VALUES ('93', '53', 'weapon', '4', '1', 'give', '2026-05-23 19:18:01', '刺刀', '个', null);
-INSERT INTO `trade_items` VALUES ('94', '54', 'material', '5', '4', 'give', '2026-05-23 19:34:34', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('95', '55', 'material', '5', '4', 'give', '2026-05-23 19:36:30', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('96', '56', 'material', '1', '2', 'give', '2026-05-23 19:40:10', '金属制品', '个', null);
-INSERT INTO `trade_items` VALUES ('97', '57', 'item', '14', '10', 'give', '2026-05-23 19:41:09', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('98', '58', 'material', '5', '2', 'give', '2026-05-23 19:47:32', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('99', '58', 'material', '1', '2', 'take', '2026-05-23 19:47:32', '金属制品', '个', null);
-INSERT INTO `trade_items` VALUES ('100', '59', 'material', '5', '2', 'give', '2026-05-23 19:55:09', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('101', '60', 'material', '5', '20', 'give', '2026-05-23 19:55:44', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('102', '61', 'material', '2', '30', 'give', '2026-05-23 19:59:00', '木材', '个', null);
-INSERT INTO `trade_items` VALUES ('103', '61', 'item', '18', '4', 'take', '2026-05-23 19:59:00', null, null, null);
-INSERT INTO `trade_items` VALUES ('104', '62', 'item', '18', '3', 'give', '2026-05-23 20:01:33', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('105', '62', 'material', '2', '30', 'take', '2026-05-23 20:01:33', '木材', '个', null);
-INSERT INTO `trade_items` VALUES ('106', '63', 'material', '5', '10', 'take', '2026-05-23 20:02:20', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('107', '63', 'material', '2', '15', 'take', '2026-05-23 20:02:20', '木材', '个', null);
-INSERT INTO `trade_items` VALUES ('108', '64', 'material', '2', '15', 'take', '2026-05-23 20:02:43', '木材', '个', null);
-INSERT INTO `trade_items` VALUES ('109', '64', 'material', '5', '10', 'take', '2026-05-23 20:02:43', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('110', '65', 'item', '18', '1', 'give', '2026-05-23 20:09:46', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('111', '65', 'item', '7', '1', 'take', '2026-05-23 20:09:46', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('112', '66', 'item', '20', '1', 'give', '2026-05-23 20:12:47', '燃料仓库钥匙', '个', null);
-INSERT INTO `trade_items` VALUES ('113', '66', 'item', '10', '1', 'take', '2026-05-23 20:12:47', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('114', '67', 'material', '5', '1', 'give', '2026-05-23 20:25:05', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('115', '68', 'material', '6', '30', 'give', '2026-05-23 21:04:17', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('116', '68', 'material', '1', '40', 'give', '2026-05-23 21:04:17', '金属制品', '个', null);
-INSERT INTO `trade_items` VALUES ('117', '69', 'material', '2', '80', 'give', '2026-05-23 21:12:20', '木材', '个', null);
-INSERT INTO `trade_items` VALUES ('118', '70', 'material', '1', '4', 'give', '2026-05-23 21:49:07', '金属制品', '个', null);
-INSERT INTO `trade_items` VALUES ('119', '71', 'material', '1', '2', 'give', '2026-05-23 21:51:00', '金属制品', '个', null);
-INSERT INTO `trade_items` VALUES ('120', '72', 'weapon', '4', '1', 'give', '2026-05-23 23:23:45', '刺刀', '个', null);
-INSERT INTO `trade_items` VALUES ('121', '73', 'weapon', '4', '1', 'give', '2026-05-23 23:24:59', '刺刀', '个', null);
-INSERT INTO `trade_items` VALUES ('122', '74', 'material', '6', '20', 'give', '2026-05-23 23:40:08', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('123', '75', 'material', '10', '1', 'give', '2026-05-23 23:42:37', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('124', '75', 'material', '11', '1', 'give', '2026-05-23 23:42:37', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('125', '76', 'ammo', '4', '2', 'give', '2026-05-24 12:33:52', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('126', '76', 'material', '5', '1', 'take', '2026-05-24 12:33:52', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('127', '77', 'item', '6', '1', 'give', '2026-05-24 13:39:28', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('128', '77', 'weapon', '8', '1', 'take', '2026-05-24 13:39:28', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('129', '78', 'item', '17', '1', 'give', '2026-05-24 14:05:33', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('130', '78', 'material', '11', '3', 'give', '2026-05-24 14:05:33', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('131', '78', 'material', '5', '2', 'take', '2026-05-24 14:05:33', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('132', '79', 'material', '6', '50', 'give', '2026-05-24 14:06:05', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('133', '79', 'material', '5', '1', 'take', '2026-05-24 14:06:05', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('134', '80', 'weapon', '4', '1', 'give', '2026-05-24 14:43:54', '刺刀', '个', null);
-INSERT INTO `trade_items` VALUES ('135', '81', 'weapon', '4', '1', 'give', '2026-05-24 14:44:11', '刺刀', '个', null);
-INSERT INTO `trade_items` VALUES ('136', '82', 'item', '18', '1', 'give', '2026-05-24 18:08:15', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('137', '83', 'item', '18', '1', 'give', '2026-05-24 18:19:47', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('138', '84', 'material', '6', '50', 'give', '2026-05-24 18:28:16', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('139', '85', 'material', '6', '20', 'give', '2026-05-24 19:07:05', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('140', '86', 'material', '11', '3', 'give', '2026-05-24 19:09:46', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('141', '86', 'material', '9', '10', 'give', '2026-05-24 19:09:46', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('142', '86', 'material', '3', '40', 'give', '2026-05-24 19:09:46', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('143', '87', 'material', '5', '2', 'give', '2026-05-24 19:14:26', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('144', '88', 'item', '18', '1', 'give', '2026-05-24 19:15:56', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('145', '89', 'material', '9', '10', 'give', '2026-05-24 19:21:42', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('146', '89', 'material', '3', '60', 'give', '2026-05-24 19:21:42', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('147', '90', 'item', '18', '1', 'give', '2026-05-24 20:01:52', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('148', '90', 'material', '5', '1', 'take', '2026-05-24 20:01:52', null, null, null);
-INSERT INTO `trade_items` VALUES ('149', '91', 'item', '18', '1', 'give', '2026-05-24 20:15:12', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('150', '91', 'material', '5', '1', 'take', '2026-05-24 20:15:12', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('151', '92', 'material', '5', '2', 'give', '2026-05-24 20:33:57', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('152', '93', 'item', '2', '1', 'give', '2026-05-24 20:35:16', '手电筒', '个', null);
-INSERT INTO `trade_items` VALUES ('153', '93', 'item', '12', '1', 'give', '2026-05-24 20:35:16', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('154', '93', 'item', '15', '1', 'give', '2026-05-24 20:35:16', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('155', '93', 'material', '8', '11', 'give', '2026-05-24 20:35:16', '燃料', 'kg', null);
-INSERT INTO `trade_items` VALUES ('156', '93', 'material', '5', '31', 'give', '2026-05-24 20:35:16', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('157', '93', 'material', '3', '10', 'give', '2026-05-24 20:35:16', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('158', '93', 'material', '2', '12', 'give', '2026-05-24 20:35:16', '木材', '个', null);
-INSERT INTO `trade_items` VALUES ('159', '94', 'material', '5', '2', 'give', '2026-05-24 20:37:46', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('160', '95', 'item', '1', '2', 'give', '2026-05-24 20:59:18', '医疗包', '个', null);
-INSERT INTO `trade_items` VALUES ('161', '95', 'item', '2', '10', 'give', '2026-05-24 20:59:18', '手电筒', '个', null);
-INSERT INTO `trade_items` VALUES ('162', '95', 'item', '3', '4', 'give', '2026-05-24 20:59:18', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('163', '95', 'item', '5', '1', 'give', '2026-05-24 20:59:18', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('164', '95', 'item', '6', '2', 'give', '2026-05-24 20:59:18', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('165', '95', 'item', '10', '20', 'give', '2026-05-24 20:59:18', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('166', '95', 'item', '11', '3', 'give', '2026-05-24 20:59:18', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('167', '95', 'item', '12', '1', 'give', '2026-05-24 20:59:18', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('168', '95', 'item', '13', '20', 'give', '2026-05-24 20:59:18', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('169', '95', 'item', '14', '5', 'give', '2026-05-24 20:59:18', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('170', '95', 'item', '15', '2', 'give', '2026-05-24 20:59:18', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('171', '95', 'item', '18', '1', 'give', '2026-05-24 20:59:18', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('172', '95', 'weapon', '1', '2', 'give', '2026-05-24 20:59:18', '制式手枪', '个', null);
-INSERT INTO `trade_items` VALUES ('173', '95', 'weapon', '2', '1', 'give', '2026-05-24 20:59:18', '猎枪', '个', null);
-INSERT INTO `trade_items` VALUES ('174', '95', 'weapon', '3', '4', 'give', '2026-05-24 20:59:18', '警棍', '个', null);
-INSERT INTO `trade_items` VALUES ('175', '95', 'weapon', '4', '2', 'give', '2026-05-24 20:59:18', '刺刀', '个', null);
-INSERT INTO `trade_items` VALUES ('176', '95', 'weapon', '6', '1', 'give', '2026-05-24 20:59:18', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('177', '95', 'weapon', '7', '1', 'give', '2026-05-24 20:59:18', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('178', '95', 'ammo', '1', '4', 'give', '2026-05-24 20:59:18', '手枪弹', '个', null);
-INSERT INTO `trade_items` VALUES ('179', '95', 'ammo', '2', '2', 'give', '2026-05-24 20:59:18', '猎枪弹', '个', null);
-INSERT INTO `trade_items` VALUES ('180', '95', 'ammo', '3', '2', 'give', '2026-05-24 20:59:18', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('181', '95', 'ammo', '4', '2', 'give', '2026-05-24 20:59:18', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('182', '95', 'material', '8', '193', 'give', '2026-05-24 20:59:18', '燃料', 'kg', null);
-INSERT INTO `trade_items` VALUES ('183', '95', 'material', '5', '3', 'give', '2026-05-24 20:59:18', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('184', '95', 'item', '7', '1', 'give', '2026-05-24 20:59:18', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('185', '96', 'weapon', '3', '1', 'give', '2026-05-24 20:59:52', '警棍', '个', null);
-INSERT INTO `trade_items` VALUES ('186', '97', 'material', '9', '50', 'give', '2026-05-24 21:09:11', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('187', '98', 'weapon', '2', '1', 'give', '2026-05-24 21:09:41', '猎枪', '个', null);
-INSERT INTO `trade_items` VALUES ('188', '98', 'ammo', '2', '2', 'give', '2026-05-24 21:09:41', '猎枪弹', '个', null);
-INSERT INTO `trade_items` VALUES ('189', '99', 'material', '3', '10', 'give', '2026-05-24 21:13:52', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('190', '100', 'item', '15', '1', 'give', '2026-05-24 21:22:30', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('191', '101', 'material', '5', '10', 'give', '2026-05-24 22:14:48', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('192', '102', 'weapon', '7', '1', 'give', '2026-05-24 22:15:35', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('193', '102', 'ammo', '4', '1', 'give', '2026-05-24 22:15:35', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('194', '102', 'material', '5', '10', 'take', '2026-05-24 22:15:35', '食物', 'kg', null);
-INSERT INTO `trade_items` VALUES ('195', '103', 'item', '6', '1', 'give', '2026-05-24 22:26:59', '未知物品', '个', null);
-INSERT INTO `trade_items` VALUES ('196', '104', 'item', '6', '1', 'take', '2026-05-24 22:27:05', null, null, null);
 
 -- ----------------------------
 -- Table structure for user
@@ -3741,41 +2167,12 @@ CREATE TABLE `user` (
   UNIQUE KEY `username` (`username`),
   KEY `player_id` (`player_id`),
   CONSTRAINT `user_ibfk_1` FOREIGN KEY (`player_id`) REFERENCES `player` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
 
 -- ----------------------------
 -- Records of user
 -- ----------------------------
 INSERT INTO `user` VALUES ('1', 'hey', '695390489', 'dm', null, '2026-04-26 22:13:35', '2026-05-22 18:18:31', '1');
-INSERT INTO `user` VALUES ('2', '笙笙', '123ghjkl', 'dm', null, '2026-04-26 22:13:35', '2026-05-22 20:29:26', '1');
-INSERT INTO `user` VALUES ('10', 'psq810820', 'psq810820', 'player', '8', '2026-05-22 17:11:11', '2026-05-22 17:11:11', '1');
-INSERT INTO `user` VALUES ('11', 'duijiu', '496815641', 'player', '9', '2026-05-22 17:14:43', '2026-05-22 17:14:43', '1');
-INSERT INTO `user` VALUES ('12', '5201314xy', '5201314xy', 'player', '10', '2026-05-22 17:16:42', '2026-05-22 17:16:42', '1');
-INSERT INTO `user` VALUES ('13', 'xishuai', '1986416781', 'player', '11', '2026-05-22 17:19:14', '2026-05-22 17:19:14', '1');
-INSERT INTO `user` VALUES ('14', 'maple8276', 'weiyang20021020', 'player', '12', '2026-05-22 17:24:37', '2026-05-22 18:14:34', '1');
-INSERT INTO `user` VALUES ('15', 'pinglan', '1548164', 'player', '13', '2026-05-22 17:26:00', '2026-05-22 17:26:00', '1');
-INSERT INTO `user` VALUES ('16', 'cyril', 'celtic', 'player', '14', '2026-05-22 17:31:02', '2026-05-22 17:31:02', '1');
-INSERT INTO `user` VALUES ('17', '8738', '123456', 'player', '15', '2026-05-22 17:32:02', '2026-05-22 17:32:02', '1');
-INSERT INTO `user` VALUES ('18', 'gcmj0526', 'gcmj0526', 'player', '16', '2026-05-22 17:33:39', '2026-05-22 17:33:39', '1');
-INSERT INTO `user` VALUES ('19', 'mikotouma', '128307', 'player', '17', '2026-05-22 17:34:38', '2026-05-22 17:34:38', '1');
-INSERT INTO `user` VALUES ('20', 'cl5220682', 'asd147258369', 'player', '18', '2026-05-22 17:35:54', '2026-05-22 17:35:54', '1');
-INSERT INTO `user` VALUES ('21', 'fxgpt', 'fuxue0522', 'player', '19', '2026-05-22 17:36:56', '2026-05-22 17:36:56', '1');
-INSERT INTO `user` VALUES ('22', 'zhuifeng233', '741963', 'player', '20', '2026-05-22 17:38:36', '2026-05-22 19:20:10', '1');
-INSERT INTO `user` VALUES ('23', 'leyu', '514615', 'player', '21', '2026-05-22 17:40:25', '2026-05-22 17:40:25', '1');
-INSERT INTO `user` VALUES ('24', '1261952870', '15922665792', 'player', '22', '2026-05-22 17:41:19', '2026-05-22 17:41:19', '1');
-INSERT INTO `user` VALUES ('25', 'jiaohuang', '1515614', 'player', '23', '2026-05-22 17:42:40', '2026-05-22 17:42:40', '1');
-INSERT INTO `user` VALUES ('26', 'huahai', '12345678', 'player', '24', '2026-05-22 17:46:08', '2026-05-22 19:34:17', '1');
-INSERT INTO `user` VALUES ('27', 'tony123', 'owokzh&&', 'player', '25', '2026-05-22 17:47:48', '2026-05-22 17:47:48', '1');
-INSERT INTO `user` VALUES ('28', 'V', 'Welcome2026!', 'player', '26', '2026-05-22 17:49:51', '2026-05-22 17:49:51', '1');
-INSERT INTO `user` VALUES ('29', 'degou', '148561', 'player', '27', '2026-05-22 17:51:15', '2026-05-22 17:51:15', '1');
-INSERT INTO `user` VALUES ('30', 'xiaohei', '1221445', 'player', '28', '2026-05-22 17:56:36', '2026-05-22 17:56:36', '1');
-INSERT INTO `user` VALUES ('31', 'feifan', '164516', 'player', '29', '2026-05-22 17:58:03', '2026-05-22 17:58:03', '1');
-INSERT INTO `user` VALUES ('32', '15102374415', 'sansan117', 'player', '30', '2026-05-22 18:00:26', '2026-05-22 18:00:26', '1');
-INSERT INTO `user` VALUES ('33', 'xianyu', '357537', 'player', '31', '2026-05-22 18:04:24', '2026-05-22 18:04:24', '1');
-INSERT INTO `user` VALUES ('34', 'hjx18825', '200825', 'player', '32', '2026-05-22 18:07:26', '2026-05-22 18:07:26', '1');
-INSERT INTO `user` VALUES ('35', 'mirageshyv', '123456', 'player', '33', '2026-05-23 19:49:05', '2026-05-23 19:49:05', '1');
-INSERT INTO `user` VALUES ('36', 'player', '123456', 'player', '34', '2026-06-22 11:55:43', '2026-06-22 11:55:43', '1');
-INSERT INTO `user` VALUES ('37', 'cs', 'cs', 'player', '35', '2026-06-24 20:08:33', '2026-06-24 20:08:33', '1');
 
 -- ----------------------------
 -- Table structure for warehouse_ark
@@ -3797,7 +2194,6 @@ CREATE TABLE `warehouse_ark` (
 -- ----------------------------
 -- Records of warehouse_ark
 -- ----------------------------
-INSERT INTO `warehouse_ark` VALUES ('6', 'material', '2', '40000', '2026-05-24 20:50:30', '2026-05-24 20:50:30');
 
 -- ----------------------------
 -- Table structure for warehouse_armory
@@ -3819,7 +2215,6 @@ CREATE TABLE `warehouse_armory` (
 -- ----------------------------
 -- Records of warehouse_armory
 -- ----------------------------
-INSERT INTO `warehouse_armory` VALUES ('15', 'material', '2', '495', '2026-05-22 22:07:28', '2026-05-23 22:05:19');
 
 -- ----------------------------
 -- Table structure for warehouse_config
@@ -3888,9 +2283,6 @@ CREATE TABLE `warehouse_fuel` (
 -- ----------------------------
 -- Records of warehouse_fuel
 -- ----------------------------
-INSERT INTO `warehouse_fuel` VALUES ('2', 'material', '2', '99046', '2026-05-17 00:00:00', '2026-05-24 12:46:52');
-INSERT INTO `warehouse_fuel` VALUES ('3', 'material', '6', '100', '2026-06-22 12:00:53', '2026-06-22 12:00:53');
-INSERT INTO `warehouse_fuel` VALUES ('4', 'material', '8', '20', '2026-06-22 12:01:07', '2026-06-22 12:01:07');
 
 -- ----------------------------
 -- Table structure for warehouse_general
@@ -3912,12 +2304,6 @@ CREATE TABLE `warehouse_general` (
 -- ----------------------------
 -- Records of warehouse_general
 -- ----------------------------
-INSERT INTO `warehouse_general` VALUES ('1', 'material', '1', '49991', '2026-05-17 00:00:00', '2026-05-24 16:21:04');
-INSERT INTO `warehouse_general` VALUES ('2', 'material', '7', '5000', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
-INSERT INTO `warehouse_general` VALUES ('4', 'material', '3', '100', '2026-05-17 00:00:00', '2026-05-22 05:21:43');
-INSERT INTO `warehouse_general` VALUES ('9', 'material', '12', '1', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
-INSERT INTO `warehouse_general` VALUES ('10', 'material', '2', '3060', '2026-05-22 05:21:17', '2026-05-24 21:30:06');
-INSERT INTO `warehouse_general` VALUES ('11', 'material', '4', '100', '2026-05-22 05:21:35', '2026-05-22 05:21:35');
 
 -- ----------------------------
 -- Table structure for warehouse_rebel
@@ -3939,11 +2325,6 @@ CREATE TABLE `warehouse_rebel` (
 -- ----------------------------
 -- Records of warehouse_rebel
 -- ----------------------------
-INSERT INTO `warehouse_rebel` VALUES ('1', 'weapon', '2', '1', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
-INSERT INTO `warehouse_rebel` VALUES ('2', 'ammo', '2', '2', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
-INSERT INTO `warehouse_rebel` VALUES ('3', 'weapon', '7', '2', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
-INSERT INTO `warehouse_rebel` VALUES ('4', 'ammo', '4', '4', '2026-05-17 00:00:00', '2026-05-17 00:00:00');
-INSERT INTO `warehouse_rebel` VALUES ('5', 'material', '6', '20', '2026-05-22 05:23:38', '2026-05-22 05:23:38');
 
 -- ----------------------------
 -- Table structure for weapon

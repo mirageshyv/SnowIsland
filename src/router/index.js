@@ -35,6 +35,12 @@ const router = createRouter({
           name: 'DmNpc',
           component: () => import('../views/DmNpcManagementView.vue'),
           meta: { requiresAuth: true, role: 'dm' }
+        },
+        {
+          path: 'reset',
+          name: 'GameReset',
+          component: () => import('../views/GameResetView.vue'),
+          meta: { requiresAuth: true, role: 'dm' }
         }
       ]
     },

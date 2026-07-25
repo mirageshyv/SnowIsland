@@ -782,6 +782,7 @@ export const PASSWORD_MAX_LENGTH = 100
 export const SHELTER_LABOR_BASE = 4
 export const SHELTER_LABOR_JOB_BONUS = 1
 export const SHELTER_LABOR_EXPLOIT_BONUS = 3
+export const SHELTER_LABOR_SLACKING_PENALTY = 1
 
 const SHELTER_PRODUCTION_JOB_NAMES = new Set(['渔民', '农户', '伐木工', '矿工', '猎户'])
 const SHELTER_PRODUCTION_SKILL_KEYWORDS = ['食物生产', '伐木', '挖掘', '炼铁']
@@ -792,12 +793,13 @@ export function isShelterProductionJob(jobName, jobSkills = '') {
   return SHELTER_PRODUCTION_SKILL_KEYWORDS.some((kw) => s.includes(kw))
 }
 
-export function calcShelterLaborBuildValue({ productionJob, exploited, escaped }) {
+export function calcShelterLaborBuildValue({ productionJob, exploited, escaped, slacking }) {
   if (escaped) return 0
   let v = SHELTER_LABOR_BASE
   if (productionJob) v += SHELTER_LABOR_JOB_BONUS
   if (exploited) v += SHELTER_LABOR_EXPLOIT_BONUS
-  return v
+  if (slacking) v -= SHELTER_LABOR_SLACKING_PENALTY
+  return Math.max(0, v)
 }
 
 export function shelterLaborTypeLabel(productionJob, exploited) {
@@ -807,11 +809,12 @@ export function shelterLaborTypeLabel(productionJob, exploited) {
   return '普通劳工'
 }
 
-export function shelterLaborBuildBreakdown(productionJob, exploited, escaped) {
+export function shelterLaborBuildBreakdown(productionJob, exploited, escaped, slacking) {
   if (escaped) return '逃役（0）'
   const parts = [`基础${SHELTER_LABOR_BASE}`]
   if (productionJob) parts.push(`职业+${SHELTER_LABOR_JOB_BONUS}`)
   if (exploited) parts.push(`压榨+${SHELTER_LABOR_EXPLOIT_BONUS}`)
+  if (slacking) parts.push(`怠工-${SHELTER_LABOR_SLACKING_PENALTY}`)
   return parts.join(' + ')
 }
 
@@ -820,11 +823,12 @@ export function refreshShelterLaborRow(row) {
   const productionJob = row.productionJob ?? isShelterProductionJob(row.jobName, row.jobSkills)
   row.productionJob = productionJob
   row.laborType = shelterLaborTypeLabel(productionJob, Boolean(row.exploited))
-  row.buildValueBreakdown = shelterLaborBuildBreakdown(productionJob, Boolean(row.exploited), Boolean(row.escaped))
+  row.buildValueBreakdown = shelterLaborBuildBreakdown(productionJob, Boolean(row.exploited), Boolean(row.escaped), Boolean(row.slacking))
   row.buildValue = calcShelterLaborBuildValue({
     productionJob,
     exploited: Boolean(row.exploited),
     escaped: Boolean(row.escaped),
+    slacking: Boolean(row.slacking),
   })
   row.computedBuildValue = row.buildValue
   return row

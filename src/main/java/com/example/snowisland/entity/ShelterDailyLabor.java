@@ -29,6 +29,9 @@ public class ShelterDailyLabor {
     @Column(name = "is_escaped", nullable = false)
     private Boolean escaped = false;
 
+    @Column(name = "is_slacking", nullable = false)
+    private Boolean slacking = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -101,6 +104,14 @@ public class ShelterDailyLabor {
 
     public void setEscaped(Boolean escaped) {
         this.escaped = escaped;
+    }
+
+    public Boolean getSlacking() {
+        return slacking;
+    }
+
+    public void setSlacking(Boolean slacking) {
+        this.slacking = slacking;
     }
 
     public LocalDateTime getCreatedAt() {

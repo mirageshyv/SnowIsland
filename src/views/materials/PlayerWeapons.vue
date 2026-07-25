@@ -9,15 +9,25 @@ const playerId = localStorage.getItem('playerId') || '1'
 
 const weaponsMap = {
   1: { name: '制式手枪', threat_level: 5, remark: '标准配备' },
-  2: { name: '猎枪', threat_level: 8, remark: '威力较大' },
-  3: { name: '警棍', threat_level: 3, remark: '非致命武器' },
+  2: { name: '猎枪', threat_level: 6, remark: '威力较大' },
+  3: { name: '警棍', threat_level: 1, remark: '非致命武器' },
   4: { name: '刺刀', threat_level: 2, remark: '近战武器' },
-  5: { name: '水手刀', threat_level: 3, remark: '多功能刀具' },
-  6: { name: '鱼叉/矛', threat_level: 6, remark: '狩猎工具' },
-  7: { name: '猎弓', threat_level: 5, remark: '远程武器' },
-  8: { name: '十字镐', threat_level: 4, remark: '挖掘工具' },
-  9: { name: '斧头', threat_level: 6, remark: '砍伐工具' },
-  10: { name: '电锯', threat_level: 7, remark: '切割工具' }
+  5: { name: '水手刀', threat_level: 2, remark: '多功能刀具' },
+  6: { name: '鱼叉/矛', threat_level: 3, remark: '狩猎工具' },
+  7: { name: '猎弓', threat_level: 4, remark: '远程武器' },
+  8: { name: '十字镐', threat_level: 1, remark: '挖掘工具' },
+  9: { name: '斧头', threat_level: 2, remark: '砍伐工具' },
+  10: { name: '电锯', threat_level: 4, remark: '切割工具' },
+  11: { name: '手术刀', threat_level: 1, remark: '医疗手术刀' },
+  12: { name: '炸药', threat_level: 10, remark: '爆炸装置' }
+}
+
+const getWeaponName = (weaponId) => {
+  return weaponsMap[weaponId]?.name || '未知武器'
+}
+
+const getWeaponRemark = (weaponId) => {
+  return weaponsMap[weaponId]?.remark || ''
 }
 
 const ammoMap = {
@@ -34,10 +44,6 @@ const getThreatColor = (level) => {
   return 'text-emerald-400 bg-emerald-500/20'
 }
 
-const getWeaponInfo = (weaponId) => {
-  return weaponsMap[weaponId] || { name: '未知武器', threat_level: 0, remark: '' }
-}
-
 const getAmmoInfo = (ammoId) => {
   return ammoMap[ammoId] || { name: '未知弹药', weapon_name: '', remark: '' }
 }
@@ -48,14 +54,13 @@ const loadWeaponsAndAmmo = async () => {
     const result = await playerAPI.getItems(playerId)
     if (Array.isArray(result)) {
       weapons.value = result.filter(item => item.type === 'weapon').map(item => {
-        const info = getWeaponInfo(item.id)
         return {
           id: item.id,
-          name: info.name,
+          name: item.name || getWeaponName(item.id),
           unit: item.unit || '把',
           quantity: item.quantity,
-          threat_level: info.threat_level,
-          remark: info.remark,
+          threat_level: item.threatLevel ?? weaponsMap[item.id]?.threat_level ?? 0,
+          remark: item.remark || getWeaponRemark(item.id),
           icon: '⚔️'
         }
       })

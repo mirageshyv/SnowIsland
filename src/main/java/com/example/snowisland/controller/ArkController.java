@@ -28,6 +28,15 @@ public class ArkController {
         return arkService.investResources(wood, metal, sealant);
     }
 
+    @PostMapping("/remove")
+    public Map<String, Object> removeResources(
+            @RequestParam(required = false, defaultValue = "0") Double wood,
+            @RequestParam(required = false, defaultValue = "0") Double metal,
+            @RequestParam(required = false, defaultValue = "0") Integer sealant
+    ) {
+        return arkService.removeResources(wood, metal, sealant);
+    }
+
     @PostMapping("/component")
     public Map<String, Object> installComponent(
             @RequestParam String componentType,
@@ -44,5 +53,10 @@ public class ArkController {
     @PostMapping("/reset")
     public Map<String, Object> reset() {
         return arkService.reset();
+    }
+
+    @PostMapping("/init-progress")
+    public Map<String, Object> initProgress() {
+        return arkService.initializeProgress();
     }
 }

@@ -82,4 +82,9 @@ public class CatastropheController {
     public ResponseEntity<Map<String, Object>> resetCatastrophe(@RequestParam(required = false) String userRole) {
         return ResponseEntity.ok(catastropheService.resetCatastrophe(userRole));
     }
+
+    @PostMapping("/reload-cards")
+    public ResponseEntity<Map<String, Object>> clearAndReloadCards(@RequestParam(required = false) String userRole) {
+        return ResponseEntity.ok(catastropheService.clearAndReloadCards(userRole));
+    }
 }

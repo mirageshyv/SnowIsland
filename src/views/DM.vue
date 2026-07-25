@@ -19,6 +19,7 @@ import DmSystemLogView from './DmSystemLogView.vue'
 import EndgameSettlementView from './EndgameSettlementView.vue'
 import DmExplorationSettlementView from './DmExplorationSettlementView.vue'
 const DmNpcManagementView = defineAsyncComponent(() => import('./DmNpcManagementView.vue'))
+const GameResetView = defineAsyncComponent(() => import('./GameResetView.vue'))
 import MinesweeperGame from './MinesweeperGame.vue'
 import DmPlayerModalInventory from '../components/DmPlayerModalInventory.vue'
 import SnowEffect from '../components/SnowEffect.vue'
@@ -512,6 +513,7 @@ onMounted(() => {
           { key: 'endgame', icon: '🏁', label: '终局结算' },
           { key: 'logs', icon: '📜', label: '系统日志' },
           { key: 'npc', icon: '👥', label: 'NPC 管理' },
+          { key: 'reset', icon: '🔄', label: '游戏重置' },
           { key: 'game', icon: '🎮', label: '小游戏' }
         ]" :key="tab.key"
           type="button"
@@ -539,7 +541,7 @@ onMounted(() => {
     </aside>
 
     <!-- Main Content -->
-    <main class="min-h-0 min-w-0 flex-1 overflow-y-auto relative" style="background-image: url('/src/assets/交互页面背景.png'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+    <main class="min-h-0 min-w-0 flex-1 overflow-y-auto relative" style="background-image: url('/交互页面背景.png'); background-size: cover; background-position: center; background-repeat: no-repeat;">
       <div class="absolute inset-0 bg-slate-950/10"></div>
       <div class="relative z-10 p-4 md:p-8 min-h-full">
       <!-- Players Tab -->
@@ -982,6 +984,10 @@ onMounted(() => {
 
       <div v-else-if="activeTab === 'npc'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <DmNpcManagementView />
+      </div>
+
+      <div v-else-if="activeTab === 'reset'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+        <GameResetView />
       </div>
 
       <div v-else-if="activeTab === 'game'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">

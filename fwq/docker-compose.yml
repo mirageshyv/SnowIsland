@@ -1,0 +1,93 @@
+services:
+  # ============================================
+  # MySQL 数据库服务
+  # ============================================
+  mysql:
+    image: mysql:8
+    container_name: snowisland-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./config/mysql.cnf:/etc/mysql/conf.d/mysql.cnf:ro
+      - ./snowisland_1.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    environment:
+      MYSQL_ROOT_PASSWORD: "695390489"
+      MYSQL_DATABASE: snowisland
+      TZ: Asia/Shanghai
+    networks:
+      - snowisland
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p695390489"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ============================================
+  # 后端 Spring Boot 服务
+  # ============================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: snowisland-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./logs:/var/log/snowisland
+      - ./config:/usr/local/java/config:ro
+    environment:
+      TZ: Asia/Shanghai
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_NAME: snowisland
+      DB_USER: "root"
+      DB_PASSWORD: "695390489"
+      AI_API_KEY: "sk-d98d8ccb78994b5fb3bee9cb1629017f"
+      SPRING_PROFILES_ACTIVE: online
+      SPRING_CONFIG_LOCATION: /usr/local/java/config/application.yml,/usr/local/java/config/application-online.yml
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - snowisland
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ============================================
+  # 前端 Vue/Nginx 服务
+  # ============================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: snowisland-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - snowisland
+
+# ============================================
+# 网络配置
+# ============================================
+networks:
+  snowisland:
+    external: true
+    driver: bridge
+
+# ============================================
+# 卷配置
+# ============================================
+volumes:
+  mysql_data:
+    driver: local

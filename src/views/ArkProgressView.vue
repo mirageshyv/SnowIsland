@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { arkAPI } from '@/utils/api.js'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const props = defineProps({
   embedded: { type: Boolean, default: false },
@@ -10,7 +10,9 @@ const props = defineProps({
 const arkData = ref(null)
 const loading = ref(true)
 const investForm = ref({ wood: 0, metal: 0, sealant: 0 })
+const removeForm = ref({ wood: 0, metal: 0, sealant: 0 })
 const installing = ref(false)
+const removing = ref(false)
 
 const currentUserRole = computed(() => (localStorage.getItem('userRole') || 'player').toLowerCase().trim())
 const isDm = computed(() => currentUserRole.value === 'dm')
@@ -31,11 +33,14 @@ const resourceCards = computed(() => {
   if (!arkData.value) return []
   const d = arkData.value
   return [
-    { name: '木材', current: d.currentWood || 0, max: d.targetWood || 250, unit: '吨' },
-    { name: '金属制品', current: d.currentMetal || 0, max: d.targetMetal || 100, unit: '吨' },
+    { name: '木材', current: d.currentWood || 0, max: d.targetWood || 25, unit: '吨' },
+    { name: '金属制品', current: d.currentMetal || 0, max: d.targetMetal || 10, unit: '吨' },
     { name: '密封材料', current: d.currentSealant || 0, max: d.targetSealant || 100, unit: 'kg' },
   ]
 })
+
+const shortagePenalty = computed(() => arkData.value?.shortagePenalty || {})
+const extraCargo = computed(() => arkData.value?.extraCargo || {})
 
 function resourcePercent(current, max) {
   if (!max) return 0
@@ -101,6 +106,60 @@ async function investResources() {
     }
   } catch {
     ElMessage.error('资源投入失败')
+  }
+}
+
+async function removeResources() {
+  if (!isDm.value) {
+    ElMessage.warning('您没有权限进行此操作')
+    return
+  }
+  try {
+    if (removeForm.value.wood < 0 || removeForm.value.metal < 0 || removeForm.value.sealant < 0) {
+      ElMessage.warning('资源不能为负数')
+      return
+    }
+    if (removeForm.value.wood === 0 && removeForm.value.metal === 0 && removeForm.value.sealant === 0) {
+      ElMessage.warning('请至少移除一项资源')
+      return
+    }
+
+    const removeItems = []
+    if (removeForm.value.wood > 0) removeItems.push(`木材 ${removeForm.value.wood}吨`)
+    if (removeForm.value.metal > 0) removeItems.push(`金属 ${removeForm.value.metal}吨`)
+    if (removeForm.value.sealant > 0) removeItems.push(`密封材料 ${removeForm.value.sealant}kg`)
+
+    const confirmed = await new Promise((resolve) => {
+      ElMessageBox.confirm(
+        `确认要从方舟建造中移除以下资源吗？\n${removeItems.join('、')}`,
+        '资源移除确认',
+        {
+          confirmButtonText: '确认移除',
+          cancelButtonText: '取消',
+          type: 'warning',
+        }
+      ).then(() => resolve(true)).catch(() => resolve(false))
+    })
+
+    if (!confirmed) return
+
+    removing.value = true
+    const result = await arkAPI.remove(
+      removeForm.value.wood || 0,
+      removeForm.value.metal || 0,
+      removeForm.value.sealant || 0
+    )
+    if (result?.success) {
+      ElMessage.success(result.message || '资源移除成功')
+      arkData.value = result.data
+      removeForm.value = { wood: 0, metal: 0, sealant: 0 }
+    } else {
+      ElMessage.error(result?.message || '资源移除失败')
+    }
+  } catch {
+    ElMessage.error('资源移除失败')
+  } finally {
+    removing.value = false
   }
 }
 
@@ -290,6 +349,41 @@ onMounted(() => {
             </div>
           </div>
 
+          <!-- Shortage Penalty Info -->
+          <div v-if="shortagePenalty.penaltyCount > 0" class="mb-6 bg-gradient-to-br from-red-900/30 to-red-800/20 border border-red-500/30 rounded-2xl p-4">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="text-red-400">⚠️</span>
+              <span class="text-red-300 text-sm font-medium">资源短缺惩罚（短板效应）</span>
+            </div>
+            <div class="text-xs text-gray-300 space-y-1">
+              <p>木材短缺：{{ shortagePenalty.woodShortage }}吨（每2吨扣3载重、2.5%进度）</p>
+              <p>金属短缺：{{ shortagePenalty.metalShortage }}吨（每1吨扣3载重、2.5%进度）</p>
+              <p>密封材料短缺：{{ shortagePenalty.sealantShortage }}kg（每5kg扣3载重、2.5%进度）</p>
+              <div class="mt-2 pt-2 border-t border-red-500/20">
+                <p class="text-red-400 font-medium">惩罚计数：{{ shortagePenalty.penaltyCount }}次</p>
+                <p>载重扣减：-{{ shortagePenalty.capacityPenalty }}点</p>
+                <p>进度扣减：-{{ shortagePenalty.progressPenalty }}%</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Extra Cargo Info -->
+          <div v-if="extraCargo.extraSets > 0" class="mb-6 bg-gradient-to-br from-green-900/30 to-green-800/20 border border-green-500/30 rounded-2xl p-4">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="text-green-400">📦</span>
+              <span class="text-green-300 text-sm font-medium">额外载重加成</span>
+            </div>
+            <div class="text-xs text-gray-300 space-y-1">
+              <p>额外木材：{{ extraCargo.extraWood }}吨</p>
+              <p>额外金属：{{ extraCargo.extraMetal }}吨</p>
+              <p>额外密封材料：{{ extraCargo.extraSealant }}kg</p>
+              <div class="mt-2 pt-2 border-t border-green-500/20">
+                <p class="text-green-400 font-medium">加成组数：{{ extraCargo.extraSets }}组（每组+2点载重）</p>
+                <p>载重加成：+{{ extraCargo.extraCapacity }}点</p>
+              </div>
+            </div>
+          </div>
+
           <!-- Components -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <div class="bg-gradient-to-br from-gray-900/40 to-gray-800/40 backdrop-blur-xl border border-gray-700/30 rounded-2xl p-5 text-center hover:border-gray-600/50 transition-all duration-150">
@@ -469,6 +563,73 @@ onMounted(() => {
                 @click="resetArk"
               >
                 重置
+              </button>
+            </div>
+          </div>
+
+          <!-- DM remove resources -->
+          <div v-if="isDm" class="mt-4 bg-gradient-to-br from-gray-900/50 to-gray-800/50 backdrop-blur-xl border border-orange-500/20 rounded-2xl p-5 md:p-6">
+            <div class="text-gray-300 text-sm mb-4 font-medium flex items-center gap-2">
+              <span>移除资源</span>
+              <span class="text-xs text-orange-400/80">从方舟建造中移除资源</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="text-xs text-gray-500 block mb-1">
+                  木材（吨）
+                  <span class="text-gray-600">（当前：{{ arkData.currentWood || 0 }}吨）</span>
+                </label>
+                <input
+                  v-model.number="removeForm.wood"
+                  type="number"
+                  min="0"
+                  :max="arkData.currentWood || 0"
+                  class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500 transition-colors duration-150"
+                />
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 block mb-1">
+                  金属（吨）
+                  <span class="text-gray-600">（当前：{{ arkData.currentMetal || 0 }}吨）</span>
+                </label>
+                <input
+                  v-model.number="removeForm.metal"
+                  type="number"
+                  min="0"
+                  :max="arkData.currentMetal || 0"
+                  class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500 transition-colors duration-150"
+                />
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 block mb-1">
+                  密封材料（kg）
+                  <span class="text-gray-600">（当前：{{ arkData.currentSealant || 0 }}kg）</span>
+                </label>
+                <input
+                  v-model.number="removeForm.sealant"
+                  type="number"
+                  min="0"
+                  :max="arkData.currentSealant || 0"
+                  class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500 transition-colors duration-150"
+                />
+              </div>
+            </div>
+            <div class="mt-4 flex flex-col sm:flex-row gap-3">
+              <button
+                type="button"
+                :disabled="removing"
+                class="flex-1 bg-gradient-to-r from-orange-500 to-amber-600 text-white py-2.5 rounded-lg font-semibold hover:from-orange-400 hover:to-amber-500 transition-all duration-150 shadow-lg shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                @click="removeResources"
+              >
+                {{ removing ? '移除中...' : '确认移除' }}
+              </button>
+              <button
+                type="button"
+                :disabled="removing"
+                class="px-6 py-2.5 bg-gray-500/20 text-gray-400 rounded-lg text-sm hover:bg-gray-500/30 border border-gray-500/30 transition-all duration-150 disabled:opacity-50"
+                @click="removeForm = { wood: 0, metal: 0, sealant: 0 }"
+              >
+                清空
               </button>
             </div>
           </div>

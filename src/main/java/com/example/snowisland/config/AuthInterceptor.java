@@ -29,11 +29,23 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
 
+        if (requestUri.startsWith("/api/ark/init-progress")) {
+            return true;
+        }
+
         if (requestUri.startsWith("/api/ark/invest") ||
+            requestUri.startsWith("/api/ark/remove") ||
             requestUri.startsWith("/api/ark/component") ||
             requestUri.startsWith("/api/ark/sail") ||
             requestUri.startsWith("/api/ark/reset")) {
             
+            return checkDmPermission(request, response);
+        }
+
+        if (requestUri.startsWith("/api/shelter/labor/verify") ||
+            requestUri.startsWith("/api/shelter/reset") ||
+            requestUri.startsWith("/api/shelter/labor") && "PUT".equalsIgnoreCase(request.getMethod()) ||
+            requestUri.startsWith("/api/game-reset")) {
             return checkDmPermission(request, response);
         }
 

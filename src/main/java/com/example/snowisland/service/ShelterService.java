@@ -289,6 +289,7 @@ public class ShelterService {
                 return out;
             }
             boolean exploited = toBool(row.get("exploited"));
+            boolean slacking = toBool(row.get("slacking"));
             if (exploited) {
                 exploitCount++;
             }
@@ -307,6 +308,7 @@ public class ShelterService {
             patch.put("workerKind", ref.kind);
             patch.put("workerId", ref.id);
             patch.put("exploited", exploited);
+            patch.put("slacking", slacking);
             patch.put("escaped", escaped);
             rowByKey.put(ref.key(), patch);
         }
@@ -437,10 +439,11 @@ public class ShelterService {
             if (!"player".equalsIgnoreCase(labor.getWorkerKind())) {
                 boolean escaped = Boolean.TRUE.equals(labor.getEscaped());
                 boolean exploited = Boolean.TRUE.equals(labor.getExploited());
+                boolean slacking = Boolean.TRUE.equals(labor.getSlacking());
                 LocationNpc npc = npcsById.get(labor.getWorkerId());
                 String npcJob = npc != null ? npc.getJob() : null;
                 boolean productionJob = ShelterLaborCalculator.isProductionLaborJobByName(npcJob);
-                int buildValue = ShelterLaborCalculator.calculateBuildValue(productionJob, exploited, escaped);
+                int buildValue = ShelterLaborCalculator.calculateBuildValue(productionJob, exploited, escaped, slacking);
                 labor.setBuildValue(buildValue);
                 shelterDailyLaborRepository.save(labor);
 
@@ -465,7 +468,8 @@ public class ShelterService {
             }
             boolean escaped = Boolean.TRUE.equals(labor.getEscaped());
             boolean exploited = Boolean.TRUE.equals(labor.getExploited());
-            int buildValue = ShelterLaborCalculator.calculateBuildValue(player, jobsById, exploited, escaped);
+            boolean slacking = Boolean.TRUE.equals(labor.getSlacking());
+            int buildValue = ShelterLaborCalculator.calculateBuildValue(player, jobsById, exploited, escaped, slacking);
             labor.setBuildValue(buildValue);
             shelterDailyLaborRepository.save(labor);
 
@@ -513,6 +517,7 @@ public class ShelterService {
         for (ShelterDailyLabor labor : rows) {
             boolean escaped = Boolean.TRUE.equals(labor.getEscaped());
             boolean exploited = Boolean.TRUE.equals(labor.getExploited());
+            boolean slacking = Boolean.TRUE.equals(labor.getSlacking());
             boolean productionJob;
             String displayName;
             String jobNameLabel;
@@ -535,7 +540,7 @@ public class ShelterService {
                 jobNameLabel = player.getJobId() != null && jobsById.get(player.getJobId()) != null
                         ? jobsById.get(player.getJobId()).getName() : "—";
             }
-            int buildValue = ShelterLaborCalculator.calculateBuildValue(productionJob, exploited, escaped);
+            int buildValue = ShelterLaborCalculator.calculateBuildValue(productionJob, exploited, escaped, slacking);
             if (!escaped) {
                 dayTotal += buildValue;
             }
@@ -547,13 +552,15 @@ public class ShelterService {
             w.put("name", displayName);
             w.put("jobName", jobNameLabel);
             w.put("laborType", ShelterLaborCalculator.laborTypeLabel(productionJob, exploited));
-            w.put("buildValueBreakdown", ShelterLaborCalculator.buildValueBreakdown(productionJob, exploited, escaped));
+            w.put("buildValueBreakdown", ShelterLaborCalculator.buildValueBreakdown(productionJob, exploited, escaped, slacking));
             w.put("baseValue", ShelterLaborCalculator.BASE_BUILD_VALUE);
             w.put("jobBonus", productionJob && !escaped ? ShelterLaborCalculator.PRODUCTION_JOB_BONUS : 0);
             w.put("exploitBonus", exploited && !escaped ? ShelterLaborCalculator.EXPLOIT_BONUS : 0);
+            w.put("slackingPenalty", slacking && !escaped ? ShelterLaborCalculator.SLACKING_PENALTY : 0);
             w.put("buildValue", buildValue);
             w.put("productionJob", productionJob);
             w.put("exploited", exploited);
+            w.put("slacking", slacking);
             w.put("escaped", escaped);
             w.put("isNpc", isNpc);
             w.put("willApplyOverworked", !escaped && !isNpc);
@@ -657,11 +664,13 @@ public class ShelterService {
                 labor.setBuildValue(0);
                 labor.setExploited(false);
                 labor.setEscaped(false);
+                labor.setSlacking(false);
             }
             Map<String, Object> row = rowByKey.get(ref.key());
             if (row != null) {
                 boolean exploited = toBool(row.get("exploited"));
                 boolean escaped = toBool(row.get("escaped"));
+                boolean slacking = toBool(row.get("slacking"));
                 int buildValue;
                 if ("npc".equalsIgnoreCase(ref.kind)) {
                     String npcJobName = null;
@@ -670,10 +679,10 @@ public class ShelterService {
                         npcJobName = npc.getJob();
                     }
                     boolean productionJob = ShelterLaborCalculator.isProductionLaborJobByName(npcJobName);
-                    buildValue = ShelterLaborCalculator.calculateBuildValue(productionJob, exploited, escaped);
+                    buildValue = ShelterLaborCalculator.calculateBuildValue(productionJob, exploited, escaped, slacking);
                 } else {
                     Player player = playersById.get(ref.id);
-                    buildValue = ShelterLaborCalculator.calculateBuildValue(player, jobsById, exploited, escaped);
+                    buildValue = ShelterLaborCalculator.calculateBuildValue(player, jobsById, exploited, escaped, slacking);
                 }
                 if (row.containsKey("buildValue")) {
                     Integer manual = toInt(row.get("buildValue"));
@@ -684,6 +693,7 @@ public class ShelterService {
                 labor.setBuildValue(buildValue);
                 labor.setExploited(exploited);
                 labor.setEscaped(escaped);
+                labor.setSlacking(slacking);
             }
             shelterDailyLaborRepository.save(labor);
         }
@@ -732,6 +742,7 @@ public class ShelterService {
             WorkerRef ref = WorkerRef.fromLabor(labor);
             boolean exploited = Boolean.TRUE.equals(labor.getExploited());
             boolean escaped = Boolean.TRUE.equals(labor.getEscaped());
+            boolean slacking = Boolean.TRUE.equals(labor.getSlacking());
             boolean productionJob;
             String name;
             String jobName;
@@ -758,7 +769,7 @@ public class ShelterService {
                 jobName = jobId != null ? jobNames.getOrDefault(jobId, "—") : "—";
                 jobSkills = job != null ? job.getSkills() : "";
             }
-            int computed = ShelterLaborCalculator.calculateBuildValue(productionJob, exploited, escaped);
+            int computed = ShelterLaborCalculator.calculateBuildValue(productionJob, exploited, escaped, slacking);
 
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("id", labor.getId());
@@ -773,10 +784,11 @@ public class ShelterService {
             row.put("jobSkills", jobSkills);
             row.put("productionJob", productionJob);
             row.put("laborType", ShelterLaborCalculator.laborTypeLabel(productionJob, exploited));
-            row.put("buildValueBreakdown", ShelterLaborCalculator.buildValueBreakdown(productionJob, exploited, escaped));
+            row.put("buildValueBreakdown", ShelterLaborCalculator.buildValueBreakdown(productionJob, exploited, escaped, slacking));
             row.put("computedBuildValue", computed);
             row.put("buildValue", labor.getBuildValue() != null ? labor.getBuildValue() : computed);
             row.put("exploited", exploited);
+            row.put("slacking", slacking);
             row.put("escaped", escaped);
             if ("player".equalsIgnoreCase(ref.kind)) {
                 Player player = playersById.get(ref.id);
@@ -1067,6 +1079,26 @@ public class ShelterService {
             item.put("name", "未知物品");
             item.put("unit", "");
             item.put("description", "");
+        }
+    }
+
+    @Transactional
+    public Map<String, Object> resetShelter() {
+        Map<String, Object> out = new LinkedHashMap<>();
+        try {
+            shelterDailyLaborRepository.deleteAll();
+            shelterLaborDayRepository.deleteAll();
+            shelterStockRepository.deleteAllInBatch();
+            entityManager.flush();
+            entityManager.clear();
+            seedDefaultStock();
+            out.put("success", true);
+            out.put("message", "避难所建设数据已重置为初始状态");
+            return out;
+        } catch (Exception e) {
+            out.put("success", false);
+            out.put("message", "重置失败: " + e.getMessage());
+            return out;
         }
     }
 

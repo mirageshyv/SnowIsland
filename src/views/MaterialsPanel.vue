@@ -229,21 +229,20 @@ const itemRemarksMap = {
   }
 }
 
-// 武器威胁值映射
+// 武器威胁值映射（与数据库 weapon.threat_level 保持一致）
 const weaponThreatMap = {
   1: 5,
-  2: 8,
-  3: 3,
+  2: 6,
+  3: 1,
   4: 2,
-  5: 3,
-  6: 6,
-  7: 5,
-  8: 4,
-  9: 6,
-  10: 7,
-  11: 2,
-  12: 10,
-  13: 4
+  5: 2,
+  6: 3,
+  7: 4,
+  8: 1,
+  9: 2,
+  10: 4,
+  11: 1,
+  12: 10
 }
 
 // 弹药适用武器映射
@@ -361,7 +360,7 @@ const transformItem = (type, item) => {
     remark: (item.remark && String(item.remark).trim()) || itemRemarksMap[type]?.[itemId] || '',
     icon: itemIconMap[type]?.[itemId] || '📦',
     imageUrl: getMaterialImageUrlOrDefault(type, itemId),
-    threat_level: type === 'weapon' ? weaponThreatMap[itemId] : undefined,
+    threat_level: type === 'weapon' ? (item.threatLevel ?? weaponThreatMap[itemId]) : undefined,
     weapon_name: type === 'ammo' ? ammoWeaponMap[itemId] : undefined
   }
 }

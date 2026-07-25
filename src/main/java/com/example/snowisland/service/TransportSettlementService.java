@@ -261,6 +261,11 @@ public class TransportSettlementService {
             case "warehouse_to_warehouse":
             case "warehouse_to_player":
             case "warehouse_to_shelter":
+                // sourceWarehouse 应该是实际仓库名（general/fuel/armory等），不是 shelter
+                // shelter 模式使用专门的 shelter_stock 表，不走 warehouse 表
+                if (plan.sourceWarehouse == null || plan.sourceWarehouse.isEmpty() || SHELTER_KEY.equals(plan.sourceWarehouse)) {
+                    return 0;
+                }
                 return getWarehouseStock("warehouse_" + plan.sourceWarehouse, itemType, itemId);
             case "shelter_to_warehouse":
             case "shelter_to_player":
@@ -479,6 +484,10 @@ public class TransportSettlementService {
     }
 
     private void executeWarehouseToShelter(TransportPlan plan) {
+        // sourceWarehouse 应该是实际仓库名，不是 shelter
+        if (plan.sourceWarehouse == null || plan.sourceWarehouse.isEmpty() || SHELTER_KEY.equals(plan.sourceWarehouse)) {
+            throw new RuntimeException("仓库→避难所模式需要指定有效的源仓库");
+        }
         String sourceTable = "warehouse_" + plan.sourceWarehouse;
         for (TransportItem item : plan.items) {
             if (item.actualQty <= 0) continue;
@@ -488,6 +497,10 @@ public class TransportSettlementService {
     }
 
     private void executeShelterToWarehouse(TransportPlan plan) {
+        // destWarehouse 应该是实际仓库名，不是 shelter
+        if (plan.destWarehouse == null || plan.destWarehouse.isEmpty() || SHELTER_KEY.equals(plan.destWarehouse)) {
+            throw new RuntimeException("避难所→仓库模式需要指定有效的目标仓库");
+        }
         String destTable = "warehouse_" + plan.destWarehouse;
         for (TransportItem item : plan.items) {
             if (item.actualQty <= 0) continue;
@@ -545,6 +558,13 @@ public class TransportSettlementService {
     }
 
     private void executeWarehouseToWarehouse(TransportPlan plan) {
+        // 验证源仓库和目标仓库都是有效的仓库名（不是 shelter）
+        if (plan.sourceWarehouse == null || plan.sourceWarehouse.isEmpty() || SHELTER_KEY.equals(plan.sourceWarehouse)) {
+            throw new RuntimeException("仓库→仓库模式需要指定有效的源仓库");
+        }
+        if (plan.destWarehouse == null || plan.destWarehouse.isEmpty() || SHELTER_KEY.equals(plan.destWarehouse)) {
+            throw new RuntimeException("仓库→仓库模式需要指定有效的目标仓库");
+        }
         String sourceTable = "warehouse_" + plan.sourceWarehouse;
         String destTable = "warehouse_" + plan.destWarehouse;
         for (TransportItem item : plan.items) {
@@ -555,6 +575,10 @@ public class TransportSettlementService {
     }
 
     private void executeWarehouseToPlayer(TransportPlan plan, Integer playerId) {
+        // 验证源仓库是有效的仓库名（不是 shelter）
+        if (plan.sourceWarehouse == null || plan.sourceWarehouse.isEmpty() || SHELTER_KEY.equals(plan.sourceWarehouse)) {
+            throw new RuntimeException("仓库→个人模式需要指定有效的源仓库");
+        }
         String sourceTable = "warehouse_" + plan.sourceWarehouse;
         for (TransportItem item : plan.items) {
             if (item.actualQty <= 0) continue;
@@ -564,6 +588,10 @@ public class TransportSettlementService {
     }
 
     private void executePlayerToWarehouse(TransportPlan plan, Integer playerId) {
+        // 验证目标仓库是有效的仓库名（不是 shelter）
+        if (plan.destWarehouse == null || plan.destWarehouse.isEmpty() || SHELTER_KEY.equals(plan.destWarehouse)) {
+            throw new RuntimeException("个人→仓库模式需要指定有效的目标仓库");
+        }
         String destTable = "warehouse_" + plan.destWarehouse;
         for (TransportItem item : plan.items) {
             if (item.actualQty <= 0) continue;
@@ -573,6 +601,10 @@ public class TransportSettlementService {
     }
 
     private void executePlayerToWarehouseInboundOnly(TransportPlan plan) {
+        // 验证目标仓库是有效的仓库名（不是 shelter）
+        if (plan.destWarehouse == null || plan.destWarehouse.isEmpty() || SHELTER_KEY.equals(plan.destWarehouse)) {
+            throw new RuntimeException("个人→仓库模式需要指定有效的目标仓库");
+        }
         String destTable = "warehouse_" + plan.destWarehouse;
         for (TransportItem item : plan.items) {
             if (item.actualQty <= 0) continue;

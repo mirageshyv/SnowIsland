@@ -108,8 +108,11 @@ function applyWeaponChange(fighter) {
   const id = fighter.weaponId
   let weaponThreat = fighter.weaponThreat
   if (id !== '' && id != null) {
-    const threat = WEAPON_THREAT_BY_ID[Number(id)]
-    if (threat != null) weaponThreat = threat
+    const weaponFromCatalog = weapons.value.find(w => w.id === Number(id))
+    const backendThreat = weaponFromCatalog?.threat
+    const mappedThreat = WEAPON_THREAT_BY_ID[Number(id)]
+    if (backendThreat != null) weaponThreat = backendThreat
+    else if (mappedThreat != null) weaponThreat = mappedThreat
   } else {
     weaponThreat = ''
   }
@@ -149,7 +152,7 @@ async function loadStaticData() {
       .map((w) => ({
         id: w.itemId,
         name: w.name || GAME_ITEM_NAMES.weapon?.[w.itemId] || `武器#${w.itemId}`,
-        threat: WEAPON_THREAT_BY_ID[w.itemId] ?? 0,
+        threat: w.threatLevel ?? WEAPON_THREAT_BY_ID[w.itemId] ?? 0,
       }))
     locations.value = Array.isArray(locList) ? locList : []
   } catch (e) {

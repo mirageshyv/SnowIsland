@@ -37,26 +37,52 @@ public class ArkService {
     @Autowired
     private WarehouseService warehouseService;
 
-    private static final double TARGET_WOOD = 250.0;
-    private static final double TARGET_METAL = 100.0;
+    private static final double TARGET_WOOD = 25.0;
+    private static final double TARGET_METAL = 10.0;
     private static final int TARGET_SEALANT = 100;
 
-    private static final double DAILY_WOOD_LIMIT = 30.0;
-    private static final double DAILY_METAL_LIMIT = 20.0;
-    private static final int DAILY_SEALANT_LIMIT = 20;
+    private static final int TARGET_ENGINE_MIN = 1;
+    private static final int TARGET_ENGINE_MAX = 3;
+    private static final int TARGET_PROPELLER = 2;
+    private static final int TARGET_GENERATOR = 1;
 
-    private static final double WORK_EQUIVALENT = 5.0;
+    private static final double DAILY_WOOD_LIMIT = 5.0;
+    private static final double DAILY_METAL_LIMIT = 2.0;
+    private static final int DAILY_SEALANT_LIMIT = 30;
+
+    private static final double WORK_EQUIVALENT_WOOD = 1.0;
+    private static final double WORK_EQUIVALENT_METAL_KG = 500.0;
+    private static final int WORK_EQUIVALENT_SEALANT = 5;
 
     private static final double KG_PER_TON = 1000.0;
+
+    private static final int BASE_CARGO_CAPACITY = 25;
+    private static final int EXTRA_CARGO_PER_SET = 2;
+    private static final double EXTRA_WOOD_PER_SET = 2.0;
+    private static final double EXTRA_METAL_PER_SET = 1.0;
+    private static final int EXTRA_SEALANT_PER_SET = 5;
+
+    private static final int SHORTAGE_PENALTY_CAPACITY = 3;
+    private static final double SHORTAGE_PENALTY_PROGRESS = 2.5;
+    private static final double SHORTAGE_WOOD_UNIT = 2.0;
+    private static final double SHORTAGE_METAL_UNIT = 1.0;
+    private static final int SHORTAGE_SEALANT_UNIT = 5;
 
     public ArkConstruction getOrCreate() {
         return arkConstructionRepository.findById(ArkConstruction.SINGLETON_ID)
                 .orElseGet(() -> {
                     ArkConstruction construction = new ArkConstruction();
                     construction.setId(ArkConstruction.SINGLETON_ID);
-                    construction.setCurrentWood(10.0);
-                    construction.setCurrentMetal(20.0);
-                    return arkConstructionRepository.save(construction);
+                    construction.setCurrentWood(5.0);
+                    construction.setCurrentMetal(1.0);
+                    construction.setCurrentSealant(0);
+                    construction.setEngineCount(0);
+                    construction.setPropellerCount(0);
+                    construction.setGeneratorCount(0);
+                    construction.setHasSail(false);
+                    ArkConstruction saved = arkConstructionRepository.save(construction);
+                    calculateAndUpdateProgress(saved);
+                    return arkConstructionRepository.save(saved);
                 });
     }
 
@@ -74,12 +100,24 @@ public class ArkService {
         result.put("currentCargoCapacity", ark.getCurrentCargoCapacity());
         result.put("completionPercentage", ark.getCompletionPercentage());
         result.put("hasSail", ark.getHasSail());
+
         result.put("targetWood", TARGET_WOOD);
         result.put("targetMetal", TARGET_METAL);
         result.put("targetSealant", TARGET_SEALANT);
+        result.put("targetEngineMin", TARGET_ENGINE_MIN);
+        result.put("targetEngineMax", TARGET_ENGINE_MAX);
+        result.put("targetPropeller", TARGET_PROPELLER);
+        result.put("targetGenerator", TARGET_GENERATOR);
+
         result.put("dailyWoodLimit", DAILY_WOOD_LIMIT);
         result.put("dailyMetalLimit", DAILY_METAL_LIMIT);
         result.put("dailySealantLimit", DAILY_SEALANT_LIMIT);
+
+        Map<String, Object> shortageInfo = calculateShortagePenalty(ark);
+        result.put("shortagePenalty", shortageInfo);
+
+        Map<String, Object> extraCargoInfo = calculateExtraCargo(ark);
+        result.put("extraCargo", extraCargoInfo);
 
         return result;
     }
@@ -108,6 +146,61 @@ public class ArkService {
         } catch (Exception e) {
             result.put("success", false);
             result.put("message", "资源投入失败: " + e.getMessage());
+        }
+        return result;
+    }
+
+    @Transactional
+    public Map<String, Object> removeResources(Double wood, Double metal, Integer sealant) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            ArkConstruction ark = getOrCreate();
+
+            List<String> errors = new ArrayList<>();
+
+            double removeWood = wood != null ? wood : 0;
+            double removeMetal = metal != null ? metal : 0;
+            int removeSealant = sealant != null ? sealant : 0;
+
+            if (removeWood <= 0 && removeMetal <= 0 && removeSealant <= 0) {
+                errors.add("请至少选择一项要移除的资源");
+            }
+
+            if (removeWood > 0 && removeWood > ark.getCurrentWood()) {
+                errors.add("木材移除量(" + round2Str(removeWood) + "吨)超出当前库存(" + round2Str(ark.getCurrentWood()) + "吨)");
+            }
+            if (removeMetal > 0 && removeMetal > ark.getCurrentMetal()) {
+                errors.add("金属移除量(" + round2Str(removeMetal) + "吨)超出当前库存(" + round2Str(ark.getCurrentMetal()) + "吨)");
+            }
+            if (removeSealant > 0 && removeSealant > ark.getCurrentSealant()) {
+                errors.add("密封材料移除量(" + removeSealant + "kg)超出当前库存(" + ark.getCurrentSealant() + "kg)");
+            }
+
+            if (!errors.isEmpty()) {
+                result.put("success", false);
+                result.put("message", String.join("; ", errors));
+                return result;
+            }
+
+            if (removeWood > 0) {
+                ark.setCurrentWood(round2(ark.getCurrentWood() - removeWood));
+            }
+            if (removeMetal > 0) {
+                ark.setCurrentMetal(round2(ark.getCurrentMetal() - removeMetal));
+            }
+            if (removeSealant > 0) {
+                ark.setCurrentSealant(ark.getCurrentSealant() - removeSealant);
+            }
+
+            calculateAndUpdateProgress(ark);
+            arkConstructionRepository.save(ark);
+
+            result.put("success", true);
+            result.put("message", "资源移除成功");
+            result.put("data", buildStatusResponse(ark));
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "资源移除失败: " + e.getMessage());
         }
         return result;
     }
@@ -182,13 +275,13 @@ public class ArkService {
             double totalMetalTon = totalMetalKg / KG_PER_TON;
 
             if (totalWoodTon > DAILY_WOOD_LIMIT) {
-                errors.add("木材总投入" + round2Str(totalWoodTon) + "吨超出单次上限" + (int) DAILY_WOOD_LIMIT + "吨");
+                errors.add("木材总投入" + round2Str(totalWoodTon) + "吨超出每日上限" + DAILY_WOOD_LIMIT + "吨");
             }
             if (totalMetalTon > DAILY_METAL_LIMIT) {
-                errors.add("金属总投入" + round2Str(totalMetalTon) + "吨超出单次上限" + (int) DAILY_METAL_LIMIT + "吨");
+                errors.add("金属总投入" + round2Str(totalMetalTon) + "吨超出每日上限" + DAILY_METAL_LIMIT + "吨");
             }
             if (totalSealantKg > DAILY_SEALANT_LIMIT) {
-                errors.add("密封材料(沥青)总投入" + totalSealantKg + "kg超出单次上限" + DAILY_SEALANT_LIMIT + "kg");
+                errors.add("密封材料(沥青)总投入" + totalSealantKg + "kg超出每日上限" + DAILY_SEALANT_LIMIT + "kg");
             }
 
             if (!errors.isEmpty()) {
@@ -265,13 +358,13 @@ public class ArkService {
             if (workType != null && !workType.isEmpty()) {
                 switch (workType) {
                     case "wood":
-                        ark.setCurrentWood(round2(ark.getCurrentWood() + WORK_EQUIVALENT));
+                        ark.setCurrentWood(round2(ark.getCurrentWood() + WORK_EQUIVALENT_WOOD));
                         break;
                     case "metal":
-                        ark.setCurrentMetal(round2(ark.getCurrentMetal() + WORK_EQUIVALENT));
+                        ark.setCurrentMetal(round2(ark.getCurrentMetal() + WORK_EQUIVALENT_METAL_KG / KG_PER_TON));
                         break;
                     case "sealant":
-                        ark.setCurrentSealant(ark.getCurrentSealant() + (int) WORK_EQUIVALENT);
+                        ark.setCurrentSealant(ark.getCurrentSealant() + WORK_EQUIVALENT_SEALANT);
                         break;
                 }
             }
@@ -347,15 +440,14 @@ public class ArkService {
         Map<String, Object> result = new HashMap<>();
         try {
             ArkConstruction ark = getOrCreate();
-            ark.setCurrentWood(10.0);
-            ark.setCurrentMetal(20.0);
+            ark.setCurrentWood(5.0);
+            ark.setCurrentMetal(1.0);
             ark.setCurrentSealant(0);
             ark.setEngineCount(0);
             ark.setPropellerCount(0);
             ark.setGeneratorCount(0);
-            ark.setCurrentCargoCapacity(0);
-            ark.setCompletionPercentage(BigDecimal.ZERO);
             ark.setHasSail(false);
+            calculateAndUpdateProgress(ark);
             arkConstructionRepository.save(ark);
             result.put("success", true);
             result.put("message", "重置成功");
@@ -371,31 +463,102 @@ public class ArkService {
         BigDecimal woodProgress = calculateResourceProgress(ark.getCurrentWood(), TARGET_WOOD, 25.0);
         BigDecimal metalProgress = calculateResourceProgress(ark.getCurrentMetal(), TARGET_METAL, 25.0);
         BigDecimal sealantProgress = calculateResourceProgress(ark.getCurrentSealant(), TARGET_SEALANT, 25.0);
-        BigDecimal engineProgress = ark.getEngineCount() >= 1 ? new BigDecimal("10.0") : BigDecimal.ZERO;
-        BigDecimal propellerProgress = ark.getPropellerCount() == 2 ? new BigDecimal("10.0") : (ark.getPropellerCount() > 0 ? new BigDecimal("5.0") : BigDecimal.ZERO);
-        BigDecimal generatorProgress = ark.getGeneratorCount() >= 1 ? new BigDecimal("5.0") : BigDecimal.ZERO;
 
-        BigDecimal totalProgress = woodProgress.add(metalProgress).add(sealantProgress)
-                .add(engineProgress).add(propellerProgress).add(generatorProgress);
-
-        if (totalProgress.compareTo(new BigDecimal("100.0")) > 0) {
-            totalProgress = new BigDecimal("100.0");
+        double engineProgress = 0;
+        if (ark.getEngineCount() >= TARGET_ENGINE_MAX) {
+            engineProgress = 10.0;
+        } else if (ark.getEngineCount() >= TARGET_ENGINE_MIN) {
+            engineProgress = 10.0 * ark.getEngineCount() / TARGET_ENGINE_MAX;
         }
 
-        ark.setCompletionPercentage(totalProgress);
+        double propellerProgress = 0;
+        if (ark.getPropellerCount() >= TARGET_PROPELLER) {
+            propellerProgress = 10.0;
+        } else if (ark.getPropellerCount() > 0) {
+            propellerProgress = 10.0 * ark.getPropellerCount() / TARGET_PROPELLER;
+        }
 
-        int theoreticalCapacity = 50;
+        BigDecimal generatorProgress = ark.getGeneratorCount() >= TARGET_GENERATOR ? new BigDecimal("5.0") : BigDecimal.ZERO;
+
+        BigDecimal totalProgress = woodProgress.add(metalProgress).add(sealantProgress)
+                .add(new BigDecimal(engineProgress))
+                .add(new BigDecimal(propellerProgress))
+                .add(generatorProgress);
+
+        Map<String, Object> shortageInfo = calculateShortagePenalty(ark);
+        int penaltyCount = ((Number) shortageInfo.get("penaltyCount")).intValue();
+        double progressPenalty = penaltyCount * SHORTAGE_PENALTY_PROGRESS;
+
+        BigDecimal finalProgress = totalProgress.subtract(new BigDecimal(progressPenalty));
+        if (finalProgress.compareTo(BigDecimal.ZERO) < 0) {
+            finalProgress = BigDecimal.ZERO;
+        }
+        if (finalProgress.compareTo(new BigDecimal("100.0")) > 0) {
+            finalProgress = new BigDecimal("100.0");
+        }
+
+        ark.setCompletionPercentage(finalProgress);
+
+        int baseCapacity = BASE_CARGO_CAPACITY;
+
+        Map<String, Object> extraCargoInfo = calculateExtraCargo(ark);
+        int extraCargoSets = ((Number) extraCargoInfo.get("extraSets")).intValue();
+        baseCapacity += extraCargoSets * EXTRA_CARGO_PER_SET;
+
+        int capacityPenalty = penaltyCount * SHORTAGE_PENALTY_CAPACITY;
+        int actualCapacity = Math.max(0, baseCapacity - capacityPenalty);
+        ark.setCurrentCargoCapacity(actualCapacity);
+    }
+
+    private Map<String, Object> calculateShortagePenalty(ArkConstruction ark) {
+        Map<String, Object> result = new HashMap<>();
+
+        double woodShortage = Math.max(0, TARGET_WOOD - ark.getCurrentWood());
+        double metalShortage = Math.max(0, TARGET_METAL - ark.getCurrentMetal());
+        int sealantShortage = Math.max(0, TARGET_SEALANT - ark.getCurrentSealant());
+
+        int woodPenaltyCount = (int) (woodShortage / SHORTAGE_WOOD_UNIT);
+        int metalPenaltyCount = (int) (metalShortage / SHORTAGE_METAL_UNIT);
+        int sealantPenaltyCount = sealantShortage / SHORTAGE_SEALANT_UNIT;
+
+        int penaltyCount = Math.min(Math.min(woodPenaltyCount, metalPenaltyCount), sealantPenaltyCount);
+
+        result.put("woodShortage", round2(woodShortage));
+        result.put("metalShortage", round2(metalShortage));
+        result.put("sealantShortage", sealantShortage);
+        result.put("woodPenaltyCount", woodPenaltyCount);
+        result.put("metalPenaltyCount", metalPenaltyCount);
+        result.put("sealantPenaltyCount", sealantPenaltyCount);
+        result.put("penaltyCount", penaltyCount);
+        result.put("capacityPenalty", penaltyCount * SHORTAGE_PENALTY_CAPACITY);
+        result.put("progressPenalty", penaltyCount * SHORTAGE_PENALTY_PROGRESS);
+
+        return result;
+    }
+
+    private Map<String, Object> calculateExtraCargo(ArkConstruction ark) {
+        Map<String, Object> result = new HashMap<>();
+
         double extraWood = Math.max(0, ark.getCurrentWood() - TARGET_WOOD);
         double extraMetal = Math.max(0, ark.getCurrentMetal() - TARGET_METAL);
-        theoreticalCapacity += (int) (extraWood / 10) * 2;
-        theoreticalCapacity += (int) (extraMetal / 5) * 2;
+        int extraSealant = Math.max(0, ark.getCurrentSealant() - TARGET_SEALANT);
 
-        int shortageCount = 0;
-        if (ark.getCurrentWood() < TARGET_WOOD) shortageCount++;
-        if (ark.getCurrentMetal() < TARGET_METAL) shortageCount++;
-        if (ark.getCurrentSealant() < TARGET_SEALANT) shortageCount++;
-        int actualCapacity = Math.max(0, theoreticalCapacity - shortageCount * 3);
-        ark.setCurrentCargoCapacity(actualCapacity);
+        int woodSets = (int) (extraWood / EXTRA_WOOD_PER_SET);
+        int metalSets = (int) (extraMetal / EXTRA_METAL_PER_SET);
+        int sealantSets = extraSealant / EXTRA_SEALANT_PER_SET;
+
+        int extraSets = Math.min(Math.min(woodSets, metalSets), sealantSets);
+
+        result.put("extraWood", round2(extraWood));
+        result.put("extraMetal", round2(extraMetal));
+        result.put("extraSealant", extraSealant);
+        result.put("woodSets", woodSets);
+        result.put("metalSets", metalSets);
+        result.put("sealantSets", sealantSets);
+        result.put("extraSets", extraSets);
+        result.put("extraCapacity", extraSets * EXTRA_CARGO_PER_SET);
+
+        return result;
     }
 
     private BigDecimal calculateResourceProgress(double current, double target, double maxPercent) {
@@ -419,9 +582,22 @@ public class ArkService {
         data.put("currentCargoCapacity", ark.getCurrentCargoCapacity());
         data.put("completionPercentage", ark.getCompletionPercentage());
         data.put("hasSail", ark.getHasSail());
+
         data.put("targetWood", TARGET_WOOD);
         data.put("targetMetal", TARGET_METAL);
         data.put("targetSealant", TARGET_SEALANT);
+        data.put("targetEngineMin", TARGET_ENGINE_MIN);
+        data.put("targetEngineMax", TARGET_ENGINE_MAX);
+        data.put("targetPropeller", TARGET_PROPELLER);
+        data.put("targetGenerator", TARGET_GENERATOR);
+
+        data.put("dailyWoodLimit", DAILY_WOOD_LIMIT);
+        data.put("dailyMetalLimit", DAILY_METAL_LIMIT);
+        data.put("dailySealantLimit", DAILY_SEALANT_LIMIT);
+
+        data.put("shortagePenalty", calculateShortagePenalty(ark));
+        data.put("extraCargo", calculateExtraCargo(ark));
+
         return data;
     }
 
@@ -477,6 +653,30 @@ public class ArkService {
         warehouseService.updateWarehouseStock("ark", itemType.name().toLowerCase(), itemId, newQty, "dm");
     }
 
+    @Transactional
+    public Map<String, Object> initializeProgress() {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            ArkConstruction ark = getOrCreate();
+            ark.setCurrentWood(5.0);
+            ark.setCurrentMetal(1.0);
+            ark.setCurrentSealant(0);
+            ark.setEngineCount(0);
+            ark.setPropellerCount(0);
+            ark.setGeneratorCount(0);
+            ark.setHasSail(false);
+            calculateAndUpdateProgress(ark);
+            arkConstructionRepository.save(ark);
+            result.put("success", true);
+            result.put("message", "方舟进度初始化成功");
+            result.put("data", buildStatusResponse(ark));
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "初始化失败: " + e.getMessage());
+        }
+        return result;
+    }
+
     public Map<String, Object> getPlayerResourceLimits(Integer playerId) {
         Map<String, Object> result = new HashMap<>();
         result.put("playerWoodKg", getPlayerMaterialQuantity(playerId, WOOD_MATERIAL_ID));
@@ -494,6 +694,9 @@ public class ArkService {
         result.put("dailyWoodLimitKg", (int) (DAILY_WOOD_LIMIT * KG_PER_TON));
         result.put("dailyMetalLimitKg", (int) (DAILY_METAL_LIMIT * KG_PER_TON));
         result.put("dailySealantLimitKg", DAILY_SEALANT_LIMIT);
+        result.put("workEquivalentWood", WORK_EQUIVALENT_WOOD);
+        result.put("workEquivalentMetalKg", WORK_EQUIVALENT_METAL_KG);
+        result.put("workEquivalentSealant", WORK_EQUIVALENT_SEALANT);
         return result;
     }
 }

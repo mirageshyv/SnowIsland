@@ -97,7 +97,7 @@ const handleLogin = async (e) => {
     <!-- Background Image -->
     <div 
       class="absolute inset-0 bg-cover bg-center bg-no-repeat"
-      style="background-image: url('/src/assets/登录页面.png');"
+      style="background-image: url('/登录页面.png');"
     ></div>
     <div class="absolute inset-0 bg-black/30"></div>
 

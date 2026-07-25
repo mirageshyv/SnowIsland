@@ -839,7 +839,7 @@ onUnmounted(() => {
       </div>
     </aside>
 
-    <main class="min-h-0 min-w-0 flex-1 overflow-y-auto relative" style="background-image: url('/src/assets/交互页面背景.png'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+    <main class="min-h-0 min-w-0 flex-1 overflow-y-auto relative" style="background-image: url('/交互页面背景.png'); background-size: cover; background-position: center; background-repeat: no-repeat;">
       <div class="absolute inset-0 bg-slate-950/10"></div>
       
       <div class="relative z-10 p-4 md:p-8 min-h-full">

@@ -37,6 +37,7 @@ const verifying = ref(false)
 const showSettlementModal = ref(false)
 const settlementPreview = ref(null)
 const loadingSettlementPreview = ref(false)
+const resettingShelter = ref(false)
 
 const shelterDisplayRows = computed(() => resolveShelterInventoryRows(shelterInventory.value))
 function candidateKey(c) {
@@ -63,6 +64,7 @@ function defaultLaborRow(candidate) {
     productionJob: candidate.productionJob ?? false,
     buildValue: 0,
     exploited: false,
+    slacking: false,
     escaped: hatesRuler,
     attitudeRuler: candidate.attitudeRuler || null,
     attitudeRebel: candidate.attitudeRebel || null,
@@ -131,6 +133,7 @@ async function saveLaborRoster({ silent = false } = {}) {
         playerId: r.playerId,
         buildValue: Math.max(0, Math.floor(Number(r.buildValue) || 0)),
         exploited: Boolean(r.exploited),
+        slacking: Boolean(r.slacking),
         escaped: Boolean(r.escaped)
       }))
       result = await shelterAPI.setDailyLabor(laborers, editGameDay.value)
@@ -204,6 +207,25 @@ async function confirmSettlement() {
     alert('结算失败: ' + (e.message || '未知错误'))
   } finally {
     verifying.value = false
+  }
+}
+
+async function resetShelterData() {
+  if (!isDm.value || resettingShelter.value) return
+  if (!confirm('确定要重置避难所建设数据吗？此操作将清空所有劳工记录和物资库存，恢复至游戏初始状态。')) return
+  resettingShelter.value = true
+  try {
+    const result = await shelterAPI.resetShelter()
+    if (result?.success) {
+      alert(result.message || '重置成功')
+      await loadShelterFromApi()
+    } else {
+      alert(result?.message || '重置失败')
+    }
+  } catch (e) {
+    alert('重置失败: ' + (e.message || '未知错误'))
+  } finally {
+    resettingShelter.value = false
   }
 }
 
@@ -496,7 +518,7 @@ onMounted(() => {
                 </span>
               </div>
               <p class="text-gray-500 text-sm mt-2">
-                建造值按规则自动计算（基础4；生产职业+1；压榨+3）。结算时对未逃役劳工施加「过劳」，压榨者另加「受伤」。
+                建造值按规则自动计算（基础4；生产职业+1；压榨+3；消极怠工-1）。结算时对未逃役劳工施加「过劳」，压榨者另加「受伤」。
               </p>
             </template>
             <template v-else>
@@ -524,6 +546,14 @@ onMounted(() => {
               @click="openSettlementPreview"
             >
               {{ loadingSettlementPreview ? '计算中…' : '确认结算' }}
+            </button>
+            <button
+              type="button"
+              class="px-4 py-2 rounded-xl bg-red-600/30 hover:bg-red-600/50 text-red-300 text-sm font-medium border border-red-500/30 disabled:opacity-50 transition-colors"
+              :disabled="resettingShelter"
+              @click="resetShelterData"
+            >
+              {{ resettingShelter ? '重置中…' : '重置避难所' }}
             </button>
           </div>
           <button
@@ -597,6 +627,16 @@ onMounted(() => {
                 @change="onLaborRowFlagsChange(row)"
               />
               压榨
+            </label>
+            <label class="flex items-center gap-1.5 text-xs text-yellow-300 cursor-pointer">
+              <input
+                v-model="row.slacking"
+                type="checkbox"
+                class="rounded"
+                :disabled="dayVerified"
+                @change="onLaborRowFlagsChange(row)"
+              />
+              消极怠工
             </label>
             <label class="flex items-center gap-1.5 text-xs text-amber-300 cursor-pointer">
               <input
