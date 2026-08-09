@@ -5,7 +5,7 @@ import { FACTION_LABELS, GM_FACTION_TABS } from './factionActions.js'
 export { FACTION_LABELS, GM_FACTION_TABS }
 
 export const NIGHT_PERSONAL_ACTION_TYPES = [
-  { value: 'go_location', label: '前往地点' },
+  { value: 'go_location', label: '变更过夜地点' },
   { value: 'investigate_player', label: '调查玩家' },
   { value: 'produce', label: '生产' },
   { value: 'use_trait', label: '使用特性' },

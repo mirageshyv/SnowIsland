@@ -60,7 +60,7 @@ ai:
 # NPC 对话限制配置
 npc:
   dialogue:
-    daily-limit: 10
+    daily-limit: 5
 
 # 日志配置
 logging:

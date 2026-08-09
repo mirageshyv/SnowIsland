@@ -40,7 +40,7 @@ public class NpcDialogueService {
     public static final String FAVOR_LEVEL_CLOSE = "亲近";
 
     /** 每日对话上限配置 */
-    @Value("${npc.dialogue.daily-limit:10}")
+    @Value("${npc.dialogue.daily-limit:5}")
     private int dailyDialogueLimit;
 
     @Autowired
@@ -604,7 +604,7 @@ public class NpcDialogueService {
         String lowerMsg = message.toLowerCase();
 
         if (lowerMsg.contains("谢谢") || lowerMsg.contains("感谢") || lowerMsg.contains("帮助")) {
-            return 5;
+            return 3;
         }
 
         if (lowerMsg.contains("你好") || lowerMsg.contains("hello") || lowerMsg.contains("hi")) {
@@ -612,33 +612,33 @@ public class NpcDialogueService {
         }
 
         if (lowerMsg.contains("道歉") || lowerMsg.contains("对不起")) {
-            return 3;
+            return 2;
         }
 
         if (lowerMsg.contains("资源") || lowerMsg.contains("交易") || lowerMsg.contains("钱")) {
             if (npc.getJob().contains("商人")) {
-                return 3;
+                return 2;
             }
             return 0;
         }
 
         if (lowerMsg.contains("信仰") || lowerMsg.contains("主") || lowerMsg.contains("神")) {
             if (npc.getJob().contains("神父") || npc.getJob().contains("牧师")) {
-                return 5;
+                return 3;
             }
             return 0;
         }
 
         if (lowerMsg.contains("武器") || lowerMsg.contains("战斗") || lowerMsg.contains("危险")) {
             if (npc.getJob().contains("猎人") || npc.getJob().contains("铁匠")) {
-                return 3;
+                return 2;
             }
             return 0;
         }
 
         if (lowerMsg.contains("医疗") || lowerMsg.contains("药") || lowerMsg.contains("受伤")) {
             if (npc.getJob().contains("医") || npc.getJob().contains("护士")) {
-                return 5;
+                return 3;
             }
             return 0;
         }

@@ -30,7 +30,7 @@ import imgAlcohol from '@/assets/医用酒精.png?url'
 import imgMatches from '@/assets/火柴.png?url'
 import imgPencil from '@/assets/铅笔.png?url'
 import imgSeaChart from '@/assets/破损海图.png?url'
-import imgBento from '@/assets/便当.png?url'
+import imgBento from '@/assets/面包.png?url'
 import imgFood from '@/assets/Food.png?url'
 import imgFuel from '@/assets/Fuel.png?url'
 import imgServicePistol from '@/assets/制式手枪.png?url'
@@ -167,7 +167,7 @@ export const GAME_ITEM_NAMES = {
     15: '火柴',
     16: '铅笔',
     17: '破损海图',
-    18: '便当',
+    18: '面包',
     19: '矿场仓库钥匙',
     20: '燃料仓库钥匙',
     21: '镇武库钥匙',
@@ -190,6 +190,7 @@ export const GAME_ITEM_NAMES = {
     10: '电锯',
     11: '手术刀',
     12: '炸药',
+    13: '电钻',
   },
   ammo: {
     1: '手枪弹',
@@ -612,7 +613,7 @@ export const SHELTER_ITEM_CATALOG = {
   flashlight: { id: 'flashlight', name: '手电筒', category: 'prop', description: '夜间行动照明工具。', imageUrl: imgFlashlight },
   handcuffs: { id: 'handcuffs', name: '手铐', category: 'prop', description: '约束目标行动的控制道具。', imageUrl: imgHandcuffs },
   whistle: { id: 'whistle', name: '哨子', category: 'prop', description: '可用于报警或快速集合。', imageUrl: imgWhistle },
-  body_armor: { id: 'body_armor', name: '防弹衣', category: 'prop', description: '冲突中提供额外防护。', imageUrl: imgBodyArmor },
+  body_armor: { id: 'body_armor', name: '防弹衣', category: 'prop', description: '在暴力冲突中可将一次「重伤」降级为「受伤」，或将一次「受伤」无效化，每场冲突限用一次。', imageUrl: imgBodyArmor },
   composite_shield: { id: 'composite_shield', name: '复合盾', category: 'prop', description: '降低正面冲突受伤风险。', imageUrl: imgCompositeShield },
   flare_gun: { id: 'flare_gun', name: '信号枪', category: 'prop', description: '发射信号弹，远距离传递信息。', imageUrl: imgFlareGun },
   repair_kit: { id: 'repair_kit', name: '维修工具包', category: 'prop', description: '用于设施与器械维修。', imageUrl: imgRepairKit },
@@ -625,18 +626,18 @@ export const SHELTER_ITEM_CATALOG = {
   matches: { id: 'matches', name: '火柴', category: 'prop', description: '取火工具。', imageUrl: imgMatches },
   pencil: { id: 'pencil', name: '铅笔', category: 'prop', description: '书写记录工具。', imageUrl: imgPencil },
   tattered_chart: { id: 'tattered_chart', name: '破损海图', category: 'prop', description: '可用于航线参考。', imageUrl: imgSeaChart },
-  service_pistol: { id: 'service_pistol', name: '制式手枪', category: 'weapon', description: '韦伯利.38口径转轮手枪，英军标准配发。威胁值2，近距离防身武器，装弹6发。', imageUrl: imgServicePistol },
-  hunting_shotgun: { id: 'hunting_shotgun', name: '猎枪', category: 'weapon', description: '12号口径单管或双管猎枪，用于狩猎鸟类和小型动物。威胁值8，中距离武器，装弹2发。', imageUrl: imgHuntingShotgun },
-  baton: { id: 'baton', name: '警棍', category: 'weapon', description: '硬木制成的短棍，长50厘米。威胁值0.5，非致命武器，可用于制服而非杀死目标。', imageUrl: imgBaton },
+  service_pistol: { id: 'service_pistol', name: '制式手枪', category: 'weapon', description: '韦伯利.38口径转轮手枪，英军标准配发。威胁值5，远程武器。', imageUrl: imgServicePistol },
+  hunting_shotgun: { id: 'hunting_shotgun', name: '猎枪', category: 'weapon', description: '12号口径单管或双管猎枪，用于狩猎鸟类和小型动物。威胁值6，远程武器。', imageUrl: imgHuntingShotgun },
+  baton: { id: 'baton', name: '警棍', category: 'weapon', description: '硬木制成的短棍，长50厘米。威胁值1，非致命武器，可用于制服而非杀死目标。', imageUrl: imgBaton },
   bayonet: { id: 'bayonet', name: '刺刀', category: 'weapon', description: '军用制式刺刀，长约20厘米。威胁值2。', imageUrl: imgBayonet },
-  harpoon_spear: { id: 'harpoon_spear', name: '鱼叉 / 矛', category: 'weapon', description: '铁头木柄的捕鱼工具，长110厘米。威胁值2，既可捕鱼也可作为近战武器，渔民的标配。', imageUrl: imgHarpoon },
-  hunting_bow: { id: 'hunting_bow', name: '猎弓', category: 'weapon', description: '简单木质主体金属包角的反曲猎弓，威胁值2，无声远程武器。', imageUrl: imgHuntingBow },
-  pickaxe: { id: 'pickaxe', name: '十字镐', category: 'weapon', description: '采矿用的双头镐具，长65厘米，重5kg。威胁值0.5，主要用来挖掘石料，紧急时也可作为武器。', imageUrl: imgPickaxe },
-  axe: { id: 'axe', name: '斧头', category: 'weapon', description: '伐木用双面斧，长65厘米。威胁值1，砍树是本职工作，砍人也不是不行。', imageUrl: imgAxe },
+  harpoon_spear: { id: 'harpoon_spear', name: '鱼叉 / 矛', category: 'weapon', description: '铁头木柄的捕鱼工具，长110厘米。威胁值3，既可捕鱼也可作为近战武器，渔民的标配。', imageUrl: imgHarpoon },
+  hunting_bow: { id: 'hunting_bow', name: '猎弓', category: 'weapon', description: '简单木质主体金属包角的反曲猎弓。威胁值4，无声远程武器。', imageUrl: imgHuntingBow },
+  pickaxe: { id: 'pickaxe', name: '十字镐', category: 'weapon', description: '采矿用的双头镐具，长65厘米，重5kg。威胁值1，主要用来挖掘石料，紧急时也可作为武器。', imageUrl: imgPickaxe },
+  axe: { id: 'axe', name: '斧头', category: 'weapon', description: '伐木用双面斧，长65厘米。威胁值2，砍树是本职工作，砍人也不是不行。', imageUrl: imgAxe },
   wood: { id: 'wood', name: '木材', category: 'material', description: '基础建造材料。', imageUrl: imgWood },
   stone: { id: 'stone', name: '石料', category: 'material', description: '用于加固结构。', imageUrl: imgStone },
   plank: { id: 'plank', name: '木板', category: 'material', description: '用于铺板和隔断。', imageUrl: imgPlank },
-  rope: { id: 'rope', name: '绳索', category: 'material', description: '常用固定与捆绑耗材。', imageUrl: imgRope },
+  rope: { id: 'rope', name: '绳索', category: 'material', description: '麻绳或钢丝绳，直径1-2厘米。用于捆绑、拖拽、登山或船只系泊。可以提升探索成功程度。', imageUrl: imgRope },
 }
 
 export const SHELTER_ITEM_CATALOG_BY_TYPE = {

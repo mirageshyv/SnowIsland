@@ -21,10 +21,10 @@ UPDATE `job` SET `description` = '潜水：每天一次，码头使用，由主�
 UPDATE `job` SET `description` = '布道：每天一次，选择最多 3 人，使其下一个行动生产 +50%；或为最多 3 人消除诅咒。医疗：每天一次，选择一位或至多 5 位“受伤”玩家，花费 3 医疗资源每人消除“受伤”；选择一位或多位“过劳”玩家，花费 2 医疗资源每人消除“过劳”。' WHERE `id` = 19;
 UPDATE `job` SET `description` = '医疗：每天一次，选择一位或至多 5 位“受伤”玩家，花费 3 医疗资源每人消除“受伤”；选择一位或多位“过劳”玩家，花费 2 医疗资源每人消除“过劳”。急救：花费 5 医疗资源，将“枪伤”改为“受伤”标记。' WHERE `id` = 20;
 UPDATE `job` SET `description` = '特殊性：初始拥有大量资源和商店功能；无职业技能。' WHERE `id` = 21;
-UPDATE `job` SET `description` = '烘焙：需要 5 单位食物与 15kg 木材制作 1 份便当；便当当天额外获得 1 个白天行动点，每人每天限 1 次。' WHERE `id` = 22;
+UPDATE `job` SET `description` = '烘焙：需要 5 单位食物与 15kg 木材制作 1 份面包；面包当天额外获得 1 个白天行动点，每人每天限 1 次。' WHERE `id` = 22;
 UPDATE `job` SET `description` = '特殊性：初始拥有大量酒类与医用酒精；无职业技能。' WHERE `id` = 23;
 UPDATE `job` SET `description` = '射击：在密谋、暴力冲突中，如果装备远距离武器增加威胁值。如果调查玩家，可以选择在夜晚阶段骰 d6 寻找攻击机会，成功可发起小规模冲突；多人调查可袭击。' WHERE `id` = 24;
-UPDATE `job` SET `description` = '烘焙：需要 5 单位食物与 15kg 木材制作 1 份便当；便当当天额外获得 1 个白天行动点，每人每天限 1 次。' WHERE `id` = 25;
+UPDATE `job` SET `description` = '烘焙：需要 5 单位食物与 15kg 木材制作 1 份面包；面包当天额外获得 1 个白天行动点，每人每天限 1 次。' WHERE `id` = 25;
 UPDATE `job` SET `description` = '急救：花费 5 医疗资源，将“枪伤”改为“受伤”标记。潜行：为谋略增加成功率，且无法被调查。' WHERE `id` = 26;
 UPDATE `job` SET `description` = '射击：在密谋、暴力冲突中，如果装备远距离武器增加威胁值。如果调查玩家，可以选择在夜晚阶段骰 d6 寻找攻击机会，成功可发起小规模冲突；多人调查可袭击。潜行：为谋略增加成功率，且无法被调查。' WHERE `id` = 27;
 UPDATE `job` SET `description` = '潜行：为谋略增加成功率，且无法被调查。' WHERE `id` = 28;

@@ -80,7 +80,7 @@ public class AiDialogueService {
     }
 
     /**
-     * AI计算好感度变化（单次增加不超过10，降低不超过5）
+     * AI计算好感度变化（单次增加不超过+3，降低不超过-5）
      */
     public int calculateFavorChangeWithAI(String npcName, String npcJob, String npcPersonality,
                                           String playerMessage, int currentFavor) {
@@ -95,10 +95,10 @@ public class AiDialogueService {
             "请分析玩家的消息，并决定好感度变化。\n" +
             "规则：\n" +
             "1. 好感度变化必须是整数\n" +
-            "2. 单次增加不能超过+10\n" +
+            "2. 单次增加不能超过+3\n" +
             "3. 单次降低不能超过-5\n" +
-            "4. 正常交流通常变化在-3到+5之间\n" +
-            "5. 友好、感谢、帮助等积极行为可以增加好感度\n" +
+            "4. 正常交流通常变化在-2到+2之间\n" +
+            "5. 友好、感谢、帮助等积极行为可以小幅增加好感度\n" +
             "6. 粗鲁、威胁、欺骗等消极行为会降低好感度\n" +
             "7. 根据NPC身份和性格判断：商人喜欢交易话题，医生喜欢医疗话题等\n" +
             "\n" +
@@ -146,7 +146,7 @@ public class AiDialogueService {
     }
 
     private int clampFavorChange(int change) {
-        if (change > 10) change = 10;
+        if (change > 3) change = 3;
         if (change < -5) change = -5;
         return change;
     }
@@ -155,35 +155,35 @@ public class AiDialogueService {
         String lowerMsg = message.toLowerCase();
 
         if (lowerMsg.contains("谢谢") || lowerMsg.contains("感谢") || lowerMsg.contains("帮助")) {
-            return 5;
+            return 3;
         }
         if (lowerMsg.contains("你好") || lowerMsg.contains("hello") || lowerMsg.contains("hi")) {
             return 2;
         }
         if (lowerMsg.contains("道歉") || lowerMsg.contains("对不起")) {
-            return 3;
+            return 2;
         }
         if (lowerMsg.contains("资源") || lowerMsg.contains("交易") || lowerMsg.contains("钱")) {
             if (npcJob != null && npcJob.contains("商人")) {
-                return 3;
+                return 2;
             }
             return 0;
         }
         if (lowerMsg.contains("信仰") || lowerMsg.contains("主") || lowerMsg.contains("神")) {
             if (npcJob != null && (npcJob.contains("神父") || npcJob.contains("牧师"))) {
-                return 5;
+                return 3;
             }
             return 0;
         }
         if (lowerMsg.contains("武器") || lowerMsg.contains("战斗") || lowerMsg.contains("危险")) {
             if (npcJob != null && (npcJob.contains("猎人") || npcJob.contains("铁匠"))) {
-                return 3;
+                return 2;
             }
             return 0;
         }
         if (lowerMsg.contains("医疗") || lowerMsg.contains("药") || lowerMsg.contains("受伤")) {
             if (npcJob != null && (npcJob.contains("医") || npcJob.contains("护士"))) {
-                return 5;
+                return 3;
             }
             return 0;
         }

@@ -33,8 +33,8 @@ const resourceCards = computed(() => {
   if (!arkData.value) return []
   const d = arkData.value
   return [
-    { name: '木材', current: d.currentWood || 0, max: d.targetWood || 25, unit: '吨' },
-    { name: '金属制品', current: d.currentMetal || 0, max: d.targetMetal || 10, unit: '吨' },
+    { name: '木材', current: d.currentWood || 0, max: d.targetWood || 250, unit: '吨' },
+    { name: '金属制品', current: d.currentMetal || 0, max: d.targetMetal || 100, unit: '吨' },
     { name: '密封材料', current: d.currentSealant || 0, max: d.targetSealant || 100, unit: 'kg' },
   ]
 })

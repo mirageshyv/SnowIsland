@@ -42,6 +42,10 @@ public class TransportSettlementService {
         public String sourceWarehouse;
         public String destWarehouse;
         public Integer targetPlayerId;
+        /** free = 不影响行动额度；action = 跳过/占用行动额度（默认） */
+        public String tier = "action";
+        /** 小镇 / 海岛；未指定时由仓库推断 */
+        public String area;
         /** 个人→仓库：提交行动时已从玩家背包扣除 */
         public boolean playerDeducted;
         public List<TransportItem> items = new ArrayList<>();
@@ -66,6 +70,10 @@ public class TransportSettlementService {
                 } catch (NumberFormatException ignored) { }
             } else if (line.startsWith("[player_deducted:")) {
                 plan.playerDeducted = line.contains("1");
+            } else if (line.startsWith("[tier:")) {
+                plan.tier = line.substring(6, closeIdx);
+            } else if (line.startsWith("[area:")) {
+                plan.area = line.substring(6, closeIdx);
             } else if (line.startsWith("[item:")) {
                 String itemStr = line.substring(6, closeIdx);
                 String[] parts = itemStr.split("\\|");
@@ -213,15 +221,85 @@ public class TransportSettlementService {
         return errors;
     }
 
+    /**
+     * 规则书137：
+     * 玩家↔仓库：小镇免费50/行动300；海岛免费30/行动300
+     * 仓库↔仓库：小镇免费100/行动500；海岛免费50/行动300
+     * 避难所相关按海岛仓库额度；装卸工职业搬运量×2
+     */
+    public int resolveMaxWeight(TransportPlan plan, Integer actingPlayerId) {
+        boolean free = plan != null && "free".equalsIgnoreCase(plan.tier);
+        String area = resolveTransportArea(plan);
+        boolean island = area != null && (area.contains("海岛") || "特殊".equals(area));
+        boolean warehouseLink = plan != null && (
+                "warehouse_to_warehouse".equals(plan.mode)
+                        || "warehouse_to_shelter".equals(plan.mode)
+                        || "shelter_to_warehouse".equals(plan.mode));
+
+        int max;
+        if (warehouseLink) {
+            max = free ? (island ? 50 : 100) : (island ? 300 : 500);
+        } else {
+            max = free ? (island ? 30 : 50) : 300;
+        }
+        if (actingPlayerId != null && isStevedore(actingPlayerId)) {
+            max *= 2;
+        }
+        return max;
+    }
+
+    private String resolveTransportArea(TransportPlan plan) {
+        if (plan == null) return "小镇";
+        if (plan.area != null && !plan.area.trim().isEmpty()) {
+            return plan.area.trim();
+        }
+        String fromSource = warehouseArea(plan.sourceWarehouse);
+        String fromDest = warehouseArea(plan.destWarehouse);
+        if ("海岛".equals(fromSource) || "海岛".equals(fromDest)) return "海岛";
+        if (fromSource != null) return fromSource;
+        if (fromDest != null) return fromDest;
+        return "小镇";
+    }
+
+    private String warehouseArea(String key) {
+        if (key == null || key.isEmpty()) return null;
+        if (SHELTER_KEY.equals(key)) return "海岛";
+        switch (key) {
+            case "general":
+                return "海岛"; // 矿场仓库
+            case "fuel":
+            case "armory":
+            case "dock":
+            case "rebel":
+            case "ark":
+                return "小镇";
+            default:
+                return "小镇";
+        }
+    }
+
+    private boolean isStevedore(Integer playerId) {
+        try {
+            Optional<Player> opt = playerRepository.findById(playerId);
+            if (!opt.isPresent() || opt.get().getJobId() == null) return false;
+            Query q = entityManager.createNativeQuery("SELECT name FROM job WHERE id = ?1");
+            q.setParameter(1, opt.get().getJobId());
+            List<?> rows = q.getResultList();
+            if (rows.isEmpty()) return false;
+            String name = String.valueOf(rows.get(0));
+            return name != null && name.contains("装卸");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     /** Compute actualQty; returns error messages if any line cannot be satisfied. */
     public List<String> computeTransfer(TransportPlan plan, Integer actingPlayerId) {
         List<String> errors = new ArrayList<>();
         errors.addAll(validatePlanStructure(plan));
         if (!errors.isEmpty()) return errors;
 
-        int maxWeight = ("warehouse_to_warehouse".equals(plan.mode)
-                || "warehouse_to_shelter".equals(plan.mode)
-                || "shelter_to_warehouse".equals(plan.mode)) ? 500 : 300;
+        int maxWeight = resolveMaxWeight(plan, actingPlayerId);
         int totalMoved = 0;
 
         for (TransportItem item : plan.items) {

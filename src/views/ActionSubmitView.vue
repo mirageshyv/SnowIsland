@@ -91,11 +91,13 @@ const transportMode = reactive({ 1: '', 2: '' })
 const transportSource = reactive({ 1: '', 2: '' })
 const transportDest = reactive({ 1: '', 2: '' })
 const transportItems = reactive({ 1: [], 2: [] })
+const transportTier = reactive({ 1: 'action', 2: 'action' })
+const overnightHere = reactive({ 1: false, 2: false })
 
 const WEIGHT_MAP = {
   material: { 1: 1, 2: 1, 3: 0.5, 4: 1, 5: 1, 7: 1, 8: 1, 12: 50 },
   item: { 1: 0.5, 2: 0.3, 3: 0.5, 4: 0.2, 5: 2, 6: 3, 7: 1, 8: 1, 9: 0.1, 10: 1, 11: 0.5, 12: 0.5, 13: 0.1, 14: 1, 15: 0.2, 16: 0.2, 17: 0.3, 18: 0.5, 19: 0.1, 20: 0.1, 21: 0.1, 22: 0.1 },
-  weapon: { 1: 2, 2: 3, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 2, 10: 5, 11: 0.5, 12: 1 },
+  weapon: { 1: 2, 2: 3, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 2, 10: 5, 11: 0.5, 12: 1, 13: 3 },
   ammo: { 1: 0.1, 2: 0.1, 3: 0.1, 4: 0.1 }
 }
 
@@ -125,7 +127,7 @@ const actionHelpEntries = [
   { title: '使用特性', body: '消耗行动点使用你的特性技能。必须在备注说明中详细描述所使用的特性名称及具体效果，DM将根据描述给予反馈。' },
   { title: '使用职业技能', body: '使用你的职业技能。必须在备注说明中详细描述所使用的职业技能及具体效果，DM将根据描述给予反馈。' },
   { title: '生产', body: '根据职业技能生产对应资源。需要DM结算后物资才会发放到背包中。' },
-  { title: '搬运', body: '在仓库与个人背包间转移物资。须持有相关仓库钥匙。个人→仓库在提交时即从背包扣除，入仓在主持人发布后生效。仓库→仓库上限500kg，其余上限300kg。' },
+  { title: '搬运', body: '在仓库与个人背包间转移物资。须持有相关仓库钥匙。个人→仓库在提交时即从背包扣除，入仓在主持人发布后生效。行动档：玩家↔仓库300kg；仓库↔仓库小镇500kg/海岛（含矿场仓库、避难所）300kg。免费档（不影响行动额度）：玩家↔仓库小镇50/海岛30；仓库↔仓库小镇100/海岛50。装卸工职业额度×2。' },
   { title: '隐藏', body: '隐藏自己：第二天不会被调查，也无法被私聊，无法成为统治者与密谋的行动目标。' },
   { title: '其他', body: '尝试执行系统未预先规划的行动。必须在描述中详细说明你想执行的具体行动内容，由DM判定是否成功及效果。' },
 ]
@@ -256,9 +258,30 @@ function getTransportTotalWeight(slot) {
   return items.reduce((sum, item) => sum + (item.quantity || 0) * item.weightPerUnit, 0)
 }
 
+function warehouseAreaKey(key) {
+  if (!key) return '小镇'
+  if (key === 'shelter' || key === 'general') return '海岛'
+  return '小镇'
+}
+
 function getTransportMaxWeight(slot) {
   const mode = transportMode[slot]
-  return (mode === 'warehouse_to_warehouse' || mode === 'warehouse_to_shelter' || mode === 'shelter_to_warehouse') ? 500 : 300
+  const free = transportTier[slot] === 'free'
+  const warehouseLink = mode === 'warehouse_to_warehouse' || mode === 'warehouse_to_shelter' || mode === 'shelter_to_warehouse'
+  let area = '小镇'
+  if (['warehouse_to_warehouse', 'warehouse_to_player', 'warehouse_to_shelter'].includes(mode)) {
+    area = warehouseAreaKey(transportSource[slot])
+  } else if (['shelter_to_warehouse', 'shelter_to_player', 'player_to_shelter', 'warehouse_to_shelter'].includes(mode)) {
+    area = '海岛'
+  } else if (mode === 'player_to_warehouse') {
+    area = warehouseAreaKey(transportDest[slot])
+  }
+  if (warehouseLink && (warehouseAreaKey(transportSource[slot]) === '海岛' || warehouseAreaKey(transportDest[slot]) === '海岛' || mode.includes('shelter'))) {
+    area = '海岛'
+  }
+  const island = area === '海岛'
+  if (warehouseLink) return free ? (island ? 50 : 100) : (island ? 300 : 500)
+  return free ? (island ? 30 : 50) : 300
 }
 
 function onTransportQuantityInput(item) {
@@ -270,6 +293,7 @@ function buildTransportNotes(slot) {
   const lines = []
   const mode = transportMode[slot] || ''
   lines.push(`[mode:${mode}]`)
+  lines.push(`[tier:${transportTier[slot] || 'action'}]`)
   if (['warehouse_to_warehouse', 'warehouse_to_player', 'warehouse_to_shelter'].includes(mode) && transportSource[slot]) {
     lines.push(`[source:${transportSource[slot]}]`)
   }
@@ -480,6 +504,8 @@ async function submitActions() {
       let notes = ad.notes || ''
       if (ad.type === 'transport') {
         notes = buildTransportNotes(s)
+      } else if (ad.type === 'go_location' && overnightHere[s]) {
+        notes = (notes ? notes + '\n' : '') + '[overnight:1]'
       }
       const data = {
         playerId: pid,
@@ -609,16 +635,22 @@ function displayActionResult(action) {
             </select>
           </div>
 
-            <div v-if="actionData[s].type === 'go_location' && actionData[s].target && getNpcOptions(actionData[s].target).length > 0">
-              <label class="block text-gray-500 text-xs mb-2 ml-0.5">互动NPC（可选）</label>
-              <select
-                v-model="actionData[s].npc"
-                :disabled="!isSlotEditable(s)"
-                class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <option value="">不互动</option>
-                <option v-for="n in getNpcOptions(actionData[s].target)" :key="n.value" :value="n.value">{{ n.label }}</option>
-              </select>
+            <div v-if="actionData[s].type === 'go_location' && actionData[s].target" class="space-y-3">
+              <div v-if="getNpcOptions(actionData[s].target).length > 0">
+                <label class="block text-gray-500 text-xs mb-2 ml-0.5">互动NPC（可选）</label>
+                <select
+                  v-model="actionData[s].npc"
+                  :disabled="!isSlotEditable(s)"
+                  class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <option value="">不互动</option>
+                  <option v-for="n in getNpcOptions(actionData[s].target)" :key="n.value" :value="n.value">{{ n.label }}</option>
+                </select>
+              </div>
+              <label class="flex items-start gap-2 text-sm text-gray-300 cursor-pointer">
+                <input v-model="overnightHere[s]" type="checkbox" class="mt-1" :disabled="!isSlotEditable(s)" />
+                <span>今晚在此过夜（默认在自己家；不勾选则不改变过夜地点）</span>
+              </label>
             </div>
 
             <div v-if="actionData[s].type === 'produce' && productionInfo && productionInfo.canProduce">
@@ -654,6 +686,18 @@ function displayActionResult(action) {
 
             <div v-if="actionData[s].type === 'transport'" class="space-y-3">
               <div>
+                <label class="block text-gray-500 text-xs mb-2 ml-0.5">搬运档位</label>
+                <select
+                  v-model="transportTier[s]"
+                  :disabled="!isSlotEditable(s)"
+                  class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <option value="action">行动档（占用本行动；额度更高）</option>
+                  <option value="free">免费档（规则中不影响行动的额度；上限更低）</option>
+                </select>
+                <p class="text-gray-500 text-xs mt-1">当前上限约 {{ getTransportMaxWeight(s) }}kg（按模式与仓库区域估算；装卸工×2由服务端结算）</p>
+              </div>
+              <div>
                 <label class="block text-gray-500 text-xs mb-2 ml-0.5">搬运模式</label>
                 <select
                   v-model="transportMode[s]"
@@ -661,13 +705,13 @@ function displayActionResult(action) {
                   class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <option value="">请选择模式</option>
-                  <option value="warehouse_to_warehouse">仓库 → 仓库（上限500kg）</option>
-                  <option value="warehouse_to_player">仓库 → 个人（上限300kg）</option>
-                  <option value="player_to_warehouse">个人 → 仓库（上限300kg，提交时扣除背包）</option>
-                  <option value="warehouse_to_shelter">仓库 → 避难所（上限500kg）</option>
-                  <option v-if="isRuler" value="shelter_to_warehouse">避难所 → 仓库（上限500kg，仅统治者）</option>
-                  <option v-if="isRuler" value="shelter_to_player">避难所 → 个人（上限300kg，仅统治者）</option>
-                  <option value="player_to_shelter">个人 → 避难所（上限300kg，提交时扣除背包）</option>
+                  <option value="warehouse_to_warehouse">仓库 → 仓库</option>
+                  <option value="warehouse_to_player">仓库 → 个人</option>
+                  <option value="player_to_warehouse">个人 → 仓库（提交时扣除背包）</option>
+                  <option value="warehouse_to_shelter">仓库 → 避难所</option>
+                  <option v-if="isRuler" value="shelter_to_warehouse">避难所 → 仓库（仅统治者）</option>
+                  <option v-if="isRuler" value="shelter_to_player">避难所 → 个人（仅统治者）</option>
+                  <option value="player_to_shelter">个人 → 避难所（提交时扣除背包）</option>
                 </select>
               </div>
               <div v-if="['warehouse_to_warehouse', 'warehouse_to_player'].includes(transportMode[s])" class="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -392,6 +392,7 @@
                   <h3 class="font-semibold flex items-center gap-2">
                     <span>🤝</span> 交易配置
                   </h3>
+                  <p class="text-xs text-slate-400 mt-1">好感只降低需求价格（友善10% / 亲近25% / 挚友免费）；供给为配置基础量，无数量加成。挚友每日可另领一次基础量免费物资。</p>
                 </div>
                 <div class="p-4">
                   <div class="flex items-center gap-4 mb-4">

@@ -64,14 +64,18 @@ public class ActionService {
 
         Map<String, Object> logging = new LinkedHashMap<>();
         logging.put("itemType", "material"); logging.put("itemId", 2); logging.put("quantity", 5);
+        logging.put("quantityWithoutTool", 1);
+        logging.put("toolWeaponId", 10); // 电锯
         logging.put("unit", "吨"); logging.put("itemName", "木材");
-        logging.put("description", "使用电锯20吨木材，否则5吨");
+        logging.put("description", "使用电锯5吨木材，否则1吨");
         PRODUCTION_OUTPUT_MAP.put("logging", logging);
 
         Map<String, Object> mining = new LinkedHashMap<>();
         mining.put("itemType", "material"); mining.put("itemId", 7); mining.put("quantity", 5);
-        mining.put("unit", "吨"); farming.put("itemName", "石料");
-        mining.put("description", "使用镐子20吨石料，否则5吨");
+        mining.put("quantityWithoutTool", 1);
+        mining.put("toolWeaponId", 13); // 电钻
+        mining.put("unit", "吨"); mining.put("itemName", "石料");
+        mining.put("description", "使用电钻5吨石料，否则1吨");
         PRODUCTION_OUTPUT_MAP.put("mining", mining);
 
         Map<String, Object> hunting = new LinkedHashMap<>();
@@ -118,6 +122,11 @@ public class ActionService {
 
         if ("go_location".equals(actionType)) {
             autoResult = resolveGoLocation(targetId, npcId, player);
+            if (notes != null && notes.contains("[overnight:1]") && targetId != null) {
+                player.setOvernightLocationId(targetId);
+                playerRepository.save(player);
+                autoResult = (autoResult != null ? autoResult : "") + "\n【过夜】已登记今晚在此地点过夜（默认在家；仅勾选时变更）。";
+            }
         } else if ("investigate_player".equals(actionType)) {
             autoResult = "等待DM反馈调查结果";
             if (targetId != null) {
@@ -569,6 +578,19 @@ public class ActionService {
         List<String> errors = new ArrayList<>();
         errors.addAll(transportSettlementService.validatePlanStructure(plan));
         errors.addAll(transportSettlementService.validateKeys(playerId, plan));
+        if (errors.isEmpty() && plan.items != null) {
+            int maxWeight = transportSettlementService.resolveMaxWeight(plan, playerId);
+            double total = 0;
+            for (TransportSettlementService.TransportItem item : plan.items) {
+                if (item.requestedQty > 0) {
+                    total += item.requestedQty * item.weightPerUnit;
+                }
+            }
+            if (total > maxWeight + 0.01) {
+                String tierLabel = "free".equalsIgnoreCase(plan.tier) ? "免费档" : "行动档";
+                errors.add("搬运总重量" + (int) Math.ceil(total) + "kg超过" + tierLabel + "上限" + maxWeight + "kg");
+            }
+        }
         return errors;
     }
 
@@ -788,12 +810,20 @@ public class ActionService {
             Map<String, Object> output = PRODUCTION_OUTPUT_MAP.get(productionKey);
             String itemType = (String) output.get("itemType");
             Integer itemId = (Integer) output.get("itemId");
-            Integer quantity = (Integer) output.get("quantity");
+            Integer quantity = resolveProductionQuantity(playerId, output);
 
             addItemToPlayer(playerId, itemType, itemId, quantity);
 
             String existingResult = action.getResult() != null ? action.getResult() : "";
-            action.setResult(existingResult + "\n\n【生产结算】已获得" + output.get("itemName") + " " + quantity + output.get("unit"));
+            String toolNote = "";
+            Integer toolWeaponId = (Integer) output.get("toolWeaponId");
+            if (toolWeaponId != null) {
+                toolNote = playerHasWeapon(playerId, toolWeaponId)
+                        ? "（持有工具，高产量）"
+                        : "（无工具，低产量）";
+            }
+            action.setResult(existingResult + "\n\n【生产结算】已获得" + output.get("itemName") + " "
+                    + quantity + output.get("unit") + toolNote);
             action.setStatus(PlayerAction.ActionStatus.feedbacked);
             action.setFeedbackPublished(false);
             actionRepository.save(action);
@@ -989,6 +1019,31 @@ public class ActionService {
             }
         } catch (Exception e) {
             throw new RuntimeException("更新仓库库存失败: " + e.getMessage());
+        }
+    }
+
+    private int resolveProductionQuantity(Integer playerId, Map<String, Object> output) {
+        Integer baseQty = (Integer) output.get("quantity");
+        if (baseQty == null) baseQty = 0;
+        Integer toolWeaponId = (Integer) output.get("toolWeaponId");
+        Integer withoutTool = (Integer) output.get("quantityWithoutTool");
+        if (toolWeaponId == null || withoutTool == null) {
+            return baseQty;
+        }
+        return playerHasWeapon(playerId, toolWeaponId) ? baseQty : withoutTool;
+    }
+
+    private boolean playerHasWeapon(Integer playerId, int weaponId) {
+        try {
+            Query q = entityManager.createNativeQuery(
+                    "SELECT quantity FROM player_items WHERE player_id = ?1 AND item_type = 'weapon' AND item_id = ?2");
+            q.setParameter(1, playerId);
+            q.setParameter(2, weaponId);
+            List<?> rows = q.getResultList();
+            if (rows.isEmpty()) return false;
+            return ((Number) rows.get(0)).intValue() > 0;
+        } catch (Exception e) {
+            return false;
         }
     }
 

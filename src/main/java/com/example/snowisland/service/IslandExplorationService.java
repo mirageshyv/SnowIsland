@@ -763,7 +763,7 @@ public class IslandExplorationService {
         itemNames.get("item").put(15, "火柴");
         itemNames.get("item").put(16, "铅笔");
         itemNames.get("item").put(17, "破损海图");
-        itemNames.get("item").put(18, "便当");
+        itemNames.get("item").put(18, "面包");
         itemNames.get("item").put(19, "矿场仓库钥匙");
         itemNames.get("item").put(20, "燃料仓库钥匙");
         itemNames.get("item").put(21, "镇武库钥匙");

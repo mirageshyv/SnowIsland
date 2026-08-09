@@ -559,11 +559,14 @@ onMounted(async () => {
                 </select>
               </div>
               <div v-if="['go_location', 'investigate_player'].includes(forms.night_personal_action.actionType)">
-                <label class="block text-gray-500 text-xs mb-2">目标</label>
+                <label class="block text-gray-500 text-xs mb-2">{{ forms.night_personal_action.actionType === 'go_location' ? '过夜地点' : '目标' }}</label>
                 <select v-model="forms.night_personal_action.targetId" :class="selectClass">
                   <option value="">请选择</option>
                   <option v-for="o in personalTargetOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
                 </select>
+                <p v-if="forms.night_personal_action.actionType === 'go_location'" class="text-gray-500 text-xs mt-1">
+                  默认在自己家过夜；此处用于变更过夜地点（占用夜晚行动）。
+                </p>
               </div>
               <div
                 v-if="forms.night_personal_action.actionType === 'go_location' && personalNpcOptions.length"

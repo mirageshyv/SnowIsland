@@ -183,7 +183,7 @@ public class NpcDialogueServiceTest {
         npcDialogueService.setFavor(1, 1, 0);
         
         Map<String, Object> thanks = npcDialogueService.sendMessage(1, 1, "谢谢你");
-        assertEquals(5, thanks.get("favorChange"));
+        assertEquals(3, thanks.get("favorChange"));
         
         Map<String, Object> hello = npcDialogueService.sendMessage(1, 1, "你好");
         assertEquals(2, hello.get("favorChange"));

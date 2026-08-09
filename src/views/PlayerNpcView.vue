@@ -200,7 +200,7 @@
                     </div>
                     <div class="text-right">
                       <div v-if="tradeConfig.favorTier.canFreeReward" class="text-xs">
-                        <span class="text-yellow-400 font-bold">🎁 免费赠送</span>
+                        <span class="text-yellow-400 font-bold">🎁 可领免费物资</span>
                       </div>
                       <div v-else-if="tradeConfig.favorTier.demandDiscount > 0" class="text-xs text-slate-400">
                         折扣: <span class="text-yellow-400 font-bold">{{ Math.round(tradeConfig.favorTier.demandDiscount * 100) }}%</span>
@@ -208,14 +208,8 @@
                       <div v-else class="text-xs text-slate-400">
                         折扣: <span class="text-gray-500">无</span>
                       </div>
-                      <div v-if="tradeConfig.favorTier.canFreeReward" class="text-xs text-slate-400">
-                        加成: <span class="text-yellow-400 font-bold">双倍</span>
-                      </div>
-                      <div v-else-if="tradeConfig.favorTier.supplyBonus > 0" class="text-xs text-slate-400">
-                        加成: <span class="text-green-400 font-bold">{{ Math.round(tradeConfig.favorTier.supplyBonus * 100) }}%</span>
-                      </div>
-                      <div v-else class="text-xs text-slate-400">
-                        加成: <span class="text-gray-500">无</span>
+                      <div class="text-xs text-slate-400">
+                        供给: <span class="text-gray-400">固定基础量</span>
                       </div>
                     </div>
                   </div>
@@ -309,7 +303,7 @@
                       <h3 class="text-yellow-400 font-bold">挚友特权</h3>
                     </div>
                     <p class="text-xs text-yellow-200/80 mb-3">
-                      您与{{ tradeConfig.npcName }}好感度已达最大值！今日{{ tradeConfig.freeRewardUsed ? '已领取' : '可领取' }}一次免费物资奖励（双倍数量）。
+                      您与{{ tradeConfig.npcName }}好感度已达最大值！今日{{ tradeConfig.freeRewardUsed ? '已领取' : '可领取' }}一次免费物资奖励（基础数量）。
                     </p>
                     <button
                       @click="claimFreeReward"
@@ -321,7 +315,7 @@
                           : 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-slate-900 animate-bounce'
                       ]"
                     >
-                      {{ tradeConfig.freeRewardUsed ? '✅ 今日已领取' : (isClaimingFreeReward ? '领取中...' : '🎁 免费领取双倍物资') }}
+                      {{ tradeConfig.freeRewardUsed ? '✅ 今日已领取' : (isClaimingFreeReward ? '领取中...' : '🎁 免费领取基础物资') }}
                     </button>
                   </div>
                 </div>
@@ -529,7 +523,7 @@ const tradeLoading = ref(false)
 const isTrading = ref(false)
 const tradeHistory = ref([])
 const dialogueLimit = ref(null)
-const dailyDialogueLimit = ref(10)
+const dailyDialogueLimit = ref(5)
 const isClaimingFreeReward = ref(false)
 const helpOptions = ref([])
 const helpHistory = ref([])
@@ -606,7 +600,7 @@ async function sendMessage() {
         }
         dialogueLimit.value.remainingChats = result.remainingChats
         dialogueLimit.value.locked = result.locked || false
-        dialogueLimit.value.dailyLimit = dailyDialogueLimit || 10
+        dialogueLimit.value.dailyLimit = dailyDialogueLimit || 5
         if (dialogueLimit.value.locked) {
           dialogueLimit.value.message = '今日与该NPC的交流次数已用完，请等待明天重置或联系DM更新游戏天数'
         }
@@ -624,7 +618,7 @@ async function sendMessage() {
         }
         dialogueLimit.value.locked = true
         dialogueLimit.value.remainingChats = 0
-        dialogueLimit.value.dailyLimit = dailyDialogueLimit || 10
+        dialogueLimit.value.dailyLimit = dailyDialogueLimit || 5
         dialogueLimit.value.message = result.message
       }
     }
@@ -708,7 +702,7 @@ async function confirmTrade() {
 async function claimFreeReward() {
   if (!selectedNpc.value || isClaimingFreeReward.value) return
   
-  if (!confirm(`作为${selectedNpc.value.name}的挚友，确认免费领取双倍物资奖励吗？`)) {
+  if (!confirm(`作为${selectedNpc.value.name}的挚友，确认免费领取基础数量物资奖励吗？`)) {
     return
   }
   

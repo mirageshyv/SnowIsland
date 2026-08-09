@@ -913,16 +913,16 @@ public class NpcTradeServiceTest {
 
     @Test
     public void testGetDemandDiscountRate_Friendly() {
-        assertEquals(0.2, NpcTradeService.getDemandDiscountRate(20), 0.001);
-        assertEquals(0.2, NpcTradeService.getDemandDiscountRate(40), 0.001);
-        assertEquals(0.2, NpcTradeService.getDemandDiscountRate(59), 0.001);
+        assertEquals(0.1, NpcTradeService.getDemandDiscountRate(20), 0.001);
+        assertEquals(0.1, NpcTradeService.getDemandDiscountRate(40), 0.001);
+        assertEquals(0.1, NpcTradeService.getDemandDiscountRate(59), 0.001);
     }
 
     @Test
     public void testGetDemandDiscountRate_Close() {
-        assertEquals(0.5, NpcTradeService.getDemandDiscountRate(60), 0.001);
-        assertEquals(0.5, NpcTradeService.getDemandDiscountRate(80), 0.001);
-        assertEquals(0.5, NpcTradeService.getDemandDiscountRate(99), 0.001);
+        assertEquals(0.25, NpcTradeService.getDemandDiscountRate(60), 0.001);
+        assertEquals(0.25, NpcTradeService.getDemandDiscountRate(80), 0.001);
+        assertEquals(0.25, NpcTradeService.getDemandDiscountRate(99), 0.001);
     }
 
     @Test
@@ -953,21 +953,21 @@ public class NpcTradeServiceTest {
 
     @Test
     public void testGetSupplyBonusRate_Friendly() {
-        assertEquals(0.2, NpcTradeService.getSupplyBonusRate(20), 0.001);
-        assertEquals(0.2, NpcTradeService.getSupplyBonusRate(40), 0.001);
-        assertEquals(0.2, NpcTradeService.getSupplyBonusRate(59), 0.001);
+        assertEquals(0.0, NpcTradeService.getSupplyBonusRate(20), 0.001);
+        assertEquals(0.0, NpcTradeService.getSupplyBonusRate(40), 0.001);
+        assertEquals(0.0, NpcTradeService.getSupplyBonusRate(59), 0.001);
     }
 
     @Test
     public void testGetSupplyBonusRate_Close() {
-        assertEquals(0.5, NpcTradeService.getSupplyBonusRate(60), 0.001);
-        assertEquals(0.5, NpcTradeService.getSupplyBonusRate(80), 0.001);
-        assertEquals(0.5, NpcTradeService.getSupplyBonusRate(99), 0.001);
+        assertEquals(0.0, NpcTradeService.getSupplyBonusRate(60), 0.001);
+        assertEquals(0.0, NpcTradeService.getSupplyBonusRate(80), 0.001);
+        assertEquals(0.0, NpcTradeService.getSupplyBonusRate(99), 0.001);
     }
 
     @Test
     public void testGetSupplyBonusRate_Max() {
-        assertEquals(1.0, NpcTradeService.getSupplyBonusRate(100), 0.001);
+        assertEquals(0.0, NpcTradeService.getSupplyBonusRate(100), 0.001);
     }
 
     @Test

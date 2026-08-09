@@ -75,43 +75,29 @@ public class NpcTradeService {
     /**
      * 根据好感度档位计算需求物资折扣率
      * 折扣率：玩家需要付出的物资 = 原始需求 * (1 - discountRate)
-     * 越高的好感度，玩家需要付出的物资越少
-     * 
+     * 越高的好感度，玩家需要付出的物资越少（供给数量不再随好感加成）
+     *
      * 好感度档位与折扣规则：
      * - 敌视（≤-60）：禁止交易
-     * - 冷漠（-60~-20）：0%折扣，标准价格
-     * - 中立（-20~20）：0%折扣，标准价格
-     * - 友善（20~60）：20%折扣，最终价格=标准价格×0.8
-     * - 亲近（60~100）：50%折扣，最终价格=标准价格×0.5
-     * - 挚友（=100）：100%折扣，免费
+     * - 冷漠 / 中立（-60~20）：0%折扣
+     * - 友善（20~60）：10%折扣
+     * - 亲近（60~100）：25%折扣
+     * - 挚友（=100）：100%折扣，免费（供给仍为图鉴配置的 1× 基础量）
      */
     public static double getDemandDiscountRate(int favorValue) {
-        if (favorValue >= 100) return 1.0;   // 挚友：100% 折扣，免费
-        if (favorValue >= 60) return 0.5;    // 亲近：50% 折扣
-        if (favorValue >= 20) return 0.2;    // 友善：20% 折扣
+        if (favorValue >= 100) return 1.0;   // 挚友：免费
+        if (favorValue >= 60) return 0.25;   // 亲近：25% 折扣
+        if (favorValue >= 20) return 0.1;    // 友善：10% 折扣
         if (favorValue >= -60) return 0.0;   // 中立/冷漠：无折扣
-        return 0.0;                          // 敌视：无折扣（交易被禁止）
+        return 0.0;                          // 敌视：禁止交易
     }
 
     /**
-     * 根据好感度档位计算供给物资加成率
-     * 加成率：NPC给予的物资 = 原始数量 * (1 + bonusRate)
-     * 越高的好感度，NPC给予的物资越多
-     * 
-     * 好感度档位与加成规则：
-     * - 敌视（≤-60）：禁止交易
-     * - 冷漠（-60~-20）：0%加成，标准数量
-     * - 中立（-20~20）：0%加成，标准数量
-     * - 友善（20~60）：20%加成，获得120%数量
-     * - 亲近（60~100）：50%加成，获得150%数量
-     * - 挚友（=100）：100%加成，获得双倍数量
+     * 供给加成已取消（Phase 1 平衡）：好感只影响需求折扣，不增加 NPC 给出的数量。
+     * 保留方法供 UI / 旧调用兼容，始终返回 0。
      */
     public static double getSupplyBonusRate(int favorValue) {
-        if (favorValue >= 100) return 1.0;   // 挚友：100% 加成（双倍）
-        if (favorValue >= 60) return 0.5;    // 亲近：50% 加成
-        if (favorValue >= 20) return 0.2;    // 友善：20% 加成
-        if (favorValue >= -60) return 0.0;   // 中立/冷漠：无加成
-        return 0.0;                          // 敌视：无加成（交易被禁止）
+        return 0.0;
     }
 
     /**
@@ -201,9 +187,9 @@ public class NpcTradeService {
             case FAVOR_TIER_HOSTILE: return "敌视状态，禁止交易";
             case FAVOR_TIER_UNFRIENDLY: return "冷漠关系，标准价格，无折扣";
             case FAVOR_TIER_NEUTRAL: return "中立关系，标准价格，无折扣";
-            case FAVOR_TIER_FRIENDLY: return "友善关系，享受20%折扣与加成";
-            case FAVOR_TIER_CLOSE: return "亲近关系，享受50%折扣与加成";
-            case FAVOR_TIER_MAX: return "挚友！免费交易，每日可领取免费物资";
+            case FAVOR_TIER_FRIENDLY: return "友善关系，需求享10%折扣（供给数量固定）";
+            case FAVOR_TIER_CLOSE: return "亲近关系，需求享25%折扣（供给数量固定）";
+            case FAVOR_TIER_MAX: return "挚友！免费交易；每日可另领一次基础量免费物资";
             default: return "未知关系";
         }
     }
@@ -515,16 +501,16 @@ public class NpcTradeService {
                 return result;
             }
 
-            // 免费给予玩家双倍物资（最大好感度特权）
+            // 免费给予玩家基础量物资（挚友特权；不再双倍）
             List<Map<String, Object>> rewardItems = new ArrayList<>();
             for (NpcTradeConfig config : validSupply) {
-                int rewardQuantity = calculateBonusSupply(config.getQuantity(), 1.0); // 100%加成 = 双倍
+                int rewardQuantity = Math.max(1, config.getQuantity());
                 TradeItem.ItemType supplyType = parseItemType(config.getItemType());
                 addPlayerItem(playerId, supplyType, config.getItemId(), rewardQuantity);
                 Map<String, Object> item = configToMap(config);
                 item.put("actualQuantity", rewardQuantity);
                 item.put("originalQuantity", config.getQuantity());
-                item.put("bonusRate", 1.0);
+                item.put("bonusRate", 0.0);
                 rewardItems.add(item);
             }
 
@@ -542,7 +528,7 @@ public class NpcTradeService {
             markFreeRewardUsed(npcId, playerId, currentDay);
 
             result.put("success", true);
-            result.put("message", "恭喜！作为挚友，您免费领取了物资！");
+            result.put("message", "恭喜！作为挚友，您免费领取了基础数量物资！");
             result.put("rewardItems", rewardItems);
             result.put("isFreeReward", true);
             result.put("favorValue", favorValue);

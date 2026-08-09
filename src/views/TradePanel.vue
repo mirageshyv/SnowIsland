@@ -36,7 +36,7 @@ const allMaterialsMap = {
     { id: 15, name: '火柴', unit: '盒', icon: '🔥' },
     { id: 16, name: '铅笔', unit: '盒', icon: '✏️' },
     { id: 17, name: '破损海图', unit: '张', icon: '🗺️' },
-    { id: 18, name: '便当', unit: '份', icon: '🍱' },
+    { id: 18, name: '面包', unit: '份', icon: '🍞' },
     { id: 19, name: '仓库钥匙', unit: '把', icon: '🔑' },
     { id: 20, name: '燃料仓库钥匙', unit: '把', icon: '🔑' },
     { id: 21, name: '镇武库钥匙', unit: '把', icon: '🔑' },

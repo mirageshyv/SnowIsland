@@ -975,7 +975,7 @@ onMounted(async () => {
                 </div>
 
                 <template v-if="forms.ark_construction.mode === 'resource'">
-                  <p class="text-amber-300/90 text-xs mb-3">每日投入上限：木材5吨、金属制品2吨、密封材料(沥青)30kg。发动机/发电机/螺旋桨/船帆无上限。资源可同时来源于个人物资和方舟仓库。</p>
+                  <p class="text-amber-300/90 text-xs mb-3">每日投入上限：木材30吨、金属制品20吨、密封材料(沥青)20kg。发动机/发电机/螺旋桨/船帆无上限。资源可同时来源于个人物资和方舟仓库。</p>
                   <div class="rounded-xl border border-white/10 bg-black/20 p-3 space-y-3">
                     <p class="text-gray-400 text-xs font-medium">个人物资投入（kg）</p>
                     <div class="grid grid-cols-3 gap-2">
@@ -1011,9 +1011,9 @@ onMounted(async () => {
                     </div>
                   </div>
                   <div class="rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-3 py-2 text-xs text-gray-300 space-y-0.5">
-                    <p>木材合计：{{ ((forms.ark_construction.woodKg || 0) + (forms.ark_construction.warehouseWoodKg || 0)).toFixed(0) }}kg = {{ (((forms.ark_construction.woodKg || 0) + (forms.ark_construction.warehouseWoodKg || 0)) / 1000).toFixed(2) }}吨 <span class="text-gray-500">/ 每日上限5吨</span></p>
-                    <p>金属合计：{{ ((forms.ark_construction.metalKg || 0) + (forms.ark_construction.warehouseMetalKg || 0)).toFixed(0) }}kg = {{ (((forms.ark_construction.metalKg || 0) + (forms.ark_construction.warehouseMetalKg || 0)) / 1000).toFixed(2) }}吨 <span class="text-gray-500">/ 每日上限2吨</span></p>
-                    <p>密封材料(沥青)合计：{{ (forms.ark_construction.sealantKg || 0) + (forms.ark_construction.warehouseSealantKg || 0) }}kg <span class="text-gray-500">/ 每日上限30kg</span></p>
+                    <p>木材合计：{{ ((forms.ark_construction.woodKg || 0) + (forms.ark_construction.warehouseWoodKg || 0)).toFixed(0) }}kg = {{ (((forms.ark_construction.woodKg || 0) + (forms.ark_construction.warehouseWoodKg || 0)) / 1000).toFixed(2) }}吨 <span class="text-gray-500">/ 每日上限30吨</span></p>
+                    <p>金属合计：{{ ((forms.ark_construction.metalKg || 0) + (forms.ark_construction.warehouseMetalKg || 0)).toFixed(0) }}kg = {{ (((forms.ark_construction.metalKg || 0) + (forms.ark_construction.warehouseMetalKg || 0)) / 1000).toFixed(2) }}吨 <span class="text-gray-500">/ 每日上限20吨</span></p>
+                    <p>密封材料(沥青)合计：{{ (forms.ark_construction.sealantKg || 0) + (forms.ark_construction.warehouseSealantKg || 0) }}kg <span class="text-gray-500">/ 每日上限20kg</span></p>
                   </div>
                   <div class="rounded-xl border border-white/10 bg-black/20 p-3 space-y-3">
                     <p class="text-gray-400 text-xs font-medium">组件投入</p>
@@ -1043,8 +1043,8 @@ onMounted(async () => {
                   <div>
                     <label class="block text-gray-500 text-xs mb-2 ml-0.5">推进类型</label>
                     <select v-model="forms.ark_construction.workType" :class="selectClass">
-                      <option value="wood">1吨木材当量</option>
-                      <option value="metal">500kg金属当量</option>
+                      <option value="wood">5吨木材当量</option>
+                      <option value="metal">5吨金属当量</option>
                       <option value="sealant">5kg密封材料(沥青)当量</option>
                     </select>
                   </div>

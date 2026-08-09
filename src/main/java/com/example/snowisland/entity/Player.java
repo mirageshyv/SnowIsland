@@ -39,6 +39,10 @@ public class Player {
     @Column(name = "skill_id")
     private Integer skillId;
 
+    /** 当晚过夜地点；null = 默认在家（参考规则） */
+    @Column(name = "overnight_location_id")
+    private Integer overnightLocationId;
+
     @Enumerated(EnumType.STRING)
     private Faction faction;
 
@@ -93,6 +97,9 @@ public class Player {
 
     public Integer getSkillId() { return skillId; }
     public void setSkillId(Integer skillId) { this.skillId = skillId; }
+
+    public Integer getOvernightLocationId() { return overnightLocationId; }
+    public void setOvernightLocationId(Integer overnightLocationId) { this.overnightLocationId = overnightLocationId; }
 
     public Faction getFaction() { return faction; }
     public void setFaction(Faction faction) { this.faction = faction; }

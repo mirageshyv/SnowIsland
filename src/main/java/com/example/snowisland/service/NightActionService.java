@@ -193,6 +193,18 @@ public class NightActionService {
         action.setResult(buildAutoResult(actionType, payload, player));
         nightActionRepository.save(action);
 
+        // 夜晚「变更过夜地点」：更新登记（默认在家；不提交则保持原登记）
+        if ("night_personal_action".equals(actionType) && payload != null
+                && "go_location".equals(str(payload.get("actionType")))) {
+            Integer locId = toInt(payload.get("targetId"));
+            if (locId != null) {
+                player.setOvernightLocationId(locId);
+                playerRepository.save(player);
+                action.setResult(action.getResult() + "\n【过夜】已变更今晚过夜地点。");
+                nightActionRepository.save(action);
+            }
+        }
+
         activityLogService.log(
                 gameDay,
                 playerId,
@@ -370,7 +382,7 @@ public class NightActionService {
     private String labelPersonalAction(String key) {
         if (key == null) return "?";
         switch (key) {
-            case "go_location": return "前往地点";
+            case "go_location": return "变更过夜地点";
             case "investigate_player": return "调查玩家";
             case "produce": return "生产";
             case "use_trait": return "使用特性";

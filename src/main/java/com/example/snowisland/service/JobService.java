@@ -45,7 +45,7 @@ public class JobService {
         itemNames.put(15, "火柴");
         itemNames.put(16, "铅笔");
         itemNames.put(17, "破损海图");
-        itemNames.put(18, "便当");
+        itemNames.put(18, "面包");
         itemNames.put(19, "矿场仓库钥匙");
         itemNames.put(20, "燃料仓库钥匙");
         itemNames.put(21, "镇武库钥匙");
