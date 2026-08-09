@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { playerAPI } from '../../utils/api.js'
+import { syncThreatInRemark } from '../../data/gameData.js'
 
 const weapons = ref([])
 const ammo = ref([])
@@ -55,13 +56,15 @@ const loadWeaponsAndAmmo = async () => {
     const result = await playerAPI.getItems(playerId)
     if (Array.isArray(result)) {
       weapons.value = result.filter(item => item.type === 'weapon').map(item => {
+        const threatLevel = item.threatLevel ?? weaponsMap[item.id]?.threat_level ?? 0
         return {
           id: item.id,
           name: item.name || getWeaponName(item.id),
           unit: item.unit || '把',
           quantity: item.quantity,
-          threat_level: item.threatLevel ?? weaponsMap[item.id]?.threat_level ?? 0,
-          remark: item.remark || getWeaponRemark(item.id),
+          threat_level: threatLevel,
+          // 描述中的「威胁值N」跟随 threat_level 字段渲染
+          remark: syncThreatInRemark(item.remark || getWeaponRemark(item.id), threatLevel),
           icon: '⚔️'
         }
       })
@@ -70,11 +73,12 @@ const loadWeaponsAndAmmo = async () => {
         const info = getAmmoInfo(item.id)
         return {
           id: item.id,
-          name: info.name,
+          // 数据库为真相；本地映射仅作缺省回退（weapon_name 无数据库字段，仍取本地）
+          name: item.name || info.name,
           unit: item.unit || '枚',
           quantity: item.quantity,
           weapon_name: info.weapon_name,
-          remark: info.remark,
+          remark: item.remark || info.remark,
           icon: '🎯'
         }
       })

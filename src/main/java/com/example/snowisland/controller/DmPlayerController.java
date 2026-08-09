@@ -77,6 +77,32 @@ public class DmPlayerController {
         return dmPlayerInventoryService.getItemCatalog(userRole);
     }
 
+    @GetMapping("/weapons")
+    public Map<String, Object> listWeapons(@RequestParam String userRole) {
+        return dmPlayerInventoryService.listWeapons(userRole);
+    }
+
+    @PutMapping("/weapons/{weaponId}")
+    public Map<String, Object> updateWeapon(
+            @PathVariable Integer weaponId,
+            @RequestParam String userRole,
+            @RequestBody Map<String, Object> body) {
+        Integer threatLevel = body.get("threatLevel") instanceof Number
+                ? ((Number) body.get("threatLevel")).intValue() : null;
+        String remark = body.get("remark") != null ? String.valueOf(body.get("remark")) : null;
+        return dmPlayerInventoryService.updateWeapon(weaponId, threatLevel, remark, userRole);
+    }
+
+    @PutMapping("/catalog/{itemType}/{itemId}")
+    public Map<String, Object> updateCatalogRemark(
+            @PathVariable String itemType,
+            @PathVariable Integer itemId,
+            @RequestParam String userRole,
+            @RequestBody Map<String, Object> body) {
+        String remark = body.get("remark") != null ? String.valueOf(body.get("remark")) : null;
+        return dmPlayerInventoryService.updateCatalogRemark(itemType, itemId, remark, userRole);
+    }
+
     @GetMapping("/players/{playerId}/inventory")
     public Map<String, Object> getPlayerInventory(
             @PathVariable Integer playerId,

@@ -26,6 +26,7 @@ import {
   effectiveWeaponThreatForFighter,
   formatCombatReportPublic,
   COMBAT_FLOW_STEPS,
+  setCatalogWeaponThreats,
 } from '@/data/combatAssist.js'
 
 const attackers = ref([])
@@ -346,19 +347,11 @@ function applyWeaponChange(fighter) {
   let catalogThreat = ''
   let threatHalved = false
   if (id !== '' && id != null) {
-    // 图鉴为真相；炸药按外围/内围覆盖；无射击技能时远程武器减半（与自动结算一致）
+    // 图鉴为真相（已在加载时注入引擎）；炸药按外围/内围；无射击技能时远程减半
     const info = effectiveWeaponThreatForFighter(fighter)
     weaponThreat = info.effective
     catalogThreat = info.catalog
     threatHalved = info.halved
-    if (Number(id) !== EXPLOSIVE_WEAPON_ID && WEAPON_THREAT_BY_ID[Number(id)] == null) {
-      const weaponFromCatalog = weapons.value.find((w) => w.id === Number(id))
-      if (weaponFromCatalog?.threat != null) {
-        weaponThreat = weaponFromCatalog.threat
-        catalogThreat = weaponFromCatalog.threat
-        threatHalved = false
-      }
-    }
   }
   return {
     weaponThreat,
@@ -442,13 +435,15 @@ async function loadStaticData() {
     ])
     players.value = Array.isArray(playerList) ? playerList : []
     const items = catalogRes?.success ? catalogRes.items || [] : []
+    // 图鉴 threat_level 为真相；硬编码表仅作图鉴缺失时的回退
     weapons.value = items
       .filter((i) => i.itemType === 'weapon')
       .map((w) => ({
         id: w.itemId,
         name: w.name || GAME_ITEM_NAMES.weapon?.[w.itemId] || `武器#${w.itemId}`,
-        threat: WEAPON_THREAT_BY_ID[w.itemId] ?? w.threatLevel ?? 0,
+        threat: w.threatLevel ?? WEAPON_THREAT_BY_ID[w.itemId] ?? 0,
       }))
+    setCatalogWeaponThreats(weapons.value.map((w) => ({ id: w.id, threat: w.threat })))
     locations.value = Array.isArray(locList) ? locList : []
   } catch (e) {
     console.error('战斗辅助加载失败', e)

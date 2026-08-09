@@ -17,7 +17,8 @@ const loadItems = async () => {
         unit: item.unit,
         quantity: item.quantity,
         icon: getIconByType('item'),
-        remark: getRemarkByItem(item.id)
+        // 数据库 remark 为真相；本地映射仅作缺省回退
+        remark: item.remark || getRemarkByItem(item.id)
       }))
       console.log('Items refreshed:', items.value.length, 'items')
     }

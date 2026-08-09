@@ -34,6 +34,129 @@ public class DmPlayerInventoryService {
     @PersistenceContext
     private EntityManager entityManager;
 
+    /** 武器图鉴（含威胁值与备注），供 DM 游戏设置页管理 */
+    public Map<String, Object> listWeapons(String userRole) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (!isDm(userRole)) {
+            result.put("success", false);
+            result.put("message", "只有DM可以查看武器设置");
+            return result;
+        }
+        @SuppressWarnings("unchecked")
+        List<Object[]> raw = entityManager.createNativeQuery(
+                "SELECT id, name, unit, threat_level, remark FROM weapon ORDER BY id"
+        ).getResultList();
+        List<Map<String, Object>> weapons = new ArrayList<>();
+        for (Object[] row : raw) {
+            Map<String, Object> w = new LinkedHashMap<>();
+            w.put("id", ((Number) row[0]).intValue());
+            w.put("name", row[1]);
+            w.put("unit", row[2]);
+            w.put("threatLevel", row[3] != null ? ((Number) row[3]).intValue() : 0);
+            w.put("remark", row[4]);
+            weapons.add(w);
+        }
+        result.put("success", true);
+        result.put("weapons", weapons);
+        return result;
+    }
+
+    /** 更新武器威胁值/备注（威胁值为战斗结算的真相来源） */
+    @Transactional
+    public Map<String, Object> updateWeapon(Integer weaponId, Integer threatLevel, String remark, String userRole) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (!isDm(userRole)) {
+            result.put("success", false);
+            result.put("message", "只有DM可以修改武器设置");
+            return result;
+        }
+        if (weaponId == null || weaponId <= 0) {
+            result.put("success", false);
+            result.put("message", "无效的武器ID");
+            return result;
+        }
+        if (threatLevel == null && remark == null) {
+            result.put("success", false);
+            result.put("message", "没有需要更新的字段");
+            return result;
+        }
+        if (threatLevel != null && (threatLevel < 0 || threatLevel > 99)) {
+            result.put("success", false);
+            result.put("message", "威胁值需在 0-99 之间");
+            return result;
+        }
+        Number exists = (Number) entityManager.createNativeQuery(
+                "SELECT COUNT(*) FROM weapon WHERE id = ?1"
+        ).setParameter(1, weaponId).getSingleResult();
+        if (exists == null || exists.intValue() == 0) {
+            result.put("success", false);
+            result.put("message", "武器不存在");
+            return result;
+        }
+        if (threatLevel != null) {
+            entityManager.createNativeQuery(
+                    "UPDATE weapon SET threat_level = ?1 WHERE id = ?2"
+            ).setParameter(1, threatLevel).setParameter(2, weaponId).executeUpdate();
+        }
+        if (remark != null) {
+            entityManager.createNativeQuery(
+                    "UPDATE weapon SET remark = ?1 WHERE id = ?2"
+            ).setParameter(1, remark.trim()).setParameter(2, weaponId).executeUpdate();
+        }
+        result.put("success", true);
+        result.put("message", "已保存");
+        result.put("weaponId", weaponId);
+        if (threatLevel != null) {
+            result.put("threatLevel", threatLevel);
+        }
+        return result;
+    }
+
+    /** 更新图鉴条目的描述（item/weapon/ammo/material 通用；名称为唯一键且被逻辑引用，不允许在此修改） */
+    @Transactional
+    public Map<String, Object> updateCatalogRemark(String itemType, Integer itemId, String remark, String userRole) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (!isDm(userRole)) {
+            result.put("success", false);
+            result.put("message", "只有DM可以修改图鉴描述");
+            return result;
+        }
+        String type = itemType == null ? "" : itemType.trim().toLowerCase();
+        if (!VALID_TYPES.contains(type)) {
+            result.put("success", false);
+            result.put("message", "无效的物品类型");
+            return result;
+        }
+        if (itemId == null || itemId <= 0) {
+            result.put("success", false);
+            result.put("message", "无效的物品ID");
+            return result;
+        }
+        if (remark == null) {
+            result.put("success", false);
+            result.put("message", "缺少描述内容");
+            return result;
+        }
+        // type 已通过白名单校验，可安全拼接为表名
+        Number exists = (Number) entityManager.createNativeQuery(
+                "SELECT COUNT(*) FROM " + type + " WHERE id = ?1"
+        ).setParameter(1, itemId).getSingleResult();
+        if (exists == null || exists.intValue() == 0) {
+            result.put("success", false);
+            result.put("message", "条目不存在");
+            return result;
+        }
+        entityManager.createNativeQuery(
+                "UPDATE " + type + " SET remark = ?1 WHERE id = ?2"
+        ).setParameter(1, remark.trim()).setParameter(2, itemId).executeUpdate();
+        result.put("success", true);
+        result.put("message", "已保存");
+        result.put("itemType", type);
+        result.put("itemId", itemId);
+        result.put("remark", remark.trim());
+        return result;
+    }
+
     public Map<String, Object> getItemCatalog(String userRole) {
         Map<String, Object> result = new LinkedHashMap<>();
         if (!isDm(userRole)) {
@@ -157,10 +280,10 @@ public class DmPlayerInventoryService {
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> loadCatalogRows() {
         List<Object[]> raw = entityManager.createNativeQuery(
-                "SELECT 'item' as itemType, id, name, unit, NULL as threatLevel FROM item " +
-                "UNION ALL SELECT 'weapon', id, name, unit, threat_level FROM weapon " +
-                "UNION ALL SELECT 'ammo', id, name, unit, NULL FROM ammo " +
-                "UNION ALL SELECT 'material', id, name, unit, NULL FROM material " +
+                "SELECT 'item' as itemType, id, name, unit, NULL as threatLevel, remark FROM item " +
+                "UNION ALL SELECT 'weapon', id, name, unit, threat_level, remark FROM weapon " +
+                "UNION ALL SELECT 'ammo', id, name, unit, NULL, remark FROM ammo " +
+                "UNION ALL SELECT 'material', id, name, unit, NULL, remark FROM material " +
                 "ORDER BY itemType, id"
         ).getResultList();
 
@@ -174,6 +297,7 @@ public class DmPlayerInventoryService {
             if (row[4] != null) {
                 item.put("threatLevel", ((Number) row[4]).intValue());
             }
+            item.put("remark", row[5] != null ? String.valueOf(row[5]) : "");
             items.add(item);
         }
         return items;

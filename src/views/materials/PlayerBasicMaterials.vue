@@ -75,7 +75,8 @@ const loadMaterials = async () => {
         unit: item.unit,
         quantity: item.quantity,
         icon: getIconByType('material'),
-        remark: getRemarkByMaterial(item.id)
+        // 数据库 remark 为真相；本地映射仅作缺省回退
+        remark: item.remark || getRemarkByMaterial(item.id)
       }))
       console.log('=== Materials after mapping:', JSON.stringify(materials.value, null, 2))
       console.log('Materials refreshed:', materials.value.length, 'items')

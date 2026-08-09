@@ -15,6 +15,7 @@ import {
   formatCombatReportPublic,
   applySettlementToFighters,
   DEFAULT_BONUS_LABEL,
+  setCatalogWeaponThreats,
 } from './combatAssist.js'
 
 function assert(cond, msg) {
@@ -28,6 +29,7 @@ assert(resolveCombatOutcome(16, 7).name === '大胜', 'ex2 outcome')
 assert(resolveCombatOutcome(4, 5).name === '小胜', 'ceil 2.4→3 小胜')
 
 assert(WEAPON_THREAT_BY_ID[6] === 3, 'spear threat 3')
+assert(WEAPON_THREAT_BY_ID[13] === 1, 'electric drill threat 1')
 assert(resolveWeaponThreat(12, 'outer') === 5, 'explosive outer')
 assert(resolveWeaponThreat(12, 'inner') === 10, 'explosive inner')
 assert(EXTRA_HIT_TABLE[3], 'threat-3 hit row')
@@ -135,5 +137,17 @@ const written = applySettlementToFighters(
   manual.attackers,
 )
 assert(written[0].attackRoll === '', 'attackRoll cleared after settlement')
+
+// 命中表非标准威胁值：按最接近的较低档结算
+const tier7 = resolveExtraHit(7, 6)
+assert(tier7.result === '重伤+虚弱', 'threat 7 falls back to tier 6')
+assert(tier7.note.includes('按威胁6档'), 'tier fallback noted')
+assert(resolveExtraHit(12, 6).result === '死亡', 'threat 12 falls back to tier 10')
+
+// 图鉴威胁值覆盖硬编码表（放在最后，避免污染前面的用例）
+setCatalogWeaponThreats([{ id: 3, threat: 2 }, { id: 99, threat: 4 }])
+assert(resolveWeaponThreat(3) === 2, 'catalog override wins over hardcoded map')
+assert(resolveWeaponThreat(99) === 4, 'db-only weapon resolves via catalog')
+assert(resolveWeaponThreat(4) === 2, 'non-overridden weapon uses fallback map')
 
 console.log('combatAssist.test.mjs: all passed')

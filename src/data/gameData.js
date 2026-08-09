@@ -216,6 +216,20 @@ export const GAME_ITEM_NAMES = {
 }
 
 /**
+ * 描述文本中的「威胁值N」按数据库 threat_level 动态渲染，避免改威胁值后描述数字过期。
+ * 无数字的写法（如「威胁值极高」）不受影响。
+ * @param {string} remark
+ * @param {number|string|null} threatLevel
+ */
+export function syncThreatInRemark(remark, threatLevel) {
+  const text = remark || ''
+  if (!text || threatLevel == null) return text
+  const t = Number(threatLevel)
+  if (!Number.isFinite(t)) return text
+  return text.replace(/威胁值\s*\d+/g, `威胁值${t}`)
+}
+
+/**
  * @param {'item'|'weapon'|'ammo'|'material'|string} itemType
  * @param {number|string} itemId
  */

@@ -374,6 +374,17 @@ export const dmPlayerAPI = {
       body: JSON.stringify({ items })
     }),
   getCatalog: () => request(`${API_BASE}/dm/item-catalog?userRole=dm`),
+  getWeapons: () => request(`${API_BASE}/dm/weapons?userRole=dm`),
+  updateWeapon: (weaponId, body) =>
+    request(`${API_BASE}/dm/weapons/${weaponId}?userRole=dm`, {
+      method: 'PUT',
+      body: JSON.stringify(body)
+    }),
+  updateCatalogItem: (itemType, itemId, body) =>
+    request(`${API_BASE}/dm/catalog/${itemType}/${itemId}?userRole=dm`, {
+      method: 'PUT',
+      body: JSON.stringify(body)
+    }),
   getInventory: (playerId) =>
     request(`${API_BASE}/dm/players/${playerId}/inventory?userRole=dm`),
   setItemQuantity: (playerId, itemType, itemId, quantity) =>

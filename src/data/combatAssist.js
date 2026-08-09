@@ -1,6 +1,9 @@
 /** DM 战斗辅助：图鉴威胁值为机械真相；规则按威胁值查命中表 */
 
-/** 与数据库 weapon.threat_level 一致（炸药基础值为内围 10；外围在辅助中覆盖为 5） */
+/**
+ * 硬编码回退表（数据库图鉴 weapon.threat_level 为真相；
+ * 页面加载图鉴后通过 setCatalogWeaponThreats 覆盖本表）。
+ */
 export const WEAPON_THREAT_BY_ID = {
   1: 5, // 制式手枪
   2: 6, // 猎枪
@@ -14,6 +17,33 @@ export const WEAPON_THREAT_BY_ID = {
   10: 4, // 电锯
   11: 1, // 手术刀
   12: 10, // 炸药（内围默认）
+  13: 1, // 电钻
+}
+
+/** 图鉴威胁值覆盖（运行时从数据库加载） */
+const catalogThreatById = {}
+
+/**
+ * 注入数据库图鉴威胁值（真相来源）。
+ * @param {Array<{id:number, threat:number}>|Record<number, number>} weapons
+ */
+export function setCatalogWeaponThreats(weapons) {
+  const entries = Array.isArray(weapons)
+    ? weapons.map((w) => [w.id, w.threat])
+    : Object.entries(weapons || {})
+  for (const [id, threat] of entries) {
+    const key = Number(id)
+    const val = Number(threat)
+    if (Number.isFinite(key) && key > 0 && Number.isFinite(val) && val >= 0) {
+      catalogThreatById[key] = val
+    }
+  }
+}
+
+/** 图鉴优先，硬编码回退 */
+export function baseWeaponThreat(weaponId) {
+  const id = Number(weaponId)
+  return catalogThreatById[id] ?? WEAPON_THREAT_BY_ID[id] ?? 0
 }
 
 export const EXPLOSIVE_WEAPON_ID = 12
@@ -68,7 +98,7 @@ export const EXTRA_HIT_TABLE = {
 
 /** 威胁值 → 图鉴武器名（规则索引；水果刀为水手刀别名） */
 export const THREAT_WEAPON_INDEX = {
-  1: ['警棍', '十字镐', '手术刀'],
+  1: ['警棍', '十字镐', '手术刀', '电钻'],
   2: ['斧头', '刺刀', '水手刀（水果刀）'],
   3: ['鱼叉/矛'],
   4: ['电锯', '猎弓'],
@@ -172,9 +202,10 @@ export function resolveWeaponThreat(weaponId, explosiveZone = 'inner', options =
   if (!Number.isFinite(id) || id <= 0) return 0
   let threat
   if (id === EXPLOSIVE_WEAPON_ID) {
-    threat = explosiveZone === 'outer' ? EXPLOSIVE_THREAT.outer : EXPLOSIVE_THREAT.inner
+    // 内围跟随图鉴（默认10），外围按规则固定5
+    threat = explosiveZone === 'outer' ? EXPLOSIVE_THREAT.outer : (baseWeaponThreat(id) || EXPLOSIVE_THREAT.inner)
   } else {
-    threat = WEAPON_THREAT_BY_ID[id] ?? 0
+    threat = baseWeaponThreat(id)
   }
   if (
     options.applyNoShootHalving &&
@@ -238,25 +269,30 @@ export function shouldTriggerExtraHit(attackRoll, weaponThreat) {
 export function resolveExtraHit(weaponThreat, defendRoll, options = {}) {
   const threat = Number(weaponThreat)
   const roll = Number(defendRoll)
-  const table = EXTRA_HIT_TABLE[threat]
+  // 命中表定义威胁档 1-6 与 10；非标准值（如管理员自定义 7）按最接近的较低档结算
+  const tierKeys = Object.keys(EXTRA_HIT_TABLE).map(Number).sort((a, b) => a - b)
+  const tier = tierKeys.filter((k) => k <= threat).pop()
+  const table = tier != null ? EXTRA_HIT_TABLE[tier] : null
   if (!table || !Number.isFinite(roll) || roll < 1 || roll > 6) {
     return { result: null, note: '无效的威胁值或判定骰' }
   }
+  const tierNote = tier !== threat ? `威胁${threat}无对应命中档，按威胁${tier}档结算` : ''
+  const withTier = (note) => [tierNote, note].filter(Boolean).join('；')
   let result = table[roll - 1]
   const alreadyInjured = Boolean(options.alreadyInjuredThisRound)
   if (alreadyInjured && result === '受伤') {
     return {
       result: '受伤',
-      note: '本轮已在战力比拼中受伤：额外命中不再叠成重伤，维持受伤',
+      note: withTier('本轮已在战力比拼中受伤：额外命中不再叠成重伤，维持受伤'),
     }
   }
   if (alreadyInjured && result === '重伤') {
-    return { result: '重伤', note: '额外命中重伤可覆盖此前的受伤' }
+    return { result: '重伤', note: withTier('额外命中重伤可覆盖此前的受伤') }
   }
   if (alreadyInjured && result === '重伤+虚弱') {
-    return { result: '重伤+虚弱', note: '额外命中重伤可覆盖此前的受伤，并附加虚弱' }
+    return { result: '重伤+虚弱', note: withTier('额外命中重伤可覆盖此前的受伤，并附加虚弱') }
   }
-  return { result, note: '' }
+  return { result, note: tierNote }
 }
 
 export function createEmptyFighter(playerId, playerName, jobSkills = '') {
