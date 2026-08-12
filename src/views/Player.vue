@@ -966,6 +966,20 @@ onUnmounted(() => {
                             </div>
                           </Transition>
                         </div>
+
+                        <div
+                          v-if="Array.isArray(playerInfo.markers) && playerInfo.markers.length"
+                          class="flex flex-wrap gap-2"
+                        >
+                          <span
+                            v-for="(marker, idx) in playerInfo.markers"
+                            :key="`${marker.name}-${idx}`"
+                            :title="marker.note || ''"
+                            class="px-3 py-1.5 bg-purple-900/40 border border-purple-700/50 rounded-lg text-purple-300 text-xs md:text-sm"
+                          >
+                            标记：{{ marker.name }}
+                          </span>
+                        </div>
                       </div>
                     </div>
 

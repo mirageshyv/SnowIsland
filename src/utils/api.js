@@ -285,6 +285,32 @@ export const loreAPI = {
   },
 }
 
+export const playerMarkerAPI = {
+  list: (userRole) => {
+    const userId = localStorage.getItem('userId')
+    const q = new URLSearchParams()
+    if (userRole) q.set('userRole', userRole)
+    return request(`${API_BASE}/player-markers?${q}`, { headers: { userId } })
+  },
+  add: (playerId, name, visibleToPlayer, note, userRole) => {
+    const userId = localStorage.getItem('userId')
+    const q = new URLSearchParams({
+      playerId: String(playerId),
+      name,
+      visibleToPlayer: visibleToPlayer ? 'true' : 'false',
+    })
+    if (note) q.set('note', note)
+    if (userRole) q.set('userRole', userRole)
+    return request(`${API_BASE}/player-markers/add?${q}`, { method: 'POST', headers: { userId } })
+  },
+  remove: (markerId, userRole) => {
+    const userId = localStorage.getItem('userId')
+    const q = new URLSearchParams({ markerId: String(markerId) })
+    if (userRole) q.set('userRole', userRole)
+    return request(`${API_BASE}/player-markers/remove?${q}`, { method: 'POST', headers: { userId } })
+  },
+}
+
 export const dmActivityLogAPI = {
   list: ({ userRole = 'dm', gameDay, limit = 500, playerId, faction } = {}) => {
     const q = new URLSearchParams({ userRole })
@@ -315,9 +341,13 @@ export const catastropheAPI = {
     request(`${API_BASE}/catastrophe/progress?value=${value}&userRole=${encodeURIComponent(userRole)}`, {
       method: 'POST'
     }),
-  advanceDay: () => request(`${API_BASE}/catastrophe/advance-day`, {
-    method: 'POST'
-  }),
+  advanceDay: (step) => {
+    const url =
+      typeof step === 'number' && Number.isFinite(step)
+        ? `${API_BASE}/catastrophe/advance-day?step=${step}`
+        : `${API_BASE}/catastrophe/advance-day`
+    return request(url, { method: 'POST' })
+  },
   drawCards: (userRole) => 
     request(`${API_BASE}/catastrophe/draw-cards?userRole=${encodeURIComponent(userRole)}`, {
       method: 'POST'
@@ -348,31 +378,47 @@ export const catastropheAPI = {
 }
 
 export const dmPlayerAPI = {
-  list: () => request(`${API_BASE}/dm/players?userRole=dm`),
-  create: (body) =>
-    request(`${API_BASE}/dm/players?userRole=dm`, {
+  list: () => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/dm/players?userRole=dm`, { headers: { userId } })
+  },
+  create: (body) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/dm/players?userRole=dm`, {
       method: 'POST',
+      headers: { userId },
       body: JSON.stringify(body)
-    }),
-  update: (playerId, body) =>
-    request(`${API_BASE}/dm/players/${playerId}?userRole=dm`, {
+    })
+  },
+  update: (playerId, body) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/dm/players/${playerId}?userRole=dm`, {
       method: 'PUT',
+      headers: { userId },
       body: JSON.stringify(body)
-    }),
-  delete: (playerId) =>
-    request(`${API_BASE}/dm/players/${playerId}?userRole=dm`, { method: 'DELETE' }),
+    })
+  },
+  delete: (playerId) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/dm/players/${playerId}?userRole=dm`, { method: 'DELETE', headers: { userId } })
+  },
   previewStartingInventory: (jobId) =>
     request(`${API_BASE}/dm/jobs/${jobId}/starting-inventory-preview?userRole=dm`),
-  grantStartingInventory: (playerId, mode = 'add') =>
-    request(
+  grantStartingInventory: (playerId, mode = 'add') => {
+    const userId = localStorage.getItem('userId')
+    return request(
       `${API_BASE}/dm/players/${playerId}/grant-starting-inventory?userRole=dm&mode=${encodeURIComponent(mode)}`,
-      { method: 'POST' }
-    ),
-  applyInventoryBulk: (playerId, items, mode = 'set') =>
-    request(`${API_BASE}/dm/players/${playerId}/inventory/bulk?userRole=dm&mode=${encodeURIComponent(mode)}`, {
+      { method: 'POST', headers: { userId } }
+    )
+  },
+  applyInventoryBulk: (playerId, items, mode = 'set') => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/dm/players/${playerId}/inventory/bulk?userRole=dm&mode=${encodeURIComponent(mode)}`, {
       method: 'PUT',
+      headers: { userId },
       body: JSON.stringify({ items })
-    }),
+    })
+  },
   getCatalog: () => request(`${API_BASE}/dm/item-catalog?userRole=dm`),
   getWeapons: () => request(`${API_BASE}/dm/weapons?userRole=dm`),
   updateWeapon: (weaponId, body) =>
@@ -385,13 +431,57 @@ export const dmPlayerAPI = {
       method: 'PUT',
       body: JSON.stringify(body)
     }),
-  getInventory: (playerId) =>
-    request(`${API_BASE}/dm/players/${playerId}/inventory?userRole=dm`),
-  setItemQuantity: (playerId, itemType, itemId, quantity) =>
-    request(`${API_BASE}/dm/players/${playerId}/inventory?userRole=dm`, {
+  updateCatalogEntry: (itemType, itemId, body) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/dm/catalog-entry/${itemType}/${itemId}?userRole=dm`, {
       method: 'PUT',
+      headers: { userId },
+      body: JSON.stringify(body)
+    })
+  },
+  uploadCatalogImage: async (itemType, itemId, file) => {
+    const userId = localStorage.getItem('userId')
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const response = await fetch(
+        `${API_BASE}/dm/catalog-image/${itemType}/${itemId}?userRole=dm`,
+        {
+          method: 'POST',
+          headers: { userId },
+          body: formData
+        }
+      )
+      const text = await response.text()
+      let data = null
+      try {
+        data = text ? JSON.parse(text) : {}
+      } catch {
+        data = { success: false, message: text || `请求失败 (${response.status})` }
+      }
+      if (!response.ok) {
+        return {
+          success: false,
+          message: data?.message || data?.error || `请求失败 (${response.status})`
+        }
+      }
+      return data
+    } catch (error) {
+      return { success: false, message: error.message || '上传失败' }
+    }
+  },
+  getInventory: (playerId) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/dm/players/${playerId}/inventory?userRole=dm`, { headers: { userId } })
+  },
+  setItemQuantity: (playerId, itemType, itemId, quantity) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/dm/players/${playerId}/inventory?userRole=dm`, {
+      method: 'PUT',
+      headers: { userId },
       body: JSON.stringify({ itemType, itemId, quantity })
     })
+  }
 }
 
 export const warehouseAPI = {
@@ -509,8 +599,9 @@ export const actionAPI = {
   approveAction: (actionId) =>
     request(`${API_BASE}/actions/${actionId}/approve`, { method: 'POST' }),
   getAllActions: (params = {}) => {
+    const userId = localStorage.getItem('userId')
     const qs = Object.entries(params).filter(([, v]) => v != null && v !== '').map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')
-    return request(`${API_BASE}/actions/all${qs ? '?' + qs : ''}`)
+    return request(`${API_BASE}/actions/all${qs ? '?' + qs : ''}`, { headers: { userId } })
   },
   feedbackAction: (actionId, feedback, failed = false) =>
     request(`${API_BASE}/actions/${actionId}/feedback`, {

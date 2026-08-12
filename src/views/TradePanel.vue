@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { playerAPI, tradeAPI } from '../utils/api.js'
-import { getMaterialImageUrlOrDefault } from '../data/gameData.js'
+import { getMaterialImageUrlOrDefault, NON_TRADABLE_ITEM_IDS } from '../data/gameData.js'
 
 const tradeTypeLabel = (t) =>
   ({
@@ -44,7 +44,10 @@ const allMaterialsMap = {
     { id: 23, name: '反叛者基地钥匙', unit: '把', icon: '🔑' },
     { id: 24, name: '方舟钥匙', unit: '把', icon: '🔑' },
     { id: 25, name: '火把', unit: '把', icon: '🔥' },
-    { id: 26, name: '诅咒硬币', unit: '个', icon: '🪙' }
+    { id: 26, name: '诅咒硬币', unit: '个', icon: '🪙' },
+    { id: 37, name: '尸油蜡烛', unit: '支', icon: '🕯️' },
+    { id: 38, name: '深海鱼油蜡烛', unit: '支', icon: '🕯️' },
+    { id: 39, name: '旧地图', unit: '张', icon: '🗺️' }
   ],
   weapon: [
     { id: 1, name: '制式手枪', unit: '把', icon: '🔫' },
@@ -110,10 +113,12 @@ const visibleTakePalette = computed(() => takePaletteRows[takePaletteTab.value] 
 const currentPlayerItems = ref([])
 
 const giveInventoryItemRows = computed(() =>
-  currentPlayerItems.value.map((item) => ({
-    ...item,
-    imageUrl: getMaterialImageUrlOrDefault(item.type, item.id)
-  }))
+  currentPlayerItems.value
+    .filter((item) => !(item.type === 'item' && NON_TRADABLE_ITEM_IDS.has(item.id)))
+    .map((item) => ({
+      ...item,
+      imageUrl: getMaterialImageUrlOrDefault(item.type, item.id)
+    }))
 )
 
 const loadCurrentPlayerItems = async () => {

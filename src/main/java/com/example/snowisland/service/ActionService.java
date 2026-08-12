@@ -30,6 +30,7 @@ public class ActionService {
     @Autowired private FactionActionService factionActionService;
     @Autowired private ActivityLogService activityLogService;
     @Autowired private NpcCognitionService npcCognitionService;
+    @Autowired private PlayerMarkerRepository playerMarkerRepository;
 
     private static final Random INVESTIGATE_ROLL = new Random();
 
@@ -335,7 +336,7 @@ public class ActionService {
         return actions.stream().map(this::toMapForPlayer).collect(Collectors.toList());
     }
 
-    public List<Map<String, Object>> getAllActions(Integer gameDay, String actionType, String status, Integer playerId) {
+    public List<Map<String, Object>> getAllActions(Integer gameDay, String actionType, String status, Integer playerId, String userRole) {
         List<PlayerAction> actions;
         if (playerId != null && gameDay != null) {
             actions = actionRepository.findByPlayerIdAndGameDayOrderByActionSlotAsc(playerId, gameDay);
@@ -350,7 +351,37 @@ public class ActionService {
         if (status != null && !status.isEmpty()) {
             actions = actions.stream().filter(a -> status.equals(a.getStatus().name())).collect(Collectors.toList());
         }
-        return actions.stream().map(this::toMap).collect(Collectors.toList());
+        List<Map<String, Object>> rows = actions.stream().map(this::toMap).collect(Collectors.toList());
+        if ("dm".equalsIgnoreCase(userRole)) {
+            enrichInvestigateTargetMarkers(rows);
+        }
+        return rows;
+    }
+
+    private void enrichInvestigateTargetMarkers(List<Map<String, Object>> rows) {
+        Set<Integer> targetIds = new LinkedHashSet<>();
+        for (Map<String, Object> row : rows) {
+            if ("investigate_player".equals(row.get("actionType")) && row.get("targetId") != null) {
+                targetIds.add((Integer) row.get("targetId"));
+            }
+        }
+        if (targetIds.isEmpty()) {
+            return;
+        }
+        Map<Integer, List<String>> namesByPlayerId = new HashMap<>();
+        for (PlayerMarker marker : playerMarkerRepository.findByPlayerIdInOrderByIdAsc(targetIds)) {
+            namesByPlayerId
+                    .computeIfAbsent(marker.getPlayerId(), k -> new ArrayList<>())
+                    .add(marker.getName());
+        }
+        for (Map<String, Object> row : rows) {
+            if ("investigate_player".equals(row.get("actionType")) && row.get("targetId") != null) {
+                List<String> names = namesByPlayerId.get((Integer) row.get("targetId"));
+                if (names != null && !names.isEmpty()) {
+                    row.put("targetMarkers", names);
+                }
+            }
+        }
     }
 
     @Transactional

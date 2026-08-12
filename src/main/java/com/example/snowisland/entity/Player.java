@@ -1,5 +1,6 @@
 package com.example.snowisland.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -51,6 +52,9 @@ public class Player {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "dm_notes", columnDefinition = "TEXT")
+    private String dmNotes;
 
     public enum Faction {
         统治者, 反叛者, 冒险者, 天灾使者, 平民
@@ -109,4 +113,8 @@ public class Player {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    @JsonIgnore
+    public String getDmNotes() { return dmNotes; }
+    public void setDmNotes(String dmNotes) { this.dmNotes = dmNotes; }
 }

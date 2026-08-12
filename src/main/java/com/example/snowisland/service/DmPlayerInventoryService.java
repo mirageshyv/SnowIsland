@@ -9,8 +9,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 @Service
@@ -18,6 +24,13 @@ public class DmPlayerInventoryService {
 
     private static final Set<String> VALID_TYPES = new HashSet<>(
             Arrays.asList("item", "weapon", "ammo", "material"));
+
+    private static final Set<String> ALLOWED_IMAGE_EXT = new HashSet<>(
+            Arrays.asList("png", "jpg", "jpeg", "gif", "webp"));
+
+    private static final long MAX_IMAGE_BYTES = 5L * 1024 * 1024;
+
+    private static final Path CATALOG_UPLOAD_DIR = Paths.get("uploads", "catalog");
 
     @Autowired
     private PlayerRepository playerRepository;
@@ -157,6 +170,141 @@ public class DmPlayerInventoryService {
         return result;
     }
 
+    /** 更新图鉴条目的标签与/或描述（仅更新请求体中提供的字段） */
+    @Transactional
+    public Map<String, Object> updateCatalogEntry(String itemType, Integer itemId, String tag, String remark, String userRole) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (!isDm(userRole)) {
+            result.put("success", false);
+            result.put("message", "只有DM可以修改图鉴");
+            return result;
+        }
+        String type = itemType == null ? "" : itemType.trim().toLowerCase();
+        if (!VALID_TYPES.contains(type)) {
+            result.put("success", false);
+            result.put("message", "无效的物品类型");
+            return result;
+        }
+        if (itemId == null || itemId <= 0) {
+            result.put("success", false);
+            result.put("message", "无效的物品ID");
+            return result;
+        }
+        if (tag == null && remark == null) {
+            result.put("success", false);
+            result.put("message", "没有需要更新的字段");
+            return result;
+        }
+        Number exists = (Number) entityManager.createNativeQuery(
+                "SELECT COUNT(*) FROM " + type + " WHERE id = ?1"
+        ).setParameter(1, itemId).getSingleResult();
+        if (exists == null || exists.intValue() == 0) {
+            result.put("success", false);
+            result.put("message", "条目不存在");
+            return result;
+        }
+        if (tag != null) {
+            entityManager.createNativeQuery(
+                    "UPDATE " + type + " SET tag = ?1 WHERE id = ?2"
+            ).setParameter(1, tag.trim()).setParameter(2, itemId).executeUpdate();
+            result.put("tag", tag.trim());
+        }
+        if (remark != null) {
+            entityManager.createNativeQuery(
+                    "UPDATE " + type + " SET remark = ?1 WHERE id = ?2"
+            ).setParameter(1, remark.trim()).setParameter(2, itemId).executeUpdate();
+            result.put("remark", remark.trim());
+        }
+        result.put("success", true);
+        result.put("message", "已保存");
+        result.put("itemType", type);
+        result.put("itemId", itemId);
+        return result;
+    }
+
+    /** 上传图鉴条目图片，更新 image_url 并删除旧文件（尽力而为） */
+    @Transactional
+    public Map<String, Object> uploadCatalogImage(String itemType, Integer itemId, MultipartFile file, String userRole) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (!isDm(userRole)) {
+            result.put("success", false);
+            result.put("message", "只有DM可以上传图鉴图片");
+            return result;
+        }
+        String type = itemType == null ? "" : itemType.trim().toLowerCase();
+        if (!VALID_TYPES.contains(type)) {
+            result.put("success", false);
+            result.put("message", "无效的物品类型");
+            return result;
+        }
+        if (itemId == null || itemId <= 0) {
+            result.put("success", false);
+            result.put("message", "无效的物品ID");
+            return result;
+        }
+        if (file == null || file.isEmpty()) {
+            result.put("success", false);
+            result.put("message", "请选择图片文件");
+            return result;
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.toLowerCase().startsWith("image/")) {
+            result.put("success", false);
+            result.put("message", "仅支持图片文件");
+            return result;
+        }
+        if (file.getSize() > MAX_IMAGE_BYTES) {
+            result.put("success", false);
+            result.put("message", "图片大小不能超过 5MB");
+            return result;
+        }
+        String ext = extractImageExt(file.getOriginalFilename());
+        if (ext == null) {
+            result.put("success", false);
+            result.put("message", "不支持的图片格式（允许 png/jpg/jpeg/gif/webp）");
+            return result;
+        }
+        Number exists = (Number) entityManager.createNativeQuery(
+                "SELECT COUNT(*) FROM " + type + " WHERE id = ?1"
+        ).setParameter(1, itemId).getSingleResult();
+        if (exists == null || exists.intValue() == 0) {
+            result.put("success", false);
+            result.put("message", "条目不存在");
+            return result;
+        }
+        String oldUrl = null;
+        try {
+            Object old = entityManager.createNativeQuery(
+                    "SELECT image_url FROM " + type + " WHERE id = ?1"
+            ).setParameter(1, itemId).getSingleResult();
+            if (old != null) {
+                oldUrl = String.valueOf(old);
+            }
+        } catch (Exception ignored) {
+            // image_url 列可能尚未迁移
+        }
+        try {
+            Files.createDirectories(CATALOG_UPLOAD_DIR);
+            String filename = type + "-" + itemId + "-" + System.currentTimeMillis() + "." + ext;
+            Path target = CATALOG_UPLOAD_DIR.resolve(filename);
+            file.transferTo(target.toFile());
+            String imageUrl = "/api/uploads/catalog/" + filename;
+            entityManager.createNativeQuery(
+                    "UPDATE " + type + " SET image_url = ?1 WHERE id = ?2"
+            ).setParameter(1, imageUrl).setParameter(2, itemId).executeUpdate();
+            deleteOldCatalogImage(oldUrl);
+            result.put("success", true);
+            result.put("message", "图片已上传");
+            result.put("imageUrl", imageUrl);
+            result.put("itemType", type);
+            result.put("itemId", itemId);
+        } catch (IOException e) {
+            result.put("success", false);
+            result.put("message", "保存图片失败");
+        }
+        return result;
+    }
+
     public Map<String, Object> getItemCatalog(String userRole) {
         Map<String, Object> result = new LinkedHashMap<>();
         if (!isDm(userRole)) {
@@ -280,10 +428,10 @@ public class DmPlayerInventoryService {
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> loadCatalogRows() {
         List<Object[]> raw = entityManager.createNativeQuery(
-                "SELECT 'item' as itemType, id, name, unit, NULL as threatLevel, remark FROM item " +
-                "UNION ALL SELECT 'weapon', id, name, unit, threat_level, remark FROM weapon " +
-                "UNION ALL SELECT 'ammo', id, name, unit, NULL, remark FROM ammo " +
-                "UNION ALL SELECT 'material', id, name, unit, NULL, remark FROM material " +
+                "SELECT 'item' as itemType, id, name, unit, NULL as threatLevel, remark, tag, image_url FROM item " +
+                "UNION ALL SELECT 'weapon', id, name, unit, threat_level, remark, tag, image_url FROM weapon " +
+                "UNION ALL SELECT 'ammo', id, name, unit, NULL, remark, tag, image_url FROM ammo " +
+                "UNION ALL SELECT 'material', id, name, unit, NULL, remark, tag, image_url FROM material " +
                 "ORDER BY itemType, id"
         ).getResultList();
 
@@ -298,9 +446,39 @@ public class DmPlayerInventoryService {
                 item.put("threatLevel", ((Number) row[4]).intValue());
             }
             item.put("remark", row[5] != null ? String.valueOf(row[5]) : "");
+            item.put("tag", row[6] != null ? String.valueOf(row[6]) : "");
+            item.put("imageUrl", row[7] != null ? String.valueOf(row[7]) : "");
             items.add(item);
         }
         return items;
+    }
+
+    private static String extractImageExt(String originalFilename) {
+        if (originalFilename == null || !originalFilename.contains(".")) {
+            return null;
+        }
+        String ext = originalFilename.substring(originalFilename.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
+        return ALLOWED_IMAGE_EXT.contains(ext) ? ext : null;
+    }
+
+    private static void deleteOldCatalogImage(String imageUrl) {
+        if (imageUrl == null || imageUrl.isEmpty()) {
+            return;
+        }
+        String prefix = "/api/uploads/catalog/";
+        if (!imageUrl.startsWith(prefix)) {
+            return;
+        }
+        String filename = imageUrl.substring(prefix.length());
+        if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
+            return;
+        }
+        try {
+            Path old = CATALOG_UPLOAD_DIR.resolve(filename);
+            Files.deleteIfExists(old);
+        } catch (IOException ignored) {
+            // best effort
+        }
     }
 
     private static boolean isDm(String userRole) {

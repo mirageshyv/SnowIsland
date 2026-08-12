@@ -4,6 +4,7 @@ import com.example.snowisland.service.ArkService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 @RestController
@@ -53,6 +54,11 @@ public class ArkController {
     @PostMapping("/reset")
     public Map<String, Object> reset() {
         return arkService.reset();
+    }
+
+    @PostMapping("/bonus")
+    public Map<String, Object> setBonus(@RequestParam BigDecimal value) {
+        return arkService.setBonus(value);
     }
 
     @PostMapping("/init-progress")

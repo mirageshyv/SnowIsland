@@ -38,6 +38,9 @@ public class ArkConstruction {
     @Column(name = "completion_percentage", precision = 5, scale = 2, nullable = false)
     private BigDecimal completionPercentage = BigDecimal.ZERO;
 
+    @Column(name = "bonus_percentage", precision = 5, scale = 2, nullable = false)
+    private BigDecimal bonusPercentage = BigDecimal.ZERO;
+
     @Column(name = "has_sail", nullable = false)
     private Boolean hasSail = false;
 
@@ -129,6 +132,14 @@ public class ArkConstruction {
 
     public void setCompletionPercentage(BigDecimal completionPercentage) {
         this.completionPercentage = completionPercentage;
+    }
+
+    public BigDecimal getBonusPercentage() {
+        return bonusPercentage;
+    }
+
+    public void setBonusPercentage(BigDecimal bonusPercentage) {
+        this.bonusPercentage = bonusPercentage;
     }
 
     public Boolean getHasSail() {

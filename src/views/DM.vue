@@ -14,6 +14,7 @@ import QuickInteractionFeedbackView from './QuickInteractionFeedbackView.vue'
 import DmPlayerInventoryView from './DmPlayerInventoryView.vue'
 import DmCombatAssistView from './DmCombatAssistView.vue'
 import GameSettingsView from './GameSettingsView.vue'
+import DmItemCodexView from './DmItemCodexView.vue'
 import RuleBookView from './RuleBookView.vue'
 import DmSystemLogView from './DmSystemLogView.vue'
 import EndgameSettlementView from './EndgameSettlementView.vue'
@@ -23,7 +24,7 @@ const GameResetView = defineAsyncComponent(() => import('./GameResetView.vue'))
 import MinesweeperGame from './MinesweeperGame.vue'
 import DmPlayerModalInventory from '../components/DmPlayerModalInventory.vue'
 import SnowEffect from '../components/SnowEffect.vue'
-import { dmPlayerAPI, jobAPI, skillAPI, gameStateAPI } from '../utils/api.js'
+import { dmPlayerAPI, jobAPI, skillAPI, gameStateAPI, playerMarkerAPI } from '../utils/api.js'
 import {
   PLAYER_NAME_MAX_LENGTH,
   USERNAME_MAX_LENGTH,
@@ -53,6 +54,10 @@ const createStartingItems = ref([])
 const createInventoryRef = ref(null)
 const gameState = ref({ currentDay: 1 })
 
+const playerMarkersByPlayerId = ref({})
+const markerAddForm = reactive({ name: '', note: '', visibleToPlayer: false })
+const markerSaving = ref(false)
+
 const filterForm = reactive({
   name: '',
   job: '',
@@ -78,7 +83,8 @@ const createForm = reactive({
   loginPassword: 'test123',
   isWeak: false,
   isOverworked: false,
-  isInjured: 0
+  isInjured: 0,
+  dmNotes: ''
 })
 
 const jobNameById = computed(() => {
@@ -119,7 +125,8 @@ function normalizePlayer(raw) {
     isInjured: raw.isInjured ?? raw.is_injured ?? 0,
     isSeverelyInjured: Boolean(raw.isSeverelyInjured ?? raw.is_severely_injured),
     isDead: Boolean(raw.isDead ?? raw.is_dead),
-    dailyConsumptionMet: Boolean(raw.dailyConsumptionMet)
+    dailyConsumptionMet: Boolean(raw.dailyConsumptionMet),
+    dmNotes: raw.dmNotes ?? raw.dm_notes ?? ''
   }
 }
 
@@ -176,6 +183,84 @@ const getStatusBadges = (player) => {
   return badges
 }
 
+function getPlayerMarkers(playerId) {
+  return playerMarkersByPlayerId.value[playerId] || []
+}
+
+function applyPlayerMarkersList(markers) {
+  const map = {}
+  for (const marker of markers || []) {
+    const pid = marker.playerId
+    if (pid == null) continue
+    if (!map[pid]) map[pid] = []
+    map[pid].push(marker)
+  }
+  playerMarkersByPlayerId.value = map
+}
+
+async function loadPlayerMarkers() {
+  try {
+    const userRole = localStorage.getItem('userRole') || 'dm'
+    const result = await playerMarkerAPI.list(userRole)
+    if (result?.success) {
+      applyPlayerMarkersList(result.markers)
+    }
+  } catch (e) {
+    console.error('加载玩家标记失败:', e)
+  }
+}
+
+function resetMarkerAddForm() {
+  markerAddForm.name = ''
+  markerAddForm.note = ''
+  markerAddForm.visibleToPlayer = false
+}
+
+async function addPlayerMarker() {
+  if (!editingPlayer.value?.id || markerSaving.value) return
+  const name = markerAddForm.name.trim()
+  if (!name) return
+  markerSaving.value = true
+  try {
+    const userRole = localStorage.getItem('userRole') || 'dm'
+    const result = await playerMarkerAPI.add(
+      editingPlayer.value.id,
+      name,
+      markerAddForm.visibleToPlayer,
+      markerAddForm.note.trim() || undefined,
+      userRole
+    )
+    if (result?.success) {
+      applyPlayerMarkersList(result.markers)
+      resetMarkerAddForm()
+    } else {
+      alert(result?.message || '添加标记失败')
+    }
+  } catch (e) {
+    alert('添加标记失败: ' + (e.message || '未知错误'))
+  } finally {
+    markerSaving.value = false
+  }
+}
+
+async function removePlayerMarker(markerId) {
+  if (markerSaving.value) return
+  markerSaving.value = true
+  try {
+    const userRole = localStorage.getItem('userRole') || 'dm'
+    const result = await playerMarkerAPI.remove(markerId, userRole)
+    if (result?.success) {
+      applyPlayerMarkersList(result.markers)
+    } else {
+      alert(result?.message || '移除标记失败')
+    }
+  } catch (e) {
+    alert('移除标记失败: ' + (e.message || '未知错误'))
+  } finally {
+    markerSaving.value = false
+  }
+}
+
 async function loadJobs() {
   const list = await jobAPI.getAll()
   jobs.value = Array.isArray(list) ? list : []
@@ -206,6 +291,7 @@ async function loadPlayers() {
     }
     const list = result.players || []
     playerList.value = list.map((p) => normalizePlayer(p))
+    await loadPlayerMarkers()
   } catch (e) {
     playerList.value = []
     playersError.value = '加载玩家失败: ' + (e.message || '未知错误')
@@ -248,8 +334,10 @@ function openEditModal(player) {
     loginPassword: player.loginPassword ?? '',
     isWeak: player.isWeak,
     isOverworked: player.isOverworked,
-    isInjured: player.isInjured ?? 0
+    isInjured: player.isInjured ?? 0,
+    dmNotes: player.dmNotes ?? ''
   }
+  resetMarkerAddForm()
   showEditModal.value = true
 }
 
@@ -298,6 +386,7 @@ function openCreateModal() {
   createForm.isWeak = false
   createForm.isOverworked = false
   createForm.isInjured = 0
+  createForm.dmNotes = ''
   createStartingItems.value = []
   showCreateModal.value = true
 }
@@ -324,7 +413,8 @@ async function saveEditPlayer() {
       isSeverelyInjured: editingPlayer.value.isSeverelyInjured,
       isDead: editingPlayer.value.isDead,
       loginUsername: editingPlayer.value.loginUsername?.trim() || undefined,
-      loginPassword: editingPlayer.value.loginPassword || undefined
+      loginPassword: editingPlayer.value.loginPassword || undefined,
+      dmNotes: editingPlayer.value.dmNotes ?? ''
     }
     if (editingPlayer.value.jobId !== '' && editingPlayer.value.jobId != null) {
       payload.jobId = Number(editingPlayer.value.jobId)
@@ -369,7 +459,8 @@ async function createPlayer() {
       isSeverelyInjured: createForm.isSeverelyInjured,
       isDead: createForm.isDead,
       loginUsername: createForm.loginUsername.trim(),
-      loginPassword: createForm.loginPassword
+      loginPassword: createForm.loginPassword,
+      dmNotes: createForm.dmNotes ?? ''
     }
     if (createStartingItems.value.length > 0) {
       payload.startingItems = createStartingItems.value.map((i) => ({
@@ -496,6 +587,7 @@ onMounted(() => {
         <button v-for="tab in [
           { key: 'players', icon: '👥', label: '玩家管理' },
           { key: 'settings', icon: '⚙️', label: '游戏设置' },
+          { key: 'codex', icon: '📚', label: '图鉴' },
           { key: 'ruleBook', icon: '📖', label: '规则书' },
           { key: 'actionFeedback', icon: '📋', label: '📋 行动反馈' },
           { key: 'factionActionFeedback', icon: '🏴', label: '阵营行动反馈' },
@@ -644,6 +736,7 @@ onMounted(() => {
                   <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">特性</th>
                   <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">阵营</th>
                   <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">状态</th>
+                  <th class="text-left text-gray-400 text-xs font-medium px-2 py-4 max-w-[80px]">备注</th>
                   <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">当日需求</th>
                   <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">操作</th>
                 </tr>
@@ -672,7 +765,7 @@ onMounted(() => {
                     </span>
                   </td>
                   <td class="px-6 py-4">
-                    <div class="flex gap-1">
+                    <div class="flex flex-wrap gap-1">
                       <span
                         v-for="badge in getStatusBadges(player)"
                         :key="badge.text"
@@ -680,7 +773,22 @@ onMounted(() => {
                       >
                         {{ badge.text }}
                       </span>
+                      <span
+                        v-for="marker in getPlayerMarkers(player.id)"
+                        :key="marker.id"
+                        :title="marker.note || marker.name"
+                        class="inline-flex items-center gap-0.5 text-xs px-2 py-1 rounded-full text-purple-300 bg-purple-500/20 border border-purple-500/25"
+                      >
+                        {{ marker.name }}
+                        <span v-if="marker.visibleToPlayer" class="opacity-80" title="玩家可见">👁</span>
+                      </span>
                     </div>
+                  </td>
+                  <td class="px-2 py-4 max-w-[80px]">
+                    <span
+                      class="text-gray-500 text-xs truncate block"
+                      :title="player.dmNotes || ''"
+                    >{{ (player.dmNotes || '').slice(0, 12) }}{{ (player.dmNotes || '').length > 12 ? '…' : '' }}</span>
                   </td>
                   <td class="px-4 py-4">
                     <span
@@ -778,6 +886,66 @@ onMounted(() => {
                     <option :value="3">死亡</option>
                   </select>
                 </label>
+              </div>
+              <div>
+                <label class="block text-gray-400 text-xs mb-1">秘密身份 / DM备注（玩家不可见）</label>
+                <textarea
+                  v-model="editingPlayer.dmNotes"
+                  rows="3"
+                  class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm resize-y"
+                  placeholder="例如：原住民 / 外来者 等隐藏身份"
+                />
+              </div>
+              <div>
+                <label class="block text-gray-400 text-xs mb-1">标记</label>
+                <div v-if="getPlayerMarkers(editingPlayer.id).length" class="flex flex-wrap gap-1.5 mb-3">
+                  <span
+                    v-for="marker in getPlayerMarkers(editingPlayer.id)"
+                    :key="marker.id"
+                    :title="marker.note || marker.name"
+                    class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full text-purple-300 bg-purple-500/20 border border-purple-500/25"
+                  >
+                    {{ marker.name }}
+                    <span v-if="marker.visibleToPlayer" class="opacity-80" title="玩家可见">👁</span>
+                    <button
+                      type="button"
+                      class="text-purple-200/70 hover:text-white leading-none"
+                      :disabled="markerSaving"
+                      @click="removePlayerMarker(marker.id)"
+                    >
+                      ×
+                    </button>
+                  </span>
+                </div>
+                <p v-else class="text-gray-600 text-xs mb-2">暂无标记</p>
+                <div class="flex flex-wrap gap-2 items-end">
+                  <input
+                    v-model="markerAddForm.name"
+                    type="text"
+                    maxlength="50"
+                    placeholder="标记名"
+                    class="flex-1 min-w-[6rem] bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                  />
+                  <input
+                    v-model="markerAddForm.note"
+                    type="text"
+                    maxlength="255"
+                    placeholder="备注（可选）"
+                    class="flex-1 min-w-[6rem] bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                  />
+                  <label class="flex items-center gap-1.5 text-xs text-gray-300 shrink-0 pb-2">
+                    <input v-model="markerAddForm.visibleToPlayer" type="checkbox" class="rounded" />
+                    玩家可见
+                  </label>
+                  <button
+                    type="button"
+                    class="px-3 py-2 bg-purple-600/80 hover:bg-purple-600 text-white text-sm rounded-lg disabled:opacity-50 shrink-0"
+                    :disabled="markerSaving || !markerAddForm.name.trim()"
+                    @click="addPlayerMarker"
+                  >
+                    添加
+                  </button>
+                </div>
               </div>
               <p class="text-gray-500 text-xs">修改背包请使用侧栏「玩家背包」。</p>
             </div>
@@ -884,6 +1052,15 @@ onMounted(() => {
                   </select>
                 </label>
               </div>
+              <div>
+                <label class="block text-gray-400 text-xs mb-1">秘密身份 / DM备注（玩家不可见）</label>
+                <textarea
+                  v-model="createForm.dmNotes"
+                  rows="3"
+                  class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm resize-y"
+                  placeholder="例如：原住民 / 外来者 等隐藏身份"
+                />
+              </div>
               <DmPlayerModalInventory
                 ref="createInventoryRef"
                 v-model="createStartingItems"
@@ -968,6 +1145,10 @@ onMounted(() => {
 
       <div v-else-if="activeTab === 'settings'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
         <GameSettingsView />
+      </div>
+
+      <div v-else-if="activeTab === 'codex'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+        <DmItemCodexView />
       </div>
 
       <div v-else-if="activeTab === 'ruleBook'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">

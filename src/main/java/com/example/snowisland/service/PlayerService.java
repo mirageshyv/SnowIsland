@@ -39,6 +39,9 @@ public class PlayerService {
     @Autowired
     private PlayerSupplyService playerSupplyService;
 
+    @Autowired
+    private PlayerMarkerService playerMarkerService;
+
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -329,7 +332,8 @@ public class PlayerService {
                 }
             }
             result.put("avatar", avatar);
-            
+            result.put("markers", playerMarkerService.listForPlayer(id));
+
         } catch (Exception e) {
             result.put("success", false);
             result.put("message", "获取玩家信息失败: " + e.getMessage());

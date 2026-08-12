@@ -101,6 +101,7 @@ public class ArkService {
         result.put("generatorCount", ark.getGeneratorCount());
         result.put("currentCargoCapacity", ark.getCurrentCargoCapacity());
         result.put("completionPercentage", ark.getCompletionPercentage());
+        result.put("bonusPercentage", resolveBonusPercentage(ark));
         result.put("hasSail", ark.getHasSail());
 
         result.put("targetWood", TARGET_WOOD);
@@ -449,6 +450,7 @@ public class ArkService {
             ark.setPropellerCount(0);
             ark.setGeneratorCount(0);
             ark.setHasSail(false);
+            ark.setBonusPercentage(BigDecimal.ZERO);
             calculateAndUpdateProgress(ark);
             arkConstructionRepository.save(ark);
             result.put("success", true);
@@ -457,6 +459,36 @@ public class ArkService {
         } catch (Exception e) {
             result.put("success", false);
             result.put("message", "重置失败: " + e.getMessage());
+        }
+        return result;
+    }
+
+    @Transactional
+    public Map<String, Object> setBonus(BigDecimal value) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            if (value == null) {
+                result.put("success", false);
+                result.put("message", "加成值不能为空");
+                return result;
+            }
+            BigDecimal clamped = value;
+            if (clamped.compareTo(new BigDecimal("-100")) < 0) {
+                clamped = new BigDecimal("-100");
+            }
+            if (clamped.compareTo(new BigDecimal("100")) > 0) {
+                clamped = new BigDecimal("100");
+            }
+            ArkConstruction ark = getOrCreate();
+            ark.setBonusPercentage(clamped);
+            calculateAndUpdateProgress(ark);
+            arkConstructionRepository.save(ark);
+            result.put("success", true);
+            result.put("message", "仪式加成设置成功");
+            result.put("data", buildStatusResponse(ark));
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "设置仪式加成失败: " + e.getMessage());
         }
         return result;
     }
@@ -495,6 +527,7 @@ public class ArkService {
         if (finalProgress.compareTo(BigDecimal.ZERO) < 0) {
             finalProgress = BigDecimal.ZERO;
         }
+        finalProgress = finalProgress.add(resolveBonusPercentage(ark));
         if (finalProgress.compareTo(new BigDecimal("100.0")) > 0) {
             finalProgress = new BigDecimal("100.0");
         }
@@ -563,6 +596,11 @@ public class ArkService {
         return result;
     }
 
+    private BigDecimal resolveBonusPercentage(ArkConstruction ark) {
+        BigDecimal bonus = ark.getBonusPercentage();
+        return bonus != null ? bonus : BigDecimal.ZERO;
+    }
+
     private BigDecimal calculateResourceProgress(double current, double target, double maxPercent) {
         if (target <= 0) return BigDecimal.ZERO;
         double ratio = Math.min(1.0, current / target);
@@ -583,6 +621,7 @@ public class ArkService {
         data.put("generatorCount", ark.getGeneratorCount());
         data.put("currentCargoCapacity", ark.getCurrentCargoCapacity());
         data.put("completionPercentage", ark.getCompletionPercentage());
+        data.put("bonusPercentage", resolveBonusPercentage(ark));
         data.put("hasSail", ark.getHasSail());
 
         data.put("targetWood", TARGET_WOOD);
@@ -667,6 +706,7 @@ public class ArkService {
             ark.setPropellerCount(0);
             ark.setGeneratorCount(0);
             ark.setHasSail(false);
+            ark.setBonusPercentage(BigDecimal.ZERO);
             calculateAndUpdateProgress(ark);
             arkConstructionRepository.save(ark);
             result.put("success", true);

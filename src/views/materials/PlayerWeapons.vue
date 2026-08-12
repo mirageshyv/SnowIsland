@@ -21,7 +21,9 @@ const weaponsMap = {
   10: { name: '电锯', threat_level: 4, remark: '威胁值4' },
   11: { name: '手术刀', threat_level: 1, remark: '威胁值1' },
   12: { name: '炸药', threat_level: 10, remark: '威胁值极高' },
-  13: { name: '电钻', threat_level: 1, remark: '生产工具（挖掘）' }
+  13: { name: '电钻', threat_level: 1, remark: '生产工具（挖掘）' },
+  14: { name: '匕首', threat_level: 2, remark: '一把锋利的匕首，便于隐蔽携带。威胁值2。' },
+  15: { name: '铁镐', threat_level: 2, remark: '结实的铁镐，可用于挖掘，紧急时也可作为武器。威胁值2。' }
 }
 
 const getWeaponName = (weaponId) => {

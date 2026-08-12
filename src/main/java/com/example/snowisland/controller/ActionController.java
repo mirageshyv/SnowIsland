@@ -52,8 +52,9 @@ public class ActionController {
             @RequestParam(required = false) Integer gameDay,
             @RequestParam(required = false) String actionType,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) Integer playerId) {
-        return ResponseEntity.ok(actionService.getAllActions(gameDay, actionType, status, playerId));
+            @RequestParam(required = false) Integer playerId,
+            @RequestParam(required = false) String userRole) {
+        return ResponseEntity.ok(actionService.getAllActions(gameDay, actionType, status, playerId, userRole));
     }
 
     @PostMapping("/{actionId}/feedback")

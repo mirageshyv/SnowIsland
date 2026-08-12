@@ -22,6 +22,7 @@ const form = ref({
 })
 
 const catastropheProgress = ref(0)
+const advanceStep = ref('')
 
 const phaseOptions = [
   { value: 'DAY', label: '白天' },
@@ -100,11 +101,21 @@ async function save() {
 
 async function advanceDay() {
   if (!confirm('推进一天将同时增加天灾进度，并可能触发天灾。确定继续？')) return
+  let step = null
+  const raw = String(advanceStep.value ?? '').trim()
+  if (raw !== '') {
+    const parsed = Number(raw)
+    if (!Number.isInteger(parsed) || parsed < 0 || parsed > 100) {
+      error.value = '进度步进须为 0–100 的整数'
+      return
+    }
+    step = parsed
+  }
   advancing.value = true
   message.value = null
   error.value = ''
   try {
-    const result = await catastropheAPI.advanceDay()
+    const result = await catastropheAPI.advanceDay(step)
     if (result?.success) {
       form.value.currentDay = Number(result.currentDay) || form.value.currentDay + 1
       if (result.catastropheTriggered) {
@@ -270,6 +281,18 @@ onMounted(() => {
               class="w-28 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-lg font-semibold tabular-nums focus:outline-none focus:border-cyan-500/50"
             />
             <span class="text-gray-500 text-sm">第 {{ form.currentDay }} 天</span>
+            <label class="flex items-center gap-2 text-gray-400 text-xs shrink-0">
+              <span class="whitespace-nowrap">进度步进（留空默认33/34）</span>
+              <input
+                v-model="advanceStep"
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                placeholder="—"
+                class="w-16 bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm tabular-nums focus:outline-none focus:border-cyan-500/50"
+              />
+            </label>
             <button
               type="button"
               class="ml-auto px-4 py-2 rounded-lg bg-purple-600/30 border border-purple-500/40 text-purple-200 text-sm hover:bg-purple-600/40 disabled:opacity-50"
@@ -279,7 +302,7 @@ onMounted(() => {
               {{ advancing ? '推进中…' : '推进一天（天灾进度）' }}
             </button>
           </div>
-          <p class="text-gray-600 text-xs mt-2">天灾进度：{{ catastropheProgress }}%（推进一天 +33/34）</p>
+          <p class="text-gray-600 text-xs mt-2">天灾进度：{{ catastropheProgress }}%（推进一天 +33/34，或自定义步进）</p>
         </div>
 
         <div>

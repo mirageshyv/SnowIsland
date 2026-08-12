@@ -34,10 +34,18 @@ function showResolveMessage(type, text) {
   setTimeout(() => { resolveMessage.value = null }, 4000)
 }
 
+function targetMarkersBadge(action) {
+  if (!action?.targetMarkers?.length) return ''
+  return `目标标记: ${action.targetMarkers.join(', ')}`
+}
+
 async function fetchActions() {
   loading.value = true
   try {
-    const result = await actionAPI.getAllActions({ gameDay: filterGameDay.value })
+    const result = await actionAPI.getAllActions({
+      gameDay: filterGameDay.value,
+      userRole: localStorage.getItem('userRole') || ''
+    })
     actions.value = Array.isArray(result) ? result : []
   } catch (e) {
     console.error('获取行动列表失败:', e)
@@ -380,6 +388,11 @@ onMounted(async () => {
                 title="已保存反馈"
               >✓</span>
               <span class="truncate">行动一{{ row.slot1 ? `：${actionShortLabel(row.slot1)}` : '' }}</span>
+              <span
+                v-if="row.slot1 && targetMarkersBadge(row.slot1)"
+                class="text-[10px] text-purple-300/90 shrink-0 max-w-[140px] truncate"
+                :title="targetMarkersBadge(row.slot1)"
+              >{{ targetMarkersBadge(row.slot1) }}</span>
             </button>
             <button
               type="button"
@@ -401,6 +414,11 @@ onMounted(async () => {
                 title="已保存反馈"
               >✓</span>
               <span class="truncate">行动二{{ row.slot2 ? `：${actionShortLabel(row.slot2)}` : '' }}</span>
+              <span
+                v-if="row.slot2 && targetMarkersBadge(row.slot2)"
+                class="text-[10px] text-purple-300/90 shrink-0 max-w-[140px] truncate"
+                :title="targetMarkersBadge(row.slot2)"
+              >{{ targetMarkersBadge(row.slot2) }}</span>
             </button>
             <button
               type="button"
@@ -443,6 +461,12 @@ onMounted(async () => {
             <h3 class="text-white font-medium">{{ modalAction.playerName }}</h3>
             <p class="text-cyan-400/90 text-sm mt-0.5">
               行动{{ modalAction.actionSlot }} · {{ actionShortLabel(modalAction) }}
+            </p>
+            <p
+              v-if="targetMarkersBadge(modalAction)"
+              class="text-xs text-purple-300/90 mt-1"
+            >
+              {{ targetMarkersBadge(modalAction) }}
             </p>
           </div>
           <button type="button" class="text-gray-500 hover:text-white shrink-0" @click="closeModal">✕</button>

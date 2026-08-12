@@ -43,3 +43,6 @@ Thumbs.db
 ### logs ###
 *.log
 logs/
+
+### private DM reference docs (do not commit) ###
+docs/private/

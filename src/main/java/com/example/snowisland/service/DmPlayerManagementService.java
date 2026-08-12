@@ -362,6 +362,9 @@ public class DmPlayerManagementService {
         if (body.containsKey("isDead")) {
             player.setIsDead(boolVal(body.get("isDead")));
         }
+        if (body.containsKey("dmNotes")) {
+            player.setDmNotes(stringVal(body.get("dmNotes")));
+        }
     }
 
     private void updateCredentials(Integer playerId, Map<String, Object> body, Map<String, Object> result) {
@@ -409,6 +412,7 @@ public class DmPlayerManagementService {
         row.put("isInjured", player.getIsInjured() != null ? player.getIsInjured() : 0);
         row.put("isSeverelyInjured", Boolean.TRUE.equals(player.getIsSeverelyInjured()));
         row.put("isDead", Boolean.TRUE.equals(player.getIsDead()));
+        row.put("dmNotes", player.getDmNotes());
         row.put("statuses", com.example.snowisland.util.PlayerStatusCatalog.buildStatusList(player));
         row.put("dailyConsumptionMet", consumptionStatus.getOrDefault(player.getId(), false));
 

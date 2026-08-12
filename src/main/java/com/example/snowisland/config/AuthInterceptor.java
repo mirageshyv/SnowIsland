@@ -37,8 +37,29 @@ public class AuthInterceptor implements HandlerInterceptor {
             requestUri.startsWith("/api/ark/remove") ||
             requestUri.startsWith("/api/ark/component") ||
             requestUri.startsWith("/api/ark/sail") ||
+            requestUri.startsWith("/api/ark/bonus") ||
             requestUri.startsWith("/api/ark/reset")) {
-            
+
+            return checkDmPermission(request, response);
+        }
+
+        if (requestUri.startsWith("/api/player-markers")) {
+            return checkDmPermission(request, response);
+        }
+
+        if (requestUri.startsWith("/api/actions/all")) {
+            String userRole = request.getParameter("userRole");
+            if (userRole != null && "dm".equalsIgnoreCase(userRole)) {
+                return checkDmPermission(request, response);
+            }
+        }
+
+        if (requestUri.startsWith("/api/dm/players")) {
+            return checkDmPermission(request, response);
+        }
+
+        if (requestUri.startsWith("/api/dm/catalog-entry") ||
+            requestUri.startsWith("/api/dm/catalog-image")) {
             return checkDmPermission(request, response);
         }
 
