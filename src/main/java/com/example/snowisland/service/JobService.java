@@ -94,6 +94,16 @@ public class JobService {
     }
 
     public List<Job> getAllJobs() {
+        List<Job> visible = new ArrayList<>();
+        for (Job job : jobRepository.findAll()) {
+            if (!Boolean.TRUE.equals(job.getHidden())) {
+                visible.add(job);
+            }
+        }
+        return visible;
+    }
+
+    public List<Job> getAllJobsIncludingHidden() {
         return jobRepository.findAll();
     }
 
@@ -169,7 +179,7 @@ public class JobService {
     }
 
     public List<Map<String, Object>> getAllJobsWithInitialItems() {
-        List<Job> jobs = jobRepository.findAll();
+        List<Job> jobs = getAllJobs();
         List<Map<String, Object>> result = new ArrayList<>();
 
         for (Job job : jobs) {

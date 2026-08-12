@@ -163,8 +163,11 @@ public class DmPlayerManagementService {
             List<Map<String, Object>> customItems = (List<Map<String, Object>>) body.get("startingItems");
             if (customItems != null && !customItems.isEmpty()) {
                 applyInventoryItems(saved.getId(), customItems, "set", userRole);
-            } else if (saved.getJobId() != null) {
-                applyInventoryItems(saved.getId(), buildStartingItemRows(saved.getJobId()), "set", userRole);
+            } else {
+                List<Map<String, Object>> starting = buildStartingItemRowsForPlayer(saved);
+                if (!starting.isEmpty()) {
+                    applyInventoryItems(saved.getId(), starting, "set", userRole);
+                }
             }
 
             result.put("success", true);
@@ -228,11 +231,11 @@ public class DmPlayerManagementService {
         if (player == null) {
             return deny(result, "玩家不存在");
         }
-        if (player.getJobId() == null) {
+        if (player.getJobId() == null && player.getHiddenJobId() == null) {
             return deny(result, "玩家未分配职业");
         }
         String applyMode = "replace".equalsIgnoreCase(mode) ? "set" : "add";
-        return applyInventoryItems(playerId, buildStartingItemRows(player.getJobId()), applyMode, userRole);
+        return applyInventoryItems(playerId, buildStartingItemRowsForPlayer(player), applyMode, userRole);
     }
 
     @Transactional
@@ -300,6 +303,33 @@ public class DmPlayerManagementService {
         return result;
     }
 
+    private List<Map<String, Object>> buildStartingItemRowsForPlayer(Player player) {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        if (player.getJobId() != null) {
+            rows.addAll(buildStartingItemRows(player.getJobId()));
+        }
+        if (player.getHiddenJobId() != null && !player.getHiddenJobId().equals(player.getJobId())) {
+            rows.addAll(buildStartingItemRows(player.getHiddenJobId()));
+        }
+        return mergeItemRows(rows);
+    }
+
+    private List<Map<String, Object>> mergeItemRows(List<Map<String, Object>> rows) {
+        Map<String, Map<String, Object>> merged = new LinkedHashMap<>();
+        for (Map<String, Object> row : rows) {
+            String key = row.get("itemType") + ":" + row.get("itemId");
+            Map<String, Object> existing = merged.get(key);
+            if (existing == null) {
+                merged.put(key, new LinkedHashMap<>(row));
+            } else {
+                Integer a = intOrNull(existing.get("quantity"));
+                Integer b = intOrNull(row.get("quantity"));
+                existing.put("quantity", (a != null ? a : 0) + (b != null ? b : 0));
+            }
+        }
+        return new ArrayList<>(merged.values());
+    }
+
     private List<Map<String, Object>> buildStartingItemRows(Integer jobId) {
         List<JobInitialItems> initialItems = jobInitialItemsRepository.findByJobIdOrderByItemType(jobId);
         List<Map<String, Object>> rows = new ArrayList<>();
@@ -365,6 +395,9 @@ public class DmPlayerManagementService {
         if (body.containsKey("dmNotes")) {
             player.setDmNotes(stringVal(body.get("dmNotes")));
         }
+        if (body.containsKey("hiddenJobId")) {
+            player.setHiddenJobId(intOrNull(body.get("hiddenJobId")));
+        }
     }
 
     private void updateCredentials(Integer playerId, Map<String, Object> body, Map<String, Object> result) {
@@ -413,6 +446,8 @@ public class DmPlayerManagementService {
         row.put("isSeverelyInjured", Boolean.TRUE.equals(player.getIsSeverelyInjured()));
         row.put("isDead", Boolean.TRUE.equals(player.getIsDead()));
         row.put("dmNotes", player.getDmNotes());
+        row.put("hiddenJobId", player.getHiddenJobId());
+        row.put("hiddenJobName", player.getHiddenJobId() != null ? jobNames.getOrDefault(player.getHiddenJobId(), "—") : null);
         row.put("statuses", com.example.snowisland.util.PlayerStatusCatalog.buildStatusList(player));
         row.put("dailyConsumptionMet", consumptionStatus.getOrDefault(player.getId(), false));
 

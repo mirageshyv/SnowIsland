@@ -97,6 +97,9 @@ public class TradeService {
         itemNames.get("item").put(47, "引魂烛台");
         itemNames.get("item").put(48, "星轨轮盘");
         itemNames.get("item").put(49, "烬火旗");
+        itemNames.get("item").put(50, "银币");
+        itemNames.get("item").put(51, "情绪抑制器");
+        itemNames.get("item").put(52, "共鸣石");
 
         itemNames.put("weapon", new HashMap<>());
         itemNames.get("weapon").put(1, "制式手枪");
@@ -186,6 +189,9 @@ public class TradeService {
         itemUnits.get("item").put(47, "座");
         itemUnits.get("item").put(48, "个");
         itemUnits.get("item").put(49, "面");
+        itemUnits.get("item").put(50, "枚");
+        itemUnits.get("item").put(51, "个");
+        itemUnits.get("item").put(52, "枚");
 
         itemUnits.put("weapon", new HashMap<>());
         itemUnits.get("weapon").put(1, "把");

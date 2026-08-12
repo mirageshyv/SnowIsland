@@ -70,7 +70,11 @@ export const playerAPI = {
 /** 统治者避难所页：建造值、shelter 建材库存、避难所公共食物/能量（非玩家个人库存） */
 export const jobAPI = {
   getAll: () => request(`${API_BASE}/jobs`),
-  getWithInitialItems: (id) => request(`${API_BASE}/jobs/${id}/items`)
+  getWithInitialItems: (id) => request(`${API_BASE}/jobs/${id}/items`),
+  getAllJobsForDm: () => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/jobs/all?userRole=dm`, { headers: { userId } })
+  }
 }
 
 export const skillAPI = {

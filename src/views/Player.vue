@@ -1169,6 +1169,21 @@ onUnmounted(() => {
                       </div>
                     </div>
 
+                    <!-- Hidden identity (self + DM only) -->
+                    <div v-if="playerInfo.hiddenJob" class="relative group">
+                      <div class="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-orange-500/5 rounded-2xl transition-all duration-300 ease-out group-hover:from-amber-500/10 group-hover:to-orange-500/10"></div>
+                      <div class="relative bg-slate-900/60 border-l-4 border-amber-500 rounded-2xl p-8 md:p-10 transition-all duration-200 ease-out hover:border-amber-400 will-change-transform transform-gpu">
+                        <div class="flex flex-wrap items-center gap-2 mb-3">
+                          <div class="text-slate-400 text-xs uppercase tracking-wider">隐藏身份 · {{ playerInfo.hiddenJob }}</div>
+                          <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">仅你自己与主持人可见</span>
+                        </div>
+                        <h3 class="text-3xl md:text-4xl text-amber-300 font-bold mb-4">{{ playerInfo.hiddenJobSkills || '隐藏技能' }}</h3>
+                        <p class="text-slate-300 text-sm md:text-base leading-relaxed whitespace-pre-line">
+                          {{ playerInfo.hiddenJobDescription }}
+                        </p>
+                      </div>
+                    </div>
+
                     <!-- Trait -->
                     <div class="relative group">
                       <div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-2xl transition-all duration-300 ease-out group-hover:from-purple-500/10 group-hover:to-pink-500/10"></div>

@@ -28,6 +28,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/api/actions/all",
                         "/api/dm/players",
                         "/api/dm/players/**",
+                        "/api/jobs/all",
                         "/api/dm/catalog-entry/**",
                         "/api/dm/catalog-image/**");
     }

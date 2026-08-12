@@ -19,6 +19,9 @@ public class Job {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "hidden", nullable = false)
+    private Boolean hidden = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -66,6 +69,14 @@ public class Job {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public Boolean getHidden() {
+        return hidden;
+    }
+
+    public void setHidden(Boolean hidden) {
+        this.hidden = hidden;
     }
 
     public LocalDateTime getCreatedAt() {

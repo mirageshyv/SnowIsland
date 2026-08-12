@@ -58,6 +58,10 @@ public class AuthInterceptor implements HandlerInterceptor {
             return checkDmPermission(request, response);
         }
 
+        if ("/api/jobs/all".equals(requestUri)) {
+            return checkDmPermission(request, response);
+        }
+
         if (requestUri.startsWith("/api/dm/catalog-entry") ||
             requestUri.startsWith("/api/dm/catalog-image")) {
             return checkDmPermission(request, response);

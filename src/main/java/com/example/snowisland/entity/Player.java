@@ -56,6 +56,9 @@ public class Player {
     @Column(name = "dm_notes", columnDefinition = "TEXT")
     private String dmNotes;
 
+    @Column(name = "hidden_job_id")
+    private Integer hiddenJobId;
+
     public enum Faction {
         统治者, 反叛者, 冒险者, 天灾使者, 平民
     }
@@ -117,4 +120,8 @@ public class Player {
     @JsonIgnore
     public String getDmNotes() { return dmNotes; }
     public void setDmNotes(String dmNotes) { this.dmNotes = dmNotes; }
+
+    @JsonIgnore
+    public Integer getHiddenJobId() { return hiddenJobId; }
+    public void setHiddenJobId(Integer hiddenJobId) { this.hiddenJobId = hiddenJobId; }
 }

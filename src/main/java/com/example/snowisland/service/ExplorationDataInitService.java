@@ -123,7 +123,7 @@ public class ExplorationDataInitService {
                 event.setEventDifficulty(eventData.difficulty);
                 event.setTriggered(false);
                 event.setRarity(getRarityByDifficulty(eventData.difficulty));
-                event.setIsSpecial(eventData.difficulty == 20);
+                event.setIsSpecial(eventData.isSpecial || eventData.difficulty == 20);
                 
                 IslandEvent savedEvent = islandEventRepository.save(event);
                 logger.info("导入事件 #{}: {} (难度: {})", eventNum, eventData.name, eventData.difficulty);
@@ -160,6 +160,7 @@ public class ExplorationDataInitService {
         String loreFragment;
         String fullText;
         int difficulty;
+        boolean isSpecial;
         List<RewardData> rewards = new ArrayList<>();
     }
 
@@ -213,6 +214,11 @@ public class ExplorationDataInitService {
                             currentEvent.difficulty = 1;
                         }
                     }
+                } else if (line.startsWith("特殊") || line.startsWith("特殊：")) {
+                    String[] parts = line.split("：", 2);
+                    if (parts.length > 1 && "是".equals(parts[1].trim())) {
+                        currentEvent.isSpecial = true;
+                    }
                 }
                 
                 if (currentEvent.fullText == null) {
@@ -236,7 +242,7 @@ public class ExplorationDataInitService {
         if (rewardsStr.contains("无直接物资") || rewardsStr.contains("无物资")) return rewards;
         if (rewardsStr.contains("请私信dm") || rewardsStr.contains("私信dm")) return rewards;
         
-        String[] items = rewardsStr.split("[，,、]");
+        String[] items = splitRewardsOutsideParens(rewardsStr);
         for (String item : items) {
             item = item.trim();
             if (item.isEmpty()) continue;
@@ -250,13 +256,41 @@ public class ExplorationDataInitService {
         return rewards;
     }
 
+    /** Split reward entries on delimiters outside both （） and () parentheses. */
+    private String[] splitRewardsOutsideParens(String rewardsStr) {
+        List<String> parts = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        int parenDepth = 0;
+        for (int i = 0; i < rewardsStr.length(); i++) {
+            char c = rewardsStr.charAt(i);
+            if (c == '（' || c == '(') {
+                parenDepth++;
+                current.append(c);
+            } else if (c == '）' || c == ')') {
+                parenDepth--;
+                current.append(c);
+            } else if (parenDepth == 0 && (c == '，' || c == ',' || c == '、')) {
+                String part = current.toString().trim();
+                if (!part.isEmpty()) {
+                    parts.add(part);
+                }
+                current = new StringBuilder();
+            } else {
+                current.append(c);
+            }
+        }
+        String part = current.toString().trim();
+        if (!part.isEmpty()) {
+            parts.add(part);
+        }
+        return parts.toArray(new String[0]);
+    }
+
     private RewardData parseSingleReward(String itemStr) {
         itemStr = itemStr.trim();
         RewardData reward = new RewardData();
         
         Map<String, TradeItem.ItemType> typeMap = new HashMap<>();
-        typeMap.put("绳索", TradeItem.ItemType.item);
-        typeMap.put("火把", TradeItem.ItemType.item);
         typeMap.put("医疗包", TradeItem.ItemType.item);
         typeMap.put("手电筒", TradeItem.ItemType.item);
         typeMap.put("维修工具包", TradeItem.ItemType.item);
@@ -267,12 +301,26 @@ public class ExplorationDataInitService {
         typeMap.put("蜡烛", TradeItem.ItemType.item);
         typeMap.put("铅笔", TradeItem.ItemType.item);
         typeMap.put("火柴", TradeItem.ItemType.item);
+        typeMap.put("火把", TradeItem.ItemType.item);
+        typeMap.put("草药", TradeItem.ItemType.item);
+        typeMap.put("医疗资源", TradeItem.ItemType.item);
+        typeMap.put("祭坛石", TradeItem.ItemType.item);
+        typeMap.put("银币", TradeItem.ItemType.item);
+        typeMap.put("轻制银币", TradeItem.ItemType.item);
+        typeMap.put("情绪抑制器", TradeItem.ItemType.item);
+        typeMap.put("共鸣石", TradeItem.ItemType.item);
+        typeMap.put("协议书", TradeItem.ItemType.item);
+        typeMap.put("医用酒精", TradeItem.ItemType.item);
+        typeMap.put("黑祭·灾厄降临记物", TradeItem.ItemType.item);
+        typeMap.put("命运之轮·星轨逆转记物", TradeItem.ItemType.item);
+        typeMap.put("灵魂摆渡·亡者回响记物", TradeItem.ItemType.item);
         
         typeMap.put("猎弓", TradeItem.ItemType.weapon);
         typeMap.put("制式手枪", TradeItem.ItemType.weapon);
         typeMap.put("旧式手枪", TradeItem.ItemType.weapon);
         typeMap.put("猎枪", TradeItem.ItemType.weapon);
         typeMap.put("信号枪", TradeItem.ItemType.weapon);
+        typeMap.put("十字镐", TradeItem.ItemType.weapon);
         
         typeMap.put("猎枪弹", TradeItem.ItemType.ammo);
         typeMap.put("手枪弹", TradeItem.ItemType.ammo);
@@ -280,6 +328,7 @@ public class ExplorationDataInitService {
         
         typeMap.put("金属制品", TradeItem.ItemType.material);
         typeMap.put("木材", TradeItem.ItemType.material);
+        typeMap.put("绳索", TradeItem.ItemType.material);
         typeMap.put("食物", TradeItem.ItemType.material);
         typeMap.put("帆布", TradeItem.ItemType.material);
         typeMap.put("煤油", TradeItem.ItemType.material);
@@ -287,15 +336,12 @@ public class ExplorationDataInitService {
         typeMap.put("燃料", TradeItem.ItemType.material);
         typeMap.put("石料", TradeItem.ItemType.material);
         typeMap.put("炸药", TradeItem.ItemType.material);
-        typeMap.put("医疗资源", TradeItem.ItemType.item);
         typeMap.put("发动机", TradeItem.ItemType.material);
         typeMap.put("发电机", TradeItem.ItemType.material);
-        typeMap.put("草药", TradeItem.ItemType.item);
         typeMap.put("木板", TradeItem.ItemType.material);
+        typeMap.put("铜质线缆", TradeItem.ItemType.material);
         
         Map<String, Integer> idMap = new HashMap<>();
-        idMap.put("绳索", 3);
-        idMap.put("火把", 6);
         idMap.put("医疗包", 1);
         idMap.put("手电筒", 2);
         idMap.put("维修工具包", 8);
@@ -303,15 +349,29 @@ public class ExplorationDataInitService {
         idMap.put("朗姆酒", 10);
         idMap.put("渔网", 12);
         idMap.put("点火工具", 15);
-        idMap.put("蜡烛", 9);
-        idMap.put("铅笔", 11);
-        idMap.put("火柴", 13);
+        idMap.put("蜡烛", 13);
+        idMap.put("铅笔", 16);
+        idMap.put("火柴", 15);
+        idMap.put("火把", 25);
+        idMap.put("草药", 11);
+        idMap.put("医疗资源", 1);
+        idMap.put("祭坛石", 27);
+        idMap.put("银币", 50);
+        idMap.put("轻制银币", 50);
+        idMap.put("情绪抑制器", 51);
+        idMap.put("共鸣石", 52);
+        idMap.put("协议书", 9);
+        idMap.put("医用酒精", 14);
+        idMap.put("黑祭·灾厄降临记物", 34);
+        idMap.put("命运之轮·星轨逆转记物", 36);
+        idMap.put("灵魂摆渡·亡者回响记物", 35);
         
         idMap.put("猎弓", 5);
         idMap.put("制式手枪", 1);
         idMap.put("旧式手枪", 6);
         idMap.put("猎枪", 2);
         idMap.put("信号枪", 7);
+        idMap.put("十字镐", 15);
         
         idMap.put("猎枪弹", 2);
         idMap.put("手枪弹", 1);
@@ -319,6 +379,7 @@ public class ExplorationDataInitService {
         
         idMap.put("金属制品", 1);
         idMap.put("木材", 2);
+        idMap.put("绳索", 3);
         idMap.put("食物", 5);
         idMap.put("帆布", 9);
         idMap.put("煤油", 8);
@@ -326,11 +387,10 @@ public class ExplorationDataInitService {
         idMap.put("燃料", 8);
         idMap.put("石料", 7);
         idMap.put("炸药", 14);
-        idMap.put("医疗资源", 1);
-        idMap.put("发动机", 11);
+        idMap.put("发动机", 10);
         idMap.put("发电机", 12);
-        idMap.put("草药", 16);
         idMap.put("木板", 4);
+        idMap.put("铜质线缆", 3);
         
         Pattern pattern = Pattern.compile("(.+?)\\s*[（(]([^）)]+?)[）)]");
         Matcher matcher = pattern.matcher(itemStr);

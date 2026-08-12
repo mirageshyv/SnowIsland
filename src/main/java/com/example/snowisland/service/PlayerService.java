@@ -313,6 +313,15 @@ public class PlayerService {
                 }
             }
 
+            if (player.getHiddenJobId() != null) {
+                Job hiddenJob = jobRepository.findById(player.getHiddenJobId()).orElse(null);
+                if (hiddenJob != null) {
+                    result.put("hiddenJob", hiddenJob.getName());
+                    result.put("hiddenJobSkills", hiddenJob.getSkills());
+                    result.put("hiddenJobDescription", hiddenJob.getDescription());
+                }
+            }
+
             if (player.getSkillId() != null) {
                 Skill skill = skillRepository.findById(player.getSkillId()).orElse(null);
                 if (skill != null) {

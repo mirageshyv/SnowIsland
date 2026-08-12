@@ -81,7 +81,10 @@ public class NewRulesetDataMigration implements CommandLineRunner {
         new ItemSeed(46, "灾厄之眼", "枚", "一枚黑色玻璃球，内部有不断旋转的暗红色雾气。", true),
         new ItemSeed(47, "引魂烛台", "座", "一座三足青铜烛台，底座刻着扭曲的符文。", true),
         new ItemSeed(48, "星轨轮盘", "个", "一个用黑曜石磨成的圆盘，表面刻着黄道十二宫符号，中心有一处凹槽。", true),
-        new ItemSeed(49, "烬火旗", "面", "一面被烧得只剩一半的旗帜，无论如何烧都不会彻底化为灰烬。", true)
+        new ItemSeed(49, "烬火旗", "面", "一面被烧得只剩一半的旗帜，无论如何烧都不会彻底化为灰烬。", true),
+        new ItemSeed(50, "银币", "枚", "一枚刻着衔尾蛇图案的旧银币，握在手中有刺骨的凉意。据说银币不属于活人。", true),
+        new ItemSeed(51, "情绪抑制器", "个", "半头盔式金属装置，内衬绣着\"铁砧小队·情绪抑制模块·型号MK-II\"。装备后获得\"情绪抑制\"状态，直到主动解除或装置损坏。", true),
+        new ItemSeed(52, "共鸣石", "枚", "婴儿拳头大小的深灰色石头，握紧时有节律性震动。可消耗快速行动感知半径200米内是否存在地脉异常点（每2天一次，使用后眩晕半小时检定-1）。", true)
     );
 
     private static final List<WeaponSeed> WEAPON_SEEDS = Arrays.asList(

@@ -45,6 +45,7 @@ const inventoryInitialPlayerId = ref(null)
 
 const playerList = ref([])
 const jobs = ref([])
+const hiddenJobs = ref([])
 const skills = ref([])
 const playersLoading = ref(false)
 const playersError = ref('')
@@ -84,7 +85,8 @@ const createForm = reactive({
   isWeak: false,
   isOverworked: false,
   isInjured: 0,
-  dmNotes: ''
+  dmNotes: '',
+  hiddenJobId: ''
 })
 
 const jobNameById = computed(() => {
@@ -126,7 +128,9 @@ function normalizePlayer(raw) {
     isSeverelyInjured: Boolean(raw.isSeverelyInjured ?? raw.is_severely_injured),
     isDead: Boolean(raw.isDead ?? raw.is_dead),
     dailyConsumptionMet: Boolean(raw.dailyConsumptionMet),
-    dmNotes: raw.dmNotes ?? raw.dm_notes ?? ''
+    dmNotes: raw.dmNotes ?? raw.dm_notes ?? '',
+    hiddenJobId: raw.hiddenJobId ?? raw.hidden_job_id ?? null,
+    hiddenJobName: raw.hiddenJobName ?? raw.hidden_job_name ?? ''
   }
 }
 
@@ -264,6 +268,13 @@ async function removePlayerMarker(markerId) {
 async function loadJobs() {
   const list = await jobAPI.getAll()
   jobs.value = Array.isArray(list) ? list : []
+  try {
+    const all = await jobAPI.getAllJobsForDm()
+    const allList = Array.isArray(all) ? all : []
+    hiddenJobs.value = allList.filter((j) => j.hidden === true || j.hidden === 1)
+  } catch {
+    hiddenJobs.value = []
+  }
 }
 
 async function loadSkills() {
@@ -335,7 +346,8 @@ function openEditModal(player) {
     isWeak: player.isWeak,
     isOverworked: player.isOverworked,
     isInjured: player.isInjured ?? 0,
-    dmNotes: player.dmNotes ?? ''
+    dmNotes: player.dmNotes ?? '',
+    hiddenJobId: player.hiddenJobId ?? ''
   }
   resetMarkerAddForm()
   showEditModal.value = true
@@ -387,6 +399,7 @@ function openCreateModal() {
   createForm.isOverworked = false
   createForm.isInjured = 0
   createForm.dmNotes = ''
+  createForm.hiddenJobId = ''
   createStartingItems.value = []
   showCreateModal.value = true
 }
@@ -414,7 +427,11 @@ async function saveEditPlayer() {
       isDead: editingPlayer.value.isDead,
       loginUsername: editingPlayer.value.loginUsername?.trim() || undefined,
       loginPassword: editingPlayer.value.loginPassword || undefined,
-      dmNotes: editingPlayer.value.dmNotes ?? ''
+      dmNotes: editingPlayer.value.dmNotes ?? '',
+      hiddenJobId:
+        editingPlayer.value.hiddenJobId === '' || editingPlayer.value.hiddenJobId == null
+          ? null
+          : Number(editingPlayer.value.hiddenJobId)
     }
     if (editingPlayer.value.jobId !== '' && editingPlayer.value.jobId != null) {
       payload.jobId = Number(editingPlayer.value.jobId)
@@ -460,7 +477,11 @@ async function createPlayer() {
       isDead: createForm.isDead,
       loginUsername: createForm.loginUsername.trim(),
       loginPassword: createForm.loginPassword,
-      dmNotes: createForm.dmNotes ?? ''
+      dmNotes: createForm.dmNotes ?? '',
+      hiddenJobId:
+        createForm.hiddenJobId === '' || createForm.hiddenJobId == null
+          ? null
+          : Number(createForm.hiddenJobId)
     }
     if (createStartingItems.value.length > 0) {
       payload.startingItems = createStartingItems.value.map((i) => ({
@@ -733,6 +754,7 @@ onMounted(() => {
                   <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">登录账号</th>
                   <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">密码</th>
                   <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">职业</th>
+                  <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">隐藏身份</th>
                   <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">特性</th>
                   <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">阵营</th>
                   <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">状态</th>
@@ -758,6 +780,7 @@ onMounted(() => {
                     </button>
                   </td>
                   <td class="px-4 py-4 text-gray-300 text-sm">{{ player.jobName }}</td>
+                  <td class="px-4 py-4 text-gray-300 text-sm">{{ player.hiddenJobName || '—' }}</td>
                   <td class="px-4 py-4 text-gray-300 text-sm max-w-[120px] truncate" :title="player.skillName">{{ player.skillName }}</td>
                   <td class="px-4 py-4">
                     <span :class="['text-xs px-2 py-1 rounded-full', getFactionColor(player.faction)]">
@@ -886,6 +909,13 @@ onMounted(() => {
                     <option :value="3">死亡</option>
                   </select>
                 </label>
+              </div>
+              <div>
+                <label class="block text-gray-400 text-xs mb-1">隐藏身份（其他玩家不可见）</label>
+                <select v-model="editingPlayer.hiddenJobId" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm">
+                  <option value="">无</option>
+                  <option v-for="job in hiddenJobs" :key="job.id" :value="job.id">{{ job.name }}</option>
+                </select>
               </div>
               <div>
                 <label class="block text-gray-400 text-xs mb-1">秘密身份 / DM备注（玩家不可见）</label>
@@ -1051,6 +1081,16 @@ onMounted(() => {
                     <option :value="3">死亡</option>
                   </select>
                 </label>
+              </div>
+              <div>
+                <label class="block text-gray-400 text-xs mb-1">隐藏身份（其他玩家不可见）</label>
+                <select
+                  v-model="createForm.hiddenJobId"
+                  class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                >
+                  <option value="">无</option>
+                  <option v-for="job in hiddenJobs" :key="job.id" :value="job.id">{{ job.name }}</option>
+                </select>
               </div>
               <div>
                 <label class="block text-gray-400 text-xs mb-1">秘密身份 / DM备注（玩家不可见）</label>
