@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch, reactive } from 'vue'
+import { ref, computed, onMounted, watch, reactive, nextTick } from 'vue'
 import { actionAPI, playerAPI, locationAPI, warehouseAPI } from '@/utils/api.js'
 import {
   formatPlayerActionResult,
@@ -8,6 +8,13 @@ import {
 } from '@/data/gameData.js'
 import { useGameDayScope } from '@/composables/useGameDayScope.js'
 import { parseTransportNotes, applyTransportQuantities } from '@/utils/actionFormHydration.js'
+import {
+  getTransportWeightPerUnit,
+  resolveTransportMaxWeight,
+  getTransportTotalWeight as sumTransportWeight,
+  buildTransportNotes as encodeTransportNotes,
+} from '@/utils/transportForm.js'
+import StyledSelect from '@/components/StyledSelect.vue'
 
 const playerId = localStorage.getItem('playerId') || ''
 const {
@@ -41,8 +48,6 @@ const submitContext = ref({ isShelterLaborer: false, laborerMessage: '' })
 
 const PENDING_RESULT_TEXT = '已提交，等待主持人确认。'
 
-const displayedQrCode = ref(null)
-
 const LOCATION_QR_MAP = {
   '警察局': '警察站.jpg',
   '镇长厅': '镇长厅.jpg',
@@ -51,7 +56,7 @@ const LOCATION_QR_MAP = {
   '灯塔': '灯塔.jpg',
   '杂货店': '杂货店.jpg',
   '码头': '港口.jpg',
-  '方舟': '',
+  '方舟': '方舟.png',
   '旅店': '旅店.jpg',
   '集市': '集市.jpg',
   '酒吧': '酒吧.jpg',
@@ -62,7 +67,7 @@ const LOCATION_QR_MAP = {
   '墓地': '墓地.jpg',
   '猎人小屋': '猎人小屋.jpg',
   '矿场': '矿场.jpg',
-  '监狱': '',
+  '监狱': '监狱.jpg',
 }
 
 const isShelterLaborer = computed(() => Boolean(submitContext.value?.isShelterLaborer))
@@ -91,17 +96,7 @@ const transportMode = reactive({ 1: '', 2: '' })
 const transportSource = reactive({ 1: '', 2: '' })
 const transportDest = reactive({ 1: '', 2: '' })
 const transportItems = reactive({ 1: [], 2: [] })
-
-const WEIGHT_MAP = {
-  material: { 1: 1, 2: 1, 3: 0.5, 4: 1, 5: 1, 7: 1, 8: 1, 12: 50 },
-  item: { 1: 0.5, 2: 0.3, 3: 0.5, 4: 0.2, 5: 2, 6: 3, 7: 1, 8: 1, 9: 0.1, 10: 1, 11: 0.5, 12: 0.5, 13: 0.1, 14: 1, 15: 0.2, 16: 0.2, 17: 0.3, 18: 0.5, 19: 0.1, 20: 0.1, 21: 0.1, 22: 0.1 },
-  weapon: { 1: 2, 2: 3, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 3, 9: 2, 10: 5, 11: 0.5, 12: 1 },
-  ammo: { 1: 0.1, 2: 0.1, 3: 0.1, 4: 0.1 }
-}
-
-function getWeightPerUnit(itemType, itemId) {
-  return (WEIGHT_MAP[itemType] && WEIGHT_MAP[itemType][itemId]) || 1
-}
+const overnightHere = reactive({ 1: false, 2: false })
 
 const actionTypeOptions = computed(() => {
   const options = [
@@ -125,7 +120,7 @@ const actionHelpEntries = [
   { title: '使用特性', body: '消耗行动点使用你的特性技能。必须在备注说明中详细描述所使用的特性名称及具体效果，DM将根据描述给予反馈。' },
   { title: '使用职业技能', body: '使用你的职业技能。必须在备注说明中详细描述所使用的职业技能及具体效果，DM将根据描述给予反馈。' },
   { title: '生产', body: '根据职业技能生产对应资源。需要DM结算后物资才会发放到背包中。' },
-  { title: '搬运', body: '在仓库与个人背包间转移物资。须持有相关仓库钥匙。个人→仓库在提交时即从背包扣除，入仓在主持人发布后生效。仓库→仓库上限500kg，其余上限300kg。' },
+  { title: '搬运', body: '在仓库与个人背包间转移物资。须持有相关仓库钥匙（含避难所仓库）。个人→仓库在提交时即从背包扣除，入仓在主持人发布后生效。本页仅为行动档（占用行动槽1/2）：玩家↔仓库300kg；仓库↔仓库小镇500kg/海岛（含矿场仓库、避难所）300kg。免费搬运改在「快速交互」提交，占用快速行动额度（一天两条共用），玩家↔仓库上限50kg，仓库↔仓库小镇100/海岛50。装卸工职业额度×2（服务端）。' },
   { title: '隐藏', body: '隐藏自己：第二天不会被调查，也无法被私聊，无法成为统治者与密谋的行动目标。' },
   { title: '其他', body: '尝试执行系统未预先规划的行动。必须在描述中详细说明你想执行的具体行动内容，由DM判定是否成功及效果。' },
 ]
@@ -153,14 +148,11 @@ const warehouseOptions = computed(() => {
     .map((w) => ({ value: w.warehouseKey, label: w.warehouseName }))
 })
 
-const isRuler = computed(() => {
-  const faction = (localStorage.getItem('playerFaction') || '').toLowerCase()
-  return faction === '统治者'
-})
-
-const shelterOption = computed(() => {
-  return warehouses.value.find((w) => w.isShelter)
-})
+const transportModeOptions = computed(() => [
+  { value: 'warehouse_to_warehouse', label: '仓库 → 仓库' },
+  { value: 'warehouse_to_player', label: '仓库 → 个人' },
+  { value: 'player_to_warehouse', label: '个人 → 仓库（提交时扣除背包）' },
+])
 
 watch(() => actionData[1].type, () => {
   if (isHydrating.value) return
@@ -186,21 +178,20 @@ watch(() => actionData[2].target, () => { if (!isHydrating.value) actionData[2].
 watch(() => transportMode[1], () => onTransportModeChange(1))
 watch(() => transportMode[2], () => onTransportModeChange(2))
 watch(() => transportSource[1], (nv) => {
-  if (nv && ['warehouse_to_warehouse', 'warehouse_to_player', 'warehouse_to_shelter'].includes(transportMode[1])) loadWarehouseStock(nv, 1)
+  if (nv && ['warehouse_to_warehouse', 'warehouse_to_player'].includes(transportMode[1])) loadWarehouseStock(nv, 1)
 })
 watch(() => transportSource[2], (nv) => {
-  if (nv && ['warehouse_to_warehouse', 'warehouse_to_player', 'warehouse_to_shelter'].includes(transportMode[2])) loadWarehouseStock(nv, 2)
+  if (nv && ['warehouse_to_warehouse', 'warehouse_to_player'].includes(transportMode[2])) loadWarehouseStock(nv, 2)
 })
 
 function onTransportModeChange(slot) {
+  if (isHydrating.value) return
   transportSource[slot] = ''
   transportDest[slot] = ''
   transportItems[slot] = []
   const mode = transportMode[slot]
-  if (mode === 'player_to_warehouse' || mode === 'player_to_shelter') {
+  if (mode === 'player_to_warehouse') {
     loadPlayerInventory(slot)
-  } else if (mode === 'shelter_to_warehouse' || mode === 'shelter_to_player') {
-    loadWarehouseStock('shelter', slot)
   }
 }
 
@@ -218,7 +209,7 @@ async function loadPlayerInventory(slot) {
         unit: item.unit || '个',
         available: item.quantity,
         quantity: 0,
-        weightPerUnit: getWeightPerUnit(item.type || item.itemType, item.id ?? item.itemId),
+        weightPerUnit: getTransportWeightPerUnit(item.type || item.itemType, item.id ?? item.itemId),
       }))
   } catch (e) {
     console.error('加载个人背包失败:', e)
@@ -239,7 +230,7 @@ async function loadWarehouseStock(warehouseKey, slot) {
         unit: item.unit,
         available: item.quantity,
         quantity: 0,
-        weightPerUnit: getWeightPerUnit(item.itemType, item.itemId)
+        weightPerUnit: getTransportWeightPerUnit(item.itemType, item.itemId)
       }))
     } else {
       transportItems[slot] = []
@@ -251,14 +242,16 @@ async function loadWarehouseStock(warehouseKey, slot) {
 }
 
 function getTransportTotalWeight(slot) {
-  const items = transportItems[slot]
-  if (!Array.isArray(items)) return 0
-  return items.reduce((sum, item) => sum + (item.quantity || 0) * item.weightPerUnit, 0)
+  return sumTransportWeight(transportItems[slot])
 }
 
 function getTransportMaxWeight(slot) {
-  const mode = transportMode[slot]
-  return (mode === 'warehouse_to_warehouse' || mode === 'warehouse_to_shelter' || mode === 'shelter_to_warehouse') ? 500 : 300
+  return resolveTransportMaxWeight({
+    mode: transportMode[slot],
+    source: transportSource[slot],
+    dest: transportDest[slot],
+    free: false,
+  })
 }
 
 function onTransportQuantityInput(item) {
@@ -267,30 +260,13 @@ function onTransportQuantityInput(item) {
 }
 
 function buildTransportNotes(slot) {
-  const lines = []
-  const mode = transportMode[slot] || ''
-  lines.push(`[mode:${mode}]`)
-  if (['warehouse_to_warehouse', 'warehouse_to_player', 'warehouse_to_shelter'].includes(mode) && transportSource[slot]) {
-    lines.push(`[source:${transportSource[slot]}]`)
-  }
-  if (['shelter_to_warehouse', 'shelter_to_player'].includes(mode)) {
-    lines.push(`[source:shelter]`)
-  }
-  if (['warehouse_to_warehouse', 'player_to_warehouse', 'shelter_to_warehouse'].includes(mode) && transportDest[slot]) {
-    lines.push(`[dest:${transportDest[slot]}]`)
-  }
-  if (['warehouse_to_shelter', 'player_to_shelter', 'shelter_to_player'].includes(mode)) {
-    lines.push(`[dest:shelter]`)
-  }
-  const items = transportItems[slot]
-  if (Array.isArray(items)) {
-    for (const item of items) {
-      if (item.quantity > 0) {
-        lines.push(`[item:${item.itemType}|${item.itemId}|${item.quantity}|${item.weightPerUnit}]`)
-      }
-    }
-  }
-  return lines.join('\n')
+  return encodeTransportNotes({
+    mode: transportMode[slot],
+    source: transportSource[slot],
+    dest: transportDest[slot],
+    items: transportItems[slot],
+    tier: 'action',
+  })
 }
 
 async function loadData() {
@@ -385,10 +361,8 @@ async function hydrateFromSubmitted() {
         transportMode[slot] = parsed.mode
         transportSource[slot] = parsed.source
         transportDest[slot] = parsed.dest
-        if (parsed.mode === 'player_to_warehouse' || parsed.mode === 'player_to_shelter') {
+        if (parsed.mode === 'player_to_warehouse') {
           await loadPlayerInventory(slot)
-        } else if (parsed.mode === 'shelter_to_warehouse' || parsed.mode === 'shelter_to_player') {
-          await loadWarehouseStock('shelter', slot)
         } else if (parsed.source) {
           await loadWarehouseStock(parsed.source, slot)
         }
@@ -398,12 +372,13 @@ async function hydrateFromSubmitted() {
       }
     }
   } finally {
+    await nextTick()
     isHydrating.value = false
-    updateDisplayedQrCode()
   }
 }
 
 function validateAction(slot) {
+  if (isSlotSubmitted(slot)) return true
   const ad = actionData[slot]
   if (!ad.type) return true
   if ((ad.type === 'go_location' || ad.type === 'investigate_player') && !ad.target) {
@@ -421,13 +396,10 @@ function validateAction(slot) {
   if (ad.type === 'transport') {
     if (!transportMode[slot]) { alert(`行动${slot === 1 ? '一' : '二'}：请选择搬运模式`); return false }
     const mode = transportMode[slot]
-    if (['warehouse_to_warehouse', 'warehouse_to_player', 'warehouse_to_shelter'].includes(mode) && !transportSource[slot]) {
+    if (['warehouse_to_warehouse', 'warehouse_to_player'].includes(mode) && !transportSource[slot]) {
       alert(`行动${slot === 1 ? '一' : '二'}：请选择源仓库`); return false
     }
-    if (['warehouse_to_warehouse', 'shelter_to_warehouse'].includes(mode) && !transportDest[slot]) {
-      alert(`行动${slot === 1 ? '一' : '二'}：请选择目标仓库`); return false
-    }
-    if (mode === 'player_to_warehouse' && !transportDest[slot]) {
+    if (['warehouse_to_warehouse', 'player_to_warehouse'].includes(mode) && !transportDest[slot]) {
       alert(`行动${slot === 1 ? '一' : '二'}：请选择目标仓库`); return false
     }
     const hasItems = Array.isArray(transportItems[slot]) && transportItems[slot].some(i => i.quantity > 0)
@@ -439,25 +411,25 @@ function validateAction(slot) {
   return true
 }
 
-function updateDisplayedQrCode() {
+const displayedLocationImages = computed(() => {
+  const cards = []
   for (const s of [1, 2]) {
     const ad = actionData[s]
-    if (ad.type === 'go_location' && ad.target) {
-      const loc = locations.value.find(l => l.id === parseInt(ad.target))
-      if (loc && loc.name) {
-        const fileName = LOCATION_QR_MAP[loc.name]
-        if (fileName) {
-          displayedQrCode.value = {
-            locationName: loc.name,
-            imageUrl: `/place/${fileName}`
-          }
-          return
-        }
-      }
-    }
+    if (!isSlotSubmitted(s) || ad.type !== 'go_location' || !ad.target) continue
+    const loc = Array.isArray(locations.value)
+      ? locations.value.find((l) => l.id === parseInt(ad.target))
+      : null
+    if (!loc?.name) continue
+    const fileName = LOCATION_QR_MAP[loc.name]
+    if (!fileName) continue
+    cards.push({
+      slot: s,
+      locationName: loc.name,
+      imageUrl: `/place/${fileName}`,
+    })
   }
-  displayedQrCode.value = null
-}
+  return cards
+})
 
 async function submitActions() {
   if (!daytimeEditable.value) {
@@ -480,6 +452,8 @@ async function submitActions() {
       let notes = ad.notes || ''
       if (ad.type === 'transport') {
         notes = buildTransportNotes(s)
+      } else if (ad.type === 'go_location' && overnightHere[s]) {
+        notes = (notes ? notes + '\n' : '') + '[overnight:1]'
       }
       const data = {
         playerId: pid,
@@ -500,7 +474,6 @@ async function submitActions() {
     }
     if (anySuccess) {
       submitMessage.value = { type: 'success', text: '个人行动提交成功' }
-      updateDisplayedQrCode()
     }
     await loadSubmittedActions()
   } catch (e) {
@@ -528,28 +501,31 @@ onMounted(async () => {
 function displayActionResult(action) {
   if (!action) return ''
   if (action.status === 'pending' || action.resultPending) return PENDING_RESULT_TEXT
-  if (action.actionType === 'transport' && action.notes?.includes('[mode:')) {
-    const zh = formatTransportNotesForDisplay(action.notes)
-    if (zh) return zh
+  if (action.result) {
+    const formatted = formatPlayerActionResult(action.result)
+    if (formatted) return formatted
   }
-  return action.result ? formatPlayerActionResult(action.result) : ''
+  if (action.actionType === 'transport' && action.notes?.includes('[mode:')) {
+    return formatTransportNotesForDisplay(action.notes, {}, { actionSlot: action.actionSlot }) || ''
+  }
+  return ''
 }
 </script>
 
 <template>
-  <div>
+  <div class="action-submit">
     <div class="text-center mb-10">
       <h1 class="text-white text-2xl md:text-3xl font-semibold tracking-tight mb-2">个人行动提交</h1>
-      <p class="text-gray-500 text-sm">选择你的两个个人行动并提交</p>
+      <p class="text-slate-300 text-sm">选择你的两个个人行动并提交</p>
       <div class="mt-3 flex items-center justify-center gap-2">
-        <label class="text-gray-400 text-sm">查看天数：</label>
+        <label class="text-slate-200 text-sm">查看天数：</label>
         <select
           v-model.number="gameDay"
-          class="bg-black/30 border border-white/10 rounded-lg px-3 py-1 text-sm text-gray-200 focus:outline-none"
+          class="bg-[#0b1220] border border-slate-500/50 rounded-lg px-3 py-1.5 text-sm text-slate-100 focus:outline-none focus:border-sky-400/70"
         >
           <option v-for="d in dayOptions" :key="d" :value="d">第 {{ d }} 天</option>
         </select>
-        <span class="text-gray-600 text-xs">
+        <span class="text-slate-400 text-sm">
           游戏第 {{ currentGameDay }} 天 · {{ phaseLabel }}
           <template v-if="gameDay === currentGameDay">（当前）</template>
         </span>
@@ -574,7 +550,7 @@ function displayActionResult(action) {
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-10">
       <div v-for="s in [1, 2]" :key="s"
-        class="relative bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-3xl p-6 overflow-hidden">
+        class="relative bg-gradient-to-br from-[#2a3a52] to-[#1a2638] border border-slate-400/25 rounded-3xl p-6 overflow-hidden">
         <div class="absolute top-0 right-0 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl" />
         <div class="relative space-y-4">
           <div class="flex items-center gap-3">
@@ -584,13 +560,13 @@ function displayActionResult(action) {
 
           <div>
             <div class="flex items-center gap-2 mb-2 ml-0.5">
-              <label class="text-gray-500 text-xs">选择行动</label>
-              <button type="button" class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-white/5 text-gray-400 hover:text-white hover:border-blue-500/40 hover:bg-blue-500/10 transition-colors text-xs font-semibold" @click="showActionHelpModal = true">?</button>
+              <label class="text-slate-300 text-sm">选择行动</label>
+              <button type="button" class="inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-400/50 bg-slate-700/60 text-slate-100 hover:text-white hover:border-sky-400/60 hover:bg-sky-500/20 transition-colors text-xs font-semibold" @click="showActionHelpModal = true">?</button>
             </div>
             <select
               v-model="actionData[s].type"
               :disabled="!isSlotEditable(s)"
-              class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
+              class="action-field"
             >
               <option value="">请选择行动</option>
               <option v-for="opt in actionTypeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
@@ -598,33 +574,39 @@ function displayActionResult(action) {
           </div>
 
           <div v-if="actionData[s].type && actionData[s].type !== 'hide' && actionData[s].type !== 'produce' && actionData[s].type !== 'use_trait' && actionData[s].type !== 'use_skill' && actionData[s].type !== 'transport' && actionData[s].type !== 'other'">
-            <label class="block text-gray-500 text-xs mb-2 ml-0.5">选择目标</label>
+            <label class="block text-slate-300 text-sm mb-2 ml-0.5">选择目标</label>
             <select
               v-model="actionData[s].target"
               :disabled="!isSlotEditable(s)"
-              class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
+              class="action-field"
             >
               <option value="">请选择目标</option>
               <option v-for="t in getTargetOptions(actionData[s].type)" :key="t.value" :value="t.value">{{ t.label }}</option>
             </select>
           </div>
 
-            <div v-if="actionData[s].type === 'go_location' && actionData[s].target && getNpcOptions(actionData[s].target).length > 0">
-              <label class="block text-gray-500 text-xs mb-2 ml-0.5">互动NPC（可选）</label>
-              <select
-                v-model="actionData[s].npc"
-                :disabled="!isSlotEditable(s)"
-                class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <option value="">不互动</option>
-                <option v-for="n in getNpcOptions(actionData[s].target)" :key="n.value" :value="n.value">{{ n.label }}</option>
-              </select>
+            <div v-if="actionData[s].type === 'go_location' && actionData[s].target" class="space-y-3">
+              <div v-if="getNpcOptions(actionData[s].target).length > 0">
+                <label class="block text-slate-300 text-sm mb-2 ml-0.5">互动NPC（可选）</label>
+                <select
+                  v-model="actionData[s].npc"
+                  :disabled="!isSlotEditable(s)"
+                  class="action-field"
+                >
+                  <option value="">不互动</option>
+                  <option v-for="n in getNpcOptions(actionData[s].target)" :key="n.value" :value="n.value">{{ n.label }}</option>
+                </select>
+              </div>
+              <label class="flex items-start gap-2 text-sm text-slate-100 cursor-pointer">
+                <input v-model="overnightHere[s]" type="checkbox" class="mt-1" :disabled="!isSlotEditable(s)" />
+                <span>今晚在此过夜（默认在自己家；不勾选则不改变过夜地点）</span>
+              </label>
             </div>
 
             <div v-if="actionData[s].type === 'produce' && productionInfo && productionInfo.canProduce">
               <div class="rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-4 py-3">
                 <p class="text-cyan-300 text-sm font-medium mb-1">{{ productionInfo.jobName }} - 生产</p>
-                <p class="text-gray-400 text-xs">{{ productionInfo.productionInfo?.description }}</p>
+                <p class="text-slate-200 text-sm leading-relaxed">{{ productionInfo.productionInfo?.description }}</p>
               </div>
             </div>
 
@@ -653,96 +635,55 @@ function displayActionResult(action) {
             </div>
 
             <div v-if="actionData[s].type === 'transport'" class="space-y-3">
+              <div class="rounded-xl border border-teal-500/20 bg-teal-500/5 px-4 py-3">
+                <p class="text-teal-200 text-sm leading-relaxed">行动档：占用本行动槽。当前上限约 {{ getTransportMaxWeight(s) }}kg（装卸工×2由服务端结算）。免费搬运请到「快速交互」提交，与快速行动共用今日 2 条额度。</p>
+              </div>
               <div>
-                <label class="block text-gray-500 text-xs mb-2 ml-0.5">搬运模式</label>
-                <select
+                <label class="block text-slate-300 text-sm mb-2 ml-0.5">搬运模式</label>
+                <StyledSelect
                   v-model="transportMode[s]"
+                  tone="action"
+                  :options="transportModeOptions"
+                  placeholder="请选择模式"
                   :disabled="!isSlotEditable(s)"
-                  class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <option value="">请选择模式</option>
-                  <option value="warehouse_to_warehouse">仓库 → 仓库（上限500kg）</option>
-                  <option value="warehouse_to_player">仓库 → 个人（上限300kg）</option>
-                  <option value="player_to_warehouse">个人 → 仓库（上限300kg，提交时扣除背包）</option>
-                  <option value="warehouse_to_shelter">仓库 → 避难所（上限500kg）</option>
-                  <option v-if="isRuler" value="shelter_to_warehouse">避难所 → 仓库（上限500kg，仅统治者）</option>
-                  <option v-if="isRuler" value="shelter_to_player">避难所 → 个人（上限300kg，仅统治者）</option>
-                  <option value="player_to_shelter">个人 → 避难所（上限300kg，提交时扣除背包）</option>
-                </select>
+                />
               </div>
               <div v-if="['warehouse_to_warehouse', 'warehouse_to_player'].includes(transportMode[s])" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">源仓库（需持有钥匙）</label>
-                  <select v-model="transportSource[s]"
-                    class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50">
-                    <option value="">选择仓库</option>
-                    <option v-for="w in warehouseOptions" :key="w.value" :value="w.value">{{ w.label }}</option>
-                  </select>
+                  <label class="block text-slate-300 text-sm mb-2 ml-0.5">源仓库（需持有钥匙）</label>
+                  <StyledSelect
+                    v-model="transportSource[s]"
+                    tone="action"
+                    :options="warehouseOptions"
+                    placeholder="选择仓库"
+                  />
                 </div>
                 <div v-if="transportMode[s] === 'warehouse_to_warehouse'">
-                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">目标仓库（需持有钥匙）</label>
-                  <select v-model="transportDest[s]"
-                    class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50">
-                    <option value="">选择仓库</option>
-                    <option v-for="w in (warehouseOptions || []).filter(o => o.value !== transportSource[s])" :key="w.value" :value="w.value">{{ w.label }}</option>
-                  </select>
-                </div>
-              </div>
-              <div v-if="transportMode[s] === 'warehouse_to_shelter'" class="space-y-3">
-                <div>
-                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">源仓库（需持有钥匙）</label>
-                  <select v-model="transportSource[s]"
-                    class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50">
-                    <option value="">选择仓库</option>
-                    <option v-for="w in warehouseOptions.filter(o => o.value !== 'shelter')" :key="w.value" :value="w.value">{{ w.label }}</option>
-                  </select>
-                </div>
-                <div class="rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-4 py-3">
-                  <p class="text-cyan-300 text-sm">目标：避难所仓库（所有玩家均可投入物资）</p>
-                </div>
-              </div>
-              <div v-if="transportMode[s] === 'shelter_to_warehouse'" class="space-y-3">
-                <div class="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
-                  <p class="text-amber-300 text-sm">源：避难所仓库（仅统治者可搬出物资）</p>
-                </div>
-                <div>
-                  <label class="block text-gray-500 text-xs mb-2 ml-0.5">目标仓库（需持有钥匙）</label>
-                  <select v-model="transportDest[s]"
-                    class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50">
-                    <option value="">选择仓库</option>
-                    <option v-for="w in warehouseOptions.filter(o => o.value !== 'shelter')" :key="w.value" :value="w.value">{{ w.label }}</option>
-                  </select>
-                </div>
-              </div>
-              <div v-if="transportMode[s] === 'shelter_to_player'" class="space-y-3">
-                <div class="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
-                  <p class="text-amber-300 text-sm">源：避难所仓库 → 个人背包（仅统治者可搬出物资）</p>
-                </div>
-              </div>
-              <div v-if="transportMode[s] === 'player_to_shelter'" class="space-y-3">
-                <div class="rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-4 py-3">
-                  <p class="text-cyan-300 text-sm">目标：避难所仓库（所有玩家均可投入物资，提交时扣除背包）</p>
+                  <label class="block text-slate-300 text-sm mb-2 ml-0.5">目标仓库（需持有钥匙）</label>
+                  <StyledSelect
+                    v-model="transportDest[s]"
+                    tone="action"
+                    :options="warehouseOptions.filter((o) => o.value !== transportSource[s])"
+                    placeholder="选择仓库"
+                  />
                 </div>
               </div>
               <div v-if="transportMode[s] === 'player_to_warehouse'">
-                <label class="block text-gray-500 text-xs mb-2 ml-0.5">目标仓库（需持有钥匙）</label>
-                <select v-model="transportDest[s]"
-                  class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 pr-10 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50">
-                  <option value="">选择仓库</option>
-                  <option v-for="w in warehouseOptions" :key="w.value" :value="w.value">{{ w.label }}</option>
-                </select>
+                <label class="block text-slate-300 text-sm mb-2 ml-0.5">目标仓库（需持有钥匙）</label>
+                <StyledSelect
+                  v-model="transportDest[s]"
+                  tone="action"
+                  :options="warehouseOptions"
+                  placeholder="选择仓库"
+                />
               </div>
               <div v-if="transportMode[s] && (
                 (['warehouse_to_warehouse', 'warehouse_to_player'].includes(transportMode[s]) && transportSource[s]) ||
-                (transportMode[s] === 'warehouse_to_shelter' && transportSource[s]) ||
-                (transportMode[s] === 'shelter_to_warehouse') ||
-                (transportMode[s] === 'shelter_to_player') ||
-                transportMode[s] === 'player_to_warehouse' ||
-                transportMode[s] === 'player_to_shelter'
+                transportMode[s] === 'player_to_warehouse'
               ) && Array.isArray(transportItems[s]) && transportItems[s].length > 0">
                 <div class="flex items-center justify-between mb-2">
-                  <label class="text-gray-500 text-xs">选择搬运物资</label>
-                  <span class="text-xs" :class="getTransportTotalWeight(s) > getTransportMaxWeight(s) ? 'text-red-400' : 'text-gray-400'">
+                  <label class="text-slate-300 text-sm">选择搬运物资</label>
+                  <span class="text-sm" :class="getTransportTotalWeight(s) > getTransportMaxWeight(s) ? 'text-red-300' : 'text-slate-200'">
                     {{ getTransportTotalWeight(s) }}/{{ getTransportMaxWeight(s) }} kg
                   </span>
                 </div>
@@ -750,8 +691,8 @@ function displayActionResult(action) {
                   <div v-for="item in transportItems[s]" :key="`${item.itemType}-${item.itemId}`"
                     class="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5">
                     <div class="min-w-0 flex-1">
-                      <span class="text-gray-200 text-xs">{{ item.name }}</span>
-                      <span class="text-gray-500 text-xs ml-1">库存:{{ item.available }}{{ item.unit }}</span>
+                      <span class="text-slate-100 text-sm">{{ item.name }}</span>
+                      <span class="text-slate-300 text-sm ml-1">库存:{{ item.available }}{{ item.unit }}</span>
                     </div>
                     <input
                       v-model.number="item.quantity"
@@ -760,32 +701,32 @@ function displayActionResult(action) {
                       step="1"
                       inputmode="numeric"
                       :max="item.available"
-                      class="w-16 bg-white/10 rounded px-2 py-1 text-gray-200 text-xs text-center"
+                      class="w-16 bg-[#0b1220] border border-slate-500/50 rounded px-2 py-1 text-slate-100 text-sm text-center"
                       @input="onTransportQuantityInput(item)"
                     />
-                    <span class="text-gray-500 text-xs w-12 text-right">{{ (item.quantity || 0) * item.weightPerUnit }}kg</span>
+                    <span class="text-slate-300 text-sm w-12 text-right">{{ (item.quantity || 0) * item.weightPerUnit }}kg</span>
                   </div>
                 </div>
               </div>
             </div>
 
             <div v-if="actionData[s].type !== 'transport'">
-              <label class="block text-gray-500 text-xs mb-2 ml-0.5">
+              <label class="block text-slate-300 text-sm mb-2 ml-0.5">
                 备注说明
-                <span v-if="actionData[s].type === 'use_trait' || actionData[s].type === 'use_skill' || actionData[s].type === 'other'" class="text-red-400">（必填）</span>
+                <span v-if="actionData[s].type === 'use_trait' || actionData[s].type === 'use_skill' || actionData[s].type === 'other'" class="text-red-300">（必填）</span>
               </label>
               <textarea
                 v-model="actionData[s].notes"
                 rows="3"
                 :disabled="!isSlotEditable(s)"
                 :placeholder="actionData[s].type === 'use_trait' ? '请详细描述你使用的特性名称及具体效果...' : actionData[s].type === 'use_skill' ? '请详细描述你使用的职业技能及具体效果...' : actionData[s].type === 'other' ? '请详细描述你想执行的具体行动内容...' : '在此输入备注说明...'"
-                class="w-full resize-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-200 text-sm placeholder:text-gray-600 focus:outline-none focus:border-blue-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                class="action-field resize-none placeholder:text-slate-400"
               />
             </div>
 
             <div>
-              <label class="block text-gray-500 text-xs mb-2 ml-0.5">行动结果</label>
-              <div class="min-h-[5.5rem] rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-gray-400 whitespace-pre-wrap">
+              <label class="block text-slate-300 text-sm mb-2 ml-0.5">行动结果</label>
+              <div class="min-h-[5.5rem] rounded-xl border border-slate-500/40 bg-[#0b1220] px-4 py-3 text-sm text-slate-100 whitespace-pre-wrap leading-relaxed">
                 {{ actionData[s].result || '提交后等待主持人确认，结果将在此显示' }}
               </div>
             </div>
@@ -810,12 +751,29 @@ function displayActionResult(action) {
         </button>
       </div>
 
-      <div v-if="displayedQrCode" class="flex justify-center mt-6">
-        <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-2xl p-6 max-w-sm w-full">
+      <div
+        v-if="displayedLocationImages.length"
+        class="mt-6 grid gap-4"
+        :class="displayedLocationImages.length > 1 ? 'grid-cols-2' : 'flex justify-center'"
+      >
+        <div
+          v-for="card in displayedLocationImages"
+          :key="card.slot"
+          class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-2xl p-6 w-full"
+          :class="displayedLocationImages.length === 1 ? 'max-w-sm' : ''"
+        >
           <div class="text-center">
-            <p class="text-gray-400 text-sm mb-3">扫描下方二维码查看 <span class="text-blue-400">{{ displayedQrCode.locationName }}</span> 详情</p>
+            <p class="text-slate-200 text-sm mb-3">
+              行动{{ card.slot === 1 ? '一' : '二' }}：扫描查看
+              <span class="text-sky-300">{{ card.locationName }}</span>
+              详情
+            </p>
             <div class="bg-white/5 rounded-xl p-4 flex justify-center">
-              <img :src="displayedQrCode.imageUrl" :alt="displayedQrCode.locationName + '二维码'" class="max-w-[200px] max-h-[200px] object-contain" />
+              <img
+                :src="card.imageUrl"
+                :alt="card.locationName + '二维码'"
+                class="max-w-[280px] max-h-[500px] w-full object-contain"
+              />
             </div>
           </div>
         </div>
@@ -825,22 +783,22 @@ function displayActionResult(action) {
         <h3 class="text-white text-lg font-medium mb-4">已提交的行动</h3>
         <div class="space-y-3">
           <div v-for="action in submittedActions" :key="action.id"
-            class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-xl p-4">
+            class="bg-gradient-to-br from-[#2a3a52] to-[#1a2638] border border-slate-400/25 rounded-xl p-4">
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center gap-2">
-                <span class="text-white text-sm font-medium">行动{{ action.actionSlot }}</span>
+                <span class="text-white text-sm font-medium">{{ action.actionSlot === 0 ? '免费搬运' : ('行动' + action.actionSlot) }}</span>
                 <span class="text-xs px-2 py-0.5 rounded-full"
                   :class="{'bg-green-500/20 text-green-400': action.actionType === 'go_location', 'bg-yellow-500/20 text-yellow-400': action.actionType === 'investigate_player', 'bg-blue-500/20 text-blue-400': action.actionType === 'produce', 'bg-orange-500/20 text-orange-400': action.actionType === 'use_trait', 'bg-violet-500/20 text-violet-400': action.actionType === 'use_skill', 'bg-teal-500/20 text-teal-400': action.actionType === 'transport', 'bg-purple-500/20 text-purple-400': action.actionType === 'hide', 'bg-gray-500/20 text-gray-400': action.actionType === 'other'}">
                   {{ action.actionTypeLabel }}
                 </span>
-                <span v-if="action.targetName" class="text-gray-400 text-xs">→ {{ action.targetName }}</span>
+                <span v-if="action.targetName" class="text-slate-200 text-sm">→ {{ action.targetName }}</span>
               </div>
               <span class="text-xs px-2 py-0.5 rounded-full"
                 :class="action.status === 'pending' ? 'bg-amber-500/20 text-amber-400' : 'bg-green-500/20 text-green-400'">
                 {{ action.status === 'pending' ? '待确认' : '已确认' }}
               </span>
             </div>
-            <div v-if="displayActionResult(action)" class="text-gray-400 text-xs whitespace-pre-wrap bg-black/20 rounded-lg p-3 mt-2">{{ displayActionResult(action) }}</div>
+            <div v-if="displayActionResult(action)" class="text-slate-100 text-sm leading-relaxed whitespace-pre-wrap bg-[#0b1220] border border-slate-500/30 rounded-lg p-3 mt-2">{{ displayActionResult(action) }}</div>
           </div>
         </div>
       </div>
@@ -851,16 +809,16 @@ function displayActionResult(action) {
             <div class="flex items-start justify-between px-6 pt-6 pb-4 border-b border-[#252d3a] shrink-0">
               <div>
                 <h2 class="text-white text-lg font-semibold tracking-tight">行动类型说明</h2>
-                <p class="text-[#a0aab7] text-xs mt-1.5">以下为各行动类型的详细规则</p>
+                <p class="text-slate-300 text-sm mt-1.5">以下为各行动类型的详细规则</p>
               </div>
-              <button type="button" class="text-[#a0aab7] hover:text-white transition-colors shrink-0 p-1" @click="showActionHelpModal = false">
+              <button type="button" class="text-slate-300 hover:text-white transition-colors shrink-0 p-1" @click="showActionHelpModal = false">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
               </button>
             </div>
             <div class="overflow-y-auto px-6 py-5 space-y-3">
               <div v-for="(entry, idx) in actionHelpEntries" :key="entry.title" class="rounded-[10px] border border-[#253041] bg-[#1c2533] px-4 py-3.5">
                 <p class="text-[#00d1ff] text-sm font-medium mb-2">{{ idx + 1 }}. {{ entry.title }}</p>
-                <p class="text-[#a0aab7] text-sm leading-relaxed">{{ entry.body }}</p>
+                <p class="text-slate-200 text-sm leading-relaxed">{{ entry.body }}</p>
               </div>
             </div>
             <div class="px-6 py-5 border-t border-[#252d3a] shrink-0 flex justify-center">
@@ -871,3 +829,29 @@ function displayActionResult(action) {
       </Teleport>
   </div>
 </template>
+
+<style scoped>
+.action-submit {
+  color-scheme: dark;
+}
+.action-field {
+  @apply w-full appearance-none rounded-xl border px-4 py-3 pr-10 text-sm text-slate-100;
+  color-scheme: dark;
+  background: #0b1220;
+  border-color: rgb(148 163 184 / 0.45);
+}
+.action-field option,
+.action-field optgroup {
+  background-color: #0b1220;
+  color: #e2e8f0;
+}
+.action-field:focus {
+  outline: none;
+  border-color: rgb(56 189 248 / 0.7);
+  box-shadow: 0 0 0 1px rgb(56 189 248 / 0.35);
+}
+.action-field:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+</style>

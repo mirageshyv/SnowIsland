@@ -20,4 +20,6 @@ public interface QuickInteractionRepository extends JpaRepository<QuickInteracti
     List<QuickInteraction> findByStatusAndGameDayOrderByCreatedAtAsc(QuickInteraction.InteractionStatus status, Integer gameDay);
 
     List<QuickInteraction> findByInteractionTypeAndGameDayOrderByCreatedAtAsc(String interactionType, Integer gameDay);
+
+    long countByPlayerIdAndGameDayAndInteractionType(Integer playerId, Integer gameDay, String interactionType);
 }

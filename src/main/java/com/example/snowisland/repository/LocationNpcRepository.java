@@ -9,5 +9,6 @@ import java.util.List;
 @Repository
 public interface LocationNpcRepository extends JpaRepository<LocationNpc, Integer> {
     List<LocationNpc> findByLocationId(Integer locationId);
+    List<LocationNpc> findByName(String name);
     void deleteByLocationId(Integer locationId);
 }

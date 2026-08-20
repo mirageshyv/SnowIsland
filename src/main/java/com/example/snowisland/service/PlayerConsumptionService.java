@@ -22,7 +22,7 @@ import java.util.*;
 public class PlayerConsumptionService {
 
   public static final int DEFAULT_FOOD_UNITS = 2;
-  public static final int DEFAULT_FUEL_KG = 15;
+  public static final int DEFAULT_FUEL_KG = 25;
   public static final int WOOD_HEAT_PER_KG = 1;
   public static final int FUEL_HEAT_PER_KG = 15;
 

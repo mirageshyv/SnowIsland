@@ -1,5 +1,6 @@
 package com.example.snowisland.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -39,6 +40,10 @@ public class Player {
     @Column(name = "skill_id")
     private Integer skillId;
 
+    /** 当晚过夜地点；null = 默认在家（参考规则） */
+    @Column(name = "overnight_location_id")
+    private Integer overnightLocationId;
+
     @Enumerated(EnumType.STRING)
     private Faction faction;
 
@@ -48,8 +53,20 @@ public class Player {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "dm_notes", columnDefinition = "TEXT")
+    private String dmNotes;
+
+    @Column(name = "hidden_job_id")
+    private Integer hiddenJobId;
+
+    @Column(name = "trade_banned")
+    private Boolean tradeBanned = false;
+
+    @Column(name = "is_bound")
+    private Boolean isBound = false;
+
     public enum Faction {
-        统治者, 反叛者, 冒险者, 天灾使者, 平民
+        统治者, 反叛者, 冒险者, 天灾使者, 平民, 外来者, 原住民
     }
 
     @PrePersist
@@ -94,6 +111,9 @@ public class Player {
     public Integer getSkillId() { return skillId; }
     public void setSkillId(Integer skillId) { this.skillId = skillId; }
 
+    public Integer getOvernightLocationId() { return overnightLocationId; }
+    public void setOvernightLocationId(Integer overnightLocationId) { this.overnightLocationId = overnightLocationId; }
+
     public Faction getFaction() { return faction; }
     public void setFaction(Faction faction) { this.faction = faction; }
 
@@ -102,4 +122,18 @@ public class Player {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    @JsonIgnore
+    public String getDmNotes() { return dmNotes; }
+    public void setDmNotes(String dmNotes) { this.dmNotes = dmNotes; }
+
+    @JsonIgnore
+    public Integer getHiddenJobId() { return hiddenJobId; }
+    public void setHiddenJobId(Integer hiddenJobId) { this.hiddenJobId = hiddenJobId; }
+
+    public Boolean getTradeBanned() { return tradeBanned; }
+    public void setTradeBanned(Boolean tradeBanned) { this.tradeBanned = tradeBanned; }
+
+    public Boolean getIsBound() { return isBound; }
+    public void setIsBound(Boolean isBound) { this.isBound = isBound; }
 }

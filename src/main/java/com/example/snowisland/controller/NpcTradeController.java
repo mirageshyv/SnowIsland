@@ -1,6 +1,7 @@
 package com.example.snowisland.controller;
 
 import com.example.snowisland.service.NpcTradeService;
+import com.example.snowisland.service.NpcTradeProposalService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +16,9 @@ public class NpcTradeController {
     @Autowired
     private NpcTradeService npcTradeService;
 
+    @Autowired
+    private NpcTradeProposalService npcTradeProposalService;
+
     @GetMapping("/config")
     public Map<String, Object> getTradeConfig(
             @RequestParam Integer npcId,
@@ -22,11 +26,18 @@ public class NpcTradeController {
         return npcTradeService.getTradeConfig(npcId, playerId);
     }
 
-    @PostMapping("/execute")
-    public Map<String, Object> executeTrade(@RequestBody Map<String, Object> request) {
-        Integer playerId = (Integer) request.get("playerId");
-        Integer npcId = (Integer) request.get("npcId");
-        return npcTradeService.executeTrade(playerId, npcId);
+    @PostMapping("/proposal/accept")
+    public Map<String, Object> acceptProposal(@RequestBody Map<String, Object> request) {
+        Integer playerId = asInt(request.get("playerId"));
+        Integer npcId = asInt(request.get("npcId"));
+        return npcTradeProposalService.accept(playerId, npcId);
+    }
+
+    @PostMapping("/proposal/reject")
+    public Map<String, Object> rejectProposal(@RequestBody Map<String, Object> request) {
+        Integer playerId = asInt(request.get("playerId"));
+        Integer npcId = asInt(request.get("npcId"));
+        return npcTradeProposalService.reject(playerId, npcId);
     }
 
     @GetMapping("/history")
@@ -69,6 +80,35 @@ public class NpcTradeController {
         Integer playerId = (Integer) request.get("playerId");
         Integer npcId = (Integer) request.get("npcId");
         return npcTradeService.claimFreeReward(playerId, npcId);
+    }
+
+    @PostMapping("/gift")
+    public Map<String, Object> giftSurvival(@RequestBody Map<String, Object> request) {
+        Integer playerId = asInt(request.get("playerId"));
+        Integer npcId = asInt(request.get("npcId"));
+        int foodUnits = asIntOrZero(request.get("foodUnits"));
+        int woodKg = asIntOrZero(request.get("woodKg"));
+        int fuelKg = asIntOrZero(request.get("fuelKg"));
+        return npcTradeService.giftSurvival(playerId, npcId, foodUnits, woodKg, fuelKg);
+    }
+
+    private static Integer asInt(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        }
+        try {
+            return Integer.parseInt(String.valueOf(value).trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private static int asIntOrZero(Object value) {
+        Integer n = asInt(value);
+        return n == null ? 0 : Math.max(0, n);
     }
 
     /**

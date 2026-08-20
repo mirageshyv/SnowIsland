@@ -24,7 +24,17 @@ public final class PlayerStatusCatalog {
     public static final String DEAD_DESC =
             "天灾的舌锋舔舐过这具躯壳。所有的门扉都已阖上，再无应答。（无额外效果）";
 
+    public static final String BOUND_DESC =
+            "绳索勒进皮肉，四肢再难听从意志。（无法执行自由行动：生产、调查、隐藏、搬运、战斗等；无法执行夜间行动：密谋、暗杀、探索等；无法使用技能：格斗、射击、潜行等）";
+
+    public static final String BOUND_DENY_MESSAGE = "你处于束缚状态，无法执行该行动";
+
     private PlayerStatusCatalog() {
+    }
+
+    /** 仅检查 player.is_bound 列；含标记的完整判定见 TradeRestrictionService.isBoundActive。 */
+    public static boolean isBoundFlag(Player player) {
+        return player != null && Boolean.TRUE.equals(player.getIsBound());
     }
 
     private static boolean isDeadActive(Player player) {
@@ -35,7 +45,10 @@ public final class PlayerStatusCatalog {
         return injured != null && injured >= 3;
     }
 
-    private static boolean isSeverelyInjuredActive(Player player) {
+    public static boolean isSeverelyInjuredActive(Player player) {
+        if (player == null) {
+            return false;
+        }
         if (Boolean.TRUE.equals(player.getIsSeverelyInjured())) {
             return true;
         }
@@ -49,6 +62,10 @@ public final class PlayerStatusCatalog {
     }
 
     public static List<Map<String, Object>> buildStatusList(Player player) {
+        return buildStatusList(player, isBoundFlag(player));
+    }
+
+    public static List<Map<String, Object>> buildStatusList(Player player, boolean boundActive) {
         if (player == null) {
             return Collections.emptyList();
         }
@@ -61,6 +78,9 @@ public final class PlayerStatusCatalog {
         }
         if (isInjuredActive(player) && !isSeverelyInjuredActive(player) && !isDeadActive(player)) {
             list.add(statusEntry("受伤", 3, INJURED_DESC, "injured"));
+        }
+        if (boundActive) {
+            list.add(statusEntry("束缚", 3, BOUND_DESC, "bound"));
         }
         if (Boolean.TRUE.equals(player.getIsOverworked())) {
             list.add(statusEntry("过劳", 2, OVERWORKED_DESC, "overworked"));
@@ -82,10 +102,14 @@ public final class PlayerStatusCatalog {
 
     /** 格斗技能在战斗中是否无效 */
     public static boolean combatMeleeDisabled(Player player) {
+        return combatMeleeDisabled(player, isBoundFlag(player));
+    }
+
+    public static boolean combatMeleeDisabled(Player player, boolean boundActive) {
         if (player == null) {
             return false;
         }
-        if (isDeadActive(player) || isSeverelyInjuredActive(player)) {
+        if (boundActive || isDeadActive(player) || isSeverelyInjuredActive(player)) {
             return true;
         }
         return Boolean.TRUE.equals(player.getIsWeak()) || isInjuredActive(player);
@@ -93,25 +117,36 @@ public final class PlayerStatusCatalog {
 
     /** 射击技能在战斗中是否无效 */
     public static boolean combatRangedDisabled(Player player) {
+        return combatRangedDisabled(player, isBoundFlag(player));
+    }
+
+    public static boolean combatRangedDisabled(Player player, boolean boundActive) {
         if (player == null) {
             return false;
         }
-        if (isDeadActive(player) || isSeverelyInjuredActive(player)) {
+        if (boundActive || isDeadActive(player) || isSeverelyInjuredActive(player)) {
             return true;
         }
         return Boolean.TRUE.equals(player.getIsWeak());
     }
 
     public static Map<String, Object> combatFlags(Player player) {
+        return combatFlags(player, isBoundFlag(player));
+    }
+
+    public static Map<String, Object> combatFlags(Player player, boolean boundActive) {
         Map<String, Object> m = new LinkedHashMap<>();
-        m.put("combatMeleeDisabled", combatMeleeDisabled(player));
-        m.put("combatRangedDisabled", combatRangedDisabled(player));
-        m.put("combatSkillsDisabled", combatMeleeDisabled(player) && combatRangedDisabled(player));
+        boolean melee = combatMeleeDisabled(player, boundActive);
+        boolean ranged = combatRangedDisabled(player, boundActive);
+        m.put("combatMeleeDisabled", melee);
+        m.put("combatRangedDisabled", ranged);
+        m.put("combatSkillsDisabled", melee && ranged);
         m.put("isDead", isDeadActive(player));
         m.put("isSeverelyInjured", isSeverelyInjuredActive(player));
         m.put("isWeak", Boolean.TRUE.equals(player.getIsWeak()));
         m.put("isInjured", isInjuredActive(player));
         m.put("isOverworked", Boolean.TRUE.equals(player.getIsOverworked()));
+        m.put("isBound", boundActive);
         return m;
     }
 }

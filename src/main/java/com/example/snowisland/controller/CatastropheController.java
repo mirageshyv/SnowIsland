@@ -29,8 +29,9 @@ public class CatastropheController {
     }
 
     @PostMapping("/advance-day")
-    public ResponseEntity<Map<String, Object>> advanceDay() {
-        return ResponseEntity.ok(catastropheService.advanceDay());
+    public ResponseEntity<Map<String, Object>> advanceDay(
+            @RequestParam(required = false) Integer step) {
+        return ResponseEntity.ok(catastropheService.advanceDay(step));
     }
 
     @PostMapping("/draw-cards")

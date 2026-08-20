@@ -368,9 +368,10 @@ DB_HOST=mysql
 DB_PORT=3306
 
 # ============================================
-# AI 配置（可选）
+# AI 配置（可选；密钥放 gitignored 的 .env，不要写进仓库）
+# 复制 .env.example 为 .env 后填入
 # ============================================
-AI_API_KEY=sk-d98d8ccb78994b5fb3bee9cb1629017f
+AI_API_KEY=
 
 # ============================================
 # Spring 配置
@@ -993,7 +994,7 @@ docker compose up -d frontend
 | `DB_NAME` | 数据库名 | `snowisland` |
 | `DB_HOST` | 数据库主机 | `mysql` |
 | `DB_PORT` | 数据库端口 | `3306` |
-| `AI_API_KEY` | 通义千问 API Key | - |
+| `AI_API_KEY` | DeepSeek API Key（写入 gitignored `.env`，勿提交） | 空 |
 | `SPRING_PROFILES_ACTIVE` | Spring 环境 | `online` |
 
 ## 附录 C：端口清单

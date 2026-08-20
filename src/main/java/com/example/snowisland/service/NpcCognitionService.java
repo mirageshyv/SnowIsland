@@ -109,9 +109,7 @@ public class NpcCognitionService {
                     map.put("gender", npc.getGender().name());
                     map.put("introduction", npc.getIntroduction());
                     map.put("locationId", npc.getLocationId());
-                    map.put("personality", npc.getPersonality());
                     map.put("status", npc.getStatus());
-                    map.put("dialogueStyle", npc.getDialogueStyle());
                     map.put("avatarUrl", npc.getAvatarUrl());
 
                     npcFavorRepository.findByNpcIdAndPlayerId(npc.getId(), playerId).ifPresent(favor -> {
@@ -171,6 +169,9 @@ public class NpcCognitionService {
             case 天灾使者:
                 attitude = npc.getAttitudeScourge();
                 break;
+            case 平民:
+            case 外来者:
+            case 原住民:
             default:
                 return INITIAL_FAVOR_NEUTRAL;
         }

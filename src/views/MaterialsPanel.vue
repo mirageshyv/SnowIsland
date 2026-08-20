@@ -22,7 +22,7 @@ const typeConfig = {
   item: { label: '道具', color: 'blue', icon: '📦' },
   weapon: { label: '武器', color: 'red', icon: '⚔️' },
   ammo: { label: '子弹', color: 'amber', icon: '🎯' },
-  material: { label: '其他物资', color: 'emerald', icon: '🔧' }
+  material: { label: '物资', color: 'emerald', icon: '🔧' }
 }
 
 // 物品名称映射
@@ -45,7 +45,7 @@ const itemNamesMap = {
     15: '点火工具',
     16: '书写工具',
     17: '导航工具',
-    18: '食物补给',
+    18: '面包',
     19: '仓库钥匙',
     20: '燃料仓库钥匙',
     21: '镇武库钥匙',
@@ -53,7 +53,36 @@ const itemNamesMap = {
     23: '反叛者基地钥匙',
     24: '方舟钥匙',
     25: '火把',
-    26: '诅咒硬币'
+    26: '诅咒硬币',
+    27: '祭坛石',
+    28: '通灵笔记',
+    29: '发光矿石碎片',
+    30: '鱼鳞外套',
+    31: '契约铁卷',
+    32: '革命宣言',
+    33: '古老龙骨图',
+    34: '灰烬预言书',
+    35: '人皮册子残页',
+    36: '星象观测手稿',
+    37: '尸油蜡烛',
+    38: '深海鱼油蜡烛',
+    39: '旧地图',
+    40: '飞机部件·油箱',
+    41: '飞机部件·起落架',
+    42: '笔记本',
+    43: '钢笔',
+    44: '归墟罗盘',
+    45: '龙骨刻刀',
+    46: '灾厄之眼',
+    47: '引魂烛台',
+    48: '星轨轮盘',
+    49: '烬火旗',
+    50: '银币',
+    51: '情绪抑制器',
+    52: '共鸣石',
+    53: '铁砧小队·记录员莉迪亚的私人笔记（残卷）',
+    54: '飞机部件·副驾座',
+    55: '避难所钥匙',
   },
   weapon: {
     1: '制式手枪',
@@ -68,7 +97,9 @@ const itemNamesMap = {
     10: '电锯',
     11: '手术刀',
     12: '炸药',
-    13: '电钻'
+    13: '电钻',
+    14: '匕首',
+    15: '铁镐'
   },
   ammo: {
     1: '手枪弹',
@@ -121,7 +152,35 @@ const itemUnitsMap = {
     23: '把',
     24: '把',
     25: '把',
-    26: '个'
+    26: '个',
+    27: '枚',
+    28: '本',
+    29: '枚',
+    30: '件',
+    31: '卷',
+    32: '份',
+    33: '卷',
+    34: '本',
+    35: '页',
+    36: '份',
+    37: '支',
+    38: '支',
+    39: '张',
+    40: '个',
+    41: '个',
+    42: '本',
+    43: '支',
+    44: '个',
+    45: '把',
+    46: '枚',
+    47: '座',
+    48: '个',
+    49: '面',
+    50: '枚',
+    51: '个',
+    52: '枚',
+    53: '份',
+    54: '个'
   },
   weapon: {
     1: '把',
@@ -136,7 +195,9 @@ const itemUnitsMap = {
     10: '把',
     11: '把',
     12: 'kg',
-    13: '把'
+    13: '把',
+    14: '把',
+    15: '把'
   },
   ammo: {
     1: '枚',
@@ -168,7 +229,7 @@ const itemRemarksMap = {
     2: '提供光源',
     3: '限制行动',
     4: '发出信号',
-    5: '减少伤害',
+    5: '重伤降级或受伤无效',
     6: '提供防护',
     7: '发射信号',
     8: '修复物品',
@@ -181,30 +242,60 @@ const itemRemarksMap = {
     15: '点火工具',
     16: '书写工具',
     17: '导航工具',
-    18: '食物补给',
+    18: '额外白天行动点',
     19: '仓库通行',
     20: '燃料仓库通行',
     21: '镇武库通行',
     22: '码头集购站通行',
     23: '反叛者基地通行',
     24: '方舟通行',
-    25: '引燃与探索道具',
-    26: '无法丢弃的神秘硬币'
+    25: '夜间照明取暖与探索',
+    26: '无法丢弃的神秘硬币',
+    27: '地脉核心的封印碎片。持有即可地脉共鸣。快速行动：10单位资源互转，或所在地点防御+2。仪式材料可消耗1～3枚。原住民初始持有绑定个人仓库，不可被偷盗或被得知拥有，可交易或赠送。',
+    28: '一本古旧的笔记，最后一页空白。据说拥有者可以借助它举行某种仪式。',
+    29: '一块发出微弱脉动光的矿石碎片，可作为信物使用。',
+    30: '一件覆盖细密鳞片的外套。每天一次可作为防弹衣效果。不可交易，不可被偷盗或任何方式被得知拥有。',
+    31: '一卷用铁片串成的册子，记载着某种古老契约的完整条款。',
+    32: '一份用铅笔写在旧报纸边缘的宣言，字迹潦草但充满力量。',
+    33: '一卷发黄的羊皮纸，画着龙骨结构图，关键节点标注了奇怪的符文。',
+    34: '一本被烧过但依然可读的皮面书，书页边缘焦黑，核心内容完整。',
+    35: '装订怪异的册子残页，大部分已腐烂，记载着某种禁忌的内容。',
+    36: '一叠详细记录星轨与星象的手稿，出自五十年前的一位灯塔看守之手。',
+    37: '特制的蜡烛，燃烧时散发奇异的气味。据说是某些仪式的必需品。',
+    38: '以深海鱼油制成的蜡烛，点燃后火焰呈幽蓝色。',
+    39: '一张残旧的地图，标注着某个地点的大致位置。',
+    40: '飞机用金属油箱，保存完好，可以安装使用。',
+    41: '飞机起落架组件，结构完整，可以安装使用。',
+    42: '一本可以书写记录的笔记本，初始5页。不可交易。',
+    43: '一支可以正常书写的钢笔。不可交易。',
+    44: '一枚刻满螺旋纹路的青铜盘，中心嵌着一颗永不下沉的黑色石子。',
+    45: '一把由鲸骨打磨成的刻刀，刀柄镶嵌着一颗已石化的鱼眼珠。',
+    46: '一枚黑色玻璃球，内部有不断旋转的暗红色雾气。',
+    47: '一座三足青铜烛台，底座刻着扭曲的符文。',
+    48: '一个用黑曜石磨成的圆盘，表面刻着黄道十二宫符号，中心有一处凹槽。',
+    49: '一面被烧得只剩一半的旗帜，无论如何烧都不会彻底化为灰烬。',
+    50: '一枚刻着衔尾蛇图案的旧银币，握在手中有刺骨的凉意。据说银币不属于活人。',
+    51: '半头盔式银灰色合金装置，内衬黑色织物。侧面按钮与指示灯大多熄灭，一颗暗红色灯缓慢闪烁。内侧绣着「铁砧小队·标准配置·情绪抑制模块·型号MK-II」。装备后获得「情绪抑制」状态，持续到持有者主动解除或装备损坏。后续部分清醒仪式以此为源头。',
+    52: '婴儿拳头大小深灰色卵石，握紧有节律震动，一端金属接口刻「白鸥小队·共鸣石·编号04」。消耗1次快速行动感知约200米内是否存在地脉异常点（只告知有/无）。每2天一次；用后眩晕耳鸣约半小时检定-1。夜晚闭眼使用可能看见不属于这个时代的残片，并获得持续1天的轻微「潮汐症」。',
+    53: '铁砧小队记录员莉迪亚留下的残卷笔记。夹杂实验日志与个人感受：我们以为在观察这座岛，实际上这座岛也在观察我们。',
+    54: '飞机副驾驶座组件，结构完整，可以安装使用。'
   },
   weapon: {
-    1: '标准配备',
-    2: '威力较大',
-    3: '非致命武器',
-    4: '近战武器',
-    5: '多功能刀具',
-    6: '狩猎工具',
-    7: '远程武器',
-    8: '挖掘工具',
-    9: '砍伐工具',
-    10: '切割工具',
-    11: '医疗工具',
-    12: '爆炸物',
-    13: '钻孔工具'
+    1: '威胁值5',
+    2: '威胁值6',
+    3: '威胁值1',
+    4: '威胁值2',
+    5: '威胁值2',
+    6: '威胁值3',
+    7: '威胁值4',
+    8: '威胁值1',
+    9: '威胁值2',
+    10: '威胁值4',
+    11: '威胁值1',
+    12: '威胁值极高',
+    13: '钻孔工具',
+    14: '一把锋利的匕首，便于隐蔽携带。威胁值2。',
+    15: '结实的铁镐，可用于挖掘，紧急时也可作为武器。威胁值2。'
   },
   ammo: {
     1: '制式手枪子弹',
@@ -215,7 +306,7 @@ const itemRemarksMap = {
   material: {
     1: '可用于制作工具',
     2: '可用于建造',
-    3: '多种用途',
+    3: '可提升探索成功程度',
     4: '建筑材料',
     5: '恢复饥饿',
     6: '建筑材料',
@@ -225,7 +316,7 @@ const itemRemarksMap = {
     10: '机械动力',
     11: '船只推进',
     12: '发电设备',
-    13: '燃料与医疗资源'
+    13: '1单位=1医疗资源'
   }
 }
 
@@ -242,7 +333,10 @@ const weaponThreatMap = {
   9: 2,
   10: 4,
   11: 1,
-  12: 10
+  12: 10,
+  13: 1,
+  14: 2,
+  15: 2
 }
 
 // 弹药适用武器映射
@@ -281,7 +375,30 @@ const itemIconMap = {
     23: '🔑',
     24: '🔑',
     25: '🔥',
-    26: '🪙'
+    26: '🪙',
+    27: '✨',
+    28: '📔',
+    29: '💎',
+    30: '🐟',
+    31: '📜',
+    32: '📃',
+    33: '🦴',
+    34: '📕',
+    35: '📄',
+    36: '🌟',
+    37: '🕯️',
+    38: '🕯️',
+    39: '🗺️',
+    40: '⛽',
+    41: '⚙️',
+    42: '📓',
+    43: '🖊️',
+    44: '🧭',
+    45: '🔪',
+    46: '👁️',
+    47: '🕯️',
+    48: '⭐',
+    49: '🚩'
   },
   weapon: {
     1: '🔫',
@@ -295,7 +412,10 @@ const itemIconMap = {
     9: '🪓',
     10: '⚙️',
     11: '🔪',
-    12: '💣'
+    12: '💣',
+    13: '🔧',
+    14: '🗡️',
+    15: '⛏️'
   },
   ammo: {
     1: '🎯',
@@ -354,8 +474,8 @@ const transformItem = (type, item) => {
   const itemId = Number(item.id)
   return {
     id: itemId,
-    name: itemNamesMap[type]?.[itemId] || '未知物品',
-    unit: itemUnitsMap[type]?.[itemId] || '个',
+    name: (item.name && String(item.name).trim()) || itemNamesMap[type]?.[itemId] || '未知物品',
+    unit: (item.unit && String(item.unit).trim()) || itemUnitsMap[type]?.[itemId] || '个',
     quantity: item.quantity,
     remark: (item.remark && String(item.remark).trim()) || itemRemarksMap[type]?.[itemId] || '',
     icon: itemIconMap[type]?.[itemId] || '📦',
@@ -438,12 +558,25 @@ const toggleType = (type) => {
 // 全选/取消全选
 const toggleAll = () => {
   if (selectedTypes.value.length === 4) {
-    // 如果全选，则只保留第一个
     selectedTypes.value = ['item']
   } else {
-    // 否则全选
     selectedTypes.value = ['item', 'weapon', 'ammo', 'material']
   }
+}
+
+function typeCount(type) {
+  if (type === 'item') return currentItems.value.length
+  if (type === 'weapon') return currentWeapons.value.length
+  if (type === 'ammo') return currentAmmo.value.length
+  if (type === 'material') return currentMaterials.value.length
+  return 0
+}
+
+const typeChipOn = {
+  item: 'bg-sky-500/25 text-sky-100 border-sky-400/50',
+  weapon: 'bg-rose-500/25 text-rose-100 border-rose-400/50',
+  ammo: 'bg-amber-500/25 text-amber-100 border-amber-400/50',
+  material: 'bg-emerald-500/25 text-emerald-100 border-emerald-400/50',
 }
 
 // 获取威胁值颜色
@@ -484,69 +617,34 @@ onUnmounted(() => {
 
 <template>
   <div class="max-w-7xl">
-    <!-- 页面标题 -->
-    <div class="mb-6">
-      <h1 class="text-white mb-1 tracking-tight text-2xl">物资管理</h1>
-      <p class="text-gray-500 text-sm">物资与装备管理</p>
-    </div>
-
-    <!-- 筛选控制区域 -->
-    <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-2xl p-5 mb-6">
-      <div class="flex flex-wrap items-center gap-4">
-        <span class="text-gray-400 text-sm font-medium">显示类型：</span>
-        
-        <!-- 全选按钮 -->
+    <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h1 class="text-white mb-1 tracking-tight text-2xl">背包</h1>
+        <p class="text-gray-500 text-sm">物资与装备管理</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-1.5">
         <button
           type="button"
-          class="px-4 py-2 rounded-xl text-sm font-medium transition-all"
-          :class="selectedTypes.length === 4 ? 'bg-blue-500/30 text-blue-400 border border-blue-500/50' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'"
+          class="px-2.5 py-1 rounded-lg text-xs font-medium border"
+          :class="selectedTypes.length === 4
+            ? 'bg-white/15 text-white border-white/25'
+            : 'bg-transparent text-gray-400 border-white/10 hover:text-white hover:border-white/20'"
           @click="toggleAll"
         >
           全部
         </button>
-
-        <!-- 分隔线 -->
-        <div class="w-px h-6 bg-white/10"></div>
-
-        <!-- 各类型筛选按钮 -->
         <button
           v-for="(config, type) in typeConfig"
           :key="type"
           type="button"
-          class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
-          :class="selectedTypes.includes(type) ? `bg-${config.color}-500/30 text-${config.color}-400 border border-${config.color}-500/50` : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'"
+          class="px-2.5 py-1 rounded-lg text-xs font-medium border"
+          :class="selectedTypes.includes(type)
+            ? typeChipOn[type]
+            : 'bg-transparent text-gray-400 border-white/10 hover:text-gray-200 hover:border-white/20'"
           @click="toggleType(type)"
         >
-          <img
-            :src="getTypeTabImage(type)"
-            alt=""
-            class="w-7 h-7 object-contain shrink-0 opacity-90"
-          />
-          <span>{{ config.label }}</span>
-          <span 
-            v-if="type === 'item' && currentItems.length > 0"
-            class="text-xs px-1.5 py-0.5 rounded-full bg-white/10"
-          >
-            {{ currentItems.length }}
-          </span>
-          <span 
-            v-if="type === 'weapon' && currentWeapons.length > 0"
-            class="text-xs px-1.5 py-0.5 rounded-full bg-white/10"
-          >
-            {{ currentWeapons.length }}
-          </span>
-          <span 
-            v-if="type === 'ammo' && currentAmmo.length > 0"
-            class="text-xs px-1.5 py-0.5 rounded-full bg-white/10"
-          >
-            {{ currentAmmo.length }}
-          </span>
-          <span 
-            v-if="type === 'material' && currentMaterials.length > 0"
-            class="text-xs px-1.5 py-0.5 rounded-full bg-white/10"
-          >
-            {{ currentMaterials.length }}
-          </span>
+          {{ config.label }}
+          <span v-if="typeCount(type)" class="opacity-70 ml-0.5">{{ typeCount(type) }}</span>
         </button>
       </div>
     </div>

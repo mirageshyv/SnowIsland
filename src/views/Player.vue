@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import MaterialsPanel from './MaterialsPanel.vue'
+import PlayerNotebookView from './PlayerNotebookView.vue'
 import TradePanel from './TradePanel.vue'
 import ArkProgressView from './ArkProgressView.vue'
 import ShelterProgressView from './ShelterProgressView.vue'
@@ -16,10 +17,12 @@ import WarehouseView from './WarehouseView.vue'
 import PlayerNpcView from './PlayerNpcView.vue'
 import MinesweeperGame from './MinesweeperGame.vue'
 import SnowEffect from '../components/SnowEffect.vue'
+import PlayerTutorialOverlay from '../components/PlayerTutorialOverlay.vue'
 import { tradeAPI, playerAPI, milestoneAPI, gameStateAPI, playerConsumptionAPI, loreAPI } from '../utils/api.js'
 import { sumPersonalFoodAndFuel, formatKgForDisplay } from '../utils/playerResources.js'
 import { getMaterialImageUrlOrDefault } from '../data/gameData.js'
 import { useSidebar } from '../composables/useSidebar.js'
+import { usePlayerTutorial } from '../composables/usePlayerTutorial.js'
 
 const { collapsed, mobileOpen, isMobile, toggle: toggleSidebar, closeMobile, sidebarVisible } = useSidebar()
 
@@ -48,6 +51,33 @@ const consumptionSaving = ref(false)
 const consumptionMessage = ref(null)
 const showOverFuelConfirm = ref(false)
 
+const {
+  prompting: tutorialPrompting,
+  playing: tutorialPlaying,
+  active: tutorialActive,
+  currentStep: tutorialStep,
+  stepIndex: tutorialStepIndex,
+  stepCount: tutorialStepCount,
+  isCardStep: tutorialIsCard,
+  canPrev: tutorialCanPrev,
+  isLast: tutorialIsLast,
+  measureGen: tutorialMeasureGen,
+  replay: replayTutorial,
+  skip: skipTutorial,
+  next: nextTutorial,
+  prev: prevTutorial,
+  tryOfferPrompt: tryOfferTutorial,
+  acceptPrompt: acceptTutorial,
+  declinePrompt: declineTutorial,
+} = usePlayerTutorial({
+  playerId,
+  getFaction: () => playerInfo.value?.faction || '',
+  setTab: (tab) => { activeTab.value = tab },
+  collapsed,
+  mobileOpen,
+  isMobile,
+})
+
 /** 仅冒险者可见「方舟建造进度」 */
 const showArkTab = computed(() => playerInfo.value?.faction === '冒险者')
 /** 仅统治者可见「统治者避难所」 */
@@ -56,10 +86,10 @@ const showShelterTab = computed(() => playerInfo.value?.faction === '统治者')
 const showMilestoneTab = computed(() => playerInfo.value?.faction === '反叛者')
 /** 仅天灾使者可见「天灾降临」 */
 const showCatastropheTab = computed(() => playerInfo.value?.faction === '天灾使者')
-/** Faction strategic actions — not available to civilians */
+/** Faction strategic actions — not available to civilians / 外来者 / 原住民 */
 const showFactionActionsTab = computed(() => {
   const f = playerInfo.value?.faction
-  return f && f !== '平民'
+  return f && f !== '平民' && f !== '外来者' && f !== '原住民'
 })
 /** Night actions — available to all factions including civilians */
 const showNightActionsTab = computed(() => {
@@ -238,6 +268,13 @@ const negativeStatuses = computed(() => {
       name: '受伤',
       severity: 3,
       description: '一道痕迹。它尚未决心吞噬你的命数——至少此刻，它还在犹豫。（你已经受伤了，再次受伤会恶化，无法生产，格斗技能无效）'
+    })
+  }
+  if (p.isBound) {
+    list.push({
+      name: '束缚',
+      severity: 3,
+      description: '绳索勒进皮肉，四肢再难听从意志。（无法执行自由行动：生产、调查、隐藏、搬运、战斗等；无法执行夜间行动：密谋、暗杀、探索等；无法使用技能：格斗、射击、潜行等）'
     })
   }
   return list
@@ -507,10 +544,16 @@ const handleLogout = () => {
 }
 
 watch(activeTab, (tab) => {
-  if (tab === 'info' && playerInfo.value) {
+  if (tab === 'info' && playerInfo.value && !tutorialActive.value) {
     fetchPlayerInfo()
   }
 })
+
+watch([playerInfo, loading, error], () => {
+  if (playerInfo.value && !loading.value && !error.value) {
+    tryOfferTutorial()
+  }
+}, { flush: 'post' })
 
 onMounted(() => {
   console.log('Player page mounted, playerId:', playerId)
@@ -525,7 +568,10 @@ onUnmounted(() => {
 
 <template>
   <!-- h-screen + overflow-hidden：侧栏固定；仅右侧 main 纵向滚动 -->
-  <div class="flex h-screen max-h-[100dvh] overflow-hidden bg-[#0a0e1a]">
+  <div
+    class="flex h-screen max-h-[100dvh] overflow-hidden bg-[#0a0e1a]"
+    :class="{ 'select-none': tutorialActive }"
+  >
     <!-- 移动端遮罩层 -->
     <div
       v-if="isMobile && mobileOpen"
@@ -539,6 +585,7 @@ onUnmounted(() => {
       type="button"
       class="fixed top-3 left-3 z-40 w-11 h-11 flex items-center justify-center rounded-xl bg-sky-600/90 border border-sky-400/80 text-white shadow-lg shadow-sky-500/30 active:scale-95 transition-transform"
       aria-label="打开导航菜单"
+      data-tutorial="hamburger"
       @click="toggleSidebar"
     >
       <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -591,7 +638,11 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <nav class="min-h-0 flex-1 overflow-y-auto py-2" :class="isMobile ? 'p-4' : (collapsed ? 'px-1' : 'p-4')">
+      <nav
+        data-tutorial="sidebar"
+        class="min-h-0 flex-1 overflow-y-auto py-2"
+        :class="isMobile ? 'p-4' : (collapsed ? 'px-1' : 'p-4')"
+      >
         <button
           type="button"
           class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
@@ -604,6 +655,32 @@ onUnmounted(() => {
         >
           <span v-if="!isMobile && collapsed">👤</span>
           <span v-else>个人信息</span>
+        </button>
+        <button
+          type="button"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
+          :class="[
+            activeTab === 'materials' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
+            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
+          ]"
+          :title="(!isMobile && collapsed) ? '背包' : ''"
+          @click="activeTab = 'materials'; isMobile && closeMobile()"
+        >
+          <span v-if="!isMobile && collapsed">🎒</span>
+          <span v-else>背包</span>
+        </button>
+        <button
+          type="button"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
+          :class="[
+            activeTab === 'notebook' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
+            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
+          ]"
+          :title="(!isMobile && collapsed) ? '笔记本' : ''"
+          @click="activeTab = 'notebook'; isMobile && closeMobile()"
+        >
+          <span v-if="!isMobile && collapsed">📓</span>
+          <span v-else>笔记本</span>
         </button>
         <button
           type="button"
@@ -658,40 +735,6 @@ onUnmounted(() => {
         >
           <span v-if="!isMobile && collapsed">💬</span>
           <span v-else>快速交互</span>
-        </button>
-        <button
-          type="button"
-          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px] relative"
-          :class="[
-            activeTab === 'ruleBook' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
-            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
-          ]"
-          :title="(!isMobile && collapsed) ? '规则书' : ''"
-          @click="activeTab = 'ruleBook'; refreshLoreUnread(); isMobile && closeMobile()"
-        >
-          <span v-if="!isMobile && collapsed">📖</span>
-          <span v-else class="flex items-center gap-2">
-            规则书
-            <span
-              v-if="loreUnreadCount > 0"
-              class="min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-black text-[10px] font-bold flex items-center justify-center"
-            >
-              {{ loreUnreadCount }}
-            </span>
-          </span>
-        </button>
-        <button
-          type="button"
-          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
-          :class="[
-            activeTab === 'materials' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
-            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
-          ]"
-          :title="(!isMobile && collapsed) ? '物资管理' : ''"
-          @click="activeTab = 'materials'; isMobile && closeMobile()"
-        >
-          <span v-if="!isMobile && collapsed">🎒</span>
-          <span v-else>物资管理</span>
         </button>
         <button
           v-if="showArkTab"
@@ -769,7 +812,7 @@ onUnmounted(() => {
             activeTab === 'trade' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
             (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
           ]"
-          :title="(!isMobile && collapsed) ? '交易管理' : ''"
+          :title="(!isMobile && collapsed) ? '交易' : ''"
           @click="handleTradeTabClick(); isMobile && closeMobile()"
         >
           <template v-if="!isMobile && collapsed">
@@ -786,7 +829,7 @@ onUnmounted(() => {
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                 </svg>
-                <span>交易管理</span>
+                <span>交易</span>
               </span>
               <span
                 v-if="pendingTradesCount > 0"
@@ -809,6 +852,27 @@ onUnmounted(() => {
         >
           <span v-if="!isMobile && collapsed">👥</span>
           <span v-else>NPC 交互</span>
+        </button>
+        <button
+          type="button"
+          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px] relative"
+          :class="[
+            activeTab === 'ruleBook' ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
+            (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center'
+          ]"
+          :title="(!isMobile && collapsed) ? '规则书' : ''"
+          @click="activeTab = 'ruleBook'; refreshLoreUnread(); isMobile && closeMobile()"
+        >
+          <span v-if="!isMobile && collapsed">📖</span>
+          <span v-else class="flex items-center gap-2">
+            规则书
+            <span
+              v-if="loreUnreadCount > 0"
+              class="min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-black text-[10px] font-bold flex items-center justify-center"
+            >
+              {{ loreUnreadCount }}
+            </span>
+          </span>
         </button>
         <button
           type="button"
@@ -875,7 +939,7 @@ onUnmounted(() => {
           <div v-if="dashboardProfile" class="min-h-full">
 
                 <!-- Header -->
-                <div class="mb-10 relative" style="z-index: 10;">
+                <div data-tutorial="profile" class="mb-10 relative" style="z-index: 10;">
                   <div class="flex items-end justify-between mb-6 gap-6">
                     <div class="min-w-0">
                       <div class="flex flex-wrap items-center gap-3">
@@ -966,11 +1030,37 @@ onUnmounted(() => {
                             </div>
                           </Transition>
                         </div>
+
+                        <div
+                          v-if="Array.isArray(playerInfo.markers) && playerInfo.markers.length"
+                          class="flex flex-wrap gap-2"
+                        >
+                          <span
+                            v-for="(marker, idx) in playerInfo.markers"
+                            :key="`${marker.name}-${idx}`"
+                            :title="marker.note || ''"
+                            class="px-3 py-1.5 bg-purple-900/40 border border-purple-700/50 rounded-lg text-purple-300 text-xs md:text-sm"
+                          >
+                            标记：{{ marker.name }}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
                     <div class="text-right shrink-0">
-                      <div class="flex items-center justify-end gap-2 mb-2">
+                      <div class="flex items-center justify-end gap-2 mb-2 flex-wrap">
+                        <button
+                          type="button"
+                          class="px-3 py-1.5 text-xs md:text-sm text-gray-200 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors flex items-center gap-2 will-change-transform transform-gpu disabled:opacity-50"
+                          :disabled="tutorialActive"
+                          @click="replayTutorial"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          重新观看引导
+                        </button>
                         <button
                           type="button"
                           class="px-3 py-1.5 text-xs md:text-sm text-gray-200 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors flex items-center gap-2 will-change-transform transform-gpu"
@@ -996,7 +1086,7 @@ onUnmounted(() => {
                   <!-- Left Column -->
                   <div class="col-span-12 lg:col-span-5 space-y-6 md:space-y-8">
                     <!-- Resources -->
-                    <div class="relative group">
+                    <div data-tutorial="survival" class="relative group">
                       <div class="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-yellow-500/10 rounded-2xl blur-xl transition-all duration-300 ease-out group-hover:blur-2xl"></div>
                       <div class="relative bg-slate-900/80 border border-slate-700/50 rounded-2xl p-6 transition-all duration-200 ease-out hover:border-amber-500/50 will-change-transform transform-gpu">
                         <div class="text-slate-400 text-xs md:text-sm mb-4 tracking-wider">个人资源</div>
@@ -1155,6 +1245,21 @@ onUnmounted(() => {
                       </div>
                     </div>
 
+                    <!-- Hidden identity (self + DM only) -->
+                    <div v-if="playerInfo.hiddenJob" class="relative group">
+                      <div class="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-orange-500/5 rounded-2xl transition-all duration-300 ease-out group-hover:from-amber-500/10 group-hover:to-orange-500/10"></div>
+                      <div class="relative bg-slate-900/60 border-l-4 border-amber-500 rounded-2xl p-8 md:p-10 transition-all duration-200 ease-out hover:border-amber-400 will-change-transform transform-gpu">
+                        <div class="flex flex-wrap items-center gap-2 mb-3">
+                          <div class="text-slate-400 text-xs uppercase tracking-wider">隐藏身份 · {{ playerInfo.hiddenJob }}</div>
+                          <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">仅你自己与主持人可见</span>
+                        </div>
+                        <h3 class="text-3xl md:text-4xl text-amber-300 font-bold mb-4">{{ playerInfo.hiddenJobSkills || '隐藏技能' }}</h3>
+                        <p class="text-slate-300 text-sm md:text-base leading-relaxed whitespace-pre-line">
+                          {{ playerInfo.hiddenJobDescription }}
+                        </p>
+                      </div>
+                    </div>
+
                     <!-- Trait -->
                     <div class="relative group">
                       <div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-2xl transition-all duration-300 ease-out group-hover:from-purple-500/10 group-hover:to-pink-500/10"></div>
@@ -1178,11 +1283,30 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div v-else-if="activeTab === 'materials'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+      <div
+        v-else-if="activeTab === 'materials'"
+        data-tutorial="materials"
+        style="background: rgba(15, 20, 35, 0.9);"
+        class="rounded-xl p-6"
+      >
         <MaterialsPanel />
       </div>
 
-      <div v-else-if="activeTab === 'actions'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+      <div
+        v-else-if="activeTab === 'notebook'"
+        data-tutorial="notebook"
+        style="background: rgba(15, 20, 35, 0.9);"
+        class="rounded-xl p-6"
+      >
+        <PlayerNotebookView />
+      </div>
+
+      <div
+        v-else-if="activeTab === 'actions'"
+        data-tutorial="actions"
+        style="background: rgba(26, 36, 54, 0.94);"
+        class="rounded-xl p-6"
+      >
         <ActionSubmitView embedded />
       </div>
 
@@ -1190,7 +1314,12 @@ onUnmounted(() => {
         <FactionActionSubmitView />
       </div>
 
-      <div v-else-if="activeTab === 'nightActions' && showNightActionsTab" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+      <div
+        v-else-if="activeTab === 'nightActions' && showNightActionsTab"
+        data-tutorial="nightActions"
+        style="background: rgba(15, 20, 35, 0.9);"
+        class="rounded-xl p-6"
+      >
         <NightActionSubmitView />
       </div>
 
@@ -1198,7 +1327,12 @@ onUnmounted(() => {
         <QuickInteractionView />
       </div>
 
-      <div v-else-if="activeTab === 'ruleBook'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+      <div
+        v-else-if="activeTab === 'ruleBook'"
+        data-tutorial="ruleBook"
+        style="background: rgba(15, 20, 35, 0.9);"
+        class="rounded-xl p-6"
+      >
         <p
           v-if="loreUnreadCount > 0"
           class="mb-4 text-amber-300/90 text-sm border border-amber-500/30 bg-amber-500/10 rounded-lg px-4 py-2"
@@ -1208,19 +1342,39 @@ onUnmounted(() => {
         <RuleBookView embedded :player-faction="playerInfo?.faction || ''" @lore-unread-updated="(n) => { loreUnreadCount = n }" />
       </div>
 
-      <div v-else-if="activeTab === 'ark' && showArkTab" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+      <div
+        v-else-if="activeTab === 'ark' && showArkTab"
+        data-tutorial="ark"
+        style="background: rgba(15, 20, 35, 0.9);"
+        class="rounded-xl p-6"
+      >
         <ArkProgressView embedded />
       </div>
 
-      <div v-else-if="activeTab === 'shelter' && showShelterTab" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+      <div
+        v-else-if="activeTab === 'shelter' && showShelterTab"
+        data-tutorial="shelter"
+        style="background: rgba(15, 20, 35, 0.9);"
+        class="rounded-xl p-6"
+      >
         <ShelterProgressView mode="ruler" />
       </div>
 
-      <div v-else-if="activeTab === 'milestone' && showMilestoneTab" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+      <div
+        v-else-if="activeTab === 'milestone' && showMilestoneTab"
+        data-tutorial="milestone"
+        style="background: rgba(15, 20, 35, 0.9);"
+        class="rounded-xl p-6"
+      >
         <RebelMilestoneView embedded />
       </div>
 
-      <div v-else-if="activeTab === 'catastrophe' && showCatastropheTab" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+      <div
+        v-else-if="activeTab === 'catastrophe' && showCatastropheTab"
+        data-tutorial="catastrophe"
+        style="background: rgba(15, 20, 35, 0.9);"
+        class="rounded-xl p-6"
+      >
         <CatastrophePanel :is-dm="false" embedded />
       </div>
 
@@ -1232,11 +1386,21 @@ onUnmounted(() => {
         <WarehouseView />
       </div>
 
-      <div v-else-if="activeTab === 'trade'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+      <div
+        v-else-if="activeTab === 'trade'"
+        data-tutorial="trade"
+        style="background: rgba(15, 20, 35, 0.9);"
+        class="rounded-xl p-6"
+      >
         <TradePanel ref="tradePanelRef" />
       </div>
 
-      <div v-else-if="activeTab === 'npc'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+      <div
+        v-else-if="activeTab === 'npc'"
+        data-tutorial="npc"
+        style="background: rgba(15, 20, 35, 0.9);"
+        class="rounded-xl p-6"
+      >
         <PlayerNpcView />
       </div>
 
@@ -1277,6 +1441,23 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
+
+    <PlayerTutorialOverlay
+      :prompting="tutorialPrompting"
+      :playing="tutorialPlaying"
+      :current-step="tutorialStep"
+      :step-index="tutorialStepIndex"
+      :step-count="tutorialStepCount"
+      :is-card-step="tutorialIsCard"
+      :can-prev="tutorialCanPrev"
+      :is-last="tutorialIsLast"
+      :measure-gen="tutorialMeasureGen"
+      @skip="skipTutorial"
+      @prev="prevTutorial"
+      @next="nextTutorial"
+      @accept="acceptTutorial"
+      @decline="declineTutorial"
+    />
   </div>
 </template>
 

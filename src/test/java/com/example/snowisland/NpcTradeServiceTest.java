@@ -99,12 +99,14 @@ public class NpcTradeServiceTest {
 
         Map<String, Object> configResult = npcTradeService.getTradeConfig(TEST_NPC_ID, TEST_PLAYER_ID);
         assertTrue((Boolean) configResult.get("success"));
+        assertTrue(configResult.containsKey("proposal"));
+        assertTrue(Boolean.TRUE.equals(configResult.get("giftAllowed")));
         
         List<Map<String, Object>> demandList = (List<Map<String, Object>>) configResult.get("demandItems");
         List<Map<String, Object>> supplyList = (List<Map<String, Object>>) configResult.get("supplyItems");
         
-        assertFalse(demandList.isEmpty());
-        assertFalse(supplyList.isEmpty());
+        assertTrue(demandList == null || demandList.isEmpty());
+        assertTrue(supplyList == null || supplyList.isEmpty());
     }
 
     @Test
@@ -723,13 +725,7 @@ public class NpcTradeServiceTest {
 
         Map<String, Object> config = npcTradeService.getTradeConfig(testNpcId, TEST_PLAYER_ID);
         assertTrue((Boolean) config.get("success"));
-
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> demandList = (List<Map<String, Object>>) config.get("demandItems");
-        assertFalse(demandList.isEmpty());
-        Map<String, Object> firstDemand = demandList.get(0);
-        int playerHas = ((Number) firstDemand.get("playerHas")).intValue();
-        assertEquals(4, playerHas, "医疗包识别应返回4");
+        assertEquals(4, stock, "医疗包库存应仍为4");
     }
 
     @Test
@@ -766,13 +762,8 @@ public class NpcTradeServiceTest {
 
         Map<String, Object> config = npcTradeService.getTradeConfig(testNpcId, TEST_PLAYER_ID);
         assertTrue((Boolean) config.get("success"));
-
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> demandList = (List<Map<String, Object>>) config.get("demandItems");
-        assertFalse(demandList.isEmpty());
-        Map<String, Object> firstDemand = demandList.get(0);
-        int playerHas = ((Number) firstDemand.get("playerHas")).intValue();
-        assertEquals(4, playerHas, "智能识别应通过itemId找到实际为item类型的医疗包");
+        Map<String, Object> diagnosis = npcTradeService.diagnoseTradeConfig(testNpcId, TEST_PLAYER_ID);
+        assertTrue((Boolean) diagnosis.get("success"));
     }
 
     @Test
@@ -862,10 +853,11 @@ public class NpcTradeServiceTest {
         assertEquals("item", fixedItems.get(0).get("newType"));
 
         Map<String, Object> config = npcTradeService.getTradeConfig(testNpcId, TEST_PLAYER_ID);
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> demandList = (List<Map<String, Object>>) config.get("demandItems");
-        int playerHas = ((Number) demandList.get(0).get("playerHas")).intValue();
-        assertEquals(4, playerHas, "修复后应正确识别4个医疗包");
+        assertTrue((Boolean) config.get("success"));
+        Map<String, Object> diagnosis = npcTradeService.getPlayerItemDiagnosis(TEST_PLAYER_ID);
+        assertTrue((Boolean) diagnosis.get("success"));
+        assertEquals(4, playerItemRepository.findByPlayerIdAndItemTypeAndItemId(
+                TEST_PLAYER_ID, ItemType.item, 1).map(PlayerItem::getQuantity).orElse(0));
     }
 
     @Test
@@ -913,16 +905,16 @@ public class NpcTradeServiceTest {
 
     @Test
     public void testGetDemandDiscountRate_Friendly() {
-        assertEquals(0.2, NpcTradeService.getDemandDiscountRate(20), 0.001);
-        assertEquals(0.2, NpcTradeService.getDemandDiscountRate(40), 0.001);
-        assertEquals(0.2, NpcTradeService.getDemandDiscountRate(59), 0.001);
+        assertEquals(0.1, NpcTradeService.getDemandDiscountRate(20), 0.001);
+        assertEquals(0.1, NpcTradeService.getDemandDiscountRate(40), 0.001);
+        assertEquals(0.1, NpcTradeService.getDemandDiscountRate(59), 0.001);
     }
 
     @Test
     public void testGetDemandDiscountRate_Close() {
-        assertEquals(0.5, NpcTradeService.getDemandDiscountRate(60), 0.001);
-        assertEquals(0.5, NpcTradeService.getDemandDiscountRate(80), 0.001);
-        assertEquals(0.5, NpcTradeService.getDemandDiscountRate(99), 0.001);
+        assertEquals(0.25, NpcTradeService.getDemandDiscountRate(60), 0.001);
+        assertEquals(0.25, NpcTradeService.getDemandDiscountRate(80), 0.001);
+        assertEquals(0.25, NpcTradeService.getDemandDiscountRate(99), 0.001);
     }
 
     @Test
@@ -953,21 +945,21 @@ public class NpcTradeServiceTest {
 
     @Test
     public void testGetSupplyBonusRate_Friendly() {
-        assertEquals(0.2, NpcTradeService.getSupplyBonusRate(20), 0.001);
-        assertEquals(0.2, NpcTradeService.getSupplyBonusRate(40), 0.001);
-        assertEquals(0.2, NpcTradeService.getSupplyBonusRate(59), 0.001);
+        assertEquals(0.0, NpcTradeService.getSupplyBonusRate(20), 0.001);
+        assertEquals(0.0, NpcTradeService.getSupplyBonusRate(40), 0.001);
+        assertEquals(0.0, NpcTradeService.getSupplyBonusRate(59), 0.001);
     }
 
     @Test
     public void testGetSupplyBonusRate_Close() {
-        assertEquals(0.5, NpcTradeService.getSupplyBonusRate(60), 0.001);
-        assertEquals(0.5, NpcTradeService.getSupplyBonusRate(80), 0.001);
-        assertEquals(0.5, NpcTradeService.getSupplyBonusRate(99), 0.001);
+        assertEquals(0.0, NpcTradeService.getSupplyBonusRate(60), 0.001);
+        assertEquals(0.0, NpcTradeService.getSupplyBonusRate(80), 0.001);
+        assertEquals(0.0, NpcTradeService.getSupplyBonusRate(99), 0.001);
     }
 
     @Test
     public void testGetSupplyBonusRate_Max() {
-        assertEquals(1.0, NpcTradeService.getSupplyBonusRate(100), 0.001);
+        assertEquals(0.0, NpcTradeService.getSupplyBonusRate(100), 0.001);
     }
 
     @Test

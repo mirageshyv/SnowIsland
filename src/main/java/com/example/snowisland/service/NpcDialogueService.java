@@ -39,8 +39,11 @@ public class NpcDialogueService {
     public static final String FAVOR_LEVEL_FRIENDLY = "友善";
     public static final String FAVOR_LEVEL_CLOSE = "亲近";
 
+    /** 同一 NPC 对话加好感全程上限 */
+    public static final int MAX_DIALOGUE_FAVOR = 75;
+
     /** 每日对话上限配置 */
-    @Value("${npc.dialogue.daily-limit:10}")
+    @Value("${npc.dialogue.daily-limit:5}")
     private int dailyDialogueLimit;
 
     @Autowired
@@ -69,6 +72,9 @@ public class NpcDialogueService {
 
     @Autowired
     private SpecialClueService specialClueService;
+
+    @Autowired
+    private NpcTradeProposalService npcTradeProposalService;
 
     /**
      * 获取好感度等级描述
@@ -215,15 +221,18 @@ public class NpcDialogueService {
 
             int currentFavor = getOrCreateFavor(npcId, playerId);
 
-            String npcReply = generateNpcReplyWithClue(npc, message, currentFavor, playerId);
+            AiDialogueService.NpcTurn turn = generateNpcTurnWithClue(npc, message, currentFavor, playerId);
+            String npcReply = turn.reply;
+            int favorChange = turn.favorChange;
+            if (favorChange > 0) {
+                int already = sumPositiveDialogueFavor(playerId, npcId);
+                int remaining = Math.max(0, MAX_DIALOGUE_FAVOR - already);
+                favorChange = Math.min(favorChange, remaining);
+            }
 
             if ("受伤".equals(npcStatus)) {
                 npcReply += "（你可以支付1个医疗包帮助npc恢复健康，请使用快速交互与dm描述行动）";
             }
-
-            int favorChange = aiDialogueService.calculateFavorChangeWithAI(
-                    npc.getName(), npc.getJob(), npc.getPersonality(),
-                    message, currentFavor);
 
             int newFavor = Math.max(MIN_FAVOR, Math.min(MAX_FAVOR, currentFavor + favorChange));
 
@@ -254,6 +263,14 @@ public class NpcDialogueService {
             result.put("remainingChats", remainingChats);
             result.put("locked", false);
             result.put("dailyLimit", dailyDialogueLimit);
+            result.put("tradeProposed", false);
+            putDialogueFavorCaps(result, playerId, npcId);
+
+            Map<String, Object> proposal = npcTradeProposalService.maybeProposeAfterChat(playerId, npcId, message);
+            if (proposal != null && Boolean.TRUE.equals(proposal.get("tradeProposed"))) {
+                result.put("tradeProposed", true);
+                result.put("tradeId", proposal.get("tradeId"));
+            }
 
         } catch (Exception e) {
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
@@ -348,6 +365,17 @@ public class NpcDialogueService {
             favor.setFavorValue(favorValue);
             npcFavorRepository.save(favor);
         }
+    }
+
+    private int sumPositiveDialogueFavor(Integer playerId, Integer npcId) {
+        return Math.max(0, npcDialogueRepository.sumPositiveFavor(playerId, npcId));
+    }
+
+    private void putDialogueFavorCaps(Map<String, Object> result, Integer playerId, Integer npcId) {
+        int total = sumPositiveDialogueFavor(playerId, npcId);
+        result.put("dialogueFavorTotal", total);
+        result.put("dialogueFavorCap", MAX_DIALOGUE_FAVOR);
+        result.put("dialogueFavorRemaining", Math.max(0, MAX_DIALOGUE_FAVOR - total));
     }
 
     /**
@@ -450,6 +478,7 @@ public class NpcDialogueService {
         result.put("message", locked ? 
             "今日与该NPC的交流次数已用完（" + currentCount + "/" + dailyDialogueLimit + "），请等待明天重置。" : 
             "剩余交流次数: " + remainingChats + "/" + dailyDialogueLimit);
+        putDialogueFavorCaps(result, playerId, npcId);
         
         return result;
     }
@@ -508,69 +537,41 @@ public class NpcDialogueService {
         return result;
     }
 
-    /**
-     * 生成NPC回复（调用AI生成）
-     */
-    private String generateNpcReply(LocationNpc npc, String playerMessage, int currentFavor) {
-        return aiDialogueService.generateNpcReply(
-            npc.getName(),
-            npc.getJob(),
-            npc.getPersonality(),
-            npc.getIntroduction(),
-            playerMessage,
-            currentFavor
-        );
-    }
-
-    /**
-     * 生成NPC回复（包含特殊线索触发检查）
-     */
-    private String generateNpcReplyWithClue(LocationNpc npc, String playerMessage, int currentFavor, Integer playerId) {
+    private AiDialogueService.NpcTurn generateNpcTurnWithClue(LocationNpc npc, String playerMessage, int currentFavor, Integer playerId) {
         String npcMatchedKeyword = checkNpcClueKeywords(npc, playerMessage);
         if (npcMatchedKeyword != null && npc.getSpecialClueContent() != null && !npc.getSpecialClueContent().trim().isEmpty()) {
             logger.info("NPC自定义线索触发: npcId={}, keyword={}", npc.getId(), npcMatchedKeyword);
-            String reply = aiDialogueService.generateClueReply(
-                npc.getName(),
-                npc.getJob(),
-                npc.getPersonality(),
-                npc.getIntroduction(),
-                playerMessage,
-                npc.getSpecialClueContent(),
-                currentFavor
-            );
-            return reply;
+            return aiDialogueService.generateNpcTurn(
+                npc.getName(), npc.getJob(), npc.getPersonality(), npc.getDialogueStyle(),
+                npc.getIntroduction(), playerMessage, currentFavor, npc.getSpecialClueContent());
         }
 
         Map<String, Object> clueCheck = specialClueService.checkKeywordMatch(playerMessage, playerId, npc.getId());
-        
+
         if ((Boolean) clueCheck.get("matched") && (Boolean) clueCheck.get("triggered")) {
             Map<String, Object> clueData = (Map<String, Object>) clueCheck.get("clue");
             String clueContent = (String) clueData.get("content");
             String matchedKeyword = (String) clueCheck.get("matchedKeyword");
-            
-            String reply = aiDialogueService.generateClueReply(
-                npc.getName(),
-                npc.getJob(),
-                npc.getPersonality(),
-                npc.getIntroduction(),
-                playerMessage,
-                clueContent,
-                currentFavor
-            );
-            
+
+            AiDialogueService.NpcTurn turn = aiDialogueService.generateNpcTurn(
+                npc.getName(), npc.getJob(), npc.getPersonality(), npc.getDialogueStyle(),
+                npc.getIntroduction(), playerMessage, currentFavor, clueContent);
+
             try {
                 com.example.snowisland.entity.SpecialClue clue = new com.example.snowisland.entity.SpecialClue();
                 clue.setId((Integer) clueData.get("id"));
                 clue.setClueCode((String) clueData.get("clueCode"));
-                specialClueService.logTrigger(playerId, npc.getId(), clue, playerMessage, matchedKeyword, reply);
+                specialClueService.logTrigger(playerId, npc.getId(), clue, playerMessage, matchedKeyword, turn.reply);
             } catch (Exception e) {
                 logger.warn("记录线索触发日志失败: {}", e.getMessage());
             }
-            
-            return reply;
+
+            return turn;
         }
-        
-        return generateNpcReply(npc, playerMessage, currentFavor);
+
+        return aiDialogueService.generateNpcTurn(
+            npc.getName(), npc.getJob(), npc.getPersonality(), npc.getDialogueStyle(),
+            npc.getIntroduction(), playerMessage, currentFavor, null);
     }
 
     /**
@@ -604,7 +605,7 @@ public class NpcDialogueService {
         String lowerMsg = message.toLowerCase();
 
         if (lowerMsg.contains("谢谢") || lowerMsg.contains("感谢") || lowerMsg.contains("帮助")) {
-            return 5;
+            return 3;
         }
 
         if (lowerMsg.contains("你好") || lowerMsg.contains("hello") || lowerMsg.contains("hi")) {
@@ -612,33 +613,33 @@ public class NpcDialogueService {
         }
 
         if (lowerMsg.contains("道歉") || lowerMsg.contains("对不起")) {
-            return 3;
+            return 2;
         }
 
         if (lowerMsg.contains("资源") || lowerMsg.contains("交易") || lowerMsg.contains("钱")) {
             if (npc.getJob().contains("商人")) {
-                return 3;
+                return 2;
             }
             return 0;
         }
 
         if (lowerMsg.contains("信仰") || lowerMsg.contains("主") || lowerMsg.contains("神")) {
             if (npc.getJob().contains("神父") || npc.getJob().contains("牧师")) {
-                return 5;
+                return 3;
             }
             return 0;
         }
 
         if (lowerMsg.contains("武器") || lowerMsg.contains("战斗") || lowerMsg.contains("危险")) {
             if (npc.getJob().contains("猎人") || npc.getJob().contains("铁匠")) {
-                return 3;
+                return 2;
             }
             return 0;
         }
 
         if (lowerMsg.contains("医疗") || lowerMsg.contains("药") || lowerMsg.contains("受伤")) {
             if (npc.getJob().contains("医") || npc.getJob().contains("护士")) {
-                return 5;
+                return 3;
             }
             return 0;
         }
@@ -665,9 +666,7 @@ public class NpcDialogueService {
         map.put("gender", npc.getGender().name());
         map.put("introduction", npc.getIntroduction());
         map.put("locationId", npc.getLocationId());
-        map.put("personality", npc.getPersonality());
         map.put("status", npc.getStatus());
-        map.put("dialogueStyle", npc.getDialogueStyle());
         map.put("avatarUrl", npc.getAvatarUrl());
 
         if (playerId != null) {

@@ -5,7 +5,8 @@ import {
   getMaterialImageUrlOrDefault,
   getTypeTabImage,
   preloadMaterialImages,
-  getWeaponThreatBadgeClass
+  getWeaponThreatBadgeClass,
+  syncThreatInRemark
 } from '../data/gameData.js'
 
 const props = defineProps({
@@ -470,7 +471,7 @@ defineExpose({ openPlayer: (id) => { selectedPlayerId.value = id } })
                 v-if="selectedRow.description"
                 class="text-gray-400 text-sm leading-relaxed text-left flex-1 overflow-y-auto max-h-48 border-t border-white/5 pt-3"
               >
-                {{ selectedRow.description }}
+                {{ syncThreatInRemark(selectedRow.description, selectedRow.threatLevel) }}
               </p>
             </template>
           </template>

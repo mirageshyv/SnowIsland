@@ -6,6 +6,7 @@ html,
 body,
 #app {
   min-height: 100%;
+  color-scheme: dark;
 }
 
 body {
@@ -15,9 +16,16 @@ body {
   color: #e5e7eb;
 }
 
-select option {
-  color: #000000;
-  background-color: #ffffff;
+select,
+select option,
+select optgroup {
+  color-scheme: dark;
+}
+
+select option,
+select optgroup {
+  color: #e8eaed;
+  background-color: #1a2332;
 }
 
 /* Custom scrollbar */

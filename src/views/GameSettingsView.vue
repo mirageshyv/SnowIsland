@@ -17,10 +17,11 @@ const form = ref({
   catastropheTriggered: false,
   extraCardDue: false,
   requiredFoodUnits: 2,
-  requiredFuelKg: 15
+  requiredFuelKg: 25
 })
 
 const catastropheProgress = ref(0)
+const advanceStep = ref('')
 
 const phaseOptions = [
   { value: 'DAY', label: '白天' },
@@ -47,7 +48,7 @@ async function load() {
         catastropheTriggered: Boolean(state.catastropheTriggered),
         extraCardDue: Boolean(state.extraCardDue),
         requiredFoodUnits: Math.max(0, Math.floor(Number(state.requiredFoodUnits) || 2)),
-        requiredFuelKg: Math.max(0, Math.floor(Number(state.requiredFuelKg) || 15))
+        requiredFuelKg: Math.max(0, Math.floor(Number(state.requiredFuelKg) || 25))
       }
     } else {
       error.value = state?.message || '无法加载游戏状态'
@@ -99,11 +100,21 @@ async function save() {
 
 async function advanceDay() {
   if (!confirm('推进一天将同时增加天灾进度，并可能触发天灾。确定继续？')) return
+  let step = null
+  const raw = String(advanceStep.value ?? '').trim()
+  if (raw !== '') {
+    const parsed = Number(raw)
+    if (!Number.isInteger(parsed) || parsed < 0 || parsed > 100) {
+      error.value = '进度步进须为 0–100 的整数'
+      return
+    }
+    step = parsed
+  }
   advancing.value = true
   message.value = null
   error.value = ''
   try {
-    const result = await catastropheAPI.advanceDay()
+    const result = await catastropheAPI.advanceDay(step)
     if (result?.success) {
       form.value.currentDay = Number(result.currentDay) || form.value.currentDay + 1
       if (result.catastropheTriggered) {
@@ -122,11 +133,13 @@ async function advanceDay() {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  load()
+})
 </script>
 
 <template>
-  <div class="max-w-2xl">
+  <div class="max-w-7xl">
     <div class="mb-6">
       <h1 class="text-white text-2xl font-semibold tracking-tight mb-1">游戏设置</h1>
       <p class="text-gray-500 text-sm">管理全局游戏状态。玩家「个人信息」页会同步显示当前天数。</p>
@@ -140,7 +153,7 @@ onMounted(load)
       <p v-if="error" class="mb-4 text-red-400 text-sm">{{ error }}</p>
       <p v-if="message" class="mb-4 text-emerald-400 text-sm">{{ message }}</p>
 
-      <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-2xl p-6 space-y-6">
+      <div class="max-w-xl bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-2xl p-6 space-y-6">
         <div>
           <label class="block text-gray-400 text-xs mb-2">当前天数</label>
           <div class="flex flex-wrap items-center gap-3">
@@ -153,6 +166,18 @@ onMounted(load)
               class="w-28 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-lg font-semibold tabular-nums focus:outline-none focus:border-cyan-500/50"
             />
             <span class="text-gray-500 text-sm">第 {{ form.currentDay }} 天</span>
+            <label class="flex items-center gap-2 text-gray-400 text-xs shrink-0">
+              <span class="whitespace-nowrap">进度步进（留空默认33/34）</span>
+              <input
+                v-model="advanceStep"
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                placeholder="—"
+                class="w-16 bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm tabular-nums focus:outline-none focus:border-cyan-500/50"
+              />
+            </label>
             <button
               type="button"
               class="ml-auto px-4 py-2 rounded-lg bg-purple-600/30 border border-purple-500/40 text-purple-200 text-sm hover:bg-purple-600/40 disabled:opacity-50"
@@ -162,7 +187,7 @@ onMounted(load)
               {{ advancing ? '推进中…' : '推进一天（天灾进度）' }}
             </button>
           </div>
-          <p class="text-gray-600 text-xs mt-2">天灾进度：{{ catastropheProgress }}%（推进一天 +33/34）</p>
+          <p class="text-gray-600 text-xs mt-2">天灾进度：{{ catastropheProgress }}%（推进一天 +33/34，或自定义步进）</p>
         </div>
 
         <div>
@@ -209,7 +234,7 @@ onMounted(load)
               step="1"
               class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white tabular-nums focus:outline-none focus:border-cyan-500/50"
             />
-            <p class="text-gray-600 text-xs mt-1">默认15热值；木材1kg：1热值，燃料1kg：15热值</p>
+            <p class="text-gray-600 text-xs mt-1">默认 25 热值；木材1kg：1热值，燃料1kg：15热值</p>
           </div>
         </div>
 
@@ -247,6 +272,7 @@ onMounted(load)
           </button>
         </div>
       </div>
+
     </template>
   </div>
 </template>

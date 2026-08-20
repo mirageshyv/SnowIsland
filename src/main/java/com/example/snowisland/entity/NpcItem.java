@@ -1,0 +1,44 @@
+package com.example.snowisland.entity;
+
+import com.example.snowisland.entity.TradeItem.ItemType;
+
+import javax.persistence.*;
+
+@Entity
+@Table(name = "npc_items", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_npc_item", columnNames = {"npc_id", "item_type", "item_id"})
+})
+public class NpcItem {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(name = "npc_id", nullable = false)
+    private Integer npcId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "item_type", nullable = false, length = 20)
+    private ItemType itemType;
+
+    @Column(name = "item_id", nullable = false)
+    private Integer itemId;
+
+    @Column(nullable = false)
+    private Integer quantity = 0;
+
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
+
+    public Integer getNpcId() { return npcId; }
+    public void setNpcId(Integer npcId) { this.npcId = npcId; }
+
+    public ItemType getItemType() { return itemType; }
+    public void setItemType(ItemType itemType) { this.itemType = itemType; }
+
+    public Integer getItemId() { return itemId; }
+    public void setItemId(Integer itemId) { this.itemId = itemId; }
+
+    public Integer getQuantity() { return quantity; }
+    public void setQuantity(Integer quantity) { this.quantity = quantity; }
+}

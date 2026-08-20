@@ -1,9 +1,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { nightActionAPI } from '@/utils/api.js'
+import { useGameDayScope } from '@/composables/useGameDayScope.js'
 import { FACTION_LABELS, GM_FACTION_TABS, PAYLOAD_FIELD_LABELS } from '@/data/nightActions.js'
 
 const actions = ref([])
+const { currentGameDay, dayOptions, loadGameState } = useGameDayScope()
 const loading = ref(true)
 const filterGameDay = ref('1')
 const filterFaction = ref('')
@@ -71,7 +73,11 @@ function formatPayload(payload) {
     .join('\n')
 }
 
-onMounted(() => fetchActions())
+onMounted(async () => {
+  await loadGameState()
+  filterGameDay.value = String(currentGameDay.value || 1)
+  await fetchActions()
+})
 </script>
 
 <template>
@@ -86,9 +92,9 @@ onMounted(() => fetchActions())
           <div>
             <label class="block text-gray-500 text-xs mb-1.5">天数</label>
             <select v-model="filterGameDay" class="filter-select" @change="fetchActions">
-              <option value="1">第1天</option>
-              <option value="2">第2天</option>
-              <option value="3">第3天</option>
+              <option v-for="d in dayOptions" :key="d" :value="String(d)">
+                第{{ d }}天{{ d === currentGameDay ? '（当前）' : '' }}
+              </option>
             </select>
           </div>
           <div>

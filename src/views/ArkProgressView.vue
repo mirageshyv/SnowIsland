@@ -13,11 +13,14 @@ const investForm = ref({ wood: 0, metal: 0, sealant: 0 })
 const removeForm = ref({ wood: 0, metal: 0, sealant: 0 })
 const installing = ref(false)
 const removing = ref(false)
+const savingBonus = ref(false)
+const bonusInput = ref(0)
 
 const currentUserRole = computed(() => (localStorage.getItem('userRole') || 'player').toLowerCase().trim())
 const isDm = computed(() => currentUserRole.value === 'dm')
 
 const arkCurrentProgress = computed(() => arkData.value?.completionPercentage || 0)
+const arkBonusPercentage = computed(() => Number(arkData.value?.bonusPercentage) || 0)
 
 const showThresholdLine = computed(() => arkCurrentProgress.value < 50)
 
@@ -33,8 +36,8 @@ const resourceCards = computed(() => {
   if (!arkData.value) return []
   const d = arkData.value
   return [
-    { name: '木材', current: d.currentWood || 0, max: d.targetWood || 25, unit: '吨' },
-    { name: '金属制品', current: d.currentMetal || 0, max: d.targetMetal || 10, unit: '吨' },
+    { name: '木材', current: d.currentWood || 0, max: d.targetWood || 250, unit: '吨' },
+    { name: '金属制品', current: d.currentMetal || 0, max: d.targetMetal || 100, unit: '吨' },
     { name: '密封材料', current: d.currentSealant || 0, max: d.targetSealant || 100, unit: 'kg' },
   ]
 })
@@ -70,6 +73,7 @@ async function fetchArkStatus() {
     const data = await arkAPI.getStatus()
     if (data?.success) {
       arkData.value = data
+      bonusInput.value = Number(data.bonusPercentage) || 0
     }
   } catch (error) {
     console.error('获取方舟状态失败:', error)
@@ -202,6 +206,50 @@ async function buildSail() {
   }
 }
 
+async function saveBonus() {
+  if (!isDm.value) {
+    ElMessage.warning('您没有权限进行此操作')
+    return
+  }
+  if (bonusInput.value === null || bonusInput.value === undefined || Number.isNaN(bonusInput.value)) {
+    ElMessage.warning('请输入有效的加成值')
+    return
+  }
+  try {
+    savingBonus.value = true
+    const userId = localStorage.getItem('userId')
+    const response = await fetch(`/api/ark/bonus?value=${bonusInput.value}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        userId,
+      },
+    })
+    const text = await response.text()
+    let result = null
+    try {
+      result = text ? JSON.parse(text) : {}
+    } catch {
+      result = { success: false, message: text || `请求失败 (${response.status})` }
+    }
+    if (!response.ok) {
+      ElMessage.error(result?.message || `请求失败 (${response.status})`)
+      return
+    }
+    if (result?.success) {
+      ElMessage.success(result.message || '仪式加成设置成功')
+      arkData.value = result.data
+      bonusInput.value = Number(result.data?.bonusPercentage) || 0
+    } else {
+      ElMessage.error(result?.message || '设置失败')
+    }
+  } catch {
+    ElMessage.error('设置失败')
+  } finally {
+    savingBonus.value = false
+  }
+}
+
 async function resetArk() {
   if (!isDm.value) {
     ElMessage.warning('您没有权限进行此操作')
@@ -212,6 +260,7 @@ async function resetArk() {
     if (result?.success) {
       ElMessage.success('重置成功')
       arkData.value = result.data
+      bonusInput.value = Number(result.data?.bonusPercentage) || 0
     }
   } catch {
     ElMessage.error('重置失败')
@@ -280,9 +329,36 @@ onMounted(() => {
 
             <div class="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 md:mb-8">
               <h2 class="text-white text-xl md:text-2xl font-bold tracking-wide">整体进度</h2>
-              <div class="text-4xl md:text-6xl font-black bg-gradient-to-br from-cyan-300 via-blue-400 to-cyan-500 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(6,182,212,0.5)] tabular-nums">
-                {{ Number(arkCurrentProgress).toFixed(1) }}%
+              <div class="text-right">
+                <div class="text-4xl md:text-6xl font-black bg-gradient-to-br from-cyan-300 via-blue-400 to-cyan-500 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(6,182,212,0.5)] tabular-nums">
+                  {{ Number(arkCurrentProgress).toFixed(1) }}%
+                </div>
+                <p v-if="arkBonusPercentage !== 0" class="text-sm text-amber-400/90 mt-1 tabular-nums">
+                  含仪式加成 {{ arkBonusPercentage > 0 ? '+' : '' }}{{ Number(arkBonusPercentage).toFixed(1) }}%
+                </p>
               </div>
+            </div>
+
+            <div v-if="isDm" class="relative mb-6 flex flex-col sm:flex-row sm:items-end gap-3">
+              <div class="flex-1 max-w-xs">
+                <label class="text-xs text-gray-500 block mb-1">完成度加成% (仪式效果)</label>
+                <input
+                  v-model.number="bonusInput"
+                  type="number"
+                  min="-100"
+                  max="100"
+                  step="0.1"
+                  class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors duration-150"
+                />
+              </div>
+              <button
+                type="button"
+                :disabled="savingBonus"
+                class="px-4 py-2 bg-amber-500/20 text-amber-400 rounded-lg text-sm hover:bg-amber-500/30 border border-amber-500/30 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                @click="saveBonus"
+              >
+                {{ savingBonus ? '保存中...' : '保存加成' }}
+              </button>
             </div>
 
             <div class="relative w-full h-6 md:h-8 rounded-full overflow-visible">

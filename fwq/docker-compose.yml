@@ -6,12 +6,10 @@ services:
     image: mysql:8
     container_name: snowisland-mysql
     restart: unless-stopped
-    ports:
-      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./config/mysql.cnf:/etc/mysql/conf.d/mysql.cnf:ro
-      - ./snowisland_1.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./snowisland.sql:/docker-entrypoint-initdb.d/init.sql:ro
     environment:
       MYSQL_ROOT_PASSWORD: "695390489"
       MYSQL_DATABASE: snowisland
@@ -35,10 +33,11 @@ services:
     container_name: snowisland-backend
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     volumes:
       - ./logs:/var/log/snowisland
       - ./config:/usr/local/java/config:ro
+      - ./uploads:/usr/local/java/uploads
     environment:
       TZ: Asia/Shanghai
       DB_HOST: mysql
@@ -46,7 +45,10 @@ services:
       DB_NAME: snowisland
       DB_USER: "root"
       DB_PASSWORD: "695390489"
-      AI_API_KEY: "sk-d98d8ccb78994b5fb3bee9cb1629017f"
+      AI_API_KEY: "${AI_API_KEY:-}"
+      AI_API_URL: "${AI_API_URL:-https://api.deepseek.com/chat/completions}"
+      AI_MODEL: "${AI_MODEL:-deepseek-v4-flash}"
+      AI_MAX_TOKENS: "${AI_MAX_TOKENS:-80}"
       SPRING_PROFILES_ACTIVE: online
       SPRING_CONFIG_LOCATION: /usr/local/java/config/application.yml,/usr/local/java/config/application-online.yml
     depends_on:
@@ -55,7 +57,7 @@ services:
     networks:
       - snowisland
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/ark/status"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -71,7 +73,7 @@ services:
     container_name: snowisland-frontend
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "127.0.0.1:80:80"
     depends_on:
       - backend
     networks:

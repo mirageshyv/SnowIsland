@@ -30,7 +30,7 @@ import imgAlcohol from '@/assets/医用酒精.png?url'
 import imgMatches from '@/assets/火柴.png?url'
 import imgPencil from '@/assets/铅笔.png?url'
 import imgSeaChart from '@/assets/破损海图.png?url'
-import imgBento from '@/assets/便当.png?url'
+import imgBento from '@/assets/面包.png?url'
 import imgFood from '@/assets/Food.png?url'
 import imgFuel from '@/assets/Fuel.png?url'
 import imgServicePistol from '@/assets/制式手枪.png?url'
@@ -67,6 +67,7 @@ import imgExplosives from '@/assets/炸药.png?url'
 import imgTorch from '@/assets/火把.png?url'
 import imgCursedCoin from '@/assets/诅咒硬币.png?url'
 import imgPlantAsh from '@/assets/草木灰.png?url'
+import { normalizeShelterTransportAlias } from '@/utils/transportForm.js'
 
 // -----------------------------
 // 物资管理页：图片映射
@@ -98,6 +99,7 @@ const ITEM_IMAGES = {
   24: imgArkKey,
   25: imgTorch,
   26: imgCursedCoin,
+  55: imgWarehouseKey,
 }
 
 const WEAPON_IMAGES = {
@@ -167,7 +169,7 @@ export const GAME_ITEM_NAMES = {
     15: '火柴',
     16: '铅笔',
     17: '破损海图',
-    18: '便当',
+    18: '面包',
     19: '矿场仓库钥匙',
     20: '燃料仓库钥匙',
     21: '镇武库钥匙',
@@ -176,6 +178,35 @@ export const GAME_ITEM_NAMES = {
     24: '方舟钥匙',
     25: '火把',
     26: '诅咒硬币',
+    27: '祭坛石',
+    28: '通灵笔记',
+    29: '发光矿石碎片',
+    30: '鱼鳞外套',
+    31: '契约铁卷',
+    32: '革命宣言',
+    33: '古老龙骨图',
+    34: '灰烬预言书',
+    35: '人皮册子残页',
+    36: '星象观测手稿',
+    37: '尸油蜡烛',
+    38: '深海鱼油蜡烛',
+    39: '旧地图',
+    40: '飞机部件·油箱',
+    41: '飞机部件·起落架',
+    42: '笔记本',
+    43: '钢笔',
+    44: '归墟罗盘',
+    45: '龙骨刻刀',
+    46: '灾厄之眼',
+    47: '引魂烛台',
+    48: '星轨轮盘',
+    49: '烬火旗',
+    50: '银币',
+    51: '情绪抑制器',
+    52: '共鸣石',
+    53: '铁砧小队·记录员莉迪亚的私人笔记（残卷）',
+    54: '飞机部件·副驾座',
+    55: '避难所钥匙',
   },
   weapon: {
     1: '制式手枪',
@@ -190,6 +221,8 @@ export const GAME_ITEM_NAMES = {
     10: '电锯',
     11: '手术刀',
     12: '炸药',
+    13: '电钻',
+    15: '铁镐',
   },
   ammo: {
     1: '手枪弹',
@@ -212,6 +245,23 @@ export const GAME_ITEM_NAMES = {
     12: '发电机',
     13: '草木灰',
   },
+}
+
+/** 前端交易侧过滤用；不可交易判定以数据库 item.tradable 为准 */
+export const NON_TRADABLE_ITEM_IDS = new Set([30, 42, 43])
+
+/**
+ * 描述文本中的「威胁值N」按数据库 threat_level 动态渲染，避免改威胁值后描述数字过期。
+ * 无数字的写法（如「威胁值极高」）不受影响。
+ * @param {string} remark
+ * @param {number|string|null} threatLevel
+ */
+export function syncThreatInRemark(remark, threatLevel) {
+  const text = remark || ''
+  if (!text || threatLevel == null) return text
+  const t = Number(threatLevel)
+  if (!Number.isFinite(t)) return text
+  return text.replace(/威胁值\s*\d+/g, `威胁值${t}`)
 }
 
 /**
@@ -247,9 +297,10 @@ const WAREHOUSE_LABELS = {
   dock: '码头集换站',
   rebel: '反叛者基地',
   ark: '方舟仓库',
+  shelter: '避难所仓库',
 }
 
-const TRANSPORT_MODE_LABELS = {
+const TRANSPORT_MODE_LABELS_ACTION = {
   warehouse_to_warehouse: '仓库→仓库（上限500千克）',
   warehouse_to_player: '仓库→个人（上限300千克）',
   player_to_warehouse: '个人→仓库（上限300千克）',
@@ -259,12 +310,27 @@ const TRANSPORT_MODE_LABELS = {
   player_to_shelter: '个人→避难所（上限300千克）',
 }
 
-const STRUCTURED_NOTE_LINE = /^\[(mode|source|dest|item|target|player_deducted):/
+const TRANSPORT_MODE_LABELS_FREE = {
+  warehouse_to_warehouse: '仓库→仓库（免费档上限100千克，海岛50千克）',
+  warehouse_to_player: '仓库→个人（免费档上限50千克）',
+  player_to_warehouse: '个人→仓库（免费档上限50千克）',
+  warehouse_to_shelter: '仓库→避难所（免费档上限50千克）',
+  shelter_to_warehouse: '避难所→仓库（免费档上限50千克，仅统治者）',
+  shelter_to_player: '避难所→个人（免费档上限50千克，仅统治者）',
+  player_to_shelter: '个人→避难所（免费档上限50千克）',
+}
 
-/** @returns {{ mode: string, source: string, dest: string, items: Array<{ itemType: string, itemId: string, quantity: string, weight: string }> } | null} */
+function transportModeDisplayLabel(mode, free) {
+  const table = free ? TRANSPORT_MODE_LABELS_FREE : TRANSPORT_MODE_LABELS_ACTION
+  return table[mode] || mode
+}
+
+const STRUCTURED_NOTE_LINE = /^\[(mode|source|dest|item|target|player_deducted|tier):/
+
+/** @returns {{ mode: string, source: string, dest: string, tier: string, items: Array<{ itemType: string, itemId: string, quantity: string, weight: string }> } | null} */
 export function parseTransportNotes(notes) {
   if (!notes) return null
-  const info = { mode: '', source: '', dest: '', targetPlayerId: '', items: [] }
+  const info = { mode: '', source: '', dest: '', tier: '', targetPlayerId: '', items: [] }
   let hasStructured = false
   for (const line of String(notes).split('\n')) {
     const trimmed = line.trim()
@@ -272,6 +338,10 @@ export function parseTransportNotes(notes) {
       hasStructured = true
       const closeIdx = trimmed.indexOf(']')
       if (closeIdx > 8) info.targetPlayerId = trimmed.substring(8, closeIdx)
+    } else if (trimmed.startsWith('[tier:')) {
+      hasStructured = true
+      const closeIdx = trimmed.indexOf(']')
+      if (closeIdx > 6) info.tier = trimmed.substring(6, closeIdx)
     } else if (trimmed.startsWith('[mode:')) {
       hasStructured = true
       const closeIdx = trimmed.indexOf(']')
@@ -300,7 +370,7 @@ export function parseTransportNotes(notes) {
       }
     }
   }
-  return hasStructured ? info : null
+  return hasStructured ? normalizeShelterTransportAlias(info) : null
 }
 
 function warehouseLabel(key, warehouseNameByKey = {}) {
@@ -310,12 +380,15 @@ function warehouseLabel(key, warehouseNameByKey = {}) {
 }
 
 /** 将搬运结构化备注格式化为中文（供 DM 查看玩家提交） */
-export function formatTransportNotesForDisplay(notes, warehouseNameByKey = {}) {
+export function formatTransportNotesForDisplay(notes, warehouseNameByKey = {}, options = {}) {
   const info = parseTransportNotes(notes)
   if (!info) return ''
   const lines = []
   if (info.mode) {
-    lines.push(`模式：${TRANSPORT_MODE_LABELS[info.mode] || info.mode}`)
+    const free = options.free === true
+      || options.actionSlot === 0
+      || String(info.tier || '').toLowerCase() === 'free'
+    lines.push(`模式：${transportModeDisplayLabel(info.mode, free)}`)
   }
   if (info.source) lines.push(`源仓库：${warehouseLabel(info.source, warehouseNameByKey)}`)
   if (info.dest) lines.push(`目标仓库：${warehouseLabel(info.dest, warehouseNameByKey)}`)
@@ -341,7 +414,9 @@ export function extractFreeformPlayerNotes(notes) {
 export function getPlayerNotesDisplay(action, warehouseNameByKey = {}) {
   if (!action?.notes?.trim()) return '（无备注）'
   if (action.actionType === 'transport') {
-    const plan = formatTransportNotesForDisplay(action.notes, warehouseNameByKey)
+    const plan = formatTransportNotesForDisplay(action.notes, warehouseNameByKey, {
+      actionSlot: action.actionSlot,
+    })
     const free = extractFreeformPlayerNotes(action.notes)
     if (plan) return free ? `${plan}\n\n${free}` : plan
     return free || '（无备注）'
@@ -509,8 +584,14 @@ export function actionShortLabel(action) {
   return label
 }
 
+export function actionSlotHeading(action) {
+  if (!action) return ''
+  if (action.actionSlot === 0) return '免费搬运 / 快速行动'
+  return `行动${action.actionSlot}`
+}
+
 /** Combined copy-paste summary for both action slots. */
-export function buildPlayerFeedbackSummary(playerName, gameDay, slot1, slot2) {
+export function buildPlayerFeedbackSummary(playerName, gameDay, slot1, slot2, freeTransports = []) {
   const day = gameDay ?? ''
   const lines = [`【${playerName} · 第${day}天 行动反馈总结】`, '']
   const slots = [
@@ -533,6 +614,20 @@ export function buildPlayerFeedbackSummary(playerName, gameDay, slot1, slot2) {
     }
     lines.push('')
   }
+  const extras = Array.isArray(freeTransports) ? freeTransports : []
+  extras.forEach((a, i) => {
+    const n = extras.length > 1 ? `免费搬运${i + 1}` : '免费搬运'
+    lines.push(`${n}（${actionShortLabel(a)} / 快速行动）`)
+    const draft = getDmFeedbackDraft(a)
+    if (draft) {
+      lines.push(draft)
+    } else if (a.status === 'feedbacked') {
+      lines.push('（已处理，无反馈文案）')
+    } else {
+      lines.push('（待反馈）')
+    }
+    lines.push('')
+  })
   return lines.join('\n').trim()
 }
 
@@ -612,7 +707,7 @@ export const SHELTER_ITEM_CATALOG = {
   flashlight: { id: 'flashlight', name: '手电筒', category: 'prop', description: '夜间行动照明工具。', imageUrl: imgFlashlight },
   handcuffs: { id: 'handcuffs', name: '手铐', category: 'prop', description: '约束目标行动的控制道具。', imageUrl: imgHandcuffs },
   whistle: { id: 'whistle', name: '哨子', category: 'prop', description: '可用于报警或快速集合。', imageUrl: imgWhistle },
-  body_armor: { id: 'body_armor', name: '防弹衣', category: 'prop', description: '冲突中提供额外防护。', imageUrl: imgBodyArmor },
+  body_armor: { id: 'body_armor', name: '防弹衣', category: 'prop', description: '在暴力冲突中可将一次「重伤」降级为「受伤」，或将一次「受伤」无效化，每场冲突限用一次。', imageUrl: imgBodyArmor },
   composite_shield: { id: 'composite_shield', name: '复合盾', category: 'prop', description: '降低正面冲突受伤风险。', imageUrl: imgCompositeShield },
   flare_gun: { id: 'flare_gun', name: '信号枪', category: 'prop', description: '发射信号弹，远距离传递信息。', imageUrl: imgFlareGun },
   repair_kit: { id: 'repair_kit', name: '维修工具包', category: 'prop', description: '用于设施与器械维修。', imageUrl: imgRepairKit },
@@ -625,18 +720,18 @@ export const SHELTER_ITEM_CATALOG = {
   matches: { id: 'matches', name: '火柴', category: 'prop', description: '取火工具。', imageUrl: imgMatches },
   pencil: { id: 'pencil', name: '铅笔', category: 'prop', description: '书写记录工具。', imageUrl: imgPencil },
   tattered_chart: { id: 'tattered_chart', name: '破损海图', category: 'prop', description: '可用于航线参考。', imageUrl: imgSeaChart },
-  service_pistol: { id: 'service_pistol', name: '制式手枪', category: 'weapon', description: '韦伯利.38口径转轮手枪，英军标准配发。威胁值2，近距离防身武器，装弹6发。', imageUrl: imgServicePistol },
-  hunting_shotgun: { id: 'hunting_shotgun', name: '猎枪', category: 'weapon', description: '12号口径单管或双管猎枪，用于狩猎鸟类和小型动物。威胁值8，中距离武器，装弹2发。', imageUrl: imgHuntingShotgun },
-  baton: { id: 'baton', name: '警棍', category: 'weapon', description: '硬木制成的短棍，长50厘米。威胁值0.5，非致命武器，可用于制服而非杀死目标。', imageUrl: imgBaton },
+  service_pistol: { id: 'service_pistol', name: '制式手枪', category: 'weapon', description: '韦伯利.38口径转轮手枪，英军标准配发。威胁值5，远程武器。', imageUrl: imgServicePistol },
+  hunting_shotgun: { id: 'hunting_shotgun', name: '猎枪', category: 'weapon', description: '12号口径单管或双管猎枪，用于狩猎鸟类和小型动物。威胁值6，远程武器。', imageUrl: imgHuntingShotgun },
+  baton: { id: 'baton', name: '警棍', category: 'weapon', description: '硬木制成的短棍，长50厘米。威胁值1，非致命武器，可用于制服而非杀死目标。', imageUrl: imgBaton },
   bayonet: { id: 'bayonet', name: '刺刀', category: 'weapon', description: '军用制式刺刀，长约20厘米。威胁值2。', imageUrl: imgBayonet },
-  harpoon_spear: { id: 'harpoon_spear', name: '鱼叉 / 矛', category: 'weapon', description: '铁头木柄的捕鱼工具，长110厘米。威胁值2，既可捕鱼也可作为近战武器，渔民的标配。', imageUrl: imgHarpoon },
-  hunting_bow: { id: 'hunting_bow', name: '猎弓', category: 'weapon', description: '简单木质主体金属包角的反曲猎弓，威胁值2，无声远程武器。', imageUrl: imgHuntingBow },
-  pickaxe: { id: 'pickaxe', name: '十字镐', category: 'weapon', description: '采矿用的双头镐具，长65厘米，重5kg。威胁值0.5，主要用来挖掘石料，紧急时也可作为武器。', imageUrl: imgPickaxe },
-  axe: { id: 'axe', name: '斧头', category: 'weapon', description: '伐木用双面斧，长65厘米。威胁值1，砍树是本职工作，砍人也不是不行。', imageUrl: imgAxe },
+  harpoon_spear: { id: 'harpoon_spear', name: '鱼叉 / 矛', category: 'weapon', description: '铁头木柄的捕鱼工具，长110厘米。威胁值3，既可捕鱼也可作为近战武器，渔民的标配。', imageUrl: imgHarpoon },
+  hunting_bow: { id: 'hunting_bow', name: '猎弓', category: 'weapon', description: '简单木质主体金属包角的反曲猎弓。威胁值4，无声远程武器。', imageUrl: imgHuntingBow },
+  pickaxe: { id: 'pickaxe', name: '十字镐', category: 'weapon', description: '采矿用的双头镐具，长65厘米，重5kg。威胁值1，主要用来挖掘石料，紧急时也可作为武器。', imageUrl: imgPickaxe },
+  axe: { id: 'axe', name: '斧头', category: 'weapon', description: '伐木用双面斧，长65厘米。威胁值2，砍树是本职工作，砍人也不是不行。', imageUrl: imgAxe },
   wood: { id: 'wood', name: '木材', category: 'material', description: '基础建造材料。', imageUrl: imgWood },
   stone: { id: 'stone', name: '石料', category: 'material', description: '用于加固结构。', imageUrl: imgStone },
   plank: { id: 'plank', name: '木板', category: 'material', description: '用于铺板和隔断。', imageUrl: imgPlank },
-  rope: { id: 'rope', name: '绳索', category: 'material', description: '常用固定与捆绑耗材。', imageUrl: imgRope },
+  rope: { id: 'rope', name: '绳索', category: 'material', description: '麻绳或钢丝绳，直径1-2厘米。用于捆绑、拖拽、登山或船只系泊。探索时投入10个可提供+2探索值。', imageUrl: imgRope },
 }
 
 export const SHELTER_ITEM_CATALOG_BY_TYPE = {

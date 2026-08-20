@@ -74,7 +74,7 @@ class IslandEventDifficultyTest {
     @Test
     @DisplayName("探索值加成 - 火把 +7")
     void explorationBonus_torch() {
-        assertEquals(7, IslandExplorationService.EXPLORATION_ITEM_BONUS.get(26),
+        assertEquals(7, IslandExplorationService.EXPLORATION_ITEM_BONUS.get(25),
                 "火把探索值加成为 7");
     }
 
@@ -93,10 +93,25 @@ class IslandEventDifficultyTest {
     }
 
     @Test
-    @DisplayName("探索值加成 - 绳索 +1")
+    @DisplayName("探索值加成 - 绳索 10个 +2")
     void explorationBonus_rope() {
-        assertEquals(1, IslandExplorationService.EXPLORATION_ITEM_BONUS.get(3),
-                "绳索探索值加成为 1");
+        assertEquals(2, IslandExplorationService.EXPLORATION_ITEM_BONUS.get(3),
+                "绳索探索值加成为 2");
+        assertEquals(10, IslandExplorationService.consumeQuantity(3),
+                "绳索一次消耗 10 个");
+        assertEquals(1, IslandExplorationService.consumeQuantity(25),
+                "火把一次消耗 1 个");
+    }
+
+    @Test
+    @DisplayName("探索值加成 - 火把数量 3 仍只加 7 一次")
+    void explorationBonus_torchQty3StillOnce() {
+        assertEquals(7, IslandExplorationService.investBonusOnce(25, 3),
+                "qty 3 torch still +7 once");
+        assertEquals(7, IslandExplorationService.investBonusOnce(25, 1),
+                "qty 1 torch +7 once");
+        assertEquals(0, IslandExplorationService.investBonusOnce(25, 0),
+                "qty 0 torch +0");
     }
 
     @Test

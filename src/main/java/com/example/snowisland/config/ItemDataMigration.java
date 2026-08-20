@@ -44,11 +44,11 @@ public class ItemDataMigration implements CommandLineRunner {
             ).getSingleResult();
             int nextId = maxIdResult.intValue() + 1;
 
-            if (nextId < 26) nextId = 26;
+            if (nextId < 25) nextId = 25;
 
             entityManager.createNativeQuery(
                 "INSERT INTO item (id, name, unit, remark, created_at, updated_at) " +
-                "VALUES (:id, '火把', '把', '木质火把，蘸有沥青和煤油。夜间照明与探索的重要工具，可有效提升探索发现率。持续时间约2小时，+7点探索值/个。', NOW(), NOW())"
+                "VALUES (:id, '火把', '把', '手工艺人的产出物品，配合每个人都有的火柴可以用来夜间照明并取暖。亦可作为探索道具（+7探索值）。', NOW(), NOW())"
             ).setParameter("id", nextId).executeUpdate();
 
             logger.info("成功添加火把道具到item表，ID: {}", nextId);

@@ -15,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import javax.annotation.PostConstruct;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.util.*;
 
 @Service
@@ -36,6 +38,12 @@ public class TradeService {
 
     @Autowired
     private GameStateService gameStateService;
+
+    @Autowired
+    private TradeRestrictionService tradeRestrictionService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private Map<String, Map<Integer, String>> itemNames = new HashMap<>();
     private Map<String, Map<Integer, String>> itemUnits = new HashMap<>();
@@ -60,7 +68,7 @@ public class TradeService {
         itemNames.get("item").put(15, "火柴");
         itemNames.get("item").put(16, "铅笔");
         itemNames.get("item").put(17, "破损海图");
-        itemNames.get("item").put(18, "便当");
+        itemNames.get("item").put(18, "面包");
         itemNames.get("item").put(19, "矿场仓库钥匙");
         itemNames.get("item").put(20, "燃料仓库钥匙");
         itemNames.get("item").put(21, "镇武库钥匙");
@@ -68,6 +76,33 @@ public class TradeService {
         itemNames.get("item").put(23, "反叛者基地钥匙");
         itemNames.get("item").put(24, "方舟钥匙");
         itemNames.get("item").put(25, "火把");
+        itemNames.get("item").put(26, "诅咒硬币");
+        itemNames.get("item").put(27, "祭坛石");
+        itemNames.get("item").put(28, "通灵笔记");
+        itemNames.get("item").put(29, "发光矿石碎片");
+        itemNames.get("item").put(30, "鱼鳞外套");
+        itemNames.get("item").put(31, "契约铁卷");
+        itemNames.get("item").put(32, "革命宣言");
+        itemNames.get("item").put(33, "古老龙骨图");
+        itemNames.get("item").put(34, "灰烬预言书");
+        itemNames.get("item").put(35, "人皮册子残页");
+        itemNames.get("item").put(36, "星象观测手稿");
+        itemNames.get("item").put(37, "尸油蜡烛");
+        itemNames.get("item").put(38, "深海鱼油蜡烛");
+        itemNames.get("item").put(39, "旧地图");
+        itemNames.get("item").put(40, "飞机部件·油箱");
+        itemNames.get("item").put(41, "飞机部件·起落架");
+        itemNames.get("item").put(42, "笔记本");
+        itemNames.get("item").put(43, "钢笔");
+        itemNames.get("item").put(44, "归墟罗盘");
+        itemNames.get("item").put(45, "龙骨刻刀");
+        itemNames.get("item").put(46, "灾厄之眼");
+        itemNames.get("item").put(47, "引魂烛台");
+        itemNames.get("item").put(48, "星轨轮盘");
+        itemNames.get("item").put(49, "烬火旗");
+        itemNames.get("item").put(50, "银币");
+        itemNames.get("item").put(51, "情绪抑制器");
+        itemNames.get("item").put(52, "共鸣石");
 
         itemNames.put("weapon", new HashMap<>());
         itemNames.get("weapon").put(1, "制式手枪");
@@ -82,6 +117,9 @@ public class TradeService {
         itemNames.get("weapon").put(10, "电锯");
         itemNames.get("weapon").put(11, "手术刀");
         itemNames.get("weapon").put(12, "炸药");
+        itemNames.get("weapon").put(13, "电钻");
+        itemNames.get("weapon").put(14, "匕首");
+        itemNames.get("weapon").put(15, "铁镐");
 
         itemNames.put("ammo", new HashMap<>());
         itemNames.get("ammo").put(1, "手枪弹");
@@ -102,6 +140,7 @@ public class TradeService {
         itemNames.get("material").put(10, "发动机");
         itemNames.get("material").put(11, "螺旋桨");
         itemNames.get("material").put(12, "发电机");
+        itemNames.get("material").put(13, "草木灰");
 
         itemUnits.put("item", new HashMap<>());
         itemUnits.get("item").put(1, "个");
@@ -129,6 +168,33 @@ public class TradeService {
         itemUnits.get("item").put(23, "把");
         itemUnits.get("item").put(24, "把");
         itemUnits.get("item").put(25, "把");
+        itemUnits.get("item").put(26, "个");
+        itemUnits.get("item").put(27, "枚");
+        itemUnits.get("item").put(28, "本");
+        itemUnits.get("item").put(29, "枚");
+        itemUnits.get("item").put(30, "件");
+        itemUnits.get("item").put(31, "卷");
+        itemUnits.get("item").put(32, "份");
+        itemUnits.get("item").put(33, "卷");
+        itemUnits.get("item").put(34, "本");
+        itemUnits.get("item").put(35, "页");
+        itemUnits.get("item").put(36, "份");
+        itemUnits.get("item").put(37, "支");
+        itemUnits.get("item").put(38, "支");
+        itemUnits.get("item").put(39, "张");
+        itemUnits.get("item").put(40, "个");
+        itemUnits.get("item").put(41, "个");
+        itemUnits.get("item").put(42, "本");
+        itemUnits.get("item").put(43, "支");
+        itemUnits.get("item").put(44, "个");
+        itemUnits.get("item").put(45, "把");
+        itemUnits.get("item").put(46, "枚");
+        itemUnits.get("item").put(47, "座");
+        itemUnits.get("item").put(48, "个");
+        itemUnits.get("item").put(49, "面");
+        itemUnits.get("item").put(50, "枚");
+        itemUnits.get("item").put(51, "个");
+        itemUnits.get("item").put(52, "枚");
 
         itemUnits.put("weapon", new HashMap<>());
         itemUnits.get("weapon").put(1, "把");
@@ -143,6 +209,9 @@ public class TradeService {
         itemUnits.get("weapon").put(10, "把");
         itemUnits.get("weapon").put(11, "把");
         itemUnits.get("weapon").put(12, "kg");
+        itemUnits.get("weapon").put(13, "把");
+        itemUnits.get("weapon").put(14, "把");
+        itemUnits.get("weapon").put(15, "把");
 
         itemUnits.put("ammo", new HashMap<>());
         itemUnits.get("ammo").put(1, "枚");
@@ -163,6 +232,43 @@ public class TradeService {
         itemUnits.get("material").put(10, "个");
         itemUnits.get("material").put(11, "个");
         itemUnits.get("material").put(12, "个");
+        itemUnits.get("material").put(13, "kg");
+    }
+
+    private String validateNonTradableItems(List<Map<String, Object>> items) {
+        if (items == null || items.isEmpty()) {
+            return null;
+        }
+        Set<Integer> itemIds = new HashSet<>();
+        for (Map<String, Object> item : items) {
+            if (item == null) {
+                continue;
+            }
+            if (!"item".equals(String.valueOf(item.get("itemType")))) {
+                continue;
+            }
+            Object itemIdObj = item.get("itemId");
+            if (itemIdObj instanceof Number) {
+                itemIds.add(((Number) itemIdObj).intValue());
+            }
+        }
+        if (itemIds.isEmpty()) {
+            return null;
+        }
+        @SuppressWarnings("unchecked")
+        List<String> names = entityManager.createNativeQuery(
+                "SELECT name FROM item WHERE tradable = 0 AND id IN (:ids)")
+                .setParameter("ids", itemIds)
+                .getResultList();
+        if (names == null || names.isEmpty()) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (String name : names) {
+            sb.append("「").append(name).append("」");
+        }
+        sb.append("为不可交易道具，无法交易");
+        return sb.toString();
     }
 
     private String getItemName(String itemType, Integer itemId) {
@@ -292,6 +398,18 @@ public class TradeService {
     public Map<String, Object> createTrade(Trade trade, List<Map<String, Object>> items) {
         Map<String, Object> result = new HashMap<>();
         try {
+            String banError = tradeRestrictionService.rejectIfBanned(trade.getFromPlayerId(), trade.getToPlayerId());
+            if (banError != null) {
+                result.put("success", false);
+                result.put("message", banError);
+                return result;
+            }
+            String tradableError = validateNonTradableItems(items);
+            if (tradableError != null) {
+                result.put("success", false);
+                result.put("message", tradableError);
+                return result;
+            }
             Map<String, Object> reserveResult = reserveOfferedItems(trade.getFromPlayerId(), items);
             if (!(Boolean) reserveResult.getOrDefault("success", false)) {
                 result.put("success", false);
@@ -342,6 +460,12 @@ public class TradeService {
             if (trade.getStatus() != Trade.TradeStatus.pending) {
                 result.put("success", false);
                 result.put("message", "交易状态不是待处理");
+                return result;
+            }
+            String banError = tradeRestrictionService.rejectIfBanned(trade.getFromPlayerId(), trade.getToPlayerId());
+            if (banError != null) {
+                result.put("success", false);
+                result.put("message", banError);
                 return result;
             }
             List<TradeItem> tradeItems = tradeItemRepository.findByTradeId(id);

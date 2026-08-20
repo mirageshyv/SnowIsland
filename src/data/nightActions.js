@@ -5,7 +5,7 @@ import { FACTION_LABELS, GM_FACTION_TABS } from './factionActions.js'
 export { FACTION_LABELS, GM_FACTION_TABS }
 
 export const NIGHT_PERSONAL_ACTION_TYPES = [
-  { value: 'go_location', label: '前往地点' },
+  { value: 'go_location', label: '变更过夜地点' },
   { value: 'investigate_player', label: '调查玩家' },
   { value: 'produce', label: '生产' },
   { value: 'use_trait', label: '使用特性' },
@@ -36,6 +36,14 @@ export const CONSPIRACY_SUBTYPES = {
     { value: 'assassinate_target', label: '暗杀目标' },
   ],
   '平民': [
+    { value: 'raid_location', label: '袭击地点' },
+    { value: 'assassinate_target', label: '暗杀目标' },
+  ],
+  '外来者': [
+    { value: 'raid_location', label: '袭击地点' },
+    { value: 'assassinate_target', label: '暗杀目标' },
+  ],
+  '原住民': [
     { value: 'raid_location', label: '袭击地点' },
     { value: 'assassinate_target', label: '暗杀目标' },
   ],
@@ -77,7 +85,7 @@ export const NIGHT_ACTION_DEFS = {
     {
       type: 'explore_island',
       title: '探索岛屿',
-      description: '在夜晚探索岛屿周边区域，可能发现物资、遭遇事件或找到有用的线索。每日一次。',
+      description: '在夜晚探索岛屿周边区域。系统会自动生成结果，主持人发布后才能查看并获得奖励。每日一次。',
     },
     {
       type: 'other',
@@ -99,7 +107,7 @@ export const NIGHT_ACTION_DEFS = {
     {
       type: 'explore_island',
       title: '探索岛屿',
-      description: '在夜晚探索岛屿周边区域，可能发现物资、遭遇事件或找到有用的线索。每日一次。',
+      description: '在夜晚探索岛屿周边区域。系统会自动生成结果，主持人发布后才能查看并获得奖励。每日一次。',
     },
     {
       type: 'other',
@@ -127,7 +135,7 @@ export const NIGHT_ACTION_DEFS = {
     {
       type: 'explore_island',
       title: '探索岛屿',
-      description: '在夜晚探索岛屿周边区域，可能发现物资、遭遇事件或找到有用的线索。每日一次。',
+      description: '在夜晚探索岛屿周边区域。系统会自动生成结果，主持人发布后才能查看并获得奖励。每日一次。',
     },
     {
       type: 'other',
@@ -144,7 +152,7 @@ export const NIGHT_ACTION_DEFS = {
     {
       type: 'explore_island',
       title: '探索岛屿',
-      description: '在夜晚探索岛屿周边区域，可能发现物资、遭遇事件或找到有用的线索。每日一次。',
+      description: '在夜晚探索岛屿周边区域。系统会自动生成结果，主持人发布后才能查看并获得奖励。每日一次。',
     },
     {
       type: 'other',
@@ -154,14 +162,24 @@ export const NIGHT_ACTION_DEFS = {
   ],
   '平民': [
     {
+      type: 'raid_location',
+      title: '袭击地点',
+      description: '组织袭击一个地点；选择破坏或搜刮，须指定地点与参与者。夜间由主持人结算。',
+    },
+    {
+      type: 'assassinate_target',
+      title: '暗杀',
+      description: '组织暗杀一名玩家；须指定目标与参与者。夜间由主持人结算。',
+    },
+    {
       type: 'conspiracy',
       title: '进行密谋',
-      description: '袭击地点或制造恐怖；夜间由主持人结算。',
+      description: '与其他玩家秘密组织行动：袭击地点或暗杀。夜间由主持人结算。',
     },
     {
       type: 'explore_island',
       title: '探索岛屿',
-      description: '在夜晚探索岛屿周边区域，可能发现物资、遭遇事件或找到有用的线索。每日一次。',
+      description: '在夜晚探索岛屿周边区域。系统会自动生成结果，主持人发布后才能查看并获得奖励。每日一次。',
     },
     {
       type: 'other',
@@ -170,6 +188,10 @@ export const NIGHT_ACTION_DEFS = {
     },
   ],
 }
+
+const CIVILIAN_LIKE_NIGHT_DEFS = NIGHT_ACTION_DEFS['平民']
+NIGHT_ACTION_DEFS['外来者'] = CIVILIAN_LIKE_NIGHT_DEFS
+NIGHT_ACTION_DEFS['原住民'] = CIVILIAN_LIKE_NIGHT_DEFS
 
 export function getNightActionDef(faction, actionType) {
   const list = NIGHT_ACTION_DEFS[faction] || []

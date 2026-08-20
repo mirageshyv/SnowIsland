@@ -30,7 +30,7 @@ public class LocationNpc {
     @Column(length = 50)
     private String status = "正常";
 
-    @Column(name = "dialogue_style", length = 50)
+    @Column(name = "dialogue_style", columnDefinition = "TEXT")
     private String dialogueStyle;
 
     @Column(name = "avatar_url", length = 255)

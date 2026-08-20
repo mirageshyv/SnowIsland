@@ -1,9 +1,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { actionAPI, playerAPI, warehouseAPI, shelterAPI } from '@/utils/api.js'
+import { useGameDayScope } from '@/composables/useGameDayScope.js'
 import {
   extractDmFeedback,
   actionShortLabel,
+  actionSlotHeading,
   buildPlayerFeedbackSummary,
   getDmFeedbackDraft,
   getPlayerNotesDisplay,
@@ -15,6 +17,7 @@ const actions = ref([])
 const players = ref([])
 const laborerIds = ref(new Set())
 const warehouseNameByKey = ref({})
+const { currentGameDay, dayOptions, loadGameState } = useGameDayScope()
 const loading = ref(true)
 const filterGameDay = ref('1')
 const resolving = ref(false)
@@ -34,10 +37,18 @@ function showResolveMessage(type, text) {
   setTimeout(() => { resolveMessage.value = null }, 4000)
 }
 
+function targetMarkersBadge(action) {
+  if (!action?.targetMarkers?.length) return ''
+  return `目标标记: ${action.targetMarkers.join(', ')}`
+}
+
 async function fetchActions() {
   loading.value = true
   try {
-    const result = await actionAPI.getAllActions({ gameDay: filterGameDay.value })
+    const result = await actionAPI.getAllActions({
+      gameDay: filterGameDay.value,
+      userRole: localStorage.getItem('userRole') || ''
+    })
     actions.value = Array.isArray(result) ? result : []
   } catch (e) {
     console.error('获取行动列表失败:', e)
@@ -93,6 +104,7 @@ const playerRows = computed(() => {
       faction: typeof p.faction === 'object' ? (p.faction?.name ?? '') : (p.faction ?? ''),
       slot1: null,
       slot2: null,
+      freeTransports: [],
     })
   }
   for (const a of dayActions.value) {
@@ -104,11 +116,13 @@ const playerRows = computed(() => {
         faction: a.playerFaction || '',
         slot1: null,
         slot2: null,
+        freeTransports: [],
       }
       byId.set(a.playerId, row)
     }
     if (a.actionSlot === 1) row.slot1 = a
     if (a.actionSlot === 2) row.slot2 = a
+    if (a.actionSlot === 0) row.freeTransports.push(a)
   }
   return [...byId.values()].sort((a, b) => a.playerName.localeCompare(b.playerName, 'zh'))
 })
@@ -166,6 +180,7 @@ function openSummaryModal(row) {
     filterGameDay.value,
     row.slot1,
     row.slot2,
+    row.freeTransports,
   )
 }
 
@@ -236,7 +251,7 @@ async function batchResolveAll() {
 
 async function publishAllFeedback() {
   if (publishing.value) return
-  if (!confirm(`确定发布第 ${filterGameDay.value} 天所有已保存的行动反馈？搬运库存变更将一并生效，玩家可在行动页查看结果。`)) return
+  if (!confirm(`确定发布第 ${filterGameDay.value} 天所有已保存的行动反馈？搬运与额外劳动物资将一并生效，玩家可在行动页查看结果。`)) return
   publishing.value = true
   try {
     const res = await actionAPI.publishFeedback(parseInt(filterGameDay.value, 10))
@@ -278,6 +293,8 @@ async function fetchWarehouses() {
 }
 
 onMounted(async () => {
+  await loadGameState()
+  filterGameDay.value = String(currentGameDay.value || 1)
   await Promise.all([fetchPlayers(), fetchActions(), fetchLaborRoster(), fetchWarehouses()])
 })
 </script>
@@ -295,9 +312,9 @@ onMounted(async () => {
             class="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200"
             @change="() => { fetchActions(); fetchLaborRoster() }"
           >
-            <option value="1">第1天</option>
-            <option value="2">第2天</option>
-            <option value="3">第3天</option>
+            <option v-for="d in dayOptions" :key="d" :value="String(d)">
+              第{{ d }}天{{ d === currentGameDay ? '（当前）' : '' }}
+            </option>
           </select>
           <button
             type="button"
@@ -380,6 +397,11 @@ onMounted(async () => {
                 title="已保存反馈"
               >✓</span>
               <span class="truncate">行动一{{ row.slot1 ? `：${actionShortLabel(row.slot1)}` : '' }}</span>
+              <span
+                v-if="row.slot1 && targetMarkersBadge(row.slot1)"
+                class="text-[10px] text-purple-300/90 shrink-0 max-w-[140px] truncate"
+                :title="targetMarkersBadge(row.slot1)"
+              >{{ targetMarkersBadge(row.slot1) }}</span>
             </button>
             <button
               type="button"
@@ -401,6 +423,30 @@ onMounted(async () => {
                 title="已保存反馈"
               >✓</span>
               <span class="truncate">行动二{{ row.slot2 ? `：${actionShortLabel(row.slot2)}` : '' }}</span>
+              <span
+                v-if="row.slot2 && targetMarkersBadge(row.slot2)"
+                class="text-[10px] text-purple-300/90 shrink-0 max-w-[140px] truncate"
+                :title="targetMarkersBadge(row.slot2)"
+              >{{ targetMarkersBadge(row.slot2) }}</span>
+            </button>
+            <button
+              v-for="(ft, idx) in row.freeTransports"
+              :key="ft.id || `ft-${idx}`"
+              type="button"
+              class="relative inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-medium transition-colors max-w-[220px] border-cyan-500/25 bg-cyan-500/10 text-cyan-100 hover:border-cyan-400/50 hover:bg-cyan-500/20"
+              @click="openActionModal(ft)"
+            >
+              <span
+                v-if="isActionFailed(ft)"
+                class="text-red-400 shrink-0"
+                title="行动失败"
+              >✕</span>
+              <span
+                v-else-if="isActionSaved(ft)"
+                class="text-emerald-400 shrink-0"
+                title="已保存反馈"
+              >✓</span>
+              <span class="truncate">免费搬运{{ row.freeTransports.length > 1 ? idx + 1 : '' }}：{{ actionShortLabel(ft) }}</span>
             </button>
             <button
               type="button"
@@ -418,7 +464,7 @@ onMounted(async () => {
     <div class="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-[#0f1419]/95 backdrop-blur-md px-4 py-4">
       <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
         <p class="text-gray-500 text-xs text-center sm:text-left">
-          保存各行动反馈后，点击下方按钮一次性向玩家公开第 {{ filterGameDay }} 天结果
+          保存各行动反馈后，点击下方按钮一次性向玩家公开第 {{ filterGameDay }} 天结果（含搬运与额外劳动物资）
         </p>
         <button
           type="button"
@@ -442,7 +488,13 @@ onMounted(async () => {
           <div>
             <h3 class="text-white font-medium">{{ modalAction.playerName }}</h3>
             <p class="text-cyan-400/90 text-sm mt-0.5">
-              行动{{ modalAction.actionSlot }} · {{ actionShortLabel(modalAction) }}
+              {{ actionSlotHeading(modalAction) }} · {{ actionShortLabel(modalAction) }}
+            </p>
+            <p
+              v-if="targetMarkersBadge(modalAction)"
+              class="text-xs text-purple-300/90 mt-1"
+            >
+              {{ targetMarkersBadge(modalAction) }}
             </p>
           </div>
           <button type="button" class="text-gray-500 hover:text-white shrink-0" @click="closeModal">✕</button>

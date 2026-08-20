@@ -1,0 +1,1 @@
+import{C as t}from"./CatastrophePanel-ASAUDN9M.js";import{i as a,f as o,h as s}from"./index-Ba5Us_iT.js";import"./api-DAc7hoNu.js";const n={__name:"CatastropheView",setup(r){const e=o(()=>(localStorage.getItem("userRole")||"").toLowerCase()==="dm");return(m,c)=>(s(),a(t,{"is-dm":e.value,embedded:!1},null,8,["is-dm"]))}};export{n as default};

@@ -14,7 +14,7 @@ const gameDay = ref(1)
 const players = ref([])
 let pollTimer = null
 
-const FACTIONS = ['统治者', '反叛者', '冒险者', '天灾使者', '平民']
+const FACTIONS = ['统治者', '反叛者', '冒险者', '天灾使者', '平民', '外来者', '原住民']
 
 const CATEGORY_LABELS = {
   action: '自由',

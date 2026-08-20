@@ -36,8 +36,6 @@ const typeLabels = {
 const accessibleWarehouses = computed(() => {
   return warehouses.value.filter(w => {
     if (!w.accessible && !isDm) return false;
-    // 永久隐藏避难所仓库
-    if (w.isShelter || w.warehouseName === '避难所仓库') return false;
     return true;
   });
 });

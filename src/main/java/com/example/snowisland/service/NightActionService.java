@@ -2,6 +2,7 @@ package com.example.snowisland.service;
 
 import com.example.snowisland.entity.*;
 import com.example.snowisland.repository.*;
+import com.example.snowisland.util.PlayerStatusCatalog;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +29,11 @@ public class NightActionService {
         NIGHT_ACTION_TYPES.put("天灾使者", new LinkedHashSet<>(Arrays.asList(
                 "conspiracy", "other")));
         NIGHT_ACTION_TYPES.put("平民", new LinkedHashSet<>(Arrays.asList(
-                "conspiracy", "other")));
+                "raid_location", "assassinate_target", "conspiracy", "other")));
+        NIGHT_ACTION_TYPES.put("外来者", new LinkedHashSet<>(Arrays.asList(
+                "raid_location", "assassinate_target", "conspiracy", "other")));
+        NIGHT_ACTION_TYPES.put("原住民", new LinkedHashSet<>(Arrays.asList(
+                "raid_location", "assassinate_target", "conspiracy", "other")));
     }
 
     private static final Map<String, Set<String>> CONSPIRACY_SUBTYPES = new LinkedHashMap<>();
@@ -41,6 +46,10 @@ public class NightActionService {
                 "raid_location", "spread_terror", "assassinate_target")));
         CONSPIRACY_SUBTYPES.put("平民", new LinkedHashSet<>(Arrays.asList(
                 "raid_location", "assassinate_target")));
+        CONSPIRACY_SUBTYPES.put("外来者", new LinkedHashSet<>(Arrays.asList(
+                "raid_location", "assassinate_target")));
+        CONSPIRACY_SUBTYPES.put("原住民", new LinkedHashSet<>(Arrays.asList(
+                "raid_location", "assassinate_target")));
     }
 
     @Autowired private NightActionRepository nightActionRepository;
@@ -51,6 +60,7 @@ public class NightActionService {
     @Autowired private PlayerExplorationRepository playerExplorationRepository;
     @Autowired private ActivityLogService activityLogService;
     @Autowired private GameStateService gameStateService;
+    @Autowired private TradeRestrictionService tradeRestrictionService;
 
     public Map<String, Object> getContext(Integer playerId, Integer gameDay) {
         Map<String, Object> ctx = new HashMap<>();
@@ -111,13 +121,18 @@ public class NightActionService {
             explorationMap.put("id", exploration.getId());
             explorationMap.put("actionType", "explore_island");
             explorationMap.put("actionTypeLabel", "探索岛屿");
-            explorationMap.put("result", exploration.getResult());
-            explorationMap.put("investPoints", exploration.getInvestPoints());
-            explorationMap.put("diceResult", exploration.getDiceResult());
-            explorationMap.put("totalExplorationValue", exploration.getTotalExplorationValue());
             explorationMap.put("status", exploration.getStatus().name());
             explorationMap.put("gameDay", exploration.getGameDay());
-            // 将探索添加到历史列表的开头
+            boolean released = exploration.getStatus() == PlayerExploration.ExplorationStatus.settled;
+            explorationMap.put("resultPending", !released);
+            if (released) {
+                explorationMap.put("result", exploration.getResult());
+                explorationMap.put("investPoints", exploration.getInvestPoints());
+                explorationMap.put("diceResult", exploration.getDiceResult());
+                explorationMap.put("totalExplorationValue", exploration.getTotalExplorationValue());
+            } else {
+                explorationMap.put("result", IslandExplorationService.PENDING_PLAYER_MESSAGE);
+            }
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> history = (List<Map<String, Object>>) ctx.get("history");
             history.add(0, explorationMap);
@@ -142,6 +157,11 @@ public class NightActionService {
             return result;
         }
         Player player = optPlayer.get();
+        if (tradeRestrictionService.isBoundActive(player)) {
+            result.put("success", false);
+            result.put("message", PlayerStatusCatalog.BOUND_DENY_MESSAGE);
+            return result;
+        }
         String faction = player.getFaction() != null ? player.getFaction().name() : null;
         if (faction == null) {
             result.put("success", false);
@@ -155,11 +175,21 @@ public class NightActionService {
             result.put("message", "当前阵营不可执行此夜晚行动");
             return result;
         }
+        if ("explore_island".equals(actionType)) {
+            result.put("success", false);
+            result.put("message", "探索岛屿请通过夜晚行动页的探索入口提交");
+            return result;
+        }
 
         boolean unlimitedActions = "统治者".equals(faction);
         List<NightAction> todayActions = nightActionRepository.findByPlayerIdAndGameDayOrderByCreatedAtDesc(playerId, gameDay);
 
         if (!unlimitedActions) {
+            if (playerExplorationRepository.findByPlayerIdAndGameDay(playerId, gameDay).isPresent()) {
+                result.put("success", false);
+                result.put("message", "今日已提交探索岛屿，每天仅可执行一次夜晚行动");
+                return result;
+            }
             if (!todayActions.isEmpty()) {
                 result.put("success", false);
                 result.put("message", "今日已提交夜晚行动，每天仅可执行一次");
@@ -192,6 +222,18 @@ public class NightActionService {
         }
         action.setResult(buildAutoResult(actionType, payload, player));
         nightActionRepository.save(action);
+
+        // 夜晚「变更过夜地点」：更新登记（默认在家；不提交则保持原登记）
+        if ("night_personal_action".equals(actionType) && payload != null
+                && "go_location".equals(str(payload.get("actionType")))) {
+            Integer locId = toInt(payload.get("targetId"));
+            if (locId != null) {
+                player.setOvernightLocationId(locId);
+                playerRepository.save(player);
+                action.setResult(action.getResult() + "\n【过夜】已变更今晚过夜地点。");
+                nightActionRepository.save(action);
+            }
+        }
 
         activityLogService.log(
                 gameDay,
@@ -242,6 +284,17 @@ public class NightActionService {
                 if (msg == null || msg.trim().length() < 3) return "请填写宣传内容";
                 return null;
             }
+            case "raid_location": {
+                if (toInt(payload.get("targetLocationId")) == null) return "请选择目标地点";
+                if (asList(payload.get("participantIds")).isEmpty()) return "请至少选择一名参与玩家";
+                if (str(payload.get("raidOutcome")) == null) return "请选择袭击成功后的意向（破坏/搜刮）";
+                return null;
+            }
+            case "assassinate_target": {
+                if (toInt(payload.get("targetPlayerId")) == null) return "请选择暗杀目标";
+                if (asList(payload.get("participantIds")).isEmpty()) return "请至少选择一名参与玩家";
+                return null;
+            }
             case "conspiracy": {
                 String sub = str(payload.get("conspiracySubtype"));
                 Set<String> allowed = CONSPIRACY_SUBTYPES.get(faction);
@@ -250,6 +303,8 @@ public class NightActionService {
                     if (toInt(payload.get("targetLocationId")) == null && toInt(payload.get("targetPlayerId")) == null) {
                         return "请选择目标地点或目标玩家";
                     }
+                } else if ("assassinate_target".equals(sub) || "assassinate_ruler".equals(sub)) {
+                    if (toInt(payload.get("targetPlayerId")) == null) return "请选择暗杀目标";
                 } else if (toInt(payload.get("targetLocationId")) == null) {
                     return "请选择目标地点";
                 }
@@ -299,10 +354,21 @@ public class NightActionService {
             case "publicity":
                 sb.append("宣传内容：").append(truncate(str(payload.get("message")), 120)).append("\n");
                 break;
+            case "raid_location":
+                sb.append("目标地点：").append(resolveLocationName(toInt(payload.get("targetLocationId")))).append("\n");
+                sb.append("参与玩家：").append(String.join("、", namesFromIds(asList(payload.get("participantIds"))))).append("\n");
+                sb.append("成功后意向：").append("destroy".equals(str(payload.get("raidOutcome"))) ? "破坏地点" : "搜刮资源").append("\n");
+                break;
+            case "assassinate_target":
+                sb.append("暗杀目标：").append(resolvePlayerName(toInt(payload.get("targetPlayerId")))).append("\n");
+                sb.append("参与玩家：").append(String.join("、", namesFromIds(asList(payload.get("participantIds"))))).append("\n");
+                break;
             case "conspiracy":
                 sb.append("密谋类型：").append(labelConspiracySubtype(str(payload.get("conspiracySubtype")))).append("\n");
                 Integer locId = toInt(payload.get("targetLocationId"));
                 if (locId != null) sb.append("目标地点：").append(resolveLocationName(locId)).append("\n");
+                Integer targetPid = toInt(payload.get("targetPlayerId"));
+                if (targetPid != null) sb.append("目标玩家：").append(resolvePlayerName(targetPid)).append("\n");
                 sb.append("参与玩家：").append(String.join("、", namesFromIds(asList(payload.get("participantIds"))))).append("\n");
                 if ("raid_location".equals(str(payload.get("conspiracySubtype")))) {
                     sb.append("成功后意向：").append("destroy".equals(str(payload.get("raidOutcome"))) ? "破坏地点" : "搜刮资源").append("\n");
@@ -361,6 +427,8 @@ public class NightActionService {
             case "pressure_ruler": return "向统治者施压";
             case "publicity": return "公开宣传";
             case "conspiracy": return "进行密谋";
+            case "raid_location": return "袭击地点";
+            case "assassinate_target": return "暗杀";
             case "explore_island": return "探索岛屿";
             case "other": return "其他";
             default: return type;
@@ -370,7 +438,7 @@ public class NightActionService {
     private String labelPersonalAction(String key) {
         if (key == null) return "?";
         switch (key) {
-            case "go_location": return "前往地点";
+            case "go_location": return "变更过夜地点";
             case "investigate_player": return "调查玩家";
             case "produce": return "生产";
             case "use_trait": return "使用特性";

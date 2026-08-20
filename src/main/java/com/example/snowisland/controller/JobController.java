@@ -25,10 +25,17 @@ public class JobController {
         return ResponseEntity.ok(jobs);
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<List<Job>> getAllJobsIncludingHidden() {
+        List<Job> jobs = jobService.getAllJobsIncludingHidden();
+        return ResponseEntity.ok(jobs);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<?> getJobById(@PathVariable Integer id) {
         Optional<Job> job = jobService.getJobById(id);
-        if (job.isPresent()) {
+        // 隐藏身份职业不通过公开单查接口暴露（防止枚举 id 泄露秘密职业设定）
+        if (job.isPresent() && !Boolean.TRUE.equals(job.get().getHidden())) {
             return ResponseEntity.ok(job.get());
         } else {
             return ResponseEntity.notFound().build();
@@ -37,6 +44,10 @@ public class JobController {
 
     @GetMapping("/{id}/items")
     public ResponseEntity<Map<String, Object>> getJobWithInitialItems(@PathVariable Integer id) {
+        Optional<Job> job = jobService.getJobById(id);
+        if (job.isPresent() && Boolean.TRUE.equals(job.get().getHidden())) {
+            return ResponseEntity.notFound().build();
+        }
         Map<String, Object> result = jobService.getJobWithInitialItems(id);
         if ((Boolean) result.get("success")) {
             return ResponseEntity.ok(result);
@@ -93,6 +104,10 @@ public class JobController {
 
     @GetMapping("/{id}/initial-items")
     public ResponseEntity<List<JobInitialItems>> getInitialItems(@PathVariable Integer id) {
+        Optional<Job> job = jobService.getJobById(id);
+        if (job.isPresent() && Boolean.TRUE.equals(job.get().getHidden())) {
+            return ResponseEntity.notFound().build();
+        }
         List<JobInitialItems> items = jobService.getInitialItemsByJobId(id);
         return ResponseEntity.ok(items);
     }

@@ -37,8 +37,9 @@ public class ArkService {
     @Autowired
     private WarehouseService warehouseService;
 
-    private static final double TARGET_WOOD = 25.0;
-    private static final double TARGET_METAL = 10.0;
+    /** 参考规则：50点载重基础船体 */
+    private static final double TARGET_WOOD = 250.0;
+    private static final double TARGET_METAL = 100.0;
     private static final int TARGET_SEALANT = 100;
 
     private static final int TARGET_ENGINE_MIN = 1;
@@ -46,26 +47,26 @@ public class ArkService {
     private static final int TARGET_PROPELLER = 2;
     private static final int TARGET_GENERATOR = 1;
 
-    private static final double DAILY_WOOD_LIMIT = 5.0;
-    private static final double DAILY_METAL_LIMIT = 2.0;
-    private static final int DAILY_SEALANT_LIMIT = 30;
+    private static final double DAILY_WOOD_LIMIT = 30.0;
+    private static final double DAILY_METAL_LIMIT = 20.0;
+    private static final int DAILY_SEALANT_LIMIT = 20;
 
-    private static final double WORK_EQUIVALENT_WOOD = 1.0;
-    private static final double WORK_EQUIVALENT_METAL_KG = 500.0;
+    private static final double WORK_EQUIVALENT_WOOD = 5.0;
+    private static final double WORK_EQUIVALENT_METAL_KG = 5000.0;
     private static final int WORK_EQUIVALENT_SEALANT = 5;
 
     private static final double KG_PER_TON = 1000.0;
 
-    private static final int BASE_CARGO_CAPACITY = 25;
+    private static final int BASE_CARGO_CAPACITY = 50;
     private static final int EXTRA_CARGO_PER_SET = 2;
-    private static final double EXTRA_WOOD_PER_SET = 2.0;
-    private static final double EXTRA_METAL_PER_SET = 1.0;
+    private static final double EXTRA_WOOD_PER_SET = 10.0;
+    private static final double EXTRA_METAL_PER_SET = 5.0;
     private static final int EXTRA_SEALANT_PER_SET = 5;
 
     private static final int SHORTAGE_PENALTY_CAPACITY = 3;
     private static final double SHORTAGE_PENALTY_PROGRESS = 2.5;
-    private static final double SHORTAGE_WOOD_UNIT = 2.0;
-    private static final double SHORTAGE_METAL_UNIT = 1.0;
+    private static final double SHORTAGE_WOOD_UNIT = 10.0;
+    private static final double SHORTAGE_METAL_UNIT = 5.0;
     private static final int SHORTAGE_SEALANT_UNIT = 5;
 
     public ArkConstruction getOrCreate() {
@@ -73,8 +74,9 @@ public class ArkService {
                 .orElseGet(() -> {
                     ArkConstruction construction = new ArkConstruction();
                     construction.setId(ArkConstruction.SINGLETON_ID);
-                    construction.setCurrentWood(5.0);
-                    construction.setCurrentMetal(1.0);
+                    // 参考规则：初始已完成 10吨木材、20吨金属制品
+                    construction.setCurrentWood(10.0);
+                    construction.setCurrentMetal(20.0);
                     construction.setCurrentSealant(0);
                     construction.setEngineCount(0);
                     construction.setPropellerCount(0);
@@ -99,6 +101,7 @@ public class ArkService {
         result.put("generatorCount", ark.getGeneratorCount());
         result.put("currentCargoCapacity", ark.getCurrentCargoCapacity());
         result.put("completionPercentage", ark.getCompletionPercentage());
+        result.put("bonusPercentage", resolveBonusPercentage(ark));
         result.put("hasSail", ark.getHasSail());
 
         result.put("targetWood", TARGET_WOOD);
@@ -447,6 +450,7 @@ public class ArkService {
             ark.setPropellerCount(0);
             ark.setGeneratorCount(0);
             ark.setHasSail(false);
+            ark.setBonusPercentage(BigDecimal.ZERO);
             calculateAndUpdateProgress(ark);
             arkConstructionRepository.save(ark);
             result.put("success", true);
@@ -455,6 +459,36 @@ public class ArkService {
         } catch (Exception e) {
             result.put("success", false);
             result.put("message", "重置失败: " + e.getMessage());
+        }
+        return result;
+    }
+
+    @Transactional
+    public Map<String, Object> setBonus(BigDecimal value) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            if (value == null) {
+                result.put("success", false);
+                result.put("message", "加成值不能为空");
+                return result;
+            }
+            BigDecimal clamped = value;
+            if (clamped.compareTo(new BigDecimal("-100")) < 0) {
+                clamped = new BigDecimal("-100");
+            }
+            if (clamped.compareTo(new BigDecimal("100")) > 0) {
+                clamped = new BigDecimal("100");
+            }
+            ArkConstruction ark = getOrCreate();
+            ark.setBonusPercentage(clamped);
+            calculateAndUpdateProgress(ark);
+            arkConstructionRepository.save(ark);
+            result.put("success", true);
+            result.put("message", "仪式加成设置成功");
+            result.put("data", buildStatusResponse(ark));
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "设置仪式加成失败: " + e.getMessage());
         }
         return result;
     }
@@ -493,6 +527,7 @@ public class ArkService {
         if (finalProgress.compareTo(BigDecimal.ZERO) < 0) {
             finalProgress = BigDecimal.ZERO;
         }
+        finalProgress = finalProgress.add(resolveBonusPercentage(ark));
         if (finalProgress.compareTo(new BigDecimal("100.0")) > 0) {
             finalProgress = new BigDecimal("100.0");
         }
@@ -561,6 +596,11 @@ public class ArkService {
         return result;
     }
 
+    private BigDecimal resolveBonusPercentage(ArkConstruction ark) {
+        BigDecimal bonus = ark.getBonusPercentage();
+        return bonus != null ? bonus : BigDecimal.ZERO;
+    }
+
     private BigDecimal calculateResourceProgress(double current, double target, double maxPercent) {
         if (target <= 0) return BigDecimal.ZERO;
         double ratio = Math.min(1.0, current / target);
@@ -581,6 +621,7 @@ public class ArkService {
         data.put("generatorCount", ark.getGeneratorCount());
         data.put("currentCargoCapacity", ark.getCurrentCargoCapacity());
         data.put("completionPercentage", ark.getCompletionPercentage());
+        data.put("bonusPercentage", resolveBonusPercentage(ark));
         data.put("hasSail", ark.getHasSail());
 
         data.put("targetWood", TARGET_WOOD);
@@ -665,6 +706,7 @@ public class ArkService {
             ark.setPropellerCount(0);
             ark.setGeneratorCount(0);
             ark.setHasSail(false);
+            ark.setBonusPercentage(BigDecimal.ZERO);
             calculateAndUpdateProgress(ark);
             arkConstructionRepository.save(ark);
             result.put("success", true);

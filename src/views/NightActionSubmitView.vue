@@ -48,15 +48,26 @@ const forms = reactive({
     raidOutcome: '',
     note: '',
   },
+  raid_location: {
+    targetLocationId: '',
+    raidOutcome: '',
+    participantIds: [],
+    note: '',
+  },
+  assassinate_target: {
+    targetPlayerId: '',
+    participantIds: [],
+    note: '',
+  },
   explore_island: { investItems: {} },
   other: { note: '' },
 })
 
 const EXPLORATION_ITEMS = [
-  { itemId: 26, itemType: 'item', name: '火把', bonus: 7, icon: '🔥' },
-  { itemId: 2, itemType: 'item', name: '手电筒', bonus: 5, icon: '🔦' },
-  { itemId: 13, itemType: 'item', name: '蜡烛', bonus: 2, icon: '🕯️' },
-  { itemId: 3, itemType: 'material', name: '绳索', bonus: 1, icon: '🪢' },
+  { itemId: 25, itemType: 'item', name: '火把', bonus: 7, consume: 1, icon: '🔥' },
+  { itemId: 2, itemType: 'item', name: '手电筒', bonus: 5, consume: 1, icon: '🔦' },
+  { itemId: 13, itemType: 'item', name: '蜡烛', bonus: 2, consume: 1, icon: '🕯️' },
+  { itemId: 3, itemType: 'material', name: '绳索', bonus: 2, consume: 10, icon: '🪢' },
 ]
 
 const MAX_EXPLORATION_POINTS = 15
@@ -79,18 +90,32 @@ function getItemQuantity(itemId) {
   return item ? item.quantity || 0 : 0
 }
 
+function getConsumeQuantity(itemId) {
+  const item = EXPLORATION_ITEMS.find((e) => e.itemId === itemId)
+  return item?.consume || 1
+}
+
+function canInvest(itemId) {
+  return getItemQuantity(itemId) >= getConsumeQuantity(itemId)
+}
+
 function getInvestQuantity(itemId) {
   return forms.explore_island.investItems[itemId] || 0
 }
 
 function setInvestQuantity(itemId, quantity) {
-  const max = getItemQuantity(itemId)
+  const max = canInvest(itemId) ? 1 : 0
   const qty = Math.max(0, Math.min(max, quantity))
   if (qty > 0) {
     forms.explore_island.investItems[itemId] = qty
   } else {
     delete forms.explore_island.investItems[itemId]
   }
+}
+
+function toggleInvest(itemId) {
+  if (!canInvest(itemId) && getInvestQuantity(itemId) <= 0) return
+  setInvestQuantity(itemId, getInvestQuantity(itemId) > 0 ? 0 : 1)
 }
 
 const totalInvestPoints = computed(() => {
@@ -184,20 +209,25 @@ const canSubmit = computed(
 
 const formReadOnly = computed(() => !nightEditable.value)
 
+const ASSASSINATE_SUBTYPES = ['assassinate_target', 'assassinate_ruler']
+
 const showConspiracyLocation = computed(() => {
   const sub = forms.conspiracy.conspiracySubtype
-  return sub && sub !== 'spread_terror'
+  return sub && sub !== 'spread_terror' && !ASSASSINATE_SUBTYPES.includes(sub)
 })
 
 const showConspiracyTerrorTarget = computed(() => forms.conspiracy.conspiracySubtype === 'spread_terror')
+const showConspiracyAssassinateTarget = computed(() =>
+  ASSASSINATE_SUBTYPES.includes(forms.conspiracy.conspiracySubtype)
+)
 const showRaidOutcome = computed(() => forms.conspiracy.conspiracySubtype === 'raid_location')
 
 function isTypeUsed(type) {
   return unlimitedActions.value && usedTypes.value.has(type)
 }
 
-function toggleParticipant(id) {
-  const ids = forms.conspiracy.participantIds
+function toggleParticipant(formKey, id) {
+  const ids = forms[formKey].participantIds
   const i = ids.indexOf(id)
   if (i >= 0) ids.splice(i, 1)
   else ids.push(id)
@@ -215,6 +245,17 @@ function resetForm(type) {
       targetPlayerId: '',
       participantIds: [],
       raidOutcome: '',
+      note: '',
+    },
+    raid_location: {
+      targetLocationId: '',
+      raidOutcome: '',
+      participantIds: [],
+      note: '',
+    },
+    assassinate_target: {
+      targetPlayerId: '',
+      participantIds: [],
       note: '',
     },
     explore_island: { investItems: {} },
@@ -281,8 +322,7 @@ function hydrateNightFromHistory() {
       selectedType.value = type
       actionResult.value = entry.result || ''
 
-      // 如果是探索行动，恢复探索详情
-      if (type === 'explore_island') {
+      if (type === 'explore_island' && !entry.resultPending && entry.status === 'settled') {
         explorationDetails.value = {
           investPoints: entry.investPoints,
           diceResult: entry.diceResult,
@@ -331,6 +371,19 @@ function buildPayload(type) {
         raidOutcome: f.raidOutcome || null,
         note: f.note || '',
       }
+    case 'raid_location':
+      return {
+        targetLocationId: f.targetLocationId ? parseInt(f.targetLocationId) : null,
+        raidOutcome: f.raidOutcome || null,
+        participantIds: f.participantIds.map(Number),
+        note: f.note || '',
+      }
+    case 'assassinate_target':
+      return {
+        targetPlayerId: f.targetPlayerId ? parseInt(f.targetPlayerId) : null,
+        participantIds: f.participantIds.map(Number),
+        note: f.note || '',
+      }
     case 'other':
       return { note: f.note || '' }
     case 'explore_island':
@@ -365,11 +418,21 @@ function validateClient(type) {
     case 'conspiracy':
       if (!f.conspiracySubtype) return '请选择密谋类型'
       if (showConspiracyLocation.value && !f.targetLocationId) return '请选择目标地点'
+      if (showConspiracyAssassinateTarget.value && !f.targetPlayerId) return '请选择暗杀目标'
       if (showConspiracyTerrorTarget.value && !f.targetLocationId && !f.targetPlayerId) {
         return '请选择目标地点或玩家'
       }
       if (!f.participantIds.length) return '请至少选择一名参与玩家'
       if (showRaidOutcome.value && !f.raidOutcome) return '请选择袭击成功后的意向'
+      break
+    case 'raid_location':
+      if (!f.targetLocationId) return '请选择目标地点'
+      if (!f.raidOutcome) return '请选择袭击成功后的意向'
+      if (!f.participantIds.length) return '请至少选择一名参与玩家'
+      break
+    case 'assassinate_target':
+      if (!f.targetPlayerId) return '请选择暗杀目标'
+      if (!f.participantIds.length) return '请至少选择一名参与玩家'
       break
     case 'explore_island':
       break
@@ -413,44 +476,8 @@ async function submitAction() {
       })
     }
     if (res?.success) {
-      if (selectedType.value === 'explore_island' && res.data) {
-        const data = res.data
-        explorationDetails.value = {
-          investPoints: data.investPoints,
-          diceResult: data.diceResult,
-          totalExplorationValue: data.totalExplorationValue,
-          targetDifficulty: res.targetDifficulty,
-        }
-        // 生成友好的探索结果显示
-        let detailText = `✓ 已提交【探索岛屿】\n\n`
-        detailText += `📊 探索统计\n`
-        detailText += `• 投入探索值: ${data.investPoints}\n`
-        detailText += `• 骰子结果: ${data.diceResult}\n`
-        detailText += `• 总探索值: ${data.totalExplorationValue}\n`
-        if (res.targetDifficulty) {
-          detailText += `• 目标难度: ${res.targetDifficulty} (最高20)\n`
-        }
-        
-        if (res.eventTriggered && data.event) {
-          detailText += `\n🎯 探索事件\n`
-          detailText += `发现: ${data.event.name}\n`
-          detailText += `难度: ${data.event.eventDifficulty}\n`
-          
-          if (res.rewards && res.rewards.length > 0) {
-            detailText += `\n🎁 探索奖励\n`
-            res.rewards.forEach(r => {
-              detailText += `+${r.quantity}${r.unit} ${r.name}\n`
-            })
-          }
-        } else {
-          detailText += `\n等待主持人在夜晚阶段结算探索结果。`
-        }
-        
-        actionResult.value = detailText
-      } else {
-        explorationDetails.value = null
-        actionResult.value = res.data?.result || '已提交'
-      }
+      explorationDetails.value = null
+      actionResult.value = res.data?.result || '已提交，等待主持人确认。'
       submitMessage.value = { type: 'success', text: '夜晚行动提交成功' }
       await loadContext()
     } else {
@@ -559,11 +586,14 @@ onMounted(async () => {
                 </select>
               </div>
               <div v-if="['go_location', 'investigate_player'].includes(forms.night_personal_action.actionType)">
-                <label class="block text-gray-500 text-xs mb-2">目标</label>
+                <label class="block text-gray-500 text-xs mb-2">{{ forms.night_personal_action.actionType === 'go_location' ? '过夜地点' : '目标' }}</label>
                 <select v-model="forms.night_personal_action.targetId" :class="selectClass">
                   <option value="">请选择</option>
                   <option v-for="o in personalTargetOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
                 </select>
+                <p v-if="forms.night_personal_action.actionType === 'go_location'" class="text-gray-500 text-xs mt-1">
+                  默认在自己家过夜；此处用于变更过夜地点（占用夜晚行动）。
+                </p>
               </div>
               <div
                 v-if="forms.night_personal_action.actionType === 'go_location' && personalNpcOptions.length"
@@ -632,8 +662,8 @@ onMounted(async () => {
             <template v-else-if="selectedType === 'explore_island'">
               <div class="rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-4 py-3 mb-4">
                 <p class="text-indigo-300 text-sm">
-                  投入物资增加探索值，探索值越高越可能发现高难度地点和珍贵物资。
-                  最终探索值 = 投入探索值 + 1d6（1-6随机）。
+                  点击物资投入（每种最多使用一次）。绳索需消耗 10 个，提供 +2 探索值。探索值越高越可能发现高难度地点和珍贵物资。
+                  最终探索值 = 投入探索值 + 1d6（1-6随机）。提交后系统会立刻生成结果，主持人发布后才能查看并获得奖励。
                 </p>
               </div>
 
@@ -655,62 +685,27 @@ onMounted(async () => {
                 </p>
               </div>
 
-              <div class="space-y-3">
-                <div
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <button
                   v-for="item in EXPLORATION_ITEMS"
                   :key="item.itemId"
-                  class="bg-black/20 border border-white/10 rounded-xl p-3"
+                  type="button"
+                  :disabled="!canInvest(item.itemId) && getInvestQuantity(item.itemId) <= 0"
+                  :class="[
+                    'aspect-square rounded-xl border p-3 flex flex-col items-center justify-center text-center transition-colors',
+                    getInvestQuantity(item.itemId) > 0
+                      ? 'bg-indigo-500/20 border-indigo-400 text-white'
+                      : 'bg-black/20 border-white/10 text-gray-300 hover:border-indigo-400/40',
+                    !canInvest(item.itemId) && getInvestQuantity(item.itemId) <= 0 ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+                  ]"
+                  @click="toggleInvest(item.itemId)"
                 >
-                  <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center gap-2">
-                      <span class="text-xl">{{ item.icon }}</span>
-                      <div>
-                        <span class="text-white text-sm font-medium">{{ item.name }}</span>
-                        <span class="text-indigo-400 text-xs ml-2">+{{ item.bonus }} 探索值/个</span>
-                      </div>
-                    </div>
-                    <span class="text-gray-400 text-xs">
-                      拥有: {{ getItemQuantity(item.itemId) }}
-                    </span>
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <button
-                      type="button"
-                      :disabled="getInvestQuantity(item.itemId) <= 0"
-                      class="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
-                      @click="setInvestQuantity(item.itemId, getInvestQuantity(item.itemId) - 1)"
-                    >
-                      -
-                    </button>
-                    <input
-                      type="number"
-                      :value="getInvestQuantity(item.itemId)"
-                      :min="0"
-                      :max="getItemQuantity(item.itemId)"
-                      class="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-center text-white focus:outline-none focus:border-indigo-500/50"
-                      @input="setInvestQuantity(item.itemId, parseInt($event.target.value) || 0)"
-                    />
-                    <button
-                      type="button"
-                      :disabled="getInvestQuantity(item.itemId) >= getItemQuantity(item.itemId)"
-                      class="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
-                      @click="setInvestQuantity(item.itemId, getInvestQuantity(item.itemId) + 1)"
-                    >
-                      +
-                    </button>
-                    <button
-                      type="button"
-                      :disabled="getItemQuantity(item.itemId) === 0"
-                      class="px-3 py-1 text-xs rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                      @click="setInvestQuantity(item.itemId, getItemQuantity(item.itemId))"
-                    >
-                      全部
-                    </button>
-                  </div>
-                  <p v-if="getInvestQuantity(item.itemId) > 0" class="text-indigo-400 text-xs mt-2">
-                    贡献探索值: +{{ getInvestQuantity(item.itemId) * item.bonus }}
-                  </p>
-                </div>
+                  <span class="text-3xl mb-2">{{ item.icon }}</span>
+                  <span class="text-sm font-medium">{{ item.name }}</span>
+                  <span class="text-indigo-300 text-xs mt-1">+{{ item.bonus }}</span>
+                  <span v-if="item.consume > 1" class="text-amber-300/80 text-xs">消耗 {{ item.consume }}</span>
+                  <span class="text-gray-400 text-xs mt-2">拥有 {{ getItemQuantity(item.itemId) }}</span>
+                </button>
               </div>
 
               <div class="mt-4 p-3 rounded-xl bg-black/20 border border-white/10">
@@ -756,6 +751,13 @@ onMounted(async () => {
                   <option v-for="o in locationOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
                 </select>
               </div>
+              <div v-if="showConspiracyAssassinateTarget">
+                <label class="block text-gray-500 text-xs mb-2">暗杀目标</label>
+                <select v-model="forms.conspiracy.targetPlayerId" :class="selectClass">
+                  <option value="">请选择玩家</option>
+                  <option v-for="p in allPlayers.filter(x => x.id !== playerId)" :key="'ap-'+p.id" :value="p.id">{{ p.name }}</option>
+                </select>
+              </div>
               <template v-if="showConspiracyTerrorTarget">
                 <div>
                   <label class="block text-gray-500 text-xs mb-2">目标地点（可选）</label>
@@ -790,13 +792,78 @@ onMounted(async () => {
                     :class="forms.conspiracy.participantIds.includes(p.id)
                       ? 'bg-purple-500/20 border-purple-500/40 text-purple-200'
                       : 'bg-white/5 border-white/10 text-gray-400'"
-                    @click="toggleParticipant(p.id)"
+                    @click="toggleParticipant('conspiracy', p.id)"
                   >
                     {{ p.name }}
                   </button>
                 </div>
               </div>
               <textarea v-model="forms.conspiracy.note" rows="2" :class="textareaClass" placeholder="密谋说明（可选）" />
+            </template>
+
+            <!-- 袭击地点 -->
+            <template v-else-if="selectedType === 'raid_location'">
+              <div>
+                <label class="block text-gray-500 text-xs mb-2">目标地点</label>
+                <select v-model="forms.raid_location.targetLocationId" :class="selectClass">
+                  <option value="">请选择地点</option>
+                  <option v-for="o in locationOptions" :key="'raid-'+o.value" :value="o.value">{{ o.label }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-gray-500 text-xs mb-2">成功后意向</label>
+                <select v-model="forms.raid_location.raidOutcome" :class="selectClass">
+                  <option value="">请选择</option>
+                  <option v-for="r in RAID_OUTCOME_OPTIONS" :key="r.value" :value="r.value">{{ r.label }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-gray-500 text-xs mb-2">参与玩家</label>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    v-for="p in allPlayers.filter(x => x.id !== playerId)"
+                    :key="'raid-p-'+p.id"
+                    type="button"
+                    class="px-3 py-1.5 rounded-lg text-xs border transition-colors"
+                    :class="forms.raid_location.participantIds.includes(p.id)
+                      ? 'bg-purple-500/20 border-purple-500/40 text-purple-200'
+                      : 'bg-white/5 border-white/10 text-gray-400'"
+                    @click="toggleParticipant('raid_location', p.id)"
+                  >
+                    {{ p.name }}
+                  </button>
+                </div>
+              </div>
+              <textarea v-model="forms.raid_location.note" rows="2" :class="textareaClass" placeholder="袭击说明（可选）" />
+            </template>
+
+            <!-- 暗杀 -->
+            <template v-else-if="selectedType === 'assassinate_target'">
+              <div>
+                <label class="block text-gray-500 text-xs mb-2">暗杀目标</label>
+                <select v-model="forms.assassinate_target.targetPlayerId" :class="selectClass">
+                  <option value="">请选择玩家</option>
+                  <option v-for="p in allPlayers.filter(x => x.id !== playerId)" :key="'asn-'+p.id" :value="p.id">{{ p.name }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-gray-500 text-xs mb-2">参与玩家</label>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    v-for="p in allPlayers.filter(x => x.id !== playerId)"
+                    :key="'asn-p-'+p.id"
+                    type="button"
+                    class="px-3 py-1.5 rounded-lg text-xs border transition-colors"
+                    :class="forms.assassinate_target.participantIds.includes(p.id)
+                      ? 'bg-purple-500/20 border-purple-500/40 text-purple-200'
+                      : 'bg-white/5 border-white/10 text-gray-400'"
+                    @click="toggleParticipant('assassinate_target', p.id)"
+                  >
+                    {{ p.name }}
+                  </button>
+                </div>
+              </div>
+              <textarea v-model="forms.assassinate_target.note" rows="2" :class="textareaClass" placeholder="暗杀说明（可选）" />
             </template>
 
             <div>
@@ -860,9 +927,9 @@ onMounted(async () => {
               <span class="text-white text-sm font-medium">{{ item.actionTypeLabel }}</span>
               <span
                 class="text-xs px-2 py-0.5 rounded-full"
-                :class="item.status === 'pending' ? 'bg-amber-500/20 text-amber-400' : 'bg-green-500/20 text-green-400'"
+                :class="item.status === 'settled' || item.status === 'feedbacked' ? 'bg-green-500/20 text-green-400' : 'bg-amber-500/20 text-amber-400'"
               >
-                {{ item.status === 'pending' ? '待结算' : '已结算' }}
+                {{ item.status === 'settled' || item.status === 'feedbacked' ? '已发布' : '待确认' }}
               </span>
             </div>
             <div

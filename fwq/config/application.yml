@@ -50,17 +50,22 @@ spring:
       enabled: true
       force: true
 
-# AI 配置
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
+# AI 配置（DeepSeek V4 Flash；密钥用环境变量 AI_API_KEY）
 ai:
-  dashscope:
-    api-key: ${AI_API_KEY:sk-d98d8ccb78994b5fb3bee9cb1629017f}
-    api-url: https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation
-    model: qwen-turbo
+  api-key: ${AI_API_KEY:}
+  api-url: ${AI_API_URL:https://api.deepseek.com/chat/completions}
+  model: ${AI_MODEL:deepseek-v4-flash}
+  max-tokens: ${AI_MAX_TOKENS:80}
 
 # NPC 对话限制配置
 npc:
   dialogue:
-    daily-limit: 10
+    daily-limit: 5
 
 # 日志配置
 logging:

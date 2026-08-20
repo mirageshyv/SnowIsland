@@ -841,7 +841,7 @@ onMounted(async () => {
               <!-- 额外劳动 -->
               <template v-else-if="selectedType === 'extra_labor'">
                 <p v-if="!context?.hasProduceToday" class="text-red-400 text-sm">须今日已提交生产类自由行动。</p>
-                <p v-else class="text-cyan-300/90 text-sm">结算后今日生产产出 +50%。</p>
+                <p v-else class="text-cyan-300/90 text-sm">结算后今日生产产出 +50%。物资在主持人发布后才会发放到背包。</p>
                 <div class="mt-2">
                   <label class="block text-gray-500 text-xs mb-2 ml-0.5">备注（可选）</label>
                   <textarea v-model="forms.extra_labor.note" rows="2" :class="textareaClass" />
@@ -975,7 +975,7 @@ onMounted(async () => {
                 </div>
 
                 <template v-if="forms.ark_construction.mode === 'resource'">
-                  <p class="text-amber-300/90 text-xs mb-3">每日投入上限：木材5吨、金属制品2吨、密封材料(沥青)30kg。发动机/发电机/螺旋桨/船帆无上限。资源可同时来源于个人物资和方舟仓库。</p>
+                  <p class="text-amber-300/90 text-xs mb-3">每日投入上限：木材30吨、金属制品20吨、密封材料(沥青)20kg。发动机/发电机/螺旋桨/船帆无上限。资源可同时来源于个人物资和方舟仓库。</p>
                   <div class="rounded-xl border border-white/10 bg-black/20 p-3 space-y-3">
                     <p class="text-gray-400 text-xs font-medium">个人物资投入（kg）</p>
                     <div class="grid grid-cols-3 gap-2">
@@ -1011,9 +1011,9 @@ onMounted(async () => {
                     </div>
                   </div>
                   <div class="rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-3 py-2 text-xs text-gray-300 space-y-0.5">
-                    <p>木材合计：{{ ((forms.ark_construction.woodKg || 0) + (forms.ark_construction.warehouseWoodKg || 0)).toFixed(0) }}kg = {{ (((forms.ark_construction.woodKg || 0) + (forms.ark_construction.warehouseWoodKg || 0)) / 1000).toFixed(2) }}吨 <span class="text-gray-500">/ 每日上限5吨</span></p>
-                    <p>金属合计：{{ ((forms.ark_construction.metalKg || 0) + (forms.ark_construction.warehouseMetalKg || 0)).toFixed(0) }}kg = {{ (((forms.ark_construction.metalKg || 0) + (forms.ark_construction.warehouseMetalKg || 0)) / 1000).toFixed(2) }}吨 <span class="text-gray-500">/ 每日上限2吨</span></p>
-                    <p>密封材料(沥青)合计：{{ (forms.ark_construction.sealantKg || 0) + (forms.ark_construction.warehouseSealantKg || 0) }}kg <span class="text-gray-500">/ 每日上限30kg</span></p>
+                    <p>木材合计：{{ ((forms.ark_construction.woodKg || 0) + (forms.ark_construction.warehouseWoodKg || 0)).toFixed(0) }}kg = {{ (((forms.ark_construction.woodKg || 0) + (forms.ark_construction.warehouseWoodKg || 0)) / 1000).toFixed(2) }}吨 <span class="text-gray-500">/ 每日上限30吨</span></p>
+                    <p>金属合计：{{ ((forms.ark_construction.metalKg || 0) + (forms.ark_construction.warehouseMetalKg || 0)).toFixed(0) }}kg = {{ (((forms.ark_construction.metalKg || 0) + (forms.ark_construction.warehouseMetalKg || 0)) / 1000).toFixed(2) }}吨 <span class="text-gray-500">/ 每日上限20吨</span></p>
+                    <p>密封材料(沥青)合计：{{ (forms.ark_construction.sealantKg || 0) + (forms.ark_construction.warehouseSealantKg || 0) }}kg <span class="text-gray-500">/ 每日上限20kg</span></p>
                   </div>
                   <div class="rounded-xl border border-white/10 bg-black/20 p-3 space-y-3">
                     <p class="text-gray-400 text-xs font-medium">组件投入</p>
@@ -1043,8 +1043,8 @@ onMounted(async () => {
                   <div>
                     <label class="block text-gray-500 text-xs mb-2 ml-0.5">推进类型</label>
                     <select v-model="forms.ark_construction.workType" :class="selectClass">
-                      <option value="wood">1吨木材当量</option>
-                      <option value="metal">500kg金属当量</option>
+                      <option value="wood">5吨木材当量</option>
+                      <option value="metal">5吨金属当量</option>
                       <option value="sealant">5kg密封材料(沥青)当量</option>
                     </select>
                   </div>
@@ -1131,9 +1131,9 @@ onMounted(async () => {
                 <span class="text-white text-sm font-medium">{{ item.actionTypeLabel }}</span>
                 <span
                   class="text-xs px-2 py-0.5 rounded-full"
-                  :class="item.status === 'pending' ? 'bg-amber-500/20 text-amber-400' : 'bg-green-500/20 text-green-400'"
+                  :class="item.resultPending || item.status === 'pending' ? 'bg-amber-500/20 text-amber-400' : 'bg-green-500/20 text-green-400'"
                 >
-                  {{ item.status === 'pending' ? '待反馈' : '已反馈' }}
+                  {{ item.resultPending ? '待发布' : (item.status === 'pending' ? '待反馈' : '已反馈') }}
                 </span>
               </div>
               <div v-if="item.result" class="text-gray-400 text-xs whitespace-pre-wrap bg-black/20 rounded-lg p-3 mt-2">{{ item.result }}</div>

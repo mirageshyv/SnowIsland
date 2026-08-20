@@ -22,6 +22,13 @@ public class GameResetController {
 
     @PostMapping("/reset")
     public ResponseEntity<Map<String, Object>> resetToInitialState(@RequestParam(required = false) String userRole) {
-        return ResponseEntity.ok(gameResetService.resetToInitialState(userRole));
+        try {
+            return ResponseEntity.ok(gameResetService.resetToInitialState(userRole));
+        } catch (Exception e) {
+            Map<String, Object> result = new java.util.LinkedHashMap<>();
+            result.put("success", false);
+            result.put("message", "重置失败: " + e.getMessage());
+            return ResponseEntity.ok(result);
+        }
     }
 }

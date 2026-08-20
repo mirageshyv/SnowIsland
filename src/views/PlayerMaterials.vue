@@ -26,7 +26,7 @@ onMounted(() => {
     <!-- Sidebar -->
     <aside class="flex h-full w-64 shrink-0 flex-col border-r border-[#1f2937] bg-[#0f1419]">
       <div class="shrink-0 border-b border-[#1f2937] p-6">
-        <h2 class="text-white tracking-tight text-lg">物资管理</h2>
+        <h2 class="text-white tracking-tight text-lg">背包</h2>
       </div>
 
       <nav class="min-h-0 flex-1 overflow-y-auto p-4">

@@ -53,6 +53,13 @@ public class NpcHelpService {
         List<Map<String, Object>> result = new ArrayList<>();
 
         try {
+            Optional<LocationNpc> npcOpt = npcRepository.findById(npcId);
+            if (npcOpt.isPresent()) {
+                String status = npcOpt.get().getStatus() != null ? npcOpt.get().getStatus() : "正常";
+                if ("死亡".equals(status) || "失踪".equals(status) || "被捕".equals(status)) {
+                    return result;
+                }
+            }
             List<NpcHelpConfig> configs = helpConfigRepository.findByNpcId(npcId);
             int playerFavor = getPlayerFavor(npcId, playerId);
 
@@ -101,6 +108,13 @@ public class NpcHelpService {
             }
 
             LocationNpc npc = npcOpt.get();
+            String status = npc.getStatus() != null ? npc.getStatus() : "正常";
+            if ("死亡".equals(status) || "失踪".equals(status) || "被捕".equals(status)) {
+                result.put("success", false);
+                result.put("message", "死亡".equals(status) ? "对方已经死去，无法求助"
+                        : "失踪".equals(status) ? "找不到此人，无法求助" : "对方已被捕，无法求助");
+                return result;
+            }
             List<NpcHelpConfig> configs = helpConfigRepository.findByNpcIdAndHelpType(npcId, helpType);
             if (configs.isEmpty()) {
                 result.put("success", false);

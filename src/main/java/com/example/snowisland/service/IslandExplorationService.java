@@ -4,6 +4,8 @@ import com.example.snowisland.entity.*;
 import com.example.snowisland.entity.PlayerExploration.ExplorationStatus;
 import com.example.snowisland.entity.TradeItem.ItemType;
 import com.example.snowisland.repository.*;
+import com.example.snowisland.util.PlayerStatusCatalog;
+import com.example.snowisland.util.SafeText;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,12 +27,18 @@ public class IslandExplorationService {
 
     public static final int MAX_INVEST_POINTS = 15;
 
+    /** Shown to players until DM releases the computed outcome. */
+    public static final String PENDING_PLAYER_MESSAGE = "已提交，等待主持人确认。";
+
     public static final Map<Integer, Integer> EXPLORATION_ITEM_BONUS = new HashMap<>();
+    /** 每种探索物资一次投入消耗的数量（未列出的按 1） */
+    public static final Map<Integer, Integer> EXPLORATION_ITEM_CONSUME = new HashMap<>();
     static {
-        EXPLORATION_ITEM_BONUS.put(3, 1);
-        EXPLORATION_ITEM_BONUS.put(26, 7);
+        EXPLORATION_ITEM_BONUS.put(3, 2);
+        EXPLORATION_ITEM_BONUS.put(25, 7);
         EXPLORATION_ITEM_BONUS.put(13, 2);
         EXPLORATION_ITEM_BONUS.put(2, 5);
+        EXPLORATION_ITEM_CONSUME.put(3, 10);
     }
 
     /**
@@ -39,7 +47,7 @@ public class IslandExplorationService {
     public static final Map<Integer, ItemType> EXPLORATION_ITEM_TYPE = new HashMap<>();
     static {
         EXPLORATION_ITEM_TYPE.put(3, ItemType.material);
-        EXPLORATION_ITEM_TYPE.put(26, ItemType.item);
+        EXPLORATION_ITEM_TYPE.put(25, ItemType.item);
         EXPLORATION_ITEM_TYPE.put(13, ItemType.item);
         EXPLORATION_ITEM_TYPE.put(2, ItemType.item);
     }
@@ -51,6 +59,23 @@ public class IslandExplorationService {
         return difficulty != null && difficulty >= MIN_DIFFICULTY && difficulty <= MAX_DIFFICULTY;
     }
 
+    public static int consumeQuantity(int itemId) {
+        Integer qty = EXPLORATION_ITEM_CONSUME.get(itemId);
+        return (qty != null && qty > 0) ? qty : 1;
+    }
+
+    /**
+     * Each exploration item type contributes at most one unit of bonus,
+     * regardless of requested quantity (qty &gt;= 1 → bonus once).
+     */
+    public static int investBonusOnce(int itemId, int quantity) {
+        if (quantity < 1) {
+            return 0;
+        }
+        Integer bonus = EXPLORATION_ITEM_BONUS.get(itemId);
+        return (bonus != null && bonus > 0) ? bonus : 0;
+    }
+
     @Autowired
     private PlayerExplorationRepository playerExplorationRepository;
 
@@ -59,6 +84,12 @@ public class IslandExplorationService {
 
     @Autowired
     private IslandEventRewardRepository islandEventRewardRepository;
+
+    @Autowired
+    private EventPackRepository eventPackRepository;
+
+    @Autowired
+    private ExplorationDataInitService explorationDataInitService;
 
     @Autowired
     private PlayerRepository playerRepository;
@@ -72,6 +103,12 @@ public class IslandExplorationService {
     @Autowired
     private GameStateService gameStateService;
 
+    @Autowired
+    private NightActionRepository nightActionRepository;
+
+    @Autowired
+    private TradeRestrictionService tradeRestrictionService;
+
     @Transactional
     public Map<String, Object> submitExploration(Integer playerId, Integer gameDay, Map<Integer, Integer> investItems) {
         Map<String, Object> result = new HashMap<>();
@@ -83,12 +120,37 @@ public class IslandExplorationService {
                 return result;
             }
             Player player = optPlayer.get();
+            if (gameDay == null || gameDay < 1) {
+                gameDay = gameStateService.getCurrentDay();
+            }
+            String editDeny = gameStateService.denyNightSubmit(gameDay);
+            if (editDeny != null) {
+                result.put("success", false);
+                result.put("message", editDeny);
+                return result;
+            }
+            if (tradeRestrictionService.isBoundActive(player)) {
+                result.put("success", false);
+                result.put("message", PlayerStatusCatalog.BOUND_DENY_MESSAGE);
+                return result;
+            }
 
             Optional<PlayerExploration> existing = playerExplorationRepository.findByPlayerIdAndGameDay(playerId, gameDay);
             if (existing.isPresent()) {
                 result.put("success", false);
                 result.put("message", "今日已提交探索行动");
                 return result;
+            }
+
+            boolean unlimitedNight = player.getFaction() == Player.Faction.统治者;
+            if (!unlimitedNight) {
+                List<NightAction> nightActions =
+                        nightActionRepository.findByPlayerIdAndGameDayOrderByCreatedAtDesc(playerId, gameDay);
+                if (!nightActions.isEmpty()) {
+                    result.put("success", false);
+                    result.put("message", "今日已提交夜晚行动，每天仅可执行一次");
+                    return result;
+                }
             }
 
             // 验证探索投入：必须投入至少1点探索值
@@ -118,12 +180,13 @@ public class IslandExplorationService {
                 }
 
                 Optional<PlayerItem> optItem = playerItemRepository.findByPlayerIdAndItemTypeAndItemId(playerId, itemType, itemId);
-                if (optItem.isPresent() && optItem.get().getQuantity() >= quantity) {
+                int consumeQty = consumeQuantity(itemId);
+                if (optItem.isPresent() && optItem.get().getQuantity() >= consumeQty) {
                     PlayerItem item = optItem.get();
-                    item.setQuantity(item.getQuantity() - quantity);
+                    item.setQuantity(item.getQuantity() - consumeQty);
                     playerItemRepository.save(item);
-                    investPoints += bonus * quantity;
-                    consumedItems.add(getItemName(itemType.name(), itemId) + " x" + quantity);
+                    investPoints += investBonusOnce(itemId, quantity);
+                    consumedItems.add(getItemName(itemType.name(), itemId) + " x" + consumeQty);
                 }
             }
 
@@ -171,32 +234,12 @@ public class IslandExplorationService {
                     "探索岛屿",
                     "玩家提交了岛屿探索行动，投入探索值: " + investPoints);
 
-            // 自动触发随机事件并结算
             Map<String, Object> triggerResult = triggerRandomEvent(exploration.getId());
-            if (Boolean.TRUE.equals(triggerResult.get("success"))) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> eventData = (Map<String, Object>) triggerResult.get("data");
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> rewards = (List<Map<String, Object>>) triggerResult.get("rewards");
-
-                result.put("success", true);
-                result.put("message", "探索行动提交成功，事件已自动触发并结算");
-                result.put("investPoints", investPoints);
-                result.put("diceResult", diceResult);
-                result.put("totalExplorationValue", totalExplorationValue);
-                result.put("targetDifficulty", targetDifficulty);
-                result.put("data", eventData);
-                result.put("rewards", rewards);
-                result.put("eventTriggered", true);
-            } else {
-                result.put("success", true);
-                result.put("message", "探索行动提交成功");
-                result.put("investPoints", investPoints);
-                result.put("diceResult", diceResult);
-                result.put("totalExplorationValue", totalExplorationValue);
-                result.put("targetDifficulty", targetDifficulty);
-                result.put("data", toMap(exploration));
-                result.put("eventTriggered", false);
+            PlayerExploration stored = playerExplorationRepository.findById(exploration.getId()).orElse(exploration);
+            result.put("success", true);
+            result.put("message", "探索行动提交成功");
+            result.put("data", toMapForPlayer(stored));
+            if (!Boolean.TRUE.equals(triggerResult.get("success"))) {
                 result.put("triggerError", triggerResult.get("message"));
             }
         } catch (Exception e) {
@@ -213,7 +256,7 @@ public class IslandExplorationService {
         try {
             List<PlayerExploration> explorations = playerExplorationRepository.findByPlayerIdOrderByGameDayDesc(playerId);
             List<Map<String, Object>> list = explorations.stream()
-                    .map(this::toMapWithEvent)
+                    .map(this::toMapForPlayer)
                     .collect(Collectors.toList());
             result.put("success", true);
             result.put("explorations", list);
@@ -227,7 +270,7 @@ public class IslandExplorationService {
     public Map<String, Object> getPendingExplorations(Integer gameDay) {
         Map<String, Object> result = new HashMap<>();
         try {
-            List<PlayerExploration> explorations = playerExplorationRepository.findByGameDayAndStatus(gameDay, ExplorationStatus.pending);
+            List<PlayerExploration> explorations = playerExplorationRepository.findByGameDay(gameDay);
             List<Map<String, Object>> list = explorations.stream()
                     .map(this::toMapWithPlayer)
                     .collect(Collectors.toList());
@@ -242,8 +285,9 @@ public class IslandExplorationService {
     }
 
     public List<Map<String, Object>> getAllIslandEvents() {
+        Map<Integer, EventPack> packMap = loadPackMap();
         return islandEventRepository.findAllByOrderByIdAsc().stream()
-                .map(this::eventToMap)
+                .map(e -> eventToMap(e, packMap))
                 .collect(Collectors.toList());
     }
 
@@ -251,13 +295,17 @@ public class IslandExplorationService {
     public Map<String, Object> createEvent(Map<String, Object> payload) {
         Map<String, Object> result = new HashMap<>();
         try {
-            String name = String.valueOf(payload.get("name"));
-            String description = String.valueOf(payload.get("description"));
+            String name = SafeText.cleanLimit(String.valueOf(payload.get("name")), SafeText.EVENT_NAME_MAX);
+            String description = SafeText.cleanLimit(
+                    payload.get("description") != null ? String.valueOf(payload.get("description")) : "",
+                    SafeText.FIELD_MAX);
             String rarity = payload.get("rarity") != null ? String.valueOf(payload.get("rarity")) : "normal";
             Integer difficulty = toInteger(payload.get("eventDifficulty"));
             if (difficulty == null) difficulty = toInteger(payload.get("difficulty"));
-            String locationDesc = payload.get("locationDesc") != null ? String.valueOf(payload.get("locationDesc")) : null;
-            String loreFragment = payload.get("loreFragment") != null ? String.valueOf(payload.get("loreFragment")) : null;
+            String locationDesc = payload.get("locationDesc") != null
+                    ? SafeText.cleanLimit(String.valueOf(payload.get("locationDesc")), SafeText.FIELD_MAX) : null;
+            String loreFragment = payload.get("loreFragment") != null
+                    ? SafeText.cleanLimit(String.valueOf(payload.get("loreFragment")), SafeText.FIELD_MAX) : null;
             Boolean isSpecial = payload.get("isSpecial") != null ? (Boolean) payload.get("isSpecial") : false;
 
             if (name == null || name.trim().isEmpty() || "null".equals(name)) {
@@ -287,7 +335,18 @@ public class IslandExplorationService {
             event.setLocationDesc(locationDesc);
             event.setLoreFragment(loreFragment);
             event.setIsSpecial(isSpecial);
+            applyPackFromPayload(event, payload, true);
             IslandEvent saved = islandEventRepository.save(event);
+            if (payload.containsKey("rewardsText")) {
+                List<String> unmatched = explorationDataInitService.replaceRewardsFromText(saved.getId(),
+                        payload.get("rewardsText") != null ? String.valueOf(payload.get("rewardsText")) : "");
+                if (unmatched != null && !unmatched.isEmpty()) {
+                    TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                    result.put("success", false);
+                    result.put("message", "物资无法识别：" + String.join("、", unmatched));
+                    return result;
+                }
+            }
 
             result.put("success", true);
             result.put("message", "事件创建成功");
@@ -314,13 +373,13 @@ public class IslandExplorationService {
             IslandEvent event = opt.get();
 
             if (payload.containsKey("name")) {
-                String name = String.valueOf(payload.get("name"));
+                String name = SafeText.cleanLimit(String.valueOf(payload.get("name")), SafeText.EVENT_NAME_MAX);
                 if (name != null && !name.trim().isEmpty() && !"null".equals(name)) {
                     event.setName(name.trim());
                 }
             }
             if (payload.containsKey("description")) {
-                String desc = String.valueOf(payload.get("description"));
+                String desc = SafeText.cleanLimit(String.valueOf(payload.get("description")), SafeText.FIELD_MAX);
                 event.setDescription(desc == null || "null".equals(desc) ? "" : desc);
             }
             if (payload.containsKey("rarity")) {
@@ -337,18 +396,40 @@ public class IslandExplorationService {
                 event.setEventDifficulty(difficulty);
             }
             if (payload.containsKey("locationDesc")) {
-                String locationDesc = String.valueOf(payload.get("locationDesc"));
+                String locationDesc = SafeText.cleanLimit(String.valueOf(payload.get("locationDesc")), SafeText.FIELD_MAX);
                 event.setLocationDesc("null".equals(locationDesc) ? null : locationDesc);
             }
             if (payload.containsKey("loreFragment")) {
-                String loreFragment = String.valueOf(payload.get("loreFragment"));
+                String loreFragment = SafeText.cleanLimit(String.valueOf(payload.get("loreFragment")), SafeText.FIELD_MAX);
                 event.setLoreFragment("null".equals(loreFragment) ? null : loreFragment);
             }
             if (payload.containsKey("isSpecial")) {
                 event.setIsSpecial((Boolean) payload.get("isSpecial"));
             }
+            if (payload.containsKey("packId") || payload.containsKey("packName")) {
+                Integer packId = toInteger(payload.get("packId"));
+                boolean hasPackName = payload.get("packName") != null
+                        && !"null".equals(String.valueOf(payload.get("packName")))
+                        && !String.valueOf(payload.get("packName")).trim().isEmpty();
+                if (packId == null && !hasPackName) {
+                    event.setPackId(null);
+                    event.setPackName(null);
+                } else {
+                    applyPackFromPayload(event, payload, false);
+                }
+            }
 
             IslandEvent saved = islandEventRepository.save(event);
+            if (payload.containsKey("rewardsText")) {
+                List<String> unmatched = explorationDataInitService.replaceRewardsFromText(saved.getId(),
+                        payload.get("rewardsText") != null ? String.valueOf(payload.get("rewardsText")) : "");
+                if (unmatched != null && !unmatched.isEmpty()) {
+                    TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                    result.put("success", false);
+                    result.put("message", "物资无法识别：" + String.join("、", unmatched));
+                    return result;
+                }
+            }
             result.put("success", true);
             result.put("message", "事件更新成功");
             result.put("event", eventToMap(saved));
@@ -380,6 +461,35 @@ public class IslandExplorationService {
             e.printStackTrace();
         }
         return result;
+    }
+
+    private Map<Integer, EventPack> loadPackMap() {
+        Map<Integer, EventPack> packMap = new HashMap<>();
+        for (EventPack pack : eventPackRepository.findAll()) {
+            packMap.put(pack.getId(), pack);
+        }
+        return packMap;
+    }
+
+    private void applyPackFromPayload(IslandEvent event, Map<String, Object> payload, boolean defaultToBase) {
+        EventPack pack = null;
+        Integer packId = toInteger(payload.get("packId"));
+        if (packId != null) {
+            pack = eventPackRepository.findById(packId).orElse(null);
+        }
+        if (pack == null && payload.get("packName") != null) {
+            String packName = String.valueOf(payload.get("packName"));
+            if (!packName.isEmpty() && !"null".equals(packName)) {
+                pack = eventPackRepository.findByName(packName.trim()).orElse(null);
+            }
+        }
+        if (pack == null && defaultToBase) {
+            pack = eventPackRepository.findByName(EventPack.PACK_BASE).orElse(null);
+        }
+        if (pack != null) {
+            event.setPackId(pack.getId());
+            event.setPackName(pack.getName());
+        }
     }
 
     private Integer toInteger(Object v) {
@@ -425,12 +535,15 @@ public class IslandExplorationService {
 
             StringBuilder sb = new StringBuilder();
             sb.append("✓ 已提交【探索岛屿】\n\n");
+            sb.append("投入探索值: ").append(exploration.getInvestPoints()).append("\n");
+            sb.append("骰子: ").append(exploration.getDiceResult()).append("\n");
+            sb.append("总探索值: ").append(exploration.getTotalExplorationValue()).append("\n\n");
             sb.append("【探索结果】\n");
             sb.append("发现：").append(event.getName()).append("\n");
             sb.append(event.getDescription()).append("\n\n");
 
             sb.append("【探索奖励】\n");
-            List<Map<String, Object>> grantedRewards = new ArrayList<>();
+            List<Map<String, Object>> plannedRewards = new ArrayList<>();
 
             List<IslandEventReward> rewards = islandEventRewardRepository.findByEventId(eventId);
             if (rewards != null && !rewards.isEmpty()) {
@@ -440,27 +553,25 @@ public class IslandExplorationService {
                     int quantity = reward.getQuantity();
                     if (quantity <= 0) continue;
 
-                    addPlayerItem(exploration.getPlayerId(), itemType, itemId, quantity);
-
                     String itemName = getItemName(itemType.name(), itemId);
                     String unit = getItemUnit(itemType.name(), itemId);
 
                     sb.append("+").append(quantity).append(unit).append(" ").append(itemName).append("\n");
 
-                    Map<String, Object> granted = new LinkedHashMap<>();
-                    granted.put("itemType", itemType.name());
-                    granted.put("itemId", itemId);
-                    granted.put("quantity", quantity);
-                    granted.put("name", itemName);
-                    granted.put("unit", unit);
-                    grantedRewards.add(granted);
+                    Map<String, Object> planned = new LinkedHashMap<>();
+                    planned.put("itemType", itemType.name());
+                    planned.put("itemId", itemId);
+                    planned.put("quantity", quantity);
+                    planned.put("name", itemName);
+                    planned.put("unit", unit);
+                    plannedRewards.add(planned);
                 }
             } else {
                 sb.append("无奖励\n");
             }
 
             exploration.setResult(sb.toString());
-            exploration.setStatus(ExplorationStatus.settled);
+            exploration.setStatus(ExplorationStatus.explored);
 
             event.setTriggered(true);
             islandEventRepository.save(event);
@@ -472,15 +583,13 @@ public class IslandExplorationService {
                     player.getName(),
                     ActivityLogService.factionOf(player),
                     ActivityLogService.CAT_NIGHT,
-                    "探索岛屿结算",
-                    "获得奖励: " + grantedRewards.stream()
-                            .map(r -> String.valueOf(r.get("quantity")) + String.valueOf(r.get("unit")) + " " + String.valueOf(r.get("name")))
-                            .collect(Collectors.joining(", ")));
+                    "探索岛屿",
+                    "结果已生成，等待主持人发布");
 
             result.put("success", true);
-            result.put("message", "事件触发成功，奖励已自动发放");
+            result.put("message", "探索结果已生成，等待主持人发布");
             result.put("data", toMapWithEvent(exploration));
-            result.put("rewards", grantedRewards);
+            result.put("rewards", plannedRewards);
         } catch (Exception e) {
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             result.put("success", false);
@@ -572,14 +681,14 @@ public class IslandExplorationService {
             
             if (exploration.getStatus() == ExplorationStatus.settled) {
                 result.put("success", false);
-                result.put("message", "探索已结算，奖励已自动发放");
+                result.put("message", "探索已发布，奖励已发放");
                 result.put("data", toMapWithEvent(exploration));
                 return result;
             }
             
             if (exploration.getStatus() != ExplorationStatus.explored) {
                 result.put("success", false);
-                result.put("message", "探索状态不允许结算");
+                result.put("message", "探索结果尚未生成，无法发布");
                 return result;
             }
 
@@ -591,9 +700,9 @@ public class IslandExplorationService {
             }
             Player player = optPlayer.get();
 
-            StringBuilder sb = new StringBuilder();
-            sb.append(exploration.getResult());
-            sb.append("\n\n【探索奖励】\n");
+            if (rewards == null || rewards.isEmpty()) {
+                rewards = getEventRewards(exploration.getEventId());
+            }
 
             List<Map<String, Object>> grantedRewards = new ArrayList<>();
 
@@ -611,8 +720,6 @@ public class IslandExplorationService {
                     String itemName = getItemName(itemTypeStr, itemId);
                     String unit = getItemUnit(itemTypeStr, itemId);
 
-                    sb.append("+").append(quantity).append(unit).append(" ").append(itemName).append("\n");
-
                     Map<String, Object> granted = new LinkedHashMap<>();
                     granted.put("itemType", itemTypeStr);
                     granted.put("itemId", itemId);
@@ -624,7 +731,6 @@ public class IslandExplorationService {
             }
 
             exploration.setStatus(ExplorationStatus.settled);
-            exploration.setResult(sb.toString());
             playerExplorationRepository.save(exploration);
 
             activityLogService.log(
@@ -639,7 +745,7 @@ public class IslandExplorationService {
                             .collect(Collectors.joining(", ")));
 
             result.put("success", true);
-            result.put("message", "探索结算成功");
+            result.put("message", "探索结果已发布给玩家");
             result.put("data", toMapWithEvent(exploration));
             result.put("grantedRewards", grantedRewards);
         } catch (Exception e) {
@@ -685,6 +791,34 @@ public class IslandExplorationService {
         return map;
     }
 
+    private Map<String, Object> toMapForPlayer(PlayerExploration exploration) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", exploration.getId());
+        map.put("playerId", exploration.getPlayerId());
+        map.put("gameDay", exploration.getGameDay());
+        map.put("status", exploration.getStatus().name());
+        map.put("createdAt", exploration.getCreatedAt());
+        map.put("updatedAt", exploration.getUpdatedAt());
+        boolean released = exploration.getStatus() == ExplorationStatus.settled;
+        map.put("resultPending", !released);
+        if (!released) {
+            map.put("result", PENDING_PLAYER_MESSAGE);
+            return map;
+        }
+        map.put("eventId", exploration.getEventId());
+        map.put("investPoints", exploration.getInvestPoints());
+        map.put("diceResult", exploration.getDiceResult());
+        map.put("totalExplorationValue", exploration.getTotalExplorationValue());
+        map.put("result", exploration.getResult());
+        if (exploration.getEventId() != null) {
+            islandEventRepository.findById(exploration.getEventId()).ifPresent(event -> {
+                map.put("event", eventToMap(event));
+                map.put("rewards", getEventRewards(exploration.getEventId()));
+            });
+        }
+        return map;
+    }
+
     private Map<String, Object> toMapWithEvent(PlayerExploration exploration) {
         Map<String, Object> map = toMap(exploration);
         if (exploration.getEventId() != null) {
@@ -712,6 +846,10 @@ public class IslandExplorationService {
     }
 
     private Map<String, Object> eventToMap(IslandEvent event) {
+        return eventToMap(event, loadPackMap());
+    }
+
+    private Map<String, Object> eventToMap(IslandEvent event, Map<Integer, EventPack> packMap) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", event.getId());
         map.put("name", event.getName());
@@ -722,11 +860,26 @@ public class IslandExplorationService {
         map.put("locationDesc", event.getLocationDesc());
         map.put("loreFragment", event.getLoreFragment());
         map.put("isSpecial", event.getIsSpecial());
+        map.put("packId", event.getPackId());
+        map.put("sourceNumber", event.getSourceNumber());
+        EventPack pack = null;
+        if (event.getPackId() != null && packMap != null) {
+            pack = packMap.get(event.getPackId());
+        }
+        String packName = event.getPackName();
+        if (packName == null && pack != null) {
+            packName = pack.getName();
+        }
+        map.put("packName", packName);
+        map.put("packEnabled", pack != null && Boolean.TRUE.equals(pack.getEnabled()));
         map.put("rewards", getEventRewards(event.getId()));
         return map;
     }
 
     private List<Map<String, Object>> getEventRewards(Integer eventId) {
+        if (eventId == null) {
+            return Collections.emptyList();
+        }
         return islandEventRewardRepository.findByEventId(eventId).stream()
                 .map(r -> {
                     Map<String, Object> map = new LinkedHashMap<>();
@@ -763,7 +916,7 @@ public class IslandExplorationService {
         itemNames.get("item").put(15, "火柴");
         itemNames.get("item").put(16, "铅笔");
         itemNames.get("item").put(17, "破损海图");
-        itemNames.get("item").put(18, "便当");
+        itemNames.get("item").put(18, "面包");
         itemNames.get("item").put(19, "矿场仓库钥匙");
         itemNames.get("item").put(20, "燃料仓库钥匙");
         itemNames.get("item").put(21, "镇武库钥匙");
@@ -771,6 +924,33 @@ public class IslandExplorationService {
         itemNames.get("item").put(23, "反叛者基地钥匙");
         itemNames.get("item").put(24, "方舟钥匙");
         itemNames.get("item").put(25, "火把");
+        itemNames.get("item").put(26, "诅咒硬币");
+        itemNames.get("item").put(27, "祭坛石");
+        itemNames.get("item").put(28, "通灵笔记");
+        itemNames.get("item").put(29, "发光矿石碎片");
+        itemNames.get("item").put(30, "鱼鳞外套");
+        itemNames.get("item").put(31, "契约铁卷");
+        itemNames.get("item").put(32, "革命宣言");
+        itemNames.get("item").put(33, "古老龙骨图");
+        itemNames.get("item").put(34, "灰烬预言书");
+        itemNames.get("item").put(35, "人皮册子残页");
+        itemNames.get("item").put(36, "星象观测手稿");
+        itemNames.get("item").put(37, "尸油蜡烛");
+        itemNames.get("item").put(38, "深海鱼油蜡烛");
+        itemNames.get("item").put(39, "旧地图");
+        itemNames.get("item").put(40, "飞机部件·油箱");
+        itemNames.get("item").put(41, "飞机部件·起落架");
+        itemNames.get("item").put(42, "笔记本");
+        itemNames.get("item").put(43, "钢笔");
+        itemNames.get("item").put(44, "归墟罗盘");
+        itemNames.get("item").put(45, "龙骨刻刀");
+        itemNames.get("item").put(46, "灾厄之眼");
+        itemNames.get("item").put(47, "引魂烛台");
+        itemNames.get("item").put(48, "星轨轮盘");
+        itemNames.get("item").put(49, "烬火旗");
+        itemNames.get("item").put(50, "银币");
+        itemNames.get("item").put(51, "情绪抑制器");
+        itemNames.get("item").put(52, "共鸣石");
         itemNames.put("weapon", new HashMap<>());
         itemNames.get("weapon").put(1, "制式手枪");
         itemNames.get("weapon").put(2, "猎枪");
@@ -784,6 +964,9 @@ public class IslandExplorationService {
         itemNames.get("weapon").put(10, "电锯");
         itemNames.get("weapon").put(11, "手术刀");
         itemNames.get("weapon").put(12, "炸药");
+        itemNames.get("weapon").put(13, "电钻");
+        itemNames.get("weapon").put(14, "匕首");
+        itemNames.get("weapon").put(15, "铁镐");
         itemNames.put("ammo", new HashMap<>());
         itemNames.get("ammo").put(1, "手枪弹");
         itemNames.get("ammo").put(2, "猎枪弹");
@@ -836,6 +1019,33 @@ public class IslandExplorationService {
         itemUnits.get("item").put(23, "把");
         itemUnits.get("item").put(24, "把");
         itemUnits.get("item").put(25, "把");
+        itemUnits.get("item").put(26, "个");
+        itemUnits.get("item").put(27, "枚");
+        itemUnits.get("item").put(28, "本");
+        itemUnits.get("item").put(29, "枚");
+        itemUnits.get("item").put(30, "件");
+        itemUnits.get("item").put(31, "卷");
+        itemUnits.get("item").put(32, "份");
+        itemUnits.get("item").put(33, "卷");
+        itemUnits.get("item").put(34, "本");
+        itemUnits.get("item").put(35, "页");
+        itemUnits.get("item").put(36, "份");
+        itemUnits.get("item").put(37, "支");
+        itemUnits.get("item").put(38, "支");
+        itemUnits.get("item").put(39, "张");
+        itemUnits.get("item").put(40, "个");
+        itemUnits.get("item").put(41, "个");
+        itemUnits.get("item").put(42, "本");
+        itemUnits.get("item").put(43, "支");
+        itemUnits.get("item").put(44, "个");
+        itemUnits.get("item").put(45, "把");
+        itemUnits.get("item").put(46, "枚");
+        itemUnits.get("item").put(47, "座");
+        itemUnits.get("item").put(48, "个");
+        itemUnits.get("item").put(49, "面");
+        itemUnits.get("item").put(50, "枚");
+        itemUnits.get("item").put(51, "个");
+        itemUnits.get("item").put(52, "枚");
         itemUnits.put("weapon", new HashMap<>());
         itemUnits.get("weapon").put(1, "把");
         itemUnits.get("weapon").put(2, "把");
@@ -849,6 +1059,9 @@ public class IslandExplorationService {
         itemUnits.get("weapon").put(10, "把");
         itemUnits.get("weapon").put(11, "把");
         itemUnits.get("weapon").put(12, "kg");
+        itemUnits.get("weapon").put(13, "把");
+        itemUnits.get("weapon").put(14, "把");
+        itemUnits.get("weapon").put(15, "把");
         itemUnits.put("ammo", new HashMap<>());
         itemUnits.get("ammo").put(1, "枚");
         itemUnits.get("ammo").put(2, "枚");

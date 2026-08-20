@@ -39,6 +39,12 @@ public class PlayerService {
     @Autowired
     private PlayerSupplyService playerSupplyService;
 
+    @Autowired
+    private PlayerMarkerService playerMarkerService;
+
+    @Autowired
+    private TradeRestrictionService tradeRestrictionService;
+
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -275,6 +281,10 @@ public class PlayerService {
     }
 
     public Map<String, Object> getPlayerDetails(Integer id) {
+        return getPlayerDetails(id, null);
+    }
+
+    public Map<String, Object> getPlayerDetails(Integer id, Integer requesterUserId) {
         Map<String, Object> result = new HashMap<>();
         
         try {
@@ -293,8 +303,10 @@ public class PlayerService {
             result.put("isInjured", player.getIsInjured() != null ? player.getIsInjured() : 0);
             result.put("isSeverelyInjured", player.getIsSeverelyInjured());
             result.put("isDead", player.getIsDead());
-            result.put("statuses", PlayerStatusCatalog.buildStatusList(player));
-            result.putAll(PlayerStatusCatalog.combatFlags(player));
+            result.put("isBound", Boolean.TRUE.equals(player.getIsBound()));
+            boolean boundActive = tradeRestrictionService.isBoundActive(player);
+            result.put("statuses", PlayerStatusCatalog.buildStatusList(player, boundActive));
+            result.putAll(PlayerStatusCatalog.combatFlags(player, boundActive));
             result.put("faction", player.getFaction() != null ? player.getFaction().name() : null);
             result.put("jobId", player.getJobId());
             result.put("skillId", player.getSkillId());
@@ -307,6 +319,15 @@ public class PlayerService {
                     result.put("job", job.getName());
                     result.put("jobSkills", job.getSkills());
                     result.put("jobDescription", job.getDescription());
+                }
+            }
+
+            if (player.getHiddenJobId() != null && canSeeHiddenJob(id, requesterUserId)) {
+                Job hiddenJob = jobRepository.findById(player.getHiddenJobId()).orElse(null);
+                if (hiddenJob != null) {
+                    result.put("hiddenJob", hiddenJob.getName());
+                    result.put("hiddenJobSkills", hiddenJob.getSkills());
+                    result.put("hiddenJobDescription", hiddenJob.getDescription());
                 }
             }
 
@@ -326,16 +347,37 @@ public class PlayerService {
                     case 冒险者: avatar = "🗡️"; break;
                     case 天灾使者: avatar = "✨"; break;
                     case 平民: avatar = "🏹"; break;
+                    case 外来者: avatar = "🧳"; break;
+                    case 原住民: avatar = "🌿"; break;
                 }
             }
             result.put("avatar", avatar);
-            
+            result.put("markers", playerMarkerService.listForPlayer(id));
+            List<String> tradeBanReasons = tradeRestrictionService.reasonsFor(player);
+            result.put("tradeBanned", Boolean.TRUE.equals(player.getTradeBanned()));
+            result.put("tradeBanReasons", tradeBanReasons);
+            result.put("tradeBanActive", !tradeBanReasons.isEmpty());
+
         } catch (Exception e) {
             result.put("success", false);
             result.put("message", "获取玩家信息失败: " + e.getMessage());
         }
         
         return result;
+    }
+
+    private boolean canSeeHiddenJob(Integer playerId, Integer requesterUserId) {
+        if (requesterUserId == null || playerId == null) {
+            return false;
+        }
+        User user = userRepository.findById(requesterUserId).orElse(null);
+        if (user == null) {
+            return false;
+        }
+        if (User.Role.DM.equals(user.getRole())) {
+            return true;
+        }
+        return playerId.equals(user.getPlayerId());
     }
 
     /** Dashboard food (kg) and fuel from player_items material 5 / 8. */

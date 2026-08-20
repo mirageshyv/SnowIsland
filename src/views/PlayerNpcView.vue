@@ -81,15 +81,12 @@
                 </div>
               </div>
               
-              <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span class="text-slate-400">性格:</span>
-                  <span class="ml-2">{{ selectedNpc.personality || '未知' }}</span>
-                </div>
-                <div>
-                  <span class="text-slate-400">状态:</span>
-                  <span class="ml-2">{{ selectedNpc.status || '正常' }}</span>
-                </div>
+              <div class="mt-4 text-sm">
+                <span class="text-slate-400">状态:</span>
+                <span class="ml-2" :class="{
+                  'text-amber-300': selectedNpc.status === '虚弱',
+                  'text-red-400': selectedNpc.status === '死亡'
+                }">{{ selectedNpc.status || '正常' }}</span>
               </div>
               
               <p class="mt-4 text-slate-300">{{ selectedNpc.introduction }}</p>
@@ -153,21 +150,25 @@
                 <div v-if="dialogues.length === 0" class="text-center text-slate-500 py-8">
                   点击下方输入框开始对话
                 </div>
+                <div v-if="tradeProposedHint" class="mt-3 p-3 rounded-lg bg-blue-900/30 border border-blue-700/50 text-sm text-blue-200">
+                  对方提出了一笔交易，请打开交易页查看
+                  <button @click="activeTab = 'trade'" class="ml-2 underline text-blue-300">去交易页</button>
+                </div>
               </div>
             </div>
 
-            <div v-else class="p-4 max-h-[400px] overflow-y-auto">
+            <div v-else-if="activeTab === 'trade'" class="p-4 max-h-[400px] overflow-y-auto">
               <div v-if="tradeLoading" class="text-center py-8">
                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
                 <p class="text-slate-400">加载中...</p>
               </div>
               
-              <div v-else-if="tradeConfig.hostile || !tradeConfig.success">
+              <div v-else-if="!tradeConfig || tradeConfig.unavailable || tradeConfig.hostile || !tradeConfig.success">
                 <div class="bg-red-900/30 border border-red-800/50 rounded-xl p-6 text-center">
                   <div class="text-4xl mb-4">⛔</div>
                   <h3 class="text-red-400 font-bold text-lg mb-2">交易不可用</h3>
-                  <p class="text-red-300/80 text-sm">{{ tradeConfig.message || '该NPC对你抱有敌意，拒绝与你交易' }}</p>
-                  <div v-if="tradeConfig.favorTier" class="mt-4 p-3 rounded-lg bg-red-800/30">
+                  <p class="text-red-300/80 text-sm">{{ tradeConfig?.message || '无法交易' }}</p>
+                  <div v-if="tradeConfig?.favorTier" class="mt-4 p-3 rounded-lg bg-red-800/30">
                     <div class="flex items-center justify-center gap-2">
                       <span class="text-xl">💔</span>
                       <div>
@@ -184,7 +185,6 @@
               </div>
               
               <div v-else>
-                <!-- 好感度档位展示 -->
                 <div v-if="tradeConfig.favorTier" class="mb-4 p-3 rounded-lg border" :style="{ borderColor: tradeConfig.favorTier.color + '80', backgroundColor: tradeConfig.favorTier.color + '15' }">
                   <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
@@ -198,118 +198,101 @@
                         </div>
                       </div>
                     </div>
-                    <div class="text-right">
-                      <div v-if="tradeConfig.favorTier.canFreeReward" class="text-xs">
-                        <span class="text-yellow-400 font-bold">🎁 免费赠送</span>
-                      </div>
-                      <div v-else-if="tradeConfig.favorTier.demandDiscount > 0" class="text-xs text-slate-400">
-                        折扣: <span class="text-yellow-400 font-bold">{{ Math.round(tradeConfig.favorTier.demandDiscount * 100) }}%</span>
-                      </div>
-                      <div v-else class="text-xs text-slate-400">
-                        折扣: <span class="text-gray-500">无</span>
-                      </div>
-                      <div v-if="tradeConfig.favorTier.canFreeReward" class="text-xs text-slate-400">
-                        加成: <span class="text-yellow-400 font-bold">双倍</span>
-                      </div>
-                      <div v-else-if="tradeConfig.favorTier.supplyBonus > 0" class="text-xs text-slate-400">
-                        加成: <span class="text-green-400 font-bold">{{ Math.round(tradeConfig.favorTier.supplyBonus * 100) }}%</span>
-                      </div>
-                      <div v-else class="text-xs text-slate-400">
-                        加成: <span class="text-gray-500">无</span>
-                      </div>
-                    </div>
+                    <button
+                      @click="refreshTradeConfig"
+                      class="px-3 py-1 text-xs bg-slate-700 hover:bg-slate-600 rounded-lg transition"
+                    >
+                      🔄 刷新
+                    </button>
                   </div>
                   <p class="text-xs text-slate-400 mt-2">{{ tradeConfig.favorTier.description }}</p>
                 </div>
 
-                <div class="mb-4 flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <span class="text-slate-400">今日剩余交易次数:</span>
-                    <span :class="tradeConfig.remainingTrades > 0 ? 'text-green-400 font-bold' : 'text-red-400 font-bold'">
-                      {{ tradeConfig.remainingTrades }} / {{ tradeConfig.dailyLimit }}
-                    </span>
+                <div v-if="openProposal" class="bg-slate-800/50 border border-blue-700/50 rounded-lg p-4 mb-6">
+                  <h3 class="text-sm font-semibold text-blue-300 mb-2">对方提出的交换</h3>
+                  <p v-if="openProposal.remark" class="text-sm text-slate-200 mb-3">{{ openProposal.remark }}</p>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="bg-red-900/20 rounded-lg p-3 border border-red-800/50">
+                      <h4 class="text-red-400 text-xs font-semibold mb-2">你需要付出</h4>
+                      <div v-for="(item, index) in openProposal.take || []" :key="'take-' + index" class="text-sm flex justify-between">
+                        <span>{{ proposalLineName(item) }}</span>
+                        <span class="text-red-300">×{{ proposalLineQty(item) }}</span>
+                      </div>
+                    </div>
+                    <div class="bg-green-900/20 rounded-lg p-3 border border-green-800/50">
+                      <h4 class="text-green-400 text-xs font-semibold mb-2">你将获得</h4>
+                      <div v-for="(item, index) in openProposal.give || []" :key="'give-' + index" class="text-sm flex justify-between">
+                        <span>{{ proposalLineName(item) }}</span>
+                        <span class="text-green-300">×{{ proposalLineQty(item) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <button
+                      @click="acceptProposal"
+                      :disabled="isTrading || isRejecting"
+                      class="py-2 rounded-lg font-semibold bg-green-600 hover:bg-green-700 disabled:bg-slate-600 disabled:cursor-not-allowed"
+                    >
+                      {{ isTrading ? '处理中...' : '接受' }}
+                    </button>
+                    <button
+                      @click="rejectProposal"
+                      :disabled="isTrading || isRejecting"
+                      class="py-2 rounded-lg font-semibold bg-slate-600 hover:bg-slate-500 disabled:opacity-50"
+                    >
+                      {{ isRejecting ? '处理中...' : '拒绝' }}
+                    </button>
+                  </div>
+                </div>
+
+                <div v-else class="bg-slate-700/30 border border-slate-600 rounded-lg p-4 mb-6 text-center">
+                  <p class="text-slate-300 text-sm">对话后对方可能会提出交换</p>
+                </div>
+
+                <div v-if="tradeConfig.giftAllowed" class="bg-slate-800/40 border border-slate-600 rounded-lg p-4 mb-6">
+                  <h3 class="text-sm font-semibold text-amber-300 mb-2">赠予食物 / 燃料（不占交易次数）</h3>
+                  <p class="text-xs text-slate-400 mb-3">
+                    对方今日还需食物 {{ tradeConfig.requiredFoodUnits }}、取暖 {{ tradeConfig.requiredFuelKg }}。
+                    现有食物 {{ tradeConfig.foodKg }}kg / 木材 {{ tradeConfig.woodKg }}kg / 燃料 {{ tradeConfig.fuelKg }}kg。
+                    好感换算：2 食物 = 1 好感，25 木材 = 1 好感，25 燃料 = 1 好感。
+                    送礼好感 {{ tradeConfig.giftFavorTotal || 0 }} / {{ tradeConfig.giftFavorCap || 15 }}。
+                    <span v-if="(tradeConfig.giftFavorRemaining || 0) <= 0" class="text-amber-300">送礼好感已满，物资仍可转交。</span>
+                    <span v-if="selectedNpc.status === '虚弱'" class="text-amber-300">对方已虚弱，再缺一天就会死去。</span>
+                  </p>
+                  <div class="grid grid-cols-3 gap-2 mb-3">
+                    <label class="text-xs text-slate-400">食物
+                      <input v-model.number="giftForm.foodUnits" type="number" min="0" :max="tradeConfig.playerFoodKg || 0" class="mt-1 w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white" />
+                      <span class="text-slate-500">你有 {{ tradeConfig.playerFoodKg || 0 }}</span>
+                    </label>
+                    <label class="text-xs text-slate-400">木材
+                      <input v-model.number="giftForm.woodKg" type="number" min="0" :max="tradeConfig.playerWoodKg || 0" class="mt-1 w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white" />
+                      <span class="text-slate-500">你有 {{ tradeConfig.playerWoodKg || 0 }}</span>
+                    </label>
+                    <label class="text-xs text-slate-400">燃料
+                      <input v-model.number="giftForm.fuelKg" type="number" min="0" :max="tradeConfig.playerFuelKg || 0" class="mt-1 w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white" />
+                      <span class="text-slate-500">你有 {{ tradeConfig.playerFuelKg || 0 }}</span>
+                    </label>
                   </div>
                   <button
-                    @click="refreshTradeConfig"
-                    class="px-3 py-1 text-xs bg-slate-700 hover:bg-slate-600 rounded-lg transition"
+                    @click="submitGift"
+                    :disabled="isGifting"
+                    class="w-full py-2 bg-amber-700 hover:bg-amber-600 rounded-lg text-sm font-semibold"
                   >
-                    🔄 刷新
+                    {{ isGifting ? '赠予中...' : '赠予生存物资' }}
                   </button>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div class="bg-red-900/20 rounded-lg p-4 border border-red-800/50">
-                    <h3 class="text-red-400 font-semibold mb-3 flex items-center gap-2">
-                      <span>📤</span> 你需要付出
-                    </h3>
-                    <div class="space-y-2">
-                      <div v-for="item in tradeConfig.demandItems" :key="item.itemId" class="flex items-center justify-between">
-                        <div>
-                          <span class="text-sm">{{ item.itemName }}</span>
-                          <div class="text-xs">
-                            <span v-if="item.savedQuantity && item.savedQuantity > 0" class="text-yellow-400">
-                              <s class="text-slate-500">x{{ item.originalQuantity }}</s> → <strong>x{{ item.actualQuantity }}</strong>
-                              <span class="text-green-400 ml-1">(省{{ item.savedQuantity }})</span>
-                            </span>
-                            <span v-else class="text-slate-400">x{{ item.actualQuantity ?? item.quantity }}</span>
-                          </div>
-                        </div>
-                        <span :class="item.playerHas >= (item.actualQuantity ?? item.quantity) ? 'text-green-400 text-xs' : 'text-red-400 text-xs'">
-                          你有: {{ item.playerHas }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="bg-green-900/20 rounded-lg p-4 border border-green-800/50">
-                    <h3 class="text-green-400 font-semibold mb-3 flex items-center gap-2">
-                      <span>📥</span> 你将获得
-                    </h3>
-                    <div class="space-y-2">
-                      <div v-for="item in tradeConfig.supplyItems" :key="item.itemId" class="flex items-center justify-between">
-                        <div>
-                          <span class="text-sm">{{ item.itemName }}</span>
-                          <div class="text-xs">
-                            <span v-if="item.extraQuantity && item.extraQuantity > 0" class="text-green-400">
-                              <s class="text-slate-500">x{{ item.originalQuantity }}</s> → <strong>x{{ item.actualQuantity }}</strong>
-                              <span class="text-yellow-400 ml-1">(+{{ item.extraQuantity }})</span>
-                            </span>
-                            <span v-else class="text-green-400">+{{ item.actualQuantity ?? item.quantity }}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div v-if="!tradeConfig.canTrade" class="bg-yellow-900/20 border border-yellow-800/50 rounded-lg p-4 mb-4">
-                  <p class="text-yellow-400 text-sm">
-                    {{ tradeConfig.remainingTrades <= 0 ? '今日交易次数已用完' : tradeConfig.demandItems.length === 0 ? '当前好感度无法进行交易' : 'NPC当前没有可提供的物资' }}
-                  </p>
-                </div>
-
-                <button
-                  @click="confirmTrade"
-                  :disabled="!tradeConfig.canTrade || isTrading"
-                  :class="[
-                    'w-full py-3 rounded-lg font-semibold transition',
-                    tradeConfig.canTrade
-                      ? 'bg-green-600 hover:bg-green-700'
-                      : 'bg-slate-600 cursor-not-allowed'
-                  ]"
-                >
-                  {{ isTrading ? '交易中...' : '确认交易' }}
-                </button>
-
-                <!-- 挚友特权：免费领取按钮 -->
-                <div v-if="tradeConfig.favorTier?.canFreeReward" class="mt-4">
-                  <div class="bg-gradient-to-r from-yellow-900/30 to-amber-900/30 border border-yellow-500/50 rounded-lg p-4 animate-pulse">
+                <div v-if="tradeConfig.canFreeReward" class="mt-4">
+                  <div class="bg-gradient-to-r from-yellow-900/30 to-amber-900/30 border border-yellow-500/50 rounded-lg p-4">
                     <div class="flex items-center gap-2 mb-2">
                       <span class="text-2xl">🌟</span>
                       <h3 class="text-yellow-400 font-bold">挚友特权</h3>
                     </div>
                     <p class="text-xs text-yellow-200/80 mb-3">
-                      您与{{ tradeConfig.npcName }}好感度已达最大值！今日{{ tradeConfig.freeRewardUsed ? '已领取' : '可领取' }}一次免费物资奖励（双倍数量）。
+                      您与{{ tradeConfig.npcName }}好感度已达最大值！今日{{ tradeConfig.freeRewardUsed ? '已领取' : '可领取' }}一次剩余物资奖励。
+                    </p>
+                    <p v-if="tradeConfig.freeReward?.length" class="text-xs text-yellow-100/70 mb-3">
+                      {{ tradeConfig.freeReward.map(i => proposalLineName(i) + '×' + proposalLineQty(i)).join('、') }}
                     </p>
                     <button
                       @click="claimFreeReward"
@@ -318,10 +301,10 @@
                         'w-full py-3 rounded-lg font-semibold transition',
                         tradeConfig.freeRewardUsed
                           ? 'bg-slate-600 cursor-not-allowed opacity-50'
-                          : 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-slate-900 animate-bounce'
+                          : 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-slate-900'
                       ]"
                     >
-                      {{ tradeConfig.freeRewardUsed ? '✅ 今日已领取' : (isClaimingFreeReward ? '领取中...' : '🎁 免费领取双倍物资') }}
+                      {{ tradeConfig.freeRewardUsed ? '✅ 今日已领取' : (isClaimingFreeReward ? '领取中...' : '🎁 免费领取剩余物资') }}
                     </button>
                   </div>
                 </div>
@@ -337,9 +320,9 @@
                         </span>
                       </div>
                       <div class="flex items-center gap-2">
-                        <span class="text-red-400">{{ record.demandItems?.map(i => i.itemName + '×' + i.quantity).join(', ') || '-' }}</span>
+                        <span class="text-red-400">{{ (record.demandItems || []).map(i => proposalLineName(i) + '×' + proposalLineQty(i)).join(', ') || '-' }}</span>
                         <span class="text-slate-500">→</span>
-                        <span class="text-green-400">{{ record.supplyItems?.map(i => i.itemName + '×' + i.quantity).join(', ') || '-' }}</span>
+                        <span class="text-green-400">{{ (record.supplyItems || []).map(i => proposalLineName(i) + '×' + proposalLineQty(i)).join(', ') || '-' }}</span>
                       </div>
                     </div>
                   </div>
@@ -467,6 +450,10 @@
                     {{ dialogueLimit.remainingChats }} / {{ dialogueLimit.dailyLimit }}
                   </span>
                 </div>
+                <p class="text-xs text-slate-400 mt-1">
+                  对话好感 {{ dialogueLimit.dialogueFavorTotal || 0 }} / {{ dialogueLimit.dialogueFavorCap || 75 }}
+                  <span v-if="(dialogueLimit.dialogueFavorRemaining || 0) <= 0">，再聊不再加好感</span>
+                </p>
                 <p v-if="dialogueLimit.locked" class="text-xs text-red-400/70 mt-1">
                   请等待DM更新游戏天数后重置
                 </p>
@@ -515,7 +502,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { npcAPI } from '../utils/api'
 
 const npcs = ref([])
@@ -527,14 +514,23 @@ const activeTab = ref('dialogue')
 const tradeConfig = ref(null)
 const tradeLoading = ref(false)
 const isTrading = ref(false)
+const isRejecting = ref(false)
 const tradeHistory = ref([])
 const dialogueLimit = ref(null)
-const dailyDialogueLimit = ref(10)
+const dailyDialogueLimit = ref(5)
 const isClaimingFreeReward = ref(false)
+const isGifting = ref(false)
+const giftForm = ref({ foodUnits: 0, woodKg: 0, fuelKg: 0 })
+const tradeProposedHint = ref(false)
 const helpOptions = ref([])
 const helpHistory = ref([])
 const helpLoading = ref(false)
 const isRequestingHelp = ref(false)
+
+const openProposal = computed(() => {
+  const proposal = tradeConfig.value?.proposal
+  return proposal && proposal.status === 'open' ? proposal : null
+})
 
 const quickMessages = ['你好', '有什么任务吗？', '最近怎么样？', '谢谢你', '再见']
 
@@ -557,6 +553,7 @@ async function refreshNpcs() {
 async function selectNpc(npc) {
   selectedNpc.value = npc
   activeTab.value = 'dialogue'
+  tradeProposedHint.value = false
   await Promise.all([
     loadDialogues(npc.id),
     loadDialogueLimit(npc.id)
@@ -606,13 +603,25 @@ async function sendMessage() {
         }
         dialogueLimit.value.remainingChats = result.remainingChats
         dialogueLimit.value.locked = result.locked || false
-        dialogueLimit.value.dailyLimit = dailyDialogueLimit || 10
+        dialogueLimit.value.dailyLimit = dailyDialogueLimit || 5
+        if (result.dialogueFavorTotal != null) {
+          dialogueLimit.value.dialogueFavorTotal = result.dialogueFavorTotal
+          dialogueLimit.value.dialogueFavorCap = result.dialogueFavorCap
+          dialogueLimit.value.dialogueFavorRemaining = result.dialogueFavorRemaining
+        }
         if (dialogueLimit.value.locked) {
           dialogueLimit.value.message = '今日与该NPC的交流次数已用完，请等待明天重置或联系DM更新游戏天数'
         }
       }
       
       message.value = ''
+
+      if (result.tradeProposed) {
+        tradeProposedHint.value = true
+        activeTab.value = 'trade'
+        await refreshTradeConfig()
+        await loadTradeHistory()
+      }
       
       await refreshNpcs()
     } else {
@@ -624,7 +633,7 @@ async function sendMessage() {
         }
         dialogueLimit.value.locked = true
         dialogueLimit.value.remainingChats = 0
-        dialogueLimit.value.dailyLimit = dailyDialogueLimit || 10
+        dialogueLimit.value.dailyLimit = dailyDialogueLimit || 5
         dialogueLimit.value.message = result.message
       }
     }
@@ -641,16 +650,44 @@ function sendQuickMessage(msg) {
   sendMessage()
 }
 
+async function submitGift() {
+  if (!selectedNpc.value || isGifting.value) return
+  const foodUnits = Math.max(0, Math.floor(Number(giftForm.value.foodUnits) || 0))
+  const woodKg = Math.max(0, Math.floor(Number(giftForm.value.woodKg) || 0))
+  const fuelKg = Math.max(0, Math.floor(Number(giftForm.value.fuelKg) || 0))
+  if (foodUnits + woodKg + fuelKg <= 0) {
+    alert('请至少赠送一项物资')
+    return
+  }
+  isGifting.value = true
+  try {
+    const result = await npcAPI.giftSurvival(playerId, selectedNpc.value.id, foodUnits, woodKg, fuelKg)
+    if (result?.success) {
+      alert(result.message || '已赠予')
+      giftForm.value = { foodUnits: 0, woodKg: 0, fuelKg: 0 }
+      if (result.newFavor != null && selectedNpc.value) {
+        selectedNpc.value.favorValue = result.newFavor
+      }
+      await refreshTradeConfig()
+      await loadTradeHistory()
+    } else {
+      alert(result?.message || '赠予失败')
+    }
+  } catch (error) {
+    console.error('赠予失败:', error)
+    alert('赠予失败，请重试')
+  } finally {
+    isGifting.value = false
+  }
+}
+
 async function refreshTradeConfig() {
   if (!selectedNpc.value) return
   tradeLoading.value = true
   try {
     const data = await npcAPI.getTradeConfig(playerId, selectedNpc.value.id)
-    if (data?.success) {
-      tradeConfig.value = data
-    } else {
-      tradeConfig.value = null
-    }
+    tradeConfig.value = data || null
+    giftForm.value = { foodUnits: 0, woodKg: 0, fuelKg: 0 }
   } catch (error) {
     console.error('加载交易配置失败:', error)
     tradeConfig.value = null
@@ -659,38 +696,17 @@ async function refreshTradeConfig() {
   }
 }
 
-async function confirmTrade() {
-  if (!tradeConfig.value?.canTrade || isTrading.value || !selectedNpc.value) return
-  
-  // 展示带折扣的交易确认信息
-  const demandInfo = tradeConfig.value.demandItems.map(i => {
-    if (i.actualQuantity !== undefined && i.actualQuantity < i.quantity) {
-      return `${i.itemName}×${i.actualQuantity} (原价×${i.quantity})`
-    }
-    return `${i.itemName}×${i.quantity}`
-  }).join(', ')
-  
-  const supplyInfo = tradeConfig.value.supplyItems.map(i => {
-    if (i.actualQuantity !== undefined && i.actualQuantity > i.quantity) {
-      return `${i.itemName}×${i.actualQuantity} (原价×${i.quantity})`
-    }
-    return `${i.itemName}×${i.quantity}`
-  }).join(', ')
-  
-  if (!confirm(`确定要进行交易吗？\n\n你将付出: ${demandInfo}\n你将获得: ${supplyInfo}`)) {
-    return
-  }
-  
+async function acceptProposal() {
+  if (!openProposal.value || isTrading.value || !selectedNpc.value) return
   isTrading.value = true
   try {
-    const result = await npcAPI.executeTrade(playerId, selectedNpc.value.id)
-    
+    const result = await npcAPI.acceptNpcProposal(playerId, selectedNpc.value.id)
     if (result?.success) {
-      alert(result.message)
+      alert(result.message || '交易成功')
+      tradeProposedHint.value = false
       await refreshTradeConfig()
       await loadTradeHistory()
       await refreshNpcs()
-      
       if (result.newFavor != null && selectedNpc.value) {
         selectedNpc.value.favorValue = result.newFavor
       }
@@ -698,17 +714,47 @@ async function confirmTrade() {
       alert(result?.message || '交易失败')
     }
   } catch (error) {
-    console.error('交易失败:', error)
+    console.error('接受交换失败:', error)
     alert('交易失败，请重试')
   } finally {
     isTrading.value = false
   }
 }
 
+async function rejectProposal() {
+  if (!openProposal.value || isRejecting.value || !selectedNpc.value) return
+  isRejecting.value = true
+  try {
+    const result = await npcAPI.rejectNpcProposal(playerId, selectedNpc.value.id)
+    if (result?.success) {
+      tradeProposedHint.value = false
+      await refreshTradeConfig()
+      await loadTradeHistory()
+    } else {
+      alert(result?.message || '拒绝失败')
+    }
+  } catch (error) {
+    console.error('拒绝交换失败:', error)
+    alert('拒绝失败，请重试')
+  } finally {
+    isRejecting.value = false
+  }
+}
+
+function proposalLineName(item) {
+  if (!item) return '物资'
+  return item.itemName || item.name || '物资'
+}
+
+function proposalLineQty(item) {
+  if (!item) return 0
+  return item.quantity ?? item.q ?? 0
+}
+
 async function claimFreeReward() {
   if (!selectedNpc.value || isClaimingFreeReward.value) return
   
-  if (!confirm(`作为${selectedNpc.value.name}的挚友，确认免费领取双倍物资奖励吗？`)) {
+  if (!confirm(`作为${selectedNpc.value.name}的挚友，确认免费领取基础数量物资奖励吗？`)) {
     return
   }
   

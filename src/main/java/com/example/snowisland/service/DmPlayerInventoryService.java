@@ -5,19 +5,40 @@ import com.example.snowisland.entity.PlayerItem;
 import com.example.snowisland.entity.TradeItem.ItemType;
 import com.example.snowisland.repository.PlayerItemRepository;
 import com.example.snowisland.repository.PlayerRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 @Service
 public class DmPlayerInventoryService {
 
+    private static final Logger logger = LoggerFactory.getLogger(DmPlayerInventoryService.class);
+
     private static final Set<String> VALID_TYPES = new HashSet<>(
             Arrays.asList("item", "weapon", "ammo", "material"));
+
+    private static final Set<String> ALLOWED_IMAGE_EXT = new HashSet<>(
+            Arrays.asList("png", "jpg", "jpeg", "gif", "webp"));
+
+    private static final long MAX_IMAGE_BYTES = 5L * 1024 * 1024;
+
+    private static Path catalogUploadDir() {
+        return Paths.get("uploads", "catalog").toAbsolutePath().normalize();
+    }
 
     @Autowired
     private PlayerRepository playerRepository;
@@ -33,6 +54,268 @@ public class DmPlayerInventoryService {
 
     @PersistenceContext
     private EntityManager entityManager;
+
+    /** 武器图鉴（含威胁值与备注），供 DM 游戏设置页管理 */
+    public Map<String, Object> listWeapons(String userRole) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (!isDm(userRole)) {
+            result.put("success", false);
+            result.put("message", "只有DM可以查看武器设置");
+            return result;
+        }
+        @SuppressWarnings("unchecked")
+        List<Object[]> raw = entityManager.createNativeQuery(
+                "SELECT id, name, unit, threat_level, remark FROM weapon ORDER BY id"
+        ).getResultList();
+        List<Map<String, Object>> weapons = new ArrayList<>();
+        for (Object[] row : raw) {
+            Map<String, Object> w = new LinkedHashMap<>();
+            w.put("id", ((Number) row[0]).intValue());
+            w.put("name", row[1]);
+            w.put("unit", row[2]);
+            w.put("threatLevel", row[3] != null ? ((Number) row[3]).intValue() : 0);
+            w.put("remark", row[4]);
+            weapons.add(w);
+        }
+        result.put("success", true);
+        result.put("weapons", weapons);
+        return result;
+    }
+
+    /** 更新武器威胁值/备注（威胁值为战斗结算的真相来源） */
+    @Transactional
+    public Map<String, Object> updateWeapon(Integer weaponId, Integer threatLevel, String remark, String userRole) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (!isDm(userRole)) {
+            result.put("success", false);
+            result.put("message", "只有DM可以修改武器设置");
+            return result;
+        }
+        if (weaponId == null || weaponId <= 0) {
+            result.put("success", false);
+            result.put("message", "无效的武器ID");
+            return result;
+        }
+        if (threatLevel == null && remark == null) {
+            result.put("success", false);
+            result.put("message", "没有需要更新的字段");
+            return result;
+        }
+        if (threatLevel != null && (threatLevel < 0 || threatLevel > 99)) {
+            result.put("success", false);
+            result.put("message", "威胁值需在 0-99 之间");
+            return result;
+        }
+        Number exists = (Number) entityManager.createNativeQuery(
+                "SELECT COUNT(*) FROM weapon WHERE id = ?1"
+        ).setParameter(1, weaponId).getSingleResult();
+        if (exists == null || exists.intValue() == 0) {
+            result.put("success", false);
+            result.put("message", "武器不存在");
+            return result;
+        }
+        if (threatLevel != null) {
+            entityManager.createNativeQuery(
+                    "UPDATE weapon SET threat_level = ?1 WHERE id = ?2"
+            ).setParameter(1, threatLevel).setParameter(2, weaponId).executeUpdate();
+        }
+        if (remark != null) {
+            entityManager.createNativeQuery(
+                    "UPDATE weapon SET remark = ?1 WHERE id = ?2"
+            ).setParameter(1, remark.trim()).setParameter(2, weaponId).executeUpdate();
+        }
+        result.put("success", true);
+        result.put("message", "已保存");
+        result.put("weaponId", weaponId);
+        if (threatLevel != null) {
+            result.put("threatLevel", threatLevel);
+        }
+        return result;
+    }
+
+    /** 更新图鉴条目的描述（item/weapon/ammo/material 通用；名称为唯一键且被逻辑引用，不允许在此修改） */
+    @Transactional
+    public Map<String, Object> updateCatalogRemark(String itemType, Integer itemId, String remark, String userRole) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (!isDm(userRole)) {
+            result.put("success", false);
+            result.put("message", "只有DM可以修改图鉴描述");
+            return result;
+        }
+        String type = itemType == null ? "" : itemType.trim().toLowerCase();
+        if (!VALID_TYPES.contains(type)) {
+            result.put("success", false);
+            result.put("message", "无效的物品类型");
+            return result;
+        }
+        if (itemId == null || itemId <= 0) {
+            result.put("success", false);
+            result.put("message", "无效的物品ID");
+            return result;
+        }
+        if (remark == null) {
+            result.put("success", false);
+            result.put("message", "缺少描述内容");
+            return result;
+        }
+        // type 已通过白名单校验，可安全拼接为表名
+        Number exists = (Number) entityManager.createNativeQuery(
+                "SELECT COUNT(*) FROM " + type + " WHERE id = ?1"
+        ).setParameter(1, itemId).getSingleResult();
+        if (exists == null || exists.intValue() == 0) {
+            result.put("success", false);
+            result.put("message", "条目不存在");
+            return result;
+        }
+        entityManager.createNativeQuery(
+                "UPDATE " + type + " SET remark = ?1 WHERE id = ?2"
+        ).setParameter(1, remark.trim()).setParameter(2, itemId).executeUpdate();
+        result.put("success", true);
+        result.put("message", "已保存");
+        result.put("itemType", type);
+        result.put("itemId", itemId);
+        result.put("remark", remark.trim());
+        return result;
+    }
+
+    /** 更新图鉴条目的标签与/或描述（仅更新请求体中提供的字段） */
+    @Transactional
+    public Map<String, Object> updateCatalogEntry(String itemType, Integer itemId, String tag, String remark, String userRole) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (!isDm(userRole)) {
+            result.put("success", false);
+            result.put("message", "只有DM可以修改图鉴");
+            return result;
+        }
+        String type = itemType == null ? "" : itemType.trim().toLowerCase();
+        if (!VALID_TYPES.contains(type)) {
+            result.put("success", false);
+            result.put("message", "无效的物品类型");
+            return result;
+        }
+        if (itemId == null || itemId <= 0) {
+            result.put("success", false);
+            result.put("message", "无效的物品ID");
+            return result;
+        }
+        if (tag == null && remark == null) {
+            result.put("success", false);
+            result.put("message", "没有需要更新的字段");
+            return result;
+        }
+        Number exists = (Number) entityManager.createNativeQuery(
+                "SELECT COUNT(*) FROM " + type + " WHERE id = ?1"
+        ).setParameter(1, itemId).getSingleResult();
+        if (exists == null || exists.intValue() == 0) {
+            result.put("success", false);
+            result.put("message", "条目不存在");
+            return result;
+        }
+        if (tag != null) {
+            entityManager.createNativeQuery(
+                    "UPDATE " + type + " SET tag = ?1 WHERE id = ?2"
+            ).setParameter(1, tag.trim()).setParameter(2, itemId).executeUpdate();
+            result.put("tag", tag.trim());
+        }
+        if (remark != null) {
+            entityManager.createNativeQuery(
+                    "UPDATE " + type + " SET remark = ?1 WHERE id = ?2"
+            ).setParameter(1, remark.trim()).setParameter(2, itemId).executeUpdate();
+            result.put("remark", remark.trim());
+        }
+        result.put("success", true);
+        result.put("message", "已保存");
+        result.put("itemType", type);
+        result.put("itemId", itemId);
+        return result;
+    }
+
+    /** 上传图鉴条目图片，更新 image_url 并删除旧文件（尽力而为） */
+    @Transactional
+    public Map<String, Object> uploadCatalogImage(String itemType, Integer itemId, MultipartFile file, String userRole) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (!isDm(userRole)) {
+            result.put("success", false);
+            result.put("message", "只有DM可以上传图鉴图片");
+            return result;
+        }
+        String type = itemType == null ? "" : itemType.trim().toLowerCase();
+        if (!VALID_TYPES.contains(type)) {
+            result.put("success", false);
+            result.put("message", "无效的物品类型");
+            return result;
+        }
+        if (itemId == null || itemId <= 0) {
+            result.put("success", false);
+            result.put("message", "无效的物品ID");
+            return result;
+        }
+        if (file == null || file.isEmpty()) {
+            result.put("success", false);
+            result.put("message", "请选择图片文件");
+            return result;
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.toLowerCase().startsWith("image/")) {
+            result.put("success", false);
+            result.put("message", "仅支持图片文件");
+            return result;
+        }
+        if (file.getSize() > MAX_IMAGE_BYTES) {
+            result.put("success", false);
+            result.put("message", "图片大小不能超过 5MB");
+            return result;
+        }
+        String ext = extractImageExt(file.getOriginalFilename());
+        if (ext == null) {
+            result.put("success", false);
+            result.put("message", "不支持的图片格式（允许 png/jpg/jpeg/gif/webp）");
+            return result;
+        }
+        Number exists = (Number) entityManager.createNativeQuery(
+                "SELECT COUNT(*) FROM " + type + " WHERE id = ?1"
+        ).setParameter(1, itemId).getSingleResult();
+        if (exists == null || exists.intValue() == 0) {
+            result.put("success", false);
+            result.put("message", "条目不存在");
+            return result;
+        }
+        String oldUrl = null;
+        try {
+            Object old = entityManager.createNativeQuery(
+                    "SELECT image_url FROM " + type + " WHERE id = ?1"
+            ).setParameter(1, itemId).getSingleResult();
+            if (old != null) {
+                oldUrl = String.valueOf(old);
+            }
+        } catch (Exception ignored) {
+            // image_url 列可能尚未迁移
+        }
+        try {
+            Path dir = catalogUploadDir();
+            Files.createDirectories(dir);
+            String filename = type + "-" + itemId + "-" + System.currentTimeMillis() + "." + ext;
+            Path target = dir.resolve(filename);
+            try (InputStream in = file.getInputStream()) {
+                Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+            String imageUrl = "/api/uploads/catalog/" + filename;
+            entityManager.createNativeQuery(
+                    "UPDATE " + type + " SET image_url = ?1 WHERE id = ?2"
+            ).setParameter(1, imageUrl).setParameter(2, itemId).executeUpdate();
+            deleteOldCatalogImage(oldUrl);
+            result.put("success", true);
+            result.put("message", "图片已上传");
+            result.put("imageUrl", imageUrl);
+            result.put("itemType", type);
+            result.put("itemId", itemId);
+        } catch (IOException e) {
+            logger.error("保存图鉴图片失败: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("message", "保存图片失败");
+        }
+        return result;
+    }
 
     public Map<String, Object> getItemCatalog(String userRole) {
         Map<String, Object> result = new LinkedHashMap<>();
@@ -157,10 +440,10 @@ public class DmPlayerInventoryService {
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> loadCatalogRows() {
         List<Object[]> raw = entityManager.createNativeQuery(
-                "SELECT 'item' as itemType, id, name, unit, NULL as threatLevel FROM item " +
-                "UNION ALL SELECT 'weapon', id, name, unit, threat_level FROM weapon " +
-                "UNION ALL SELECT 'ammo', id, name, unit, NULL FROM ammo " +
-                "UNION ALL SELECT 'material', id, name, unit, NULL FROM material " +
+                "SELECT 'item' as itemType, id, name, unit, NULL as threatLevel, remark, tag, image_url FROM item " +
+                "UNION ALL SELECT 'weapon', id, name, unit, threat_level, remark, tag, image_url FROM weapon " +
+                "UNION ALL SELECT 'ammo', id, name, unit, NULL, remark, tag, image_url FROM ammo " +
+                "UNION ALL SELECT 'material', id, name, unit, NULL, remark, tag, image_url FROM material " +
                 "ORDER BY itemType, id"
         ).getResultList();
 
@@ -174,9 +457,40 @@ public class DmPlayerInventoryService {
             if (row[4] != null) {
                 item.put("threatLevel", ((Number) row[4]).intValue());
             }
+            item.put("remark", row[5] != null ? String.valueOf(row[5]) : "");
+            item.put("tag", row[6] != null ? String.valueOf(row[6]) : "");
+            item.put("imageUrl", row[7] != null ? String.valueOf(row[7]) : "");
             items.add(item);
         }
         return items;
+    }
+
+    private static String extractImageExt(String originalFilename) {
+        if (originalFilename == null || !originalFilename.contains(".")) {
+            return null;
+        }
+        String ext = originalFilename.substring(originalFilename.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
+        return ALLOWED_IMAGE_EXT.contains(ext) ? ext : null;
+    }
+
+    private static void deleteOldCatalogImage(String imageUrl) {
+        if (imageUrl == null || imageUrl.isEmpty()) {
+            return;
+        }
+        String prefix = "/api/uploads/catalog/";
+        if (!imageUrl.startsWith(prefix)) {
+            return;
+        }
+        String filename = imageUrl.substring(prefix.length());
+        if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
+            return;
+        }
+        try {
+            Path old = catalogUploadDir().resolve(filename);
+            Files.deleteIfExists(old);
+        } catch (IOException ignored) {
+            // best effort
+        }
     }
 
     private static boolean isDm(String userRole) {

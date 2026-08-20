@@ -31,8 +31,10 @@ public class PlayerController {
     }
 
     @GetMapping("/{id}/details")
-    public Map<String, Object> getPlayerDetails(@PathVariable Integer id) {
-        return playerService.getPlayerDetails(id);
+    public Map<String, Object> getPlayerDetails(
+            @PathVariable Integer id,
+            @RequestHeader(value = "userId", required = false) Integer userId) {
+        return playerService.getPlayerDetails(id, userId);
     }
 
     @GetMapping("/{id}/items")
