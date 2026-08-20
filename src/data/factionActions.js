@@ -6,9 +6,11 @@ export const FACTION_LABELS = {
   '冒险者': { key: 'adventurer', label: '冒险者', color: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10' },
   '天灾使者': { key: 'scourge', label: '天灾使者', color: 'text-amber-400 border-amber-500/30 bg-amber-500/10' },
   '平民': { key: 'civilian', label: '平民', color: 'text-gray-400 border-gray-500/30 bg-gray-500/10' },
+  '外来者': { key: 'outsider', label: '外来者', color: 'text-teal-400 border-teal-500/30 bg-teal-500/10' },
+  '原住民': { key: 'native', label: '原住民', color: 'text-lime-400 border-lime-500/30 bg-lime-500/10' },
 }
 
-export const GM_FACTION_TABS = ['统治者', '反叛者', '冒险者', '天灾使者', '平民']
+export const GM_FACTION_TABS = ['统治者', '反叛者', '冒险者', '天灾使者', '平民', '外来者', '原住民']
 
 /** 与「个人行动提交」白天选项一致（生产由 canProduce 动态插入） */
 export const PERSONAL_DAY_ACTION_OPTIONS = [
@@ -88,8 +90,8 @@ export const FACTION_ACTION_DEFS = {
     {
       type: 'extra_labor',
       title: '额外劳动',
-      description: '今日生产行动产出 +50%，须当天已提交生产类自由行动。',
-      tooltip: '需当天已提交「生产」自由行动。',
+      description: '今日生产行动产出 +50%，须当天已提交生产类自由行动。由主持人结算后计算额外物资，发布后才发放。',
+      tooltip: '需当天已提交「生产」自由行动。额外产出在发布后入包。',
     },
     {
       type: 'secret_contact',
@@ -120,8 +122,8 @@ export const FACTION_ACTION_DEFS = {
     {
       type: 'extra_labor',
       title: '额外劳动',
-      description: '今日生产行动产出 +50%。',
-      tooltip: '需当天已提交「生产」自由行动。',
+      description: '今日生产行动产出 +50%。由主持人结算后计算额外物资，发布后才发放。',
+      tooltip: '需当天已提交「生产」自由行动。额外产出在发布后入包。',
     },
     {
       type: 'guard_ark',

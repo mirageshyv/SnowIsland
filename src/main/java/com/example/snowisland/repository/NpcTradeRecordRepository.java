@@ -19,7 +19,15 @@ public interface NpcTradeRecordRepository extends JpaRepository<NpcTradeRecord, 
     @Query("SELECT COUNT(t) FROM NpcTradeRecord t WHERE t.npcId = :npcId AND t.playerId = :playerId AND t.gameDay = :gameDay")
     long countTodayTrades(@Param("npcId") Integer npcId, @Param("playerId") Integer playerId, @Param("gameDay") Integer gameDay);
     
-    /** 检查今日是否已领取免费奖励（favorChange=0） */
-    @Query("SELECT COUNT(t) FROM NpcTradeRecord t WHERE t.npcId = :npcId AND t.playerId = :playerId AND t.gameDay = :gameDay AND t.favorChange = 0")
+    /** 挚友免费奖励：玩家未付出物资（demand 为空）、NPC 给出物资 */
+    @Query("SELECT COUNT(t) FROM NpcTradeRecord t WHERE t.npcId = :npcId AND t.playerId = :playerId AND t.gameDay = :gameDay "
+            + "AND t.favorChange = 0 AND (t.demandItems IS NULL OR t.demandItems = '[]') "
+            + "AND t.supplyItems IS NOT NULL AND t.supplyItems <> '[]'")
     long countFreeRewardToday(@Param("npcId") Integer npcId, @Param("playerId") Integer playerId, @Param("gameDay") Integer gameDay);
+
+    /** 赠予：玩家付出物资、NPC 不给回物资（全程累计好感） */
+    @Query("SELECT COALESCE(SUM(t.favorChange), 0) FROM NpcTradeRecord t WHERE t.npcId = :npcId AND t.playerId = :playerId "
+            + "AND (t.supplyItems IS NULL OR t.supplyItems = '[]') "
+            + "AND t.demandItems IS NOT NULL AND t.demandItems <> '[]'")
+    int sumGiftFavor(@Param("npcId") Integer npcId, @Param("playerId") Integer playerId);
 }

@@ -2,6 +2,7 @@ package com.example.snowisland.controller;
 
 import com.example.snowisland.service.IslandExplorationService;
 import com.example.snowisland.service.ExplorationDataInitService;
+import com.example.snowisland.service.EventPackService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +20,9 @@ public class IslandExplorationController {
 
     @Autowired
     private ExplorationDataInitService explorationDataInitService;
+
+    @Autowired
+    private EventPackService eventPackService;
 
     @PostMapping("/submit")
     public Map<String, Object> submitExploration(@RequestBody Map<String, Object> request) {
@@ -102,5 +106,30 @@ public class IslandExplorationController {
             result.put("message", "重新导入失败: " + e.getMessage());
         }
         return result;
+    }
+
+    @GetMapping("/admin/packs")
+    public Map<String, Object> listPacks() {
+        return eventPackService.listPacks();
+    }
+
+    @PutMapping("/admin/packs/{id}/enabled")
+    public Map<String, Object> setPackEnabled(@PathVariable Integer id, @RequestBody Map<String, Object> body) {
+        Object enabledVal = body != null ? body.get("enabled") : null;
+        Boolean enabled = enabledVal instanceof Boolean ? (Boolean) enabledVal : Boolean.parseBoolean(String.valueOf(enabledVal));
+        return eventPackService.setPackEnabled(id, enabled);
+    }
+
+    @PostMapping("/admin/packs/preview")
+    public Map<String, Object> previewPackImport(@RequestBody Map<String, Object> body) {
+        String rawText = body != null && body.get("rawText") != null ? String.valueOf(body.get("rawText")) : "";
+        return eventPackService.previewImport(rawText);
+    }
+
+    @PostMapping("/admin/packs/import")
+    public Map<String, Object> importPack(@RequestBody Map<String, Object> body) {
+        String packName = body != null && body.get("packName") != null ? String.valueOf(body.get("packName")) : "";
+        String rawText = body != null && body.get("rawText") != null ? String.valueOf(body.get("rawText")) : "";
+        return eventPackService.importPack(packName, rawText);
     }
 }

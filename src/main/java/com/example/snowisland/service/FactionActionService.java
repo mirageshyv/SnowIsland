@@ -2,6 +2,7 @@ package com.example.snowisland.service;
 
 import com.example.snowisland.entity.*;
 import com.example.snowisland.repository.*;
+import com.example.snowisland.util.PlayerStatusCatalog;
 import com.example.snowisland.util.SabotageTargets;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,6 +46,7 @@ public class FactionActionService {
     @Autowired private EntityManager entityManager;
     @Autowired private GameStateService gameStateService;
     @Autowired private ActivityLogService activityLogService;
+    @Autowired private TradeRestrictionService tradeRestrictionService;
 
     public Map<String, Object> getContext(Integer playerId, Integer gameDay) {
         Map<String, Object> ctx = new HashMap<>();
@@ -56,9 +58,9 @@ public class FactionActionService {
         }
         Player player = opt.get();
         String faction = player.getFaction() != null ? player.getFaction().name() : null;
-        if (faction == null || "平民".equals(faction)) {
+        if (faction == null || "平民".equals(faction) || "外来者".equals(faction) || "原住民".equals(faction)) {
             ctx.put("success", false);
-            ctx.put("message", "平民无法使用阵营行动");
+            ctx.put("message", "该阵营无法使用阵营行动");
             ctx.put("faction", faction);
             return ctx;
         }
@@ -98,7 +100,7 @@ public class FactionActionService {
         ctx.put("militiaPlayers", getPlayersByJobs(GUARD_JOBS));
         ctx.put("allPlayers", getPlayerSummaries());
         ctx.put("laborCandidates", getLaborCandidates(gameDay));
-        ctx.put("history", todayActions.stream().map(this::toMap).collect(Collectors.toList()));
+        ctx.put("history", todayActions.stream().map(a -> toMap(a, true)).collect(Collectors.toList()));
         gameStateService.enrichActionEditMeta(ctx, gameDay);
 
         return ctx;
@@ -120,10 +122,15 @@ public class FactionActionService {
             return result;
         }
         Player player = optPlayer.get();
-        String faction = player.getFaction() != null ? player.getFaction().name() : null;
-        if (faction == null || "平民".equals(faction)) {
+        if (tradeRestrictionService.isBoundActive(player)) {
             result.put("success", false);
-            result.put("message", "平民无法提交阵营行动");
+            result.put("message", PlayerStatusCatalog.BOUND_DENY_MESSAGE);
+            return result;
+        }
+        String faction = player.getFaction() != null ? player.getFaction().name() : null;
+        if (faction == null || "平民".equals(faction) || "外来者".equals(faction) || "原住民".equals(faction)) {
+            result.put("success", false);
+            result.put("message", "该阵营无法提交阵营行动");
             return result;
         }
 
@@ -511,7 +518,7 @@ public class FactionActionService {
 
     public List<Map<String, Object>> getPlayerHistory(Integer playerId, Integer gameDay) {
         return factionActionRepository.findByPlayerIdAndGameDayOrderByCreatedAtDesc(playerId, gameDay)
-                .stream().map(this::toMap).collect(Collectors.toList());
+                .stream().map(a -> toMap(a, true)).collect(Collectors.toList());
     }
 
     public List<Map<String, Object>> getAllActions(Integer gameDay, String faction, String status) {
@@ -526,7 +533,7 @@ public class FactionActionService {
         if (status != null && !status.isEmpty()) {
             list = list.stream().filter(a -> status.equals(a.getStatus().name())).collect(Collectors.toList());
         }
-        return list.stream().map(this::toMap).collect(Collectors.toList());
+        return list.stream().map(a -> toMap(a, false)).collect(Collectors.toList());
     }
 
     @Transactional
@@ -795,6 +802,10 @@ public class FactionActionService {
     }
 
     private Map<String, Object> toMap(FactionAction action) {
+        return toMap(action, false);
+    }
+
+    private Map<String, Object> toMap(FactionAction action, boolean forPlayer) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", action.getId());
         map.put("playerId", action.getPlayerId());
@@ -803,8 +814,19 @@ public class FactionActionService {
         map.put("actionType", action.getActionType());
         map.put("actionTypeLabel", getActionTypeLabel(action.getActionType()));
         map.put("payload", parsePayload(action.getPayload()));
-        map.put("result", action.getResult());
+        String result = action.getResult();
+        boolean extraLaborPending = result != null && result.contains("【额外劳动待发布】");
+        boolean extraLaborDispatched = result != null && result.contains(ActionService.EXTRA_LABOR_DISPATCHED_MARKER);
+        if ("extra_labor".equals(action.getActionType()) && extraLaborPending && forPlayer) {
+            result = "已提交【额外劳动】。额外产出已结算，等待主持人发布后发放到背包。";
+        } else if ("extra_labor".equals(action.getActionType()) && result != null) {
+            result = ActionService.stripExtraLaborPendingForDisplay(result);
+        }
+        map.put("result", result);
         map.put("status", action.getStatus().name());
+        map.put("resultPending", extraLaborPending);
+        map.put("extraLaborPending", extraLaborPending);
+        map.put("extraLaborDispatched", extraLaborDispatched);
         map.put("gameDay", action.getGameDay());
         map.put("phase", action.getPhase());
         map.put("createdAt", action.getCreatedAt());

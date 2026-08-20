@@ -52,31 +52,47 @@ public class HiddenRoleMigration implements CommandLineRunner {
         }
     }
 
+    private static final String NATIVE_SHARED =
+            "身份永远隐藏，原住民之间默认互不知晓。若同时探索同一地点，或同处一地且现场无其他玩家，则自动互认。"
+            + "开局抽表面阵营与公共职业，并获得该职业的正常资源与技能。"
+            + "26人局固定2名（从鱼人/荒原狼/石之子中随机抽2个各1人，配置在平民席位）；48人局亦为2名。"
+            + "开局由主持人告知一处隐秘居所（与信天翁所知不同）。"
+            + "\n共同目标：首要不暴露原住民身份、进入避难所并活下去。"
+            + "成就「未启之门」：暴雪结束时无其他玩家执行二级仪式，且至少一名原住民成功举行过一次二级仪式。"
+            + "成就「地脉守护者」：暴雪结束时原住民阵营持有至少5枚祭坛石，且全游戏未举行任何仪式。"
+            + "收集全场祭坛石、抢先完成仪式，阻止铁门被打开。";
+
     private static final List<JobSeed> JOB_SEEDS = Arrays.asList(
         new JobSeed(
             "鱼人",
             "鱼鳞外套（被动）",
-            "潮汐之子。原住民阵营，身份永远隐藏。鱼鳞外套每天一次防弹衣效果，不可交易、不可被偷盗或被得知拥有。初始1枚祭坛石绑定个人仓库（不可被偷盗，可交易或赠送）；随机仪式记物由DM发放。原住民共同目标见阵营规则。"
+            "潮汐之子。原住民。你幼时被矿场的老人从海边捡回；入水时皮肤会泛起暗蓝色纹路。"
+            + "\n初始：鱼鳞外套（每天一次防弹衣效果，不可交易、不可被偷盗或被得知拥有）；祭坛石×1（绑定个人仓库，不可被偷盗或被得知拥有，可交易或赠送）；随机仪式记物由主持人发放。"
+            + "\n" + NATIVE_SHARED
         ),
         new JobSeed(
             "荒原狼",
-            "野性追踪（被动）；匕首威胁值3不可被偷盗",
-            "孤野的猎手。原住民阵营，身份永远隐藏。野性追踪（被动）。初始匕首威胁值3且不可被偷盗；祭坛石×1绑定个人仓库（不可被偷盗，可交易或赠送）；随机仪式记物由DM发放。原住民共同目标见阵营规则。"
+            "野性追踪（被动）；刺刀威胁值2不可被偷盗",
+            "孤野的猎手。原住民。你出生在矿场后山的乱石堆，比镇上任何人更熟悉这座岛的每一道裂缝。"
+            + "\n初始：刺刀（威胁值2，不可被偷盗）；祭坛石×1（绑定个人仓库，不可被偷盗或被得知拥有，可交易或赠送）；随机仪式记物由主持人发放。"
+            + "\n" + NATIVE_SHARED
         ),
         new JobSeed(
             "石之子",
             "石之皮肤（被动）；铁镐威胁值2",
-            "沉默的脊梁。原住民阵营，身份永远隐藏。石之皮肤（被动）。初始铁镐威胁值2；祭坛石×1绑定个人仓库（不可被偷盗，可交易或赠送）；随机仪式记物由DM发放。原住民共同目标见阵营规则。"
+            "沉默的脊梁。原住民。你小时候掉进废弃巷道，第四天自己走出来，手里攥着发微光的矿石；从此不怕黑、不怕冷。"
+            + "\n初始：铁镐×1（威胁值2）；祭坛石×1（绑定个人仓库，不可被偷盗或被得知拥有，可交易或赠送）；随机仪式记物由主持人发放。"
+            + "\n" + NATIVE_SHARED
         ),
         new JobSeed(
             "飞行员",
-            "维修,飞行员",
-            "钢铁与天空的重逢。外来者。维修：可修复设施或飞机部件，无需额外资源，可指导安装。飞行员：可驾驶已修复的飞机。飞机修复需4个部件（发电机、螺旋桨、油箱、起落架），燃料150升；坠机点仅飞行员初始知晓。快速行动：机库维修、试飞。弱点：坠机点被发现后可能被破坏。胜利条件：集齐4部件并加注≥150升燃料，暴雪降临前或开始时起飞。4个飞机部件与维修资源20由DM手动记录发放。"
+            "维修,驾驶员",
+            "钢铁与天空的重逢。外来者。维修：可修复设施或飞机部件，无需额外资源，可指导安装。驾驶员：可驾驶已修复的飞机。飞机修复需4个部件（发电机、螺旋桨、油箱、起落架），燃料150升煤油；坠机点仅飞行员初始知晓。快速行动：机库维修（夜晚，金属5kg+5点维修资源，每次最多装1个部件）、试飞（白天1其他行动或夜晚快速行动，最终一次性消耗煤油150升）。弱点：坠机点被发现后可能被破坏。胜利条件：集齐4部件并加注≥150升燃料，暴雪降临前或开始时起飞；成功则飞行员与登记平民单独胜利、不计入避难所/方舟。失败：暴雪降临时未修复则个人目标失败。4个飞机部件与维修资源20由DM手动记录发放。"
         ),
         new JobSeed(
             "信天翁",
             "根源感知（被动）,替身（被动）",
-            "感知者、岛屿倾听者。身份隐藏。根源感知（被动）：开局知晓一块祭坛石的具体地点。替身（被动）：开局可选一个公共职业并拥有其资源与技能。初始通灵笔记×1、蜡烛×10、酒精10升。胜利条件：至少完成一次任意二级仪式，且游戏结束时身份未被确认。"
+            "感知者、岛屿倾听者。身份隐藏。根源感知（被动）：开局知晓一块祭坛石的具体地点，并且知道一处隐秘居所（与原住民开局所知不同）。替身（被动）：开局可选一个公共职业并拥有其资源与技能。初始通灵笔记×1、蜡烛×10、酒精10升。胜利条件：至少成功进行过一次通灵笔记二级仪式，且游戏结束时没有直接暴露自己的身份。"
         ),
         new JobSeed(
             "调查记者",
@@ -88,7 +104,7 @@ public class HiddenRoleMigration implements CommandLineRunner {
     private static final List<ItemSeed> ITEM_SEEDS = Arrays.asList(
         new ItemSeed("鱼人", "item", 30, 1, "件"),
         new ItemSeed("鱼人", "item", 27, 1, "枚"),
-        new ItemSeed("荒原狼", "weapon", 14, 1, "把"),
+        new ItemSeed("荒原狼", "weapon", 4, 1, "把"),
         new ItemSeed("荒原狼", "item", 27, 1, "枚"),
         new ItemSeed("石之子", "weapon", 15, 1, "把"),
         new ItemSeed("石之子", "item", 27, 1, "枚"),
@@ -133,22 +149,38 @@ public class HiddenRoleMigration implements CommandLineRunner {
 
     private void seedHiddenJobs() {
         for (JobSeed seed : JOB_SEEDS) {
+            int hiddenFlag = "飞行员".equals(seed.name) ? 0 : 1;
             Number exists = (Number) entityManager.createNativeQuery(
                 "SELECT COUNT(*) FROM job WHERE name = :name"
             ).setParameter("name", seed.name).getSingleResult();
             if (exists.intValue() > 0) {
+                entityManager.createNativeQuery(
+                    "UPDATE job SET skills = :skills, description = :description, hidden = :hiddenFlag, updated_at = NOW() " +
+                    "WHERE name = :name"
+                )
+                    .setParameter("skills", seed.skills)
+                    .setParameter("description", seed.description)
+                    .setParameter("hiddenFlag", hiddenFlag)
+                    .setParameter("name", seed.name)
+                    .executeUpdate();
+                logger.info("已更新{}职业「{}」", hiddenFlag == 0 ? "公开" : "隐藏", seed.name);
                 continue;
             }
             entityManager.createNativeQuery(
                 "INSERT INTO job (name, skills, description, hidden, created_at, updated_at) " +
-                "VALUES (:name, :skills, :description, 1, NOW(), NOW())"
+                "VALUES (:name, :skills, :description, :hiddenFlag, NOW(), NOW())"
             )
                 .setParameter("name", seed.name)
                 .setParameter("skills", seed.skills)
                 .setParameter("description", seed.description)
+                .setParameter("hiddenFlag", hiddenFlag)
                 .executeUpdate();
-            logger.info("已添加隐藏职业「{}」", seed.name);
+            logger.info("已添加{}职业「{}」", hiddenFlag == 0 ? "公开" : "隐藏", seed.name);
         }
+        entityManager.createNativeQuery(
+            "UPDATE job SET hidden = 0 WHERE name = '飞行员'"
+        ).executeUpdate();
+        logger.info("已将职业「飞行员」设为公开 (hidden=0)");
     }
 
     private void seedInitialItems() {
@@ -181,6 +213,23 @@ public class HiddenRoleMigration implements CommandLineRunner {
                     .executeUpdate();
             }
             logger.info("已为隐藏职业「{}」写入初始物资", job.name);
+        }
+        correctWastelandWolfWeapon();
+    }
+
+    private void correctWastelandWolfWeapon() {
+        Number jobIdNum = lookupJobId("荒原狼");
+        if (jobIdNum == null) {
+            return;
+        }
+        int updated = entityManager.createNativeQuery(
+            "UPDATE job_initial_items SET item_id = 4, unit = '把', updated_at = NOW() " +
+            "WHERE job_id = :jobId AND item_type = 'weapon' AND item_id = 14"
+        )
+            .setParameter("jobId", jobIdNum.intValue())
+            .executeUpdate();
+        if (updated > 0) {
+            logger.info("已将荒原狼初始武器从匕首(14)更正为刺刀(4)");
         }
     }
 

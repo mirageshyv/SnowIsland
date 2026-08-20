@@ -40,6 +40,13 @@ package-lock.json
 .DS_Store
 Thumbs.db
 
+### env / secrets ###
+.env
+.env.local
+.env.*.local
+application-local.properties
+**/application-local.properties
+
 ### logs ###
 *.log
 logs/

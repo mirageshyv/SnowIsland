@@ -1,5 +1,6 @@
 package com.example.snowisland.controller;
 
+import com.example.snowisland.service.ActionService;
 import com.example.snowisland.service.FactionActionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,9 @@ public class FactionActionController {
 
     @Autowired
     private FactionActionService factionActionService;
+
+    @Autowired
+    private ActionService actionService;
 
     @GetMapping("/context/{playerId}")
     public ResponseEntity<Map<String, Object>> getContext(
@@ -55,6 +59,18 @@ public class FactionActionController {
             @RequestBody Map<String, Object> body) {
         String feedback = body.get("feedback") != null ? body.get("feedback").toString() : "";
         return ResponseEntity.ok(factionActionService.feedbackAction(actionId, feedback));
+    }
+
+    @PostMapping("/resolve-extra-labor")
+    public ResponseEntity<Map<String, Object>> resolveExtraLabor(
+            @RequestParam(defaultValue = "1") Integer gameDay) {
+        return ResponseEntity.ok(actionService.resolveExtraLabor(gameDay));
+    }
+
+    @PostMapping("/publish-extra-labor")
+    public ResponseEntity<Map<String, Object>> publishExtraLabor(
+            @RequestParam(defaultValue = "1") Integer gameDay) {
+        return ResponseEntity.ok(actionService.publishExtraLabor(gameDay));
     }
 
     private Integer toInt(Object value) {

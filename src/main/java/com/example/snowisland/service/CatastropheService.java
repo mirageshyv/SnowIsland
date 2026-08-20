@@ -36,6 +36,12 @@ public class CatastropheService {
     @Autowired
     private PlayerConsumptionService playerConsumptionService;
 
+    @Autowired
+    private NpcConsumptionService npcConsumptionService;
+
+    @Autowired
+    private NpcTradeProposalService npcTradeProposalService;
+
     public Map<String, Object> getProgress() {
         CatastropheProgress progress = progressRepository.findFirstByOrderByIdAsc();
         if (progress == null) {
@@ -114,6 +120,8 @@ public class CatastropheService {
         progress = progressRepository.save(progress);
 
         playerConsumptionService.applyMissedConsumptionPenalties(currentDay);
+        npcConsumptionService.settleDay(currentDay);
+        npcTradeProposalService.expireOpenForDay(currentDay);
 
         gameState.setCurrentDay(currentDay + 1);
         gameState = gameStateRepository.save(gameState);

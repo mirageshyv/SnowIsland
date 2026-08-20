@@ -13,8 +13,8 @@ ENV TZ=Asia/Shanghai
 # 同步系统时间
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# 创建日志目录
-RUN mkdir -p /var/log/snowisland
+# 创建日志与图鉴上传目录
+RUN mkdir -p /var/log/snowisland /usr/local/java/uploads/catalog
 
 # 工作目录
 WORKDIR /usr/local/java
@@ -27,7 +27,7 @@ COPY snowisland.jar ./snowisland.jar
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/ark/status || exit 1
 
 # 启动命令
 ENTRYPOINT ["java", "-Dspring.profiles.active=online", "-Dspring.config.location=/usr/local/java/config/application.yml,/usr/local/java/config/application-online.yml", "-jar", "/usr/local/java/snowisland.jar"]

@@ -7,6 +7,7 @@ import { getMaterialImageUrlOrDefault } from '../data/gameData.js'
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },
   jobId: { type: [Number, String], default: null },
+  hiddenJobId: { type: [Number, String], default: null },
   compact: { type: Boolean, default: false }
 })
 
@@ -46,10 +47,14 @@ async function loadCatalog() {
 }
 
 async function loadJobPreview() {
-  if (!props.jobId) return
+  const publicId = props.jobId ? Number(props.jobId) : null
+  const hiddenId = props.hiddenJobId ? Number(props.hiddenJobId) : null
+  if (!publicId && !hiddenId) return
   loading.value = true
   try {
-    const result = await dmPlayerAPI.previewStartingInventory(Number(props.jobId))
+    const result = publicId
+      ? await dmPlayerAPI.previewStartingInventory(publicId, hiddenId)
+      : await dmPlayerAPI.previewStartingInventory(hiddenId)
     if (result?.success) {
       const items = (result.items || []).map(enrichFromCatalog)
       emit('update:modelValue', items)
@@ -123,15 +128,15 @@ function confirmAdd() {
 defineExpose({ loadJobPreview })
 
 watch(
-  () => props.jobId,
+  () => [props.jobId, props.hiddenJobId],
   () => {
-    if (props.jobId) loadJobPreview()
+    if (props.jobId || props.hiddenJobId) loadJobPreview()
   }
 )
 
 onMounted(async () => {
   await loadCatalog()
-  if (props.jobId) await loadJobPreview()
+  if (props.jobId || props.hiddenJobId) await loadJobPreview()
 })
 </script>
 
@@ -141,7 +146,7 @@ onMounted(async () => {
       <span class="text-gray-400 text-xs">初始背包</span>
       <div class="flex flex-wrap gap-2">
         <button
-          v-if="jobId"
+          v-if="jobId || hiddenJobId"
           type="button"
           class="text-xs px-2 py-1 rounded-lg bg-white/10 text-gray-300 hover:bg-white/15 disabled:opacity-50"
           :disabled="loading"
@@ -163,7 +168,7 @@ onMounted(async () => {
       <div class="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
     </div>
     <div v-else-if="displayRows.length === 0" class="py-6 text-center text-gray-500 text-xs">
-      {{ jobId ? '选择职业后点「从职业刷新」，或手动添加' : '暂无物品' }}
+      选择职业或隐藏身份后点「从职业刷新」，或手动添加
     </div>
     <div v-else :class="compact ? 'max-h-48' : 'max-h-64'" class="overflow-y-auto divide-y divide-white/5">
       <div

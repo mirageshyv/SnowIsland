@@ -16,6 +16,14 @@ const currentPlayerName = ref('')
 const trades = ref([])
 const players = ref([])
 const loading = ref(false)
+const tradeBanActive = ref(false)
+const tradeBanReasons = ref([])
+
+const tradeBanBanner = computed(() => {
+  if (!tradeBanActive.value) return ''
+  const reasons = tradeBanReasons.value.filter(Boolean)
+  return reasons.length ? `禁止交易：${reasons.join('；')}` : '禁止交易'
+})
 
 const allMaterialsMap = {
   item: [
@@ -237,6 +245,7 @@ const selectedTakeCount = (row) =>
   })
 
 const openTradeModal = () => {
+  if (tradeBanActive.value) return
   tradeModalStep.value = 1
   showTradeModal.value = true
 }
@@ -316,6 +325,7 @@ const normalizeTakeQuantity = (item) => {
 }
 
 const sendTrade = async () => {
+  if (tradeBanActive.value) return
   if (!selectedTargetPlayer.value) {
     alert('请选择交易对象')
     return
@@ -370,6 +380,7 @@ const sendTrade = async () => {
 }
 
 const acceptTrade = async (trade) => {
+  if (tradeBanActive.value) return
   loading.value = true
   try {
     const result = await tradeAPI.accept(trade.id, playerId)
@@ -434,6 +445,17 @@ const loadPlayers = async () => {
   }
 }
 
+const loadTradeRestriction = async () => {
+  try {
+    const details = await playerAPI.getDetails(playerId)
+    tradeBanActive.value = Boolean(details?.tradeBanActive)
+    tradeBanReasons.value = Array.isArray(details?.tradeBanReasons) ? details.tradeBanReasons : []
+  } catch {
+    tradeBanActive.value = false
+    tradeBanReasons.value = []
+  }
+}
+
 const loadTrades = async () => {
   try {
     const result = await tradeAPI.getByPlayer(playerId)
@@ -475,6 +497,7 @@ onMounted(async () => {
   await loadPlayers()
   await loadTrades()
   await loadCurrentPlayerItems()
+  await loadTradeRestriction()
   const currentPlayer = players.value.find(p => p.id === playerId)
   currentPlayerName.value = currentPlayer?.name || ''
 })
@@ -487,14 +510,22 @@ defineExpose({
 <template>
   <div class="max-w-7xl">
     <div class="mb-6">
-      <h1 class="text-white mb-1 tracking-tight text-2xl">交易管理</h1>
+      <h1 class="text-white mb-1 tracking-tight text-2xl">交易</h1>
       <p class="text-gray-500 text-sm">Trade Management</p>
+    </div>
+
+    <div
+      v-if="tradeBanBanner"
+      class="mb-6 rounded-xl border border-red-500/40 bg-red-950/50 px-4 py-3 text-red-300 text-sm"
+    >
+      {{ tradeBanBanner }}
     </div>
 
     <div class="flex gap-3 mb-6">
       <button
         type="button"
-        class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-5 py-2.5 rounded-xl transition-all text-sm shadow-lg shadow-blue-500/30 flex items-center gap-2"
+        class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-5 py-2.5 rounded-xl transition-all text-sm shadow-lg shadow-blue-500/30 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:from-blue-500 disabled:hover:to-blue-600"
+        :disabled="tradeBanActive"
         @click="openTradeModal"
       >
         <span>发起交易</span>
@@ -525,7 +556,7 @@ defineExpose({
               </div>
               <div class="flex gap-2">
                 <button type="button" class="bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 px-4 py-2 rounded-xl text-sm transition-all" @click="viewTradeDetail(trade)">查看</button>
-                <button type="button" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 px-4 py-2 rounded-xl text-sm transition-all" @click="acceptTrade(trade)" :disabled="loading">接受</button>
+                <button type="button" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 px-4 py-2 rounded-xl text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed" @click="acceptTrade(trade)" :disabled="loading || tradeBanActive">接受</button>
                 <button type="button" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded-xl text-sm transition-all" @click="rejectTrade(trade)" :disabled="loading">拒绝</button>
               </div>
             </div>

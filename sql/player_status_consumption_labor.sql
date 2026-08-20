@@ -8,7 +8,7 @@ ALTER TABLE `player`
 CREATE TABLE IF NOT EXISTS `game_day_settings` (
   `game_day` int(11) NOT NULL COMMENT '游戏天数',
   `required_food_units` int(11) NOT NULL DEFAULT 2 COMMENT '每人每日所需食物（单位）',
-  `required_fuel_kg` int(11) NOT NULL DEFAULT 15 COMMENT '每人每日取暖燃料（千克，木材或燃料）',
+  `required_fuel_kg` int(11) NOT NULL DEFAULT 25 COMMENT '每人每日取暖燃料（千克，木材或燃料）',
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`game_day`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='每日全局消耗需求（DM在游戏设置中配置）';
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS `player_daily_consumption` (
   `player_id` int(11) NOT NULL,
   `game_day` int(11) NOT NULL,
   `required_food_units` int(11) NOT NULL DEFAULT 2,
-  `required_fuel_kg` int(11) NOT NULL DEFAULT 15,
+  `required_fuel_kg` int(11) NOT NULL DEFAULT 25,
   `consumed_food_units` int(11) NOT NULL DEFAULT 0,
   `consumed_fuel_kg` int(11) NOT NULL DEFAULT 0,
   `fuel_from_wood_kg` int(11) NOT NULL DEFAULT 0,

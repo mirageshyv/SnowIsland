@@ -22,7 +22,7 @@ const typeConfig = {
   item: { label: '道具', color: 'blue', icon: '📦' },
   weapon: { label: '武器', color: 'red', icon: '⚔️' },
   ammo: { label: '子弹', color: 'amber', icon: '🎯' },
-  material: { label: '其他物资', color: 'emerald', icon: '🔧' }
+  material: { label: '物资', color: 'emerald', icon: '🔧' }
 }
 
 // 物品名称映射
@@ -79,7 +79,10 @@ const itemNamesMap = {
     49: '烬火旗',
     50: '银币',
     51: '情绪抑制器',
-    52: '共鸣石'
+    52: '共鸣石',
+    53: '铁砧小队·记录员莉迪亚的私人笔记（残卷）',
+    54: '飞机部件·副驾座',
+    55: '避难所钥匙',
   },
   weapon: {
     1: '制式手枪',
@@ -175,7 +178,9 @@ const itemUnitsMap = {
     49: '面',
     50: '枚',
     51: '个',
-    52: '枚'
+    52: '枚',
+    53: '份',
+    54: '个'
   },
   weapon: {
     1: '把',
@@ -246,10 +251,10 @@ const itemRemarksMap = {
     24: '方舟通行',
     25: '夜间照明取暖与探索',
     26: '无法丢弃的神秘硬币',
-    27: '一枚泛着微光的奇异石头，握在手中能感到隐约的温热，似乎蕴含着某种能量。',
+    27: '地脉核心的封印碎片。持有即可地脉共鸣。快速行动：10单位资源互转，或所在地点防御+2。仪式材料可消耗1～3枚。原住民初始持有绑定个人仓库，不可被偷盗或被得知拥有，可交易或赠送。',
     28: '一本古旧的笔记，最后一页空白。据说拥有者可以借助它举行某种仪式。',
     29: '一块发出微弱脉动光的矿石碎片，可作为信物使用。',
-    30: '一件覆盖细密鳞片的外套，贴身穿着时有奇异的防护力。不可交易。',
+    30: '一件覆盖细密鳞片的外套。每天一次可作为防弹衣效果。不可交易，不可被偷盗或任何方式被得知拥有。',
     31: '一卷用铁片串成的册子，记载着某种古老契约的完整条款。',
     32: '一份用铅笔写在旧报纸边缘的宣言，字迹潦草但充满力量。',
     33: '一卷发黄的羊皮纸，画着龙骨结构图，关键节点标注了奇怪的符文。',
@@ -270,8 +275,10 @@ const itemRemarksMap = {
     48: '一个用黑曜石磨成的圆盘，表面刻着黄道十二宫符号，中心有一处凹槽。',
     49: '一面被烧得只剩一半的旗帜，无论如何烧都不会彻底化为灰烬。',
     50: '一枚刻着衔尾蛇图案的旧银币，握在手中有刺骨的凉意。据说银币不属于活人。',
-    51: '半头盔式金属装置，内衬绣着"铁砧小队·情绪抑制模块·型号MK-II"。装备后获得"情绪抑制"状态，直到主动解除或装置损坏。',
-    52: '婴儿拳头大小的深灰色石头，握紧时有节律性震动。可消耗快速行动感知半径200米内是否存在地脉异常点（每2天一次，使用后眩晕半小时检定-1）。'
+    51: '半头盔式银灰色合金装置，内衬黑色织物。侧面按钮与指示灯大多熄灭，一颗暗红色灯缓慢闪烁。内侧绣着「铁砧小队·标准配置·情绪抑制模块·型号MK-II」。装备后获得「情绪抑制」状态，持续到持有者主动解除或装备损坏。后续部分清醒仪式以此为源头。',
+    52: '婴儿拳头大小深灰色卵石，握紧有节律震动，一端金属接口刻「白鸥小队·共鸣石·编号04」。消耗1次快速行动感知约200米内是否存在地脉异常点（只告知有/无）。每2天一次；用后眩晕耳鸣约半小时检定-1。夜晚闭眼使用可能看见不属于这个时代的残片，并获得持续1天的轻微「潮汐症」。',
+    53: '铁砧小队记录员莉迪亚留下的残卷笔记。夹杂实验日志与个人感受：我们以为在观察这座岛，实际上这座岛也在观察我们。',
+    54: '飞机副驾驶座组件，结构完整，可以安装使用。'
   },
   weapon: {
     1: '威胁值5',
@@ -551,12 +558,25 @@ const toggleType = (type) => {
 // 全选/取消全选
 const toggleAll = () => {
   if (selectedTypes.value.length === 4) {
-    // 如果全选，则只保留第一个
     selectedTypes.value = ['item']
   } else {
-    // 否则全选
     selectedTypes.value = ['item', 'weapon', 'ammo', 'material']
   }
+}
+
+function typeCount(type) {
+  if (type === 'item') return currentItems.value.length
+  if (type === 'weapon') return currentWeapons.value.length
+  if (type === 'ammo') return currentAmmo.value.length
+  if (type === 'material') return currentMaterials.value.length
+  return 0
+}
+
+const typeChipOn = {
+  item: 'bg-sky-500/25 text-sky-100 border-sky-400/50',
+  weapon: 'bg-rose-500/25 text-rose-100 border-rose-400/50',
+  ammo: 'bg-amber-500/25 text-amber-100 border-amber-400/50',
+  material: 'bg-emerald-500/25 text-emerald-100 border-emerald-400/50',
 }
 
 // 获取威胁值颜色
@@ -597,69 +617,34 @@ onUnmounted(() => {
 
 <template>
   <div class="max-w-7xl">
-    <!-- 页面标题 -->
-    <div class="mb-6">
-      <h1 class="text-white mb-1 tracking-tight text-2xl">物资管理</h1>
-      <p class="text-gray-500 text-sm">物资与装备管理</p>
-    </div>
-
-    <!-- 筛选控制区域 -->
-    <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-2xl p-5 mb-6">
-      <div class="flex flex-wrap items-center gap-4">
-        <span class="text-gray-400 text-sm font-medium">显示类型：</span>
-        
-        <!-- 全选按钮 -->
+    <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h1 class="text-white mb-1 tracking-tight text-2xl">背包</h1>
+        <p class="text-gray-500 text-sm">物资与装备管理</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-1.5">
         <button
           type="button"
-          class="px-4 py-2 rounded-xl text-sm font-medium transition-all"
-          :class="selectedTypes.length === 4 ? 'bg-blue-500/30 text-blue-400 border border-blue-500/50' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'"
+          class="px-2.5 py-1 rounded-lg text-xs font-medium border"
+          :class="selectedTypes.length === 4
+            ? 'bg-white/15 text-white border-white/25'
+            : 'bg-transparent text-gray-400 border-white/10 hover:text-white hover:border-white/20'"
           @click="toggleAll"
         >
           全部
         </button>
-
-        <!-- 分隔线 -->
-        <div class="w-px h-6 bg-white/10"></div>
-
-        <!-- 各类型筛选按钮 -->
         <button
           v-for="(config, type) in typeConfig"
           :key="type"
           type="button"
-          class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
-          :class="selectedTypes.includes(type) ? `bg-${config.color}-500/30 text-${config.color}-400 border border-${config.color}-500/50` : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'"
+          class="px-2.5 py-1 rounded-lg text-xs font-medium border"
+          :class="selectedTypes.includes(type)
+            ? typeChipOn[type]
+            : 'bg-transparent text-gray-400 border-white/10 hover:text-gray-200 hover:border-white/20'"
           @click="toggleType(type)"
         >
-          <img
-            :src="getTypeTabImage(type)"
-            alt=""
-            class="w-7 h-7 object-contain shrink-0 opacity-90"
-          />
-          <span>{{ config.label }}</span>
-          <span 
-            v-if="type === 'item' && currentItems.length > 0"
-            class="text-xs px-1.5 py-0.5 rounded-full bg-white/10"
-          >
-            {{ currentItems.length }}
-          </span>
-          <span 
-            v-if="type === 'weapon' && currentWeapons.length > 0"
-            class="text-xs px-1.5 py-0.5 rounded-full bg-white/10"
-          >
-            {{ currentWeapons.length }}
-          </span>
-          <span 
-            v-if="type === 'ammo' && currentAmmo.length > 0"
-            class="text-xs px-1.5 py-0.5 rounded-full bg-white/10"
-          >
-            {{ currentAmmo.length }}
-          </span>
-          <span 
-            v-if="type === 'material' && currentMaterials.length > 0"
-            class="text-xs px-1.5 py-0.5 rounded-full bg-white/10"
-          >
-            {{ currentMaterials.length }}
-          </span>
+          {{ config.label }}
+          <span v-if="typeCount(type)" class="opacity-70 ml-0.5">{{ typeCount(type) }}</span>
         </button>
       </div>
     </div>

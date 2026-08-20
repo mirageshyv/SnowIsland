@@ -15,7 +15,7 @@ public class GameDaySettings {
     private Integer requiredFoodUnits = 2;
 
     @Column(name = "required_fuel_kg", nullable = false)
-    private Integer requiredFuelKg = 15;
+    private Integer requiredFuelKg = 25;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;

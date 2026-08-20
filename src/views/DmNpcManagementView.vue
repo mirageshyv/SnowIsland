@@ -65,9 +65,11 @@
                 <select v-model="filterStatus" class="bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
                   <option value="">所有状态</option>
                   <option value="正常">正常</option>
+                  <option value="虚弱">虚弱</option>
                   <option value="受伤">受伤</option>
                   <option value="死亡">死亡</option>
                   <option value="失踪">失踪</option>
+                  <option value="被捕">被捕</option>
                 </select>
               </div>
               <button @click="clearFilters" class="px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg transition text-sm">
@@ -172,11 +174,12 @@
                     <div>
                       <label class="block text-sm text-slate-400 mb-1">状态</label>
                       <select v-model="editForm.status" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500">
-                        <option value="正常">正常</option>
-                        <option value="受伤">受伤</option>
-                        <option value="死亡">死亡</option>
-                        <option value="失踪">失踪</option>
-                        <option value="被捕">被捕</option>
+                  <option value="正常">正常</option>
+                  <option value="虚弱">虚弱</option>
+                  <option value="受伤">受伤</option>
+                  <option value="死亡">死亡</option>
+                  <option value="失踪">失踪</option>
+                  <option value="被捕">被捕</option>
                       </select>
                     </div>
                     <div>
@@ -195,11 +198,11 @@
                     </div>
                     <div class="col-span-2">
                       <label class="block text-sm text-slate-400 mb-1">性格特点</label>
-                      <input v-model="editForm.personality" type="text" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" />
+                      <textarea v-model="editForm.personality" rows="2" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" placeholder="例如：胆怯温和，只想安稳过日子。"></textarea>
                     </div>
                     <div class="col-span-2">
                       <label class="block text-sm text-slate-400 mb-1">对话风格</label>
-                      <input v-model="editForm.dialogueStyle" type="text" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" placeholder="如：温和、严厉、幽默..." />
+                      <textarea v-model="editForm.dialogueStyle" rows="3" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" placeholder="写入 AI 提示词，例如：声音小，经常低头说话……"></textarea>
                     </div>
                   </div>
                 </div>
@@ -388,85 +391,53 @@
               </div>
 
               <div class="bg-slate-800/50 rounded-xl backdrop-blur-sm border border-slate-700">
-                <div class="p-4 border-b border-slate-700">
-                  <h3 class="font-semibold flex items-center gap-2">
-                    <span>🤝</span> 交易配置
-                  </h3>
-                  <p class="text-xs text-slate-400 mt-1">好感只降低需求价格（友善10% / 亲近25% / 挚友免费）；供给为配置基础量，无数量加成。挚友每日可另领一次基础量免费物资。</p>
+                <div class="p-4 border-b border-slate-700 flex items-center justify-between">
+                  <div>
+                    <h3 class="font-semibold flex items-center gap-2">
+                      <span>🎒</span> 个人背包
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-1">交易只能拿出背包里的东西；食物/燃料会预留当日消耗。尸体物资仅DM可改。</p>
+                  </div>
+                  <div class="flex gap-2">
+                    <button @click="seedNpcInventory('add')" class="px-3 py-1 text-xs bg-slate-600 hover:bg-slate-500 rounded-lg">按职业补发</button>
+                    <button @click="seedNpcInventory('replace')" class="px-3 py-1 text-xs bg-amber-800 hover:bg-amber-700 rounded-lg">按职业重置</button>
+                  </div>
                 </div>
-                <div class="p-4">
-                  <div class="flex items-center gap-4 mb-4">
-                    <div>
-                      <label class="block text-sm text-slate-400 mb-1">每日交易上限</label>
-                      <input type="number" v-model="tradeConfigForm.dailyLimit" min="0" class="w-24 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" />
-                    </div>
-                    <button @click="saveDailyLimit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition text-sm">
-                      保存上限
-                    </button>
+                <div class="p-4 space-y-4">
+                  <div v-if="npcSurvival" class="text-xs text-slate-300 flex flex-wrap gap-3">
+                    <span>食物 {{ npcSurvival.foodKg }} / 需 {{ npcSurvival.requiredFoodUnits }}</span>
+                    <span>木材 {{ npcSurvival.woodKg }}kg</span>
+                    <span>燃料 {{ npcSurvival.fuelKg }}kg</span>
+                    <span>热值 {{ npcSurvival.heatValue }} / {{ npcSurvival.requiredFuelKg }}</span>
                   </div>
-
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <div class="flex items-center justify-between mb-3">
-                        <h4 class="font-medium text-red-400">📤 需求物资</h4>
-                        <button @click="addDemandItem" class="px-3 py-1 text-xs bg-red-900/30 hover:bg-red-800/30 border border-red-800/50 rounded-lg transition">
-                          + 添加
-                        </button>
-                      </div>
-                      <div class="space-y-2">
-                        <div v-for="(item, index) in tradeConfigForm.demandItems" :key="'demand-' + index" class="bg-slate-700/50 rounded-lg p-3">
-                          <div class="flex gap-2 flex-wrap">
-                            <select v-model="item.itemType" class="bg-slate-600 border border-slate-500 rounded px-2 py-1 text-sm">
-                              <option value="material">物资</option>
-                              <option value="item">道具</option>
-                              <option value="weapon">武器</option>
-                              <option value="ammo">弹药</option>
-                            </select>
-                            <select v-model="item.itemId" class="bg-slate-600 border border-slate-500 rounded px-2 py-1 text-sm">
-                              <option v-for="i in getItemList(item.itemType)" :key="i.id" :value="i.id">{{ i.name }}</option>
-                            </select>
-                            <input type="number" v-model="item.quantity" min="1" class="w-16 bg-slate-600 border border-slate-500 rounded px-2 py-1 text-sm text-center" />
-                            <input type="number" v-model="item.minFavor" min="-100" max="100" class="w-16 bg-slate-600 border border-slate-500 rounded px-2 py-1 text-sm text-center" placeholder="最低好感" />
-                            <input type="number" v-model="item.maxFavor" min="-100" max="100" class="w-16 bg-slate-600 border border-slate-500 rounded px-2 py-1 text-sm text-center" placeholder="最高好感" />
-                            <button @click="removeDemandItem(index)" class="px-2 py-1 text-xs bg-red-600/30 hover:bg-red-600/50 rounded">✕</button>
-                          </div>
-                        </div>
-                      </div>
+                  <div class="space-y-2 max-h-56 overflow-y-auto">
+                    <div v-for="item in npcInventory" :key="item.id || (item.itemType + '-' + item.itemId)" class="flex items-center gap-2 bg-slate-700/50 rounded-lg px-3 py-2">
+                      <span class="text-sm flex-1">{{ item.itemName }}</span>
+                      <span class="text-xs text-slate-500">{{ item.itemType }} #{{ item.itemId }}</span>
+                      <input type="number" min="0" :value="item.quantity" @change="onInventoryQty(item, $event)" class="w-20 bg-slate-600 border border-slate-500 rounded px-2 py-1 text-sm text-center" />
                     </div>
-
-                    <div>
-                      <div class="flex items-center justify-between mb-3">
-                        <h4 class="font-medium text-green-400">📥 供给物资</h4>
-                        <button @click="addSupplyItem" class="px-3 py-1 text-xs bg-green-900/30 hover:bg-green-800/30 border border-green-800/50 rounded-lg transition">
-                          + 添加
-                        </button>
-                      </div>
-                      <div class="space-y-2">
-                        <div v-for="(item, index) in tradeConfigForm.supplyItems" :key="'supply-' + index" class="bg-slate-700/50 rounded-lg p-3">
-                          <div class="flex gap-2 flex-wrap">
-                            <select v-model="item.itemType" class="bg-slate-600 border border-slate-500 rounded px-2 py-1 text-sm">
-                              <option value="material">物资</option>
-                              <option value="item">道具</option>
-                              <option value="weapon">武器</option>
-                              <option value="ammo">弹药</option>
-                            </select>
-                            <select v-model="item.itemId" class="bg-slate-600 border border-slate-500 rounded px-2 py-1 text-sm">
-                              <option v-for="i in getItemList(item.itemType)" :key="i.id" :value="i.id">{{ i.name }}</option>
-                            </select>
-                            <input type="number" v-model="item.quantity" min="1" class="w-16 bg-slate-600 border border-slate-500 rounded px-2 py-1 text-sm text-center" />
-                            <input type="number" v-model="item.minFavor" min="-100" max="100" class="w-16 bg-slate-600 border border-slate-500 rounded px-2 py-1 text-sm text-center" placeholder="最低好感" />
-                            <input type="number" v-model="item.maxFavor" min="-100" max="100" class="w-16 bg-slate-600 border border-slate-500 rounded px-2 py-1 text-sm text-center" placeholder="最高好感" />
-                            <input type="number" v-model="item.probability" min="0" max="1" step="0.1" class="w-20 bg-slate-600 border border-slate-500 rounded px-2 py-1 text-sm text-center" placeholder="概率" />
-                            <button @click="removeSupplyItem(index)" class="px-2 py-1 text-xs bg-red-600/30 hover:bg-red-600/50 rounded">✕</button>
-                          </div>
-                        </div>
-                      </div>
+                    <p v-if="npcInventory.length === 0" class="text-slate-500 text-sm">背包是空的</p>
+                  </div>
+                  <div class="flex flex-wrap gap-2 items-end">
+                    <select v-model="inventoryAdd.itemType" class="bg-slate-600 border border-slate-500 rounded px-2 py-1 text-sm">
+                      <option value="material">物资</option>
+                      <option value="item">道具</option>
+                      <option value="weapon">武器</option>
+                      <option value="ammo">弹药</option>
+                    </select>
+                    <select v-model="inventoryAdd.itemId" class="bg-slate-600 border border-slate-500 rounded px-2 py-1 text-sm">
+                      <option v-for="i in getItemList(inventoryAdd.itemType)" :key="i.id" :value="i.id">{{ i.name }}</option>
+                    </select>
+                    <input v-model.number="inventoryAdd.quantity" type="number" min="1" class="w-20 bg-slate-600 border border-slate-500 rounded px-2 py-1 text-sm text-center" />
+                    <button @click="addInventoryItem" class="px-3 py-1 text-xs bg-green-700 hover:bg-green-600 rounded-lg">加入</button>
+                  </div>
+                  <div v-if="npcConsumptionHistory.length" class="text-xs text-slate-400 space-y-1">
+                    <div class="text-slate-300">消耗记录</div>
+                    <div v-for="row in npcConsumptionHistory" :key="row.gameDay">
+                      第{{ row.gameDay }}天 {{ row.requirementsMet ? '达标' : '不足' }} → {{ row.resultStatus }}
+                      （食{{ row.consumedFoodUnits }}/{{ row.requiredFoodUnits }} 暖{{ row.consumedFuelKg }}/{{ row.requiredFuelKg }}）
                     </div>
                   </div>
-
-                  <button @click="saveTradeConfig" class="mt-4 w-full py-3 bg-green-600 hover:bg-green-700 rounded-lg transition font-semibold">
-                    💾 保存交易配置
-                  </button>
                 </div>
               </div>
             </div>
@@ -1037,11 +1008,10 @@ const selectedNpc = ref(null)
 const playerFavors = ref([])
 const npcStats = ref({})
 const editForm = ref({})
-const tradeConfigForm = ref({
-  dailyLimit: 1,
-  demandItems: [],
-  supplyItems: []
-})
+const npcInventory = ref([])
+const npcSurvival = ref(null)
+const npcConsumptionHistory = ref([])
+const inventoryAdd = ref({ itemType: 'material', itemId: 5, quantity: 1 })
 
 const showCreateModal = ref(false)
 const createForm = ref({
@@ -1222,30 +1192,14 @@ async function selectNpc(npc) {
     specialClueContent: npc.specialClueContent || ''
   }
   await loadPlayerFavors(npc.id)
-  await loadTradeConfig(npc.id)
   await loadRecognitionPlayers(npc.id)
+  await loadNpcInventory(npc.id)
 }
 
 async function loadPlayerFavors(npcId) {
   const data = await npcAPI.getFavorsByNpc(npcId)
   if (data) {
     playerFavors.value = data
-  }
-}
-
-async function loadTradeConfig(npcId) {
-  const data = await npcAPI.getAllTradeConfigs()
-  if (data) {
-    const config = data.find(c => c.npcId === npcId)
-    if (config) {
-      tradeConfigForm.value = {
-        dailyLimit: config.dailyTradeLimit || 1,
-        demandItems: config.demandItems || [],
-        supplyItems: config.supplyItems || []
-      }
-    } else {
-      tradeConfigForm.value = { dailyLimit: 1, demandItems: [], supplyItems: [] }
-    }
   }
 }
 
@@ -1499,11 +1453,72 @@ function getFavorColor(favorValue) {
 function getStatusClass(status) {
   switch (status) {
     case '正常': return 'bg-green-900/50 text-green-400'
+    case '虚弱': return 'bg-amber-900/50 text-amber-300'
     case '受伤': return 'bg-yellow-900/50 text-yellow-400'
     case '死亡': return 'bg-red-900/50 text-red-400'
     case '失踪': return 'bg-slate-600 text-slate-400'
     case '被捕': return 'bg-purple-900/50 text-purple-400'
     default: return 'bg-slate-600 text-slate-400'
+  }
+}
+
+async function loadNpcInventory(npcId) {
+  npcInventory.value = []
+  npcSurvival.value = null
+  npcConsumptionHistory.value = []
+  if (!npcId) return
+  const data = await npcAPI.getNpcInventory(npcId)
+  if (data?.success) {
+    npcInventory.value = data.inventory || []
+    npcSurvival.value = data.survival || null
+    npcConsumptionHistory.value = data.consumptionHistory || []
+  }
+}
+
+async function onInventoryQty(item, event) {
+  if (!selectedNpc.value) return
+  const quantity = Math.max(0, Math.floor(Number(event.target.value) || 0))
+  const result = await npcAPI.setNpcInventoryItem(selectedNpc.value.id, item.itemType, item.itemId, quantity)
+  if (result?.success) {
+    npcInventory.value = result.inventory || []
+    npcSurvival.value = result.survival || null
+  } else {
+    alert(result?.message || '更新失败')
+    await loadNpcInventory(selectedNpc.value.id)
+  }
+}
+
+async function addInventoryItem() {
+  if (!selectedNpc.value) return
+  const qty = Math.max(1, Math.floor(Number(inventoryAdd.value.quantity) || 1))
+  const existing = npcInventory.value.find(i => i.itemType === inventoryAdd.value.itemType && Number(i.itemId) === Number(inventoryAdd.value.itemId))
+  const next = (existing?.quantity || 0) + qty
+  const result = await npcAPI.setNpcInventoryItem(
+    selectedNpc.value.id,
+    inventoryAdd.value.itemType,
+    inventoryAdd.value.itemId,
+    next
+  )
+  if (result?.success) {
+    npcInventory.value = result.inventory || []
+    npcSurvival.value = result.survival || null
+  } else {
+    alert(result?.message || '加入失败')
+  }
+}
+
+async function seedNpcInventory(mode) {
+  if (!selectedNpc.value) return
+  if (mode === 'replace' && !confirm('将清空该NPC背包并按职业重新发放玩家职业初始物资，确定？')) {
+    return
+  }
+  const result = await npcAPI.seedNpcInventory(selectedNpc.value.id, mode)
+  if (result?.success) {
+    npcInventory.value = result.inventory || []
+    npcSurvival.value = result.survival || null
+    alert(result.message)
+  } else {
+    alert(result?.message || '操作失败')
   }
 }
 
@@ -1702,59 +1717,6 @@ function getAttitudeClass(attitude) {
 
 function getItemList(itemType) {
   return itemCatalog[itemType] || []
-}
-
-function addDemandItem() {
-  tradeConfigForm.value.demandItems.push({
-    itemType: 'material',
-    itemId: 5,
-    quantity: 10,
-    minFavor: -100,
-    maxFavor: 100
-  })
-}
-
-function removeDemandItem(index) {
-  tradeConfigForm.value.demandItems.splice(index, 1)
-}
-
-function addSupplyItem() {
-  tradeConfigForm.value.supplyItems.push({
-    itemType: 'material',
-    itemId: 1,
-    quantity: 5,
-    minFavor: -100,
-    maxFavor: 100,
-    probability: 1
-  })
-}
-
-function removeSupplyItem(index) {
-  tradeConfigForm.value.supplyItems.splice(index, 1)
-}
-
-async function saveDailyLimit() {
-  if (!selectedNpc.value) return
-  const result = await npcAPI.setDailyTradeLimit(selectedNpc.value.id, tradeConfigForm.value.dailyLimit)
-  if (result?.success) {
-    alert(result.message)
-  } else {
-    alert(result?.message || '保存失败')
-  }
-}
-
-async function saveTradeConfig() {
-  if (!selectedNpc.value) return
-  const result = await npcAPI.saveTradeConfig(
-    selectedNpc.value.id,
-    tradeConfigForm.value.demandItems,
-    tradeConfigForm.value.supplyItems
-  )
-  if (result?.success) {
-    alert(result.message)
-  } else {
-    alert(result?.message || '保存失败')
-  }
 }
 
 async function handleFavorRangeChange(favor, event) {

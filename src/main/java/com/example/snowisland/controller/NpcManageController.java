@@ -1,7 +1,12 @@
 package com.example.snowisland.controller;
 
 import com.example.snowisland.entity.*;
+import com.example.snowisland.entity.TradeItem.ItemType;
 import com.example.snowisland.repository.*;
+import com.example.snowisland.service.GameStateService;
+import com.example.snowisland.service.NpcConsumptionService;
+import com.example.snowisland.service.NpcInventoryService;
+import com.example.snowisland.service.PlayerConsumptionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +42,18 @@ public class NpcManageController {
 
     @Autowired
     private PlayerNpcRecognitionRepository recognitionRepository;
+
+    @Autowired
+    private NpcInventoryService npcInventoryService;
+
+    @Autowired
+    private NpcConsumptionService npcConsumptionService;
+
+    @Autowired
+    private PlayerConsumptionService playerConsumptionService;
+
+    @Autowired
+    private GameStateService gameStateService;
 
     /**
      * 获取所有NPC列表（DM管理用，包含完整信息）
@@ -121,9 +138,87 @@ public class NpcManageController {
 
         map.put("createdAt", npc.getCreatedAt());
         map.put("updatedAt", npc.getUpdatedAt());
+        map.putAll(inventoryPayload(npc.getId()));
 
         map.put("success", true);
         return map;
+    }
+
+    @GetMapping("/{npcId}/inventory")
+    public Map<String, Object> getNpcInventory(@PathVariable Integer npcId) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (!npcRepository.existsById(npcId)) {
+            result.put("success", false);
+            result.put("message", "NPC不存在");
+            return result;
+        }
+        result.put("success", true);
+        result.putAll(inventoryPayload(npcId));
+        result.put("consumptionHistory", npcConsumptionService.historyForNpc(npcId));
+        return result;
+    }
+
+    @PostMapping("/{npcId}/inventory/set")
+    public Map<String, Object> setNpcInventoryItem(
+            @PathVariable Integer npcId,
+            @RequestBody Map<String, Object> request) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (!npcRepository.existsById(npcId)) {
+            result.put("success", false);
+            result.put("message", "NPC不存在");
+            return result;
+        }
+        try {
+            ItemType itemType = ItemType.valueOf(String.valueOf(request.get("itemType")).trim().toLowerCase());
+            Integer itemId = request.get("itemId") instanceof Number
+                    ? ((Number) request.get("itemId")).intValue() : Integer.parseInt(String.valueOf(request.get("itemId")));
+            int quantity = request.get("quantity") instanceof Number
+                    ? ((Number) request.get("quantity")).intValue() : Integer.parseInt(String.valueOf(request.get("quantity")));
+            npcInventoryService.setQuantity(npcId, itemType, itemId, quantity);
+            result.put("success", true);
+            result.put("message", "背包已更新");
+            result.putAll(inventoryPayload(npcId));
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "更新失败: " + e.getMessage());
+        }
+        return result;
+    }
+
+    @PostMapping("/{npcId}/inventory/seed")
+    public Map<String, Object> seedNpcInventory(
+            @PathVariable Integer npcId,
+            @RequestBody(required = false) Map<String, Object> request) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (!npcRepository.existsById(npcId)) {
+            result.put("success", false);
+            result.put("message", "NPC不存在");
+            return result;
+        }
+        String mode = request != null && request.get("mode") != null
+                ? String.valueOf(request.get("mode")) : "add";
+        int seeded = "replace".equalsIgnoreCase(mode)
+                ? npcInventoryService.replaceFromJob(npcId)
+                : npcInventoryService.seedFromJobIfEmpty(npcId);
+        result.put("success", true);
+        result.put("message", "replace".equalsIgnoreCase(mode)
+                ? "已按职业重置背包" : (seeded > 0 ? "已补发职业初始物资" : "背包已有物资，未覆盖"));
+        result.put("seededItemKinds", seeded);
+        result.putAll(inventoryPayload(npcId));
+        return result;
+    }
+
+    private Map<String, Object> inventoryPayload(Integer npcId) {
+        int day = Math.max(1, gameStateService.getCurrentDay());
+        GameDaySettings settings = playerConsumptionService.getOrCreateDaySettings(day);
+        int food = settings.getRequiredFoodUnits() != null
+                ? settings.getRequiredFoodUnits() : PlayerConsumptionService.DEFAULT_FOOD_UNITS;
+        int heat = settings.getRequiredFuelKg() != null
+                ? settings.getRequiredFuelKg() : PlayerConsumptionService.DEFAULT_FUEL_KG;
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("inventory", npcInventoryService.listItems(npcId));
+        payload.put("survival", npcInventoryService.survivalSnapshot(npcId, food, heat));
+        return payload;
     }
 
     /**
@@ -300,13 +395,15 @@ public class NpcManageController {
             }
 
             npcRepository.save(npc);
+            int seeded = npcInventoryService.seedFromJobIfEmpty(npc.getId());
 
-            logger.info("NPC创建成功: {}", npc.getName());
+            logger.info("NPC创建成功: {}（发放职业物资 {} 种）", npc.getName(), seeded);
 
             Map<String, Object> result = new HashMap<>();
             result.put("success", true);
-            result.put("message", "NPC创建成功");
+            result.put("message", seeded > 0 ? "NPC创建成功，已按职业发放初始物资" : "NPC创建成功");
             result.put("npcId", npc.getId());
+            result.put("seededItemKinds", seeded);
             return result;
 
         } catch (Exception e) {
@@ -333,6 +430,7 @@ public class NpcManageController {
 
         try {
             LocationNpc npc = npcOpt.get();
+            npcInventoryService.clearInventory(npc.getId());
             npcRepository.delete(npc);
 
             logger.info("NPC删除成功: {}", npc.getName());

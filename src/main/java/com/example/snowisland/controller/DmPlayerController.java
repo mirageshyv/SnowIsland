@@ -2,6 +2,7 @@ package com.example.snowisland.controller;
 
 import com.example.snowisland.service.DmPlayerInventoryService;
 import com.example.snowisland.service.DmPlayerManagementService;
+import com.example.snowisland.service.PlayerNotebookService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,6 +21,9 @@ public class DmPlayerController {
     @Autowired
     private DmPlayerManagementService dmPlayerManagementService;
 
+    @Autowired
+    private PlayerNotebookService playerNotebookService;
+
     @GetMapping("/players")
     public Map<String, Object> listPlayers(@RequestParam String userRole) {
         return dmPlayerManagementService.listPlayersForDm(userRole);
@@ -28,8 +32,9 @@ public class DmPlayerController {
     @GetMapping("/jobs/{jobId}/starting-inventory-preview")
     public Map<String, Object> previewStartingInventory(
             @PathVariable Integer jobId,
+            @RequestParam(required = false) Integer hiddenJobId,
             @RequestParam String userRole) {
-        return dmPlayerManagementService.previewJobStartingInventory(jobId, userRole);
+        return dmPlayerManagementService.previewJobStartingInventory(jobId, hiddenJobId, userRole);
     }
 
     @PostMapping("/players")
@@ -138,15 +143,39 @@ public class DmPlayerController {
     }
 
     @PutMapping("/players/{playerId}/inventory")
-    public Map<String, Object> setPlayerItemQuantity(
+    public Map<String, Object> setPlayerInventoryItem(
             @PathVariable Integer playerId,
             @RequestParam String userRole,
             @RequestBody Map<String, Object> body) {
         String itemType = body.get("itemType") != null ? String.valueOf(body.get("itemType")) : null;
-        Integer itemId = body.get("itemId") instanceof Number
-                ? ((Number) body.get("itemId")).intValue() : null;
-        Integer quantity = body.get("quantity") instanceof Number
-                ? ((Number) body.get("quantity")).intValue() : null;
+        Integer itemId = toInt(body.get("itemId"));
+        Integer quantity = toInt(body.get("quantity"));
         return dmPlayerInventoryService.setPlayerItemQuantity(playerId, itemType, itemId, quantity, userRole);
+    }
+
+    private static Integer toInt(Object value) {
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        }
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(String.valueOf(value).trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    @GetMapping("/players/{playerId}/notebook")
+    public Map<String, Object> listNotebook(@PathVariable Integer playerId) {
+        return playerNotebookService.listForPlayer(playerId);
+    }
+
+    @GetMapping("/players/{playerId}/notebook/{noteId}")
+    public Map<String, Object> getNotebookPage(
+            @PathVariable Integer playerId,
+            @PathVariable Integer noteId) {
+        return playerNotebookService.getForPlayer(playerId, noteId);
     }
 }

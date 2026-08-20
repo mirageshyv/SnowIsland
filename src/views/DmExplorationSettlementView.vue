@@ -1,15 +1,48 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { explorationAPI, gameStateAPI } from '@/utils/api.js'
+import { explorationAPI } from '@/utils/api.js'
+import { useGameDayScope } from '@/composables/useGameDayScope.js'
+
+const {
+  currentGameDay,
+  viewGameDay: gameDay,
+  dayOptions,
+  phaseLabel,
+  loadGameState,
+} = useGameDayScope()
 
 const loading = ref(true)
-const gameDay = ref(1)
+const loadError = ref('')
 const explorations = ref([])
 const events = ref([])
+const packs = ref([])
+const packCollapsed = ref({})
 const expandedId = ref(null)
 const submitting = ref(false)
 
+const PACK_IMPORT_EXAMPLE = `{5}{废弃哨站
+地点描述：一座废墟。
+可获得物资：绳索 (10米)， 火把 (1把)
+历史碎片：柱子上有刻痕。
+}{8}{冰封矿道
+地点描述：被灌木掩盖的矿道入口。
+可获得物资：金属制品 (1吨)
+历史碎片：墙壁镶嵌着黑色金属。
+特殊：是
+}`
+
+const newPackName = ref('')
+const importRawText = ref('')
+const previewing = ref(false)
+const importing = ref(false)
+const showPreview = ref(false)
+const previewEvents = ref([])
+const previewMessage = ref('')
+const previewWarnings = ref([])
+const previewOk = ref(false)
+
 const showEventManager = ref(false)
+const eventManagerTab = ref('single')
 const editingEvent = ref(null)
 const eventForm = ref({
   name: '',
@@ -18,7 +51,9 @@ const eventForm = ref({
   eventDifficulty: 5,
   locationDesc: '',
   loreFragment: '',
+  rewardsText: '',
   isSpecial: false,
+  packId: null,
 })
 
 const selectedEventDetail = ref(null)
@@ -32,6 +67,7 @@ async function handleReimport() {
     if (res?.success) {
       alert('重新导入成功')
       await loadPendingExplorations()
+      await loadPacks()
     } else {
       alert(res?.message || '导入失败')
     }
@@ -76,6 +112,71 @@ const filteredEvents = computed(() => {
   return list
 })
 
+const pickerEvents = computed(() =>
+  filteredEvents.value.filter((e) => e.packEnabled !== false)
+)
+
+const eventsByPackId = computed(() => {
+  const map = {}
+  for (const event of filteredEvents.value) {
+    const key = event.packId == null ? 'none' : event.packId
+    if (!map[key]) map[key] = []
+    map[key].push(event)
+  }
+  return map
+})
+
+const packTree = computed(() => {
+  const byParent = {}
+  for (const pack of packs.value) {
+    const pid = pack.parentId == null ? 'root' : pack.parentId
+    if (!byParent[pid]) byParent[pid] = []
+    byParent[pid].push(pack)
+  }
+  function build(parentKey) {
+    return (byParent[parentKey] || [])
+      .slice()
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.id - b.id)
+      .map((pack) => ({
+        ...pack,
+        events: eventsByPackId.value[pack.id] || [],
+        children: build(pack.id),
+      }))
+  }
+  const tree = build('root')
+  const ungrouped = eventsByPackId.value.none || []
+  if (ungrouped.length) {
+    tree.push({
+      id: 'none',
+      name: '未分组',
+      enabled: false,
+      eventCount: ungrouped.length,
+      parentId: null,
+      events: ungrouped,
+      children: [],
+    })
+  }
+  return tree
+})
+
+const packRows = computed(() => {
+  const collapsed = packCollapsed.value
+  const rows = []
+  function walk(nodes, depth) {
+    for (const node of nodes) {
+      rows.push({ kind: 'pack', key: 'p-' + node.id, pack: node, depth })
+      if (!collapsed[node.id]) {
+        for (const event of node.events || []) {
+          rows.push({ kind: 'event', key: 'e-' + event.id, event, depth: depth + 1 })
+        }
+        walk(node.children || [], depth + 1)
+      }
+    }
+  }
+  walk(packTree.value, 0)
+  return rows
+})
+
 const pendingExplorations = computed(() =>
   explorations.value.filter((e) => e.status === 'pending')
 )
@@ -86,17 +187,25 @@ const settledExplorations = computed(() =>
   explorations.value.filter((e) => e.status === 'settled')
 )
 
-async function loadGameDay() {
+async function onDayChange() {
+  expandedId.value = null
+  await loadPendingExplorations(true)
+}
+
+async function loadPacks() {
   try {
-    const state = await gameStateAPI.getState()
-    gameDay.value = state?.currentDay || 1
+    const res = await explorationAPI.getPacks()
+    if (res?.success && Array.isArray(res.packs)) {
+      packs.value = res.packs
+    }
   } catch (e) {
     console.error(e)
   }
 }
 
-async function loadPendingExplorations() {
-  loading.value = true
+async function loadPendingExplorations(silent = false) {
+  if (!silent) loading.value = true
+  loadError.value = ''
   try {
     const [explRes, eventsRes] = await Promise.all([
       explorationAPI.getPendingExplorations(gameDay.value),
@@ -104,14 +213,18 @@ async function loadPendingExplorations() {
     ])
     if (explRes?.success) {
       explorations.value = explRes.explorations || []
+    } else {
+      explorations.value = []
+      loadError.value = explRes?.message || '无法加载待结算探索'
     }
     if (Array.isArray(eventsRes)) {
       events.value = eventsRes
     }
   } catch (e) {
     console.error(e)
+    loadError.value = '无法加载待结算探索'
   } finally {
-    loading.value = false
+    if (!silent) loading.value = false
   }
 }
 
@@ -152,21 +265,17 @@ async function triggerSpecificEvent(explorationId, eventId) {
 }
 
 async function settleExploration(exploration) {
-  const rewards = exploration.event?.rewards || []
-  if (!rewards.length) {
-    alert('该事件没有奖励')
-    return
-  }
+  const rewards = exploration.event?.rewards || exploration.rewards || []
   submitting.value = true
   try {
     const res = await explorationAPI.settle(exploration.id, rewards)
     if (res?.success) {
       await loadPendingExplorations()
     } else {
-      alert(res?.message || '结算失败')
+      alert(res?.message || '发布失败')
     }
   } catch {
-    alert('结算失败')
+    alert('发布失败')
   } finally {
     submitting.value = false
   }
@@ -222,6 +331,8 @@ function getDifficultyLabel(difficulty) {
 // ============ 事件管理 ============
 function openCreateEvent() {
   editingEvent.value = null
+  eventManagerTab.value = 'single'
+  const basePack = packs.value.find((p) => p.name === '基础包')
   eventForm.value = {
     name: '',
     description: '',
@@ -229,13 +340,18 @@ function openCreateEvent() {
     eventDifficulty: 5,
     locationDesc: '',
     loreFragment: '',
+    rewardsText: '',
     isSpecial: false,
+    packId: basePack?.id ?? null,
   }
+  newPackName.value = ''
+  importRawText.value = ''
   showEventManager.value = true
 }
 
 function openEditEvent(event) {
   editingEvent.value = event
+  eventManagerTab.value = 'single'
   eventForm.value = {
     name: event.name || '',
     description: event.description || '',
@@ -243,9 +359,24 @@ function openEditEvent(event) {
     eventDifficulty: event.eventDifficulty ?? 5,
     locationDesc: event.locationDesc || '',
     loreFragment: event.loreFragment || '',
+    rewardsText: rewardsToText(event.rewards),
     isSpecial: event.isSpecial || false,
+    packId: event.packId ?? null,
   }
   showEventManager.value = true
+}
+
+function rewardsToText(rewards) {
+  if (!Array.isArray(rewards) || !rewards.length) return ''
+  return rewards
+    .map((r) => {
+      const name = r.name || ''
+      const qty = r.quantity ?? 1
+      const unit = r.unit || ''
+      return name ? `${name} (${qty}${unit})` : ''
+    })
+    .filter(Boolean)
+    .join('，')
 }
 
 function closeEventManager() {
@@ -275,7 +406,9 @@ async function saveEvent() {
         eventDifficulty: difficulty,
         locationDesc: eventForm.value.locationDesc,
         loreFragment: eventForm.value.loreFragment,
+        rewardsText: eventForm.value.rewardsText,
         isSpecial: eventForm.value.isSpecial,
+        packId: eventForm.value.packId,
       })
     } else {
       res = await explorationAPI.createEvent({
@@ -285,11 +418,14 @@ async function saveEvent() {
         eventDifficulty: difficulty,
         locationDesc: eventForm.value.locationDesc,
         loreFragment: eventForm.value.loreFragment,
+        rewardsText: eventForm.value.rewardsText,
         isSpecial: eventForm.value.isSpecial,
+        packId: eventForm.value.packId,
       })
     }
     if (res?.success) {
       await loadPendingExplorations()
+      await loadPacks()
       closeEventManager()
     } else {
       alert(res?.message || '保存失败')
@@ -308,6 +444,7 @@ async function deleteEvent(event) {
     const res = await explorationAPI.deleteEvent(event.id)
     if (res?.success) {
       await loadPendingExplorations()
+      await loadPacks()
     } else {
       alert(res?.message || '删除失败')
     }
@@ -319,7 +456,7 @@ async function deleteEvent(event) {
 }
 
 function getStatusLabel(status) {
-  const labels = { pending: '待探索', explored: '待结算', settled: '已结算' }
+  const labels = { pending: '待生成', explored: '待发布', settled: '已发布' }
   return labels[status] || status
 }
 
@@ -333,18 +470,148 @@ function getStatusColor(status) {
 }
 
 onMounted(async () => {
-  await loadGameDay()
+  await loadGameState()
+  await loadPacks()
   await loadPendingExplorations()
 })
+
+function togglePackFolder(packId) {
+  packCollapsed.value = { ...packCollapsed.value, [packId]: !packCollapsed.value[packId] }
+}
+
+function isPackCollapsed(packId) {
+  return !!packCollapsed.value[packId]
+}
+
+async function togglePackEnabled(pack, enabled) {
+  try {
+    const res = await explorationAPI.setPackEnabled(pack.id, enabled)
+    if (res?.success) {
+      await loadPacks()
+      await loadPendingExplorations(true)
+    } else {
+      alert(res?.message || '更新卡包失败')
+    }
+  } catch {
+    alert('更新卡包失败')
+  }
+}
+
+async function copyFormatExample() {
+  try {
+    await navigator.clipboard.writeText(PACK_IMPORT_EXAMPLE)
+    alert('已复制格式示例')
+  } catch {
+    alert('复制失败，请手动选择文本复制')
+  }
+}
+
+const PACK_NAME_MAX = 80
+const RAW_IMPORT_MAX = 200000
+const PACK_NAME_OK = /^[\u4e00-\u9fffA-Za-z0-9_\-·（）()\s]+$/
+
+function validatePackNameClient(raw) {
+  const name = String(raw || '').trim()
+  if (!name) return '请填写卡包名称'
+  if (name.length > PACK_NAME_MAX) return `卡包名称不能超过 ${PACK_NAME_MAX} 个字符`
+  if (!PACK_NAME_OK.test(name)) return '卡包名称仅允许中文、字母、数字、空格与 ·_-（）'
+  return null
+}
+
+function validateImportTextClient(raw) {
+  const text = String(raw || '')
+  if (!text.trim()) return '请粘贴事件文本'
+  if (text.length > RAW_IMPORT_MAX) return `导入文本过长（上限 ${RAW_IMPORT_MAX} 字符）`
+  if (text.includes('\0')) return '导入文本包含非法控制字符'
+  return null
+}
+
+async function handlePreviewImport() {
+  const nameErr = validatePackNameClient(newPackName.value)
+  if (nameErr) {
+    alert(nameErr)
+    return
+  }
+  const textErr = validateImportTextClient(importRawText.value)
+  if (textErr) {
+    alert(textErr)
+    return
+  }
+  previewing.value = true
+  try {
+    const res = await explorationAPI.previewPackImport(importRawText.value)
+    previewEvents.value = res?.events || []
+    previewMessage.value = res?.message || ''
+    previewWarnings.value = Array.isArray(res?.warnings) ? res.warnings : []
+    previewOk.value = !!res?.success
+    if (res?.success) {
+      showPreview.value = true
+    } else {
+      alert(res?.message || '解析失败')
+      if (previewEvents.value.length) {
+        showPreview.value = true
+      }
+    }
+  } catch {
+    alert('解析失败')
+  } finally {
+    previewing.value = false
+  }
+}
+
+async function confirmImportPack() {
+  const nameErr = validatePackNameClient(newPackName.value)
+  if (nameErr) {
+    alert(nameErr)
+    return
+  }
+  const textErr = validateImportTextClient(importRawText.value)
+  if (textErr) {
+    alert(textErr)
+    return
+  }
+  importing.value = true
+  try {
+    const res = await explorationAPI.importPack(newPackName.value.trim(), importRawText.value)
+    if (res?.success) {
+      alert(res.message || '导入成功')
+      showPreview.value = false
+      showEventManager.value = false
+      newPackName.value = ''
+      importRawText.value = ''
+      previewEvents.value = []
+      await loadPacks()
+      await loadPendingExplorations()
+    } else {
+      alert(res?.message || '导入失败')
+    }
+  } catch {
+    alert('导入失败')
+  } finally {
+    importing.value = false
+  }
+}
 </script>
 
 <template>
   <div>
     <div class="text-center mb-8">
       <h1 class="text-white text-2xl font-semibold mb-2">探索岛屿结算</h1>
-      <p class="text-gray-500 text-sm">处理玩家的探索岛屿行动，触发事件并发放奖励</p>
-      <div class="mt-3">
-        <span class="text-gray-400 text-sm">游戏第 {{ gameDay }} 天</span>
+      <p class="text-gray-500 text-sm">系统已自动生成探索结果，确认后发布给玩家并发放奖励</p>
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-3">
+        <label class="text-gray-400 text-sm">查看天数</label>
+        <select
+          v-model.number="gameDay"
+          class="bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-gray-200"
+          @change="onDayChange"
+        >
+          <option v-for="d in dayOptions" :key="d" :value="d">
+            第 {{ d }} 天{{ d === currentGameDay ? '（当前）' : '' }}
+          </option>
+        </select>
+        <span class="text-gray-500 text-sm">
+          游戏第 {{ currentGameDay }} 天 · {{ phaseLabel }}
+        </span>
       </div>
     </div>
 
@@ -354,13 +621,6 @@ onMounted(async () => {
 
     <template v-else>
       <div class="mb-6 flex items-center gap-3 flex-wrap">
-        <button
-          type="button"
-          class="bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium"
-          @click="loadPendingExplorations"
-        >
-          刷新探索列表
-        </button>
         <button
           type="button"
           class="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium"
@@ -407,66 +667,102 @@ onMounted(async () => {
           事件库（{{ events.length }}）
           <span class="text-xs text-gray-500 ml-2">显示：{{ filteredEvents.length }}</span>
         </h2>
+
         <div class="space-y-2 max-h-96 overflow-y-auto">
           <div
-            v-for="event in filteredEvents"
-            :key="event.id"
-            class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-xl p-3 flex items-start justify-between gap-3"
+            v-for="row in packRows"
+            :key="row.key"
+            :style="{ marginLeft: (row.depth * 16) + 'px' }"
           >
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 flex-wrap mb-1">
-                <span class="text-white text-sm font-medium">{{ event.name }}</span>
-                <span
-                  class="text-xs px-2 py-0.5 rounded-full border"
-                  :class="getDifficultyColor(event.eventDifficulty)"
-                >
-                  {{ getDifficultyIcon(event.eventDifficulty) }} 难度 {{ event.eventDifficulty }}/{{ MAX_DIFFICULTY }}
-                </span>
-                <span
-                  class="text-xs px-2 py-0.5 rounded-full border"
-                  :class="getRarityColor(event.rarity)"
-                >
-                  {{ getRarityLabel(event.rarity) }}
-                </span>
-                <span v-if="event.isSpecial" class="text-xs px-2 py-0.5 rounded-full border border-pink-500/30 bg-pink-500/20 text-pink-400">
-                  ⭐ 特殊事件
-                </span>
-                <span v-if="event.triggered" class="text-gray-600 text-xs">（已触发）</span>
-              </div>
-              <p class="text-gray-500 text-xs line-clamp-1">{{ event.description }}</p>
+            <div
+              v-if="row.kind === 'pack'"
+              class="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between gap-3"
+            >
+              <button
+                type="button"
+                class="flex items-center gap-2 text-left min-w-0 flex-1"
+                @click="togglePackFolder(row.pack.id)"
+              >
+                <span class="text-gray-400 text-xs w-3">{{ isPackCollapsed(row.pack.id) ? '▶' : '▼' }}</span>
+                <span class="text-white text-sm font-medium truncate">{{ row.pack.name }}</span>
+                <span class="text-gray-500 text-xs shrink-0">（{{ row.pack.eventCount ?? row.pack.events.length }}）</span>
+              </button>
+              <label
+                v-if="row.pack.id !== 'none'"
+                class="flex items-center gap-2 shrink-0 cursor-pointer text-xs text-gray-300"
+                @click.stop
+              >
+                <input
+                  type="checkbox"
+                  :checked="!!row.pack.enabled"
+                  class="w-4 h-4"
+                  @change="togglePackEnabled(row.pack, $event.target.checked)"
+                />
+                加入本局
+              </label>
             </div>
-            <div class="flex gap-2 shrink-0">
-              <button
-                type="button"
-                class="text-xs px-3 py-1 rounded-lg border border-gray-500/30 text-gray-400 hover:bg-gray-500/10"
-                @click="viewEventDetail(event)"
-              >
-                详情
-              </button>
-              <button
-                type="button"
-                class="text-xs px-3 py-1 rounded-lg border border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
-                @click="openEditEvent(event)"
-              >
-                编辑
-              </button>
-              <button
-                type="button"
-                class="text-xs px-3 py-1 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10"
-                @click="deleteEvent(event)"
-              >
-                删除
-              </button>
+            <div
+              v-else
+              class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/10 rounded-xl p-3 flex items-start justify-between gap-3"
+            >
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap mb-1">
+                  <span class="text-white text-sm font-medium">{{ row.event.name }}</span>
+                  <span
+                    class="text-xs px-2 py-0.5 rounded-full border"
+                    :class="getDifficultyColor(row.event.eventDifficulty)"
+                  >
+                    {{ getDifficultyIcon(row.event.eventDifficulty) }} 难度 {{ row.event.eventDifficulty }}/{{ MAX_DIFFICULTY }}
+                  </span>
+                  <span
+                    class="text-xs px-2 py-0.5 rounded-full border"
+                    :class="getRarityColor(row.event.rarity)"
+                  >
+                    {{ getRarityLabel(row.event.rarity) }}
+                  </span>
+                  <span v-if="row.event.isSpecial" class="text-xs px-2 py-0.5 rounded-full border border-pink-500/30 bg-pink-500/20 text-pink-400">
+                    ⭐ 特殊事件
+                  </span>
+                  <span v-if="row.event.triggered" class="text-gray-600 text-xs">（已触发）</span>
+                </div>
+                <p class="text-gray-500 text-xs line-clamp-1">{{ row.event.description }}</p>
+              </div>
+              <div class="flex gap-2 shrink-0">
+                <button
+                  type="button"
+                  class="text-xs px-3 py-1 rounded-lg border border-gray-500/30 text-gray-400 hover:bg-gray-500/10"
+                  @click="viewEventDetail(row.event)"
+                >
+                  详情
+                </button>
+                <button
+                  type="button"
+                  class="text-xs px-3 py-1 rounded-lg border border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                  @click="openEditEvent(row.event)"
+                >
+                  编辑
+                </button>
+                <button
+                  type="button"
+                  class="text-xs px-3 py-1 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10"
+                  @click="deleteEvent(row.event)"
+                >
+                  删除
+                </button>
+              </div>
             </div>
           </div>
-          <div v-if="filteredEvents.length === 0" class="text-center py-8 text-gray-500 text-sm">
+          <div v-if="packRows.length === 0" class="text-center py-8 text-gray-500 text-sm">
             没有匹配的事件
           </div>
         </div>
       </div>
 
-      <div v-if="explorations.length === 0" class="text-center py-16 text-gray-400">
-        暂无待处理的探索行动
+      <div v-if="loadError" class="text-center py-16 text-red-400">
+        {{ loadError }}
+      </div>
+      <div v-else-if="explorations.length === 0" class="text-center py-16 text-gray-400">
+        第 {{ gameDay }} 天暂无探索行动
       </div>
 
       <div v-else class="space-y-6">
@@ -516,7 +812,7 @@ onMounted(async () => {
                 <p class="text-gray-500 text-xs mb-2">选择要触发的事件：</p>
                 <div class="space-y-2 max-h-60 overflow-y-auto">
                   <button
-                    v-for="event in filteredEvents"
+                    v-for="event in pickerEvents"
                     :key="event.id"
                     type="button"
                     :disabled="submitting"
@@ -556,7 +852,7 @@ onMounted(async () => {
         <div v-if="exploredExplorations.length">
           <h2 class="text-white text-lg font-medium mb-4 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-            待结算（{{ exploredExplorations.length }}）
+            待发布（{{ exploredExplorations.length }}）
           </h2>
           <div class="space-y-3">
             <div
@@ -614,11 +910,11 @@ onMounted(async () => {
 
               <button
                 type="button"
-                :disabled="submitting || !exp.rewards?.length"
+                :disabled="submitting"
                 class="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-600 disabled:to-gray-600 text-white py-2.5 rounded-lg text-sm font-medium"
                 @click="settleExploration(exp)"
               >
-                {{ submitting ? '结算中...' : '发放奖励并结算' }}
+                {{ submitting ? '发布中...' : '确认发布给玩家' }}
               </button>
             </div>
           </div>
@@ -627,7 +923,7 @@ onMounted(async () => {
         <div v-if="settledExplorations.length">
           <h2 class="text-white text-lg font-medium mb-4 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-green-500"></span>
-            已结算（{{ settledExplorations.length }}）
+            已发布（{{ settledExplorations.length }}）
           </h2>
           <div class="space-y-3">
             <div
@@ -659,11 +955,30 @@ onMounted(async () => {
       class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
       @click.self="closeEventManager"
     >
-      <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/20 rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+      <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/20 rounded-2xl p-6 max-w-4xl w-full max-h-[92vh] overflow-y-auto">
         <h3 class="text-white text-lg font-semibold mb-4">
           {{ editingEvent ? '编辑事件' : '新建事件' }}
         </h3>
-        <div class="space-y-4">
+        <div v-if="!editingEvent" class="flex gap-2 mb-5">
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            :class="eventManagerTab === 'single' ? 'bg-indigo-500/30 border border-indigo-400/50 text-white' : 'border border-white/10 text-gray-400 hover:bg-white/5'"
+            @click="eventManagerTab = 'single'"
+          >
+            单个新建
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            :class="eventManagerTab === 'import' ? 'bg-indigo-500/30 border border-indigo-400/50 text-white' : 'border border-white/10 text-gray-400 hover:bg-white/5'"
+            @click="eventManagerTab = 'import'"
+          >
+            一键导入
+          </button>
+        </div>
+
+        <div v-if="editingEvent || eventManagerTab === 'single'" class="space-y-4">
           <div>
             <label class="block text-gray-400 text-xs mb-1">事件名称 <span class="text-red-400">*</span></label>
             <input
@@ -673,6 +988,16 @@ onMounted(async () => {
               class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200"
               placeholder="例：神秘洞穴"
             />
+          </div>
+          <div>
+            <label class="block text-gray-400 text-xs mb-1">所属卡包</label>
+            <select
+              v-model="eventForm.packId"
+              class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200"
+            >
+              <option :value="null">未分组</option>
+              <option v-for="pack in packs" :key="pack.id" :value="pack.id">{{ pack.name }}</option>
+            </select>
           </div>
           <div>
             <label class="block text-gray-400 text-xs mb-1">事件描述</label>
@@ -693,13 +1018,23 @@ onMounted(async () => {
             />
           </div>
           <div>
-            <label class="block text-gray-400 text-xs mb-1">历史秘密碎片</label>
+            <label class="block text-gray-400 text-xs mb-1">历史碎片</label>
             <textarea
               v-model="eventForm.loreFragment"
               rows="3"
               class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 resize-none"
               placeholder="探索时发现的历史秘密/线索..."
             />
+          </div>
+          <div>
+            <label class="block text-gray-400 text-xs mb-1">可获得物资</label>
+            <textarea
+              v-model="eventForm.rewardsText"
+              rows="2"
+              class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 resize-none"
+              placeholder="例：绳索 (10米)， 火把 (1把)。留空表示无物资。"
+            />
+            <p class="text-red-400/80 text-xs mt-1">物资名称需与目录一致，无法识别的名称将阻止保存。</p>
           </div>
           <div>
             <label class="block text-gray-400 text-xs mb-1">稀有度</label>
@@ -737,7 +1072,6 @@ onMounted(async () => {
                 class="w-20 bg-black/30 border border-white/10 rounded-lg px-2 py-1 text-sm text-gray-200 text-center"
               />
             </div>
-
           </div>
           <div class="flex items-center gap-3">
             <label class="flex items-center gap-2 cursor-pointer">
@@ -750,6 +1084,54 @@ onMounted(async () => {
             </label>
           </div>
         </div>
+
+        <div v-else class="space-y-4">
+          <p class="text-gray-500 text-xs leading-relaxed">
+            重复块 <code class="text-indigo-300">{难度}{正文}</code>。编号可选：也可写成 <code class="text-indigo-300">{编号}{难度}{正文}</code>。
+            正文第一行是事件名，随后必须包含 <code class="text-indigo-300">地点描述</code>、<code class="text-indigo-300">可获得物资</code>（物品）、<code class="text-indigo-300">历史碎片</code>，可选「特殊：是」。正文中不能包含 <code class="text-indigo-300">}</code>。难度 0-20。
+          </p>
+          <div>
+            <label class="block text-gray-400 text-xs mb-1">卡包名称</label>
+            <input
+              v-model="newPackName"
+              type="text"
+              maxlength="80"
+              class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200"
+              placeholder="例：扩展包·海岸"
+            />
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-gray-400 text-xs">可复制格式示例</label>
+                <button
+                  type="button"
+                  class="text-xs px-2 py-1 rounded-lg border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/10"
+                  @click="copyFormatExample"
+                >
+                  复制示例
+                </button>
+              </div>
+              <textarea
+                readonly
+                :value="PACK_IMPORT_EXAMPLE"
+                rows="14"
+                class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-gray-400 font-mono resize-none"
+              />
+            </div>
+            <div>
+              <label class="block text-gray-400 text-xs mb-1">导入文本</label>
+              <textarea
+                v-model="importRawText"
+                rows="14"
+                maxlength="200000"
+                class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 font-mono"
+                placeholder="粘贴 {难度}{正文}，正文含名称、地点描述、可获得物资、历史碎片..."
+              />
+            </div>
+          </div>
+        </div>
+
         <div class="flex justify-end gap-3 mt-6">
           <button
             type="button"
@@ -759,12 +1141,22 @@ onMounted(async () => {
             取消
           </button>
           <button
+            v-if="editingEvent || eventManagerTab === 'single'"
             type="button"
             :disabled="submitting"
             class="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 disabled:from-gray-600 disabled:to-gray-600 text-white text-sm"
             @click="saveEvent"
           >
             {{ submitting ? '保存中...' : '保存' }}
+          </button>
+          <button
+            v-else
+            type="button"
+            :disabled="previewing"
+            class="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 disabled:from-gray-600 disabled:to-gray-600 text-white text-sm"
+            @click="handlePreviewImport"
+          >
+            {{ previewing ? '解析中...' : '预览并导入' }}
           </button>
         </div>
       </div>
@@ -864,6 +1256,85 @@ onMounted(async () => {
             @click="closeEventDetail(); openEditEvent(selectedEventDetail)"
           >
             编辑事件
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 导入预览弹窗 -->
+    <div
+      v-if="showPreview"
+      class="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4"
+      @click.self="showPreview = false"
+    >
+      <div class="bg-gradient-to-br from-[#1a2332] to-[#0f1419] border border-white/20 rounded-2xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <h3 class="text-white text-lg font-semibold mb-2">导入预览</h3>
+        <p class="text-gray-400 text-xs mb-2">{{ previewMessage || ('卡包：' + newPackName) }}</p>
+        <p v-if="previewWarnings.length && !previewOk" class="text-amber-400/80 text-xs mb-4">
+          {{ previewWarnings.join('；') }}
+        </p>
+        <div class="space-y-2 mb-6">
+          <div
+            v-for="(ev, idx) in previewEvents"
+            :key="idx"
+            class="bg-black/20 border border-white/10 rounded-xl p-3"
+          >
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+              <span class="text-white text-sm font-medium">{{ ev.name }}</span>
+              <span v-if="ev.sourceNumber != null" class="text-xs text-gray-500">#{{ ev.sourceNumber }}</span>
+              <span
+                class="text-xs px-2 py-0.5 rounded-full border"
+                :class="getDifficultyColor(ev.difficulty ?? ev.eventDifficulty)"
+              >
+                难度 {{ ev.difficulty ?? ev.eventDifficulty }}
+              </span>
+              <span v-if="ev.isSpecial" class="text-xs px-2 py-0.5 rounded-full border border-pink-500/30 bg-pink-500/20 text-pink-400">
+                ⭐ 特殊
+              </span>
+            </div>
+            <p v-if="ev.locationDescSnippet || ev.locationDesc" class="text-gray-500 text-xs mb-1">
+              地点：{{ ev.locationDescSnippet || ev.locationDesc }}
+            </p>
+            <p v-if="ev.loreSnippet || ev.loreFragment" class="text-amber-400/80 text-xs mb-1">
+              历史碎片：{{ ev.loreSnippet || ev.loreFragment }}
+            </p>
+            <p v-if="ev.rewardLabels && ev.rewardLabels.length" class="text-green-400 text-xs">
+              物资：{{ ev.rewardLabels.join('，') }}
+            </p>
+            <p v-if="ev.unmatchedRewards && ev.unmatchedRewards.length" class="text-red-400 text-xs">
+              无法识别：{{ ev.unmatchedRewards.join('、') }}
+            </p>
+            <p
+              v-for="(warn, wi) in (ev.qtyFallbackWarnings || [])"
+              :key="'qty-' + idx + '-' + wi"
+              class="text-amber-400/80 text-xs"
+            >
+              {{ warn }}
+            </p>
+            <p
+              v-if="!(ev.rewardLabels && ev.rewardLabels.length) && !(ev.unmatchedRewards && ev.unmatchedRewards.length)"
+              class="text-gray-600 text-xs"
+            >
+              物资：无
+            </p>
+          </div>
+          <div v-if="previewEvents.length === 0" class="text-center py-6 text-gray-500 text-sm">没有解析到事件</div>
+        </div>
+        <div class="flex justify-end gap-3">
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 text-sm"
+            @click="showPreview = false"
+          >
+            取消
+          </button>
+          <button
+            type="button"
+            :disabled="importing || !previewOk || !previewEvents.length"
+            class="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 disabled:from-gray-600 disabled:to-gray-600 text-white text-sm"
+            @click="confirmImportPack"
+          >
+            {{ importing ? '导入中...' : '确认导入' }}
           </button>
         </div>
       </div>

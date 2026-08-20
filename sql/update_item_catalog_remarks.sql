@@ -41,8 +41,8 @@ UPDATE `ammo` SET `remark` = '木质箭杆配金属箭头，每支为猎弓专�
 
 UPDATE `material` SET `name` = '燃料', `remark` = '统称可用于燃烧供能的物资，包括木柴、煤炭、燃料等。不同设备的燃料消耗标准不同，详见燃料消耗表。' WHERE `id` = 8;
 UPDATE `material` SET `remark` = '加工后的铁件、钉子、铁丝等金属材料。可用于锻造武器或工具，或修建设施的基础材料。' WHERE `id` = 1;
-UPDATE `material` SET `remark` = '从岛上砍伐的原木，未经过加工。可直接作为燃料（15kg/天取暖），或加工成木板用于建筑。' WHERE `id` = 2;
-UPDATE `material` SET `remark` = '麻绳或钢丝绳，直径1-2厘米。用于捆绑、拖拽、登山或船只系泊。可以提升探索成功程度。' WHERE `id` = 3;
+UPDATE `material` SET `remark` = '从岛上砍伐的原木，未经过加工。可直接作为燃料（25kg/天取暖），或加工成木板用于建筑。' WHERE `id` = 2;
+UPDATE `material` SET `remark` = '麻绳或钢丝绳，直径1-2厘米。用于捆绑、拖拽、登山或船只系泊。探索时投入10个可提供+2探索值。' WHERE `id` = 3;
 UPDATE `material` SET `remark` = '原木经蒸汽箱加工后的标准化板材。用于建造避难所、修理船只或制作家具，比原木更易使用。' WHERE `id` = 4;
 UPDATE `material` SET `remark` = '泛指各种可食用物资，包括面粉、鱼干、咸肉、土豆等。' WHERE `id` = 5;
 UPDATE `material` SET `remark` = '黑色粘稠的石油残渣，桶装保存。可用于修补船体裂缝、防水处理。' WHERE `id` = 6;
@@ -54,3 +54,10 @@ UPDATE `material` SET `remark` = '老旧柴油发电机，已闲置多年。可�
 UPDATE `material` SET `remark` = '烧炭工烧制燃料的副产物，1单位的草木灰等于1单位医疗资源。' WHERE `id` = 13;
 
 UPDATE `catastrophe_card` SET `description` = REPLACE(`description`, '煤油/燃油', '煤油/燃料') WHERE `description` LIKE '%煤油/燃油%';
+
+UPDATE `item` SET `remark` = '地脉核心的封印碎片。持有即可产生地脉共鸣。可花费1次快速行动：将任意10单位资源（食物、燃料、木材、金属）转换为等量另一种资源；或为当前所在地点增加2点防御值。亦可作为仪式材料消耗1～3枚。原住民初始持有的祭坛石绑定个人仓库：不可被偷盗或被得知拥有，可交易或赠送。全游戏约5～7枚（26人5枚）。' WHERE `name` = '祭坛石';
+UPDATE `item` SET `remark` = '一件覆盖细密鳞片的外套。每天一次可作为防弹衣效果。不可交易，不可被偷盗或任何方式被得知拥有。', `tradable` = 0 WHERE `name` = '鱼鳞外套';
+UPDATE `item` SET `remark` = '半头盔式银灰色合金装置，内衬黑色织物。侧面按钮与指示灯大多熄灭，一颗暗红色灯缓慢闪烁。内侧绣着「铁砧小队·标准配置·情绪抑制模块·型号MK-II」。装备后获得「情绪抑制」状态，持续到持有者主动解除或装备损坏。后续部分清醒仪式以此为源头，是保持清醒的原因之一。' WHERE `name` = '情绪抑制器';
+UPDATE `item` SET `remark` = '婴儿拳头大小深灰色卵石，握紧有节律震动，一端金属接口刻「白鸥小队·共鸣石·编号04」。消耗1次快速行动感知半径约200米内是否存在地脉异常点（祭坛石、地脉核心、仪式进行地点等：只告知有/无，不给位置）。每2天一次；用后眩晕耳鸣约半小时，期间检定-1。夜晚闭眼使用可能看见不属于这个时代的残片（白鸥小队「回声」残留），并获得持续1天的轻微「潮汐症」。' WHERE `name` = '共鸣石';
+UPDATE `weapon` SET `threat_level` = 2, `remark` = '结实的铁镐，可用于挖掘，紧急时也可作为武器。威胁值2。' WHERE `id` = 15 OR `name` = '铁镐';
+

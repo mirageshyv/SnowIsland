@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { quickInteractionAPI } from '@/utils/api.js'
+import { useGameDayScope } from '@/composables/useGameDayScope.js'
 import { FACTION_LABELS, GM_FACTION_TABS } from '@/data/factionActions.js'
 import {
   INTERACTION_STATUS_OPTIONS,
@@ -10,6 +11,7 @@ import {
 } from '@/data/quickInteraction.js'
 
 const interactions = ref([])
+const { currentGameDay, dayOptions, loadGameState } = useGameDayScope()
 const loading = ref(true)
 const filterGameDay = ref('1')
 const filterFaction = ref('')
@@ -85,7 +87,11 @@ function formatTime(ts) {
   return new Date(ts).toLocaleString('zh-CN')
 }
 
-onMounted(() => fetchInteractions())
+onMounted(async () => {
+  await loadGameState()
+  filterGameDay.value = String(currentGameDay.value || 1)
+  await fetchInteractions()
+})
 </script>
 
 <template>
@@ -100,9 +106,9 @@ onMounted(() => fetchInteractions())
           <div>
             <label class="block text-gray-500 text-xs mb-1.5">天数</label>
             <select v-model="filterGameDay" class="filter-select" @change="fetchInteractions">
-              <option value="1">第1天</option>
-              <option value="2">第2天</option>
-              <option value="3">第3天</option>
+              <option v-for="d in dayOptions" :key="d" :value="String(d)">
+                第{{ d }}天{{ d === currentGameDay ? '（当前）' : '' }}
+              </option>
             </select>
           </div>
           <div>
@@ -168,6 +174,13 @@ onMounted(() => fetchInteractions())
           <div class="text-gray-300 text-sm whitespace-pre-wrap bg-black/20 rounded-xl p-4 mb-3 border border-white/5">
             {{ item.content }}
           </div>
+
+          <p
+            v-if="item.interactionType === 'free_transport'"
+            class="text-cyan-300/90 text-xs mb-3 rounded-lg border border-cyan-500/25 bg-cyan-500/10 px-3 py-2"
+          >
+            库存结算请到「每日行动结算」对该玩家的免费搬运点「结算搬运」后再发布反馈。此处回复不会移动物资。
+          </p>
 
           <div
             v-if="item.dmReply"

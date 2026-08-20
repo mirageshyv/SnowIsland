@@ -21,7 +21,7 @@ public class PlayerDailyConsumption {
     private Integer requiredFoodUnits = 2;
 
     @Column(name = "required_fuel_kg", nullable = false)
-    private Integer requiredFuelKg = 15;
+    private Integer requiredFuelKg = 25;
 
     @Column(name = "consumed_food_units", nullable = false)
     private Integer consumedFoodUnits = 0;

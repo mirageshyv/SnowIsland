@@ -5,6 +5,8 @@ import com.example.snowisland.entity.PlayerItem;
 import com.example.snowisland.entity.TradeItem.ItemType;
 import com.example.snowisland.repository.PlayerItemRepository;
 import com.example.snowisland.repository.PlayerRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,13 +16,17 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 @Service
 public class DmPlayerInventoryService {
+
+    private static final Logger logger = LoggerFactory.getLogger(DmPlayerInventoryService.class);
 
     private static final Set<String> VALID_TYPES = new HashSet<>(
             Arrays.asList("item", "weapon", "ammo", "material"));
@@ -30,7 +36,9 @@ public class DmPlayerInventoryService {
 
     private static final long MAX_IMAGE_BYTES = 5L * 1024 * 1024;
 
-    private static final Path CATALOG_UPLOAD_DIR = Paths.get("uploads", "catalog");
+    private static Path catalogUploadDir() {
+        return Paths.get("uploads", "catalog").toAbsolutePath().normalize();
+    }
 
     @Autowired
     private PlayerRepository playerRepository;
@@ -284,10 +292,13 @@ public class DmPlayerInventoryService {
             // image_url 列可能尚未迁移
         }
         try {
-            Files.createDirectories(CATALOG_UPLOAD_DIR);
+            Path dir = catalogUploadDir();
+            Files.createDirectories(dir);
             String filename = type + "-" + itemId + "-" + System.currentTimeMillis() + "." + ext;
-            Path target = CATALOG_UPLOAD_DIR.resolve(filename);
-            file.transferTo(target.toFile());
+            Path target = dir.resolve(filename);
+            try (InputStream in = file.getInputStream()) {
+                Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+            }
             String imageUrl = "/api/uploads/catalog/" + filename;
             entityManager.createNativeQuery(
                     "UPDATE " + type + " SET image_url = ?1 WHERE id = ?2"
@@ -299,6 +310,7 @@ public class DmPlayerInventoryService {
             result.put("itemType", type);
             result.put("itemId", itemId);
         } catch (IOException e) {
+            logger.error("保存图鉴图片失败: {}", e.getMessage(), e);
             result.put("success", false);
             result.put("message", "保存图片失败");
         }
@@ -474,7 +486,7 @@ public class DmPlayerInventoryService {
             return;
         }
         try {
-            Path old = CATALOG_UPLOAD_DIR.resolve(filename);
+            Path old = catalogUploadDir().resolve(filename);
             Files.deleteIfExists(old);
         } catch (IOException ignored) {
             // best effort

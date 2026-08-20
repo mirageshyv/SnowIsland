@@ -67,6 +67,7 @@ import imgExplosives from '@/assets/炸药.png?url'
 import imgTorch from '@/assets/火把.png?url'
 import imgCursedCoin from '@/assets/诅咒硬币.png?url'
 import imgPlantAsh from '@/assets/草木灰.png?url'
+import { normalizeShelterTransportAlias } from '@/utils/transportForm.js'
 
 // -----------------------------
 // 物资管理页：图片映射
@@ -98,6 +99,7 @@ const ITEM_IMAGES = {
   24: imgArkKey,
   25: imgTorch,
   26: imgCursedCoin,
+  55: imgWarehouseKey,
 }
 
 const WEAPON_IMAGES = {
@@ -202,6 +204,9 @@ export const GAME_ITEM_NAMES = {
     50: '银币',
     51: '情绪抑制器',
     52: '共鸣石',
+    53: '铁砧小队·记录员莉迪亚的私人笔记（残卷）',
+    54: '飞机部件·副驾座',
+    55: '避难所钥匙',
   },
   weapon: {
     1: '制式手枪',
@@ -217,7 +222,6 @@ export const GAME_ITEM_NAMES = {
     11: '手术刀',
     12: '炸药',
     13: '电钻',
-    14: '匕首',
     15: '铁镐',
   },
   ammo: {
@@ -293,9 +297,10 @@ const WAREHOUSE_LABELS = {
   dock: '码头集换站',
   rebel: '反叛者基地',
   ark: '方舟仓库',
+  shelter: '避难所仓库',
 }
 
-const TRANSPORT_MODE_LABELS = {
+const TRANSPORT_MODE_LABELS_ACTION = {
   warehouse_to_warehouse: '仓库→仓库（上限500千克）',
   warehouse_to_player: '仓库→个人（上限300千克）',
   player_to_warehouse: '个人→仓库（上限300千克）',
@@ -305,12 +310,27 @@ const TRANSPORT_MODE_LABELS = {
   player_to_shelter: '个人→避难所（上限300千克）',
 }
 
-const STRUCTURED_NOTE_LINE = /^\[(mode|source|dest|item|target|player_deducted):/
+const TRANSPORT_MODE_LABELS_FREE = {
+  warehouse_to_warehouse: '仓库→仓库（免费档上限100千克，海岛50千克）',
+  warehouse_to_player: '仓库→个人（免费档上限50千克）',
+  player_to_warehouse: '个人→仓库（免费档上限50千克）',
+  warehouse_to_shelter: '仓库→避难所（免费档上限50千克）',
+  shelter_to_warehouse: '避难所→仓库（免费档上限50千克，仅统治者）',
+  shelter_to_player: '避难所→个人（免费档上限50千克，仅统治者）',
+  player_to_shelter: '个人→避难所（免费档上限50千克）',
+}
 
-/** @returns {{ mode: string, source: string, dest: string, items: Array<{ itemType: string, itemId: string, quantity: string, weight: string }> } | null} */
+function transportModeDisplayLabel(mode, free) {
+  const table = free ? TRANSPORT_MODE_LABELS_FREE : TRANSPORT_MODE_LABELS_ACTION
+  return table[mode] || mode
+}
+
+const STRUCTURED_NOTE_LINE = /^\[(mode|source|dest|item|target|player_deducted|tier):/
+
+/** @returns {{ mode: string, source: string, dest: string, tier: string, items: Array<{ itemType: string, itemId: string, quantity: string, weight: string }> } | null} */
 export function parseTransportNotes(notes) {
   if (!notes) return null
-  const info = { mode: '', source: '', dest: '', targetPlayerId: '', items: [] }
+  const info = { mode: '', source: '', dest: '', tier: '', targetPlayerId: '', items: [] }
   let hasStructured = false
   for (const line of String(notes).split('\n')) {
     const trimmed = line.trim()
@@ -318,6 +338,10 @@ export function parseTransportNotes(notes) {
       hasStructured = true
       const closeIdx = trimmed.indexOf(']')
       if (closeIdx > 8) info.targetPlayerId = trimmed.substring(8, closeIdx)
+    } else if (trimmed.startsWith('[tier:')) {
+      hasStructured = true
+      const closeIdx = trimmed.indexOf(']')
+      if (closeIdx > 6) info.tier = trimmed.substring(6, closeIdx)
     } else if (trimmed.startsWith('[mode:')) {
       hasStructured = true
       const closeIdx = trimmed.indexOf(']')
@@ -346,7 +370,7 @@ export function parseTransportNotes(notes) {
       }
     }
   }
-  return hasStructured ? info : null
+  return hasStructured ? normalizeShelterTransportAlias(info) : null
 }
 
 function warehouseLabel(key, warehouseNameByKey = {}) {
@@ -356,12 +380,15 @@ function warehouseLabel(key, warehouseNameByKey = {}) {
 }
 
 /** 将搬运结构化备注格式化为中文（供 DM 查看玩家提交） */
-export function formatTransportNotesForDisplay(notes, warehouseNameByKey = {}) {
+export function formatTransportNotesForDisplay(notes, warehouseNameByKey = {}, options = {}) {
   const info = parseTransportNotes(notes)
   if (!info) return ''
   const lines = []
   if (info.mode) {
-    lines.push(`模式：${TRANSPORT_MODE_LABELS[info.mode] || info.mode}`)
+    const free = options.free === true
+      || options.actionSlot === 0
+      || String(info.tier || '').toLowerCase() === 'free'
+    lines.push(`模式：${transportModeDisplayLabel(info.mode, free)}`)
   }
   if (info.source) lines.push(`源仓库：${warehouseLabel(info.source, warehouseNameByKey)}`)
   if (info.dest) lines.push(`目标仓库：${warehouseLabel(info.dest, warehouseNameByKey)}`)
@@ -387,7 +414,9 @@ export function extractFreeformPlayerNotes(notes) {
 export function getPlayerNotesDisplay(action, warehouseNameByKey = {}) {
   if (!action?.notes?.trim()) return '（无备注）'
   if (action.actionType === 'transport') {
-    const plan = formatTransportNotesForDisplay(action.notes, warehouseNameByKey)
+    const plan = formatTransportNotesForDisplay(action.notes, warehouseNameByKey, {
+      actionSlot: action.actionSlot,
+    })
     const free = extractFreeformPlayerNotes(action.notes)
     if (plan) return free ? `${plan}\n\n${free}` : plan
     return free || '（无备注）'
@@ -555,8 +584,14 @@ export function actionShortLabel(action) {
   return label
 }
 
+export function actionSlotHeading(action) {
+  if (!action) return ''
+  if (action.actionSlot === 0) return '免费搬运 / 快速行动'
+  return `行动${action.actionSlot}`
+}
+
 /** Combined copy-paste summary for both action slots. */
-export function buildPlayerFeedbackSummary(playerName, gameDay, slot1, slot2) {
+export function buildPlayerFeedbackSummary(playerName, gameDay, slot1, slot2, freeTransports = []) {
   const day = gameDay ?? ''
   const lines = [`【${playerName} · 第${day}天 行动反馈总结】`, '']
   const slots = [
@@ -579,6 +614,20 @@ export function buildPlayerFeedbackSummary(playerName, gameDay, slot1, slot2) {
     }
     lines.push('')
   }
+  const extras = Array.isArray(freeTransports) ? freeTransports : []
+  extras.forEach((a, i) => {
+    const n = extras.length > 1 ? `免费搬运${i + 1}` : '免费搬运'
+    lines.push(`${n}（${actionShortLabel(a)} / 快速行动）`)
+    const draft = getDmFeedbackDraft(a)
+    if (draft) {
+      lines.push(draft)
+    } else if (a.status === 'feedbacked') {
+      lines.push('（已处理，无反馈文案）')
+    } else {
+      lines.push('（待反馈）')
+    }
+    lines.push('')
+  })
   return lines.join('\n').trim()
 }
 
@@ -682,7 +731,7 @@ export const SHELTER_ITEM_CATALOG = {
   wood: { id: 'wood', name: '木材', category: 'material', description: '基础建造材料。', imageUrl: imgWood },
   stone: { id: 'stone', name: '石料', category: 'material', description: '用于加固结构。', imageUrl: imgStone },
   plank: { id: 'plank', name: '木板', category: 'material', description: '用于铺板和隔断。', imageUrl: imgPlank },
-  rope: { id: 'rope', name: '绳索', category: 'material', description: '麻绳或钢丝绳，直径1-2厘米。用于捆绑、拖拽、登山或船只系泊。可以提升探索成功程度。', imageUrl: imgRope },
+  rope: { id: 'rope', name: '绳索', category: 'material', description: '麻绳或钢丝绳，直径1-2厘米。用于捆绑、拖拽、登山或船只系泊。探索时投入10个可提供+2探索值。', imageUrl: imgRope },
 }
 
 export const SHELTER_ITEM_CATALOG_BY_TYPE = {

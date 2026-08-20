@@ -1,9 +1,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { factionActionAPI } from '@/utils/api.js'
+import { useGameDayScope } from '@/composables/useGameDayScope.js'
 import { FACTION_LABELS, GM_FACTION_TABS, PAYLOAD_FIELD_LABELS } from '@/data/factionActions.js'
 
 const actions = ref([])
+const { currentGameDay, dayOptions, loadGameState } = useGameDayScope()
 const loading = ref(true)
 const filterGameDay = ref('1')
 const filterFaction = ref('')
@@ -21,9 +23,49 @@ const statusOptions = [
 const filteredActions = computed(() => (Array.isArray(actions.value) ? actions.value : []))
 const pendingCount = computed(() => actions.value.filter(a => a.status === 'pending').length)
 
-function showToast(type, text) {
-  toast.value = { type, text }
-  setTimeout(() => { toast.value = null }, 3500)
+const resolving = ref(false)
+const publishing = ref(false)
+
+function extraLaborActions() {
+  return (actions.value || []).filter((a) => a.actionType === 'extra_labor')
+}
+
+const extraLaborPendingCount = computed(() =>
+  extraLaborActions().filter((a) => a.extraLaborPending).length
+)
+
+const extraLaborUnsettledCount = computed(() =>
+  extraLaborActions().filter((a) => !a.extraLaborPending && !a.extraLaborDispatched).length
+)
+
+async function resolveExtraLabor() {
+  resolving.value = true
+  try {
+    const res = await factionActionAPI.resolveExtraLabor(parseInt(filterGameDay.value, 10))
+    const errs = Array.isArray(res?.errors) ? res.errors.filter(Boolean) : []
+    showToast(res?.success && errs.length === 0 ? 'success' : 'error', res?.message || '结算失败')
+    await fetchActions()
+  } catch {
+    showToast('error', '额外劳动结算异常')
+  } finally {
+    resolving.value = false
+  }
+}
+
+async function publishExtraLabor() {
+  if (publishing.value) return
+  if (!confirm(`确定发布第 ${filterGameDay.value} 天的额外劳动物资？确认后才会发放到玩家背包。`)) return
+  publishing.value = true
+  try {
+    const res = await factionActionAPI.publishExtraLabor(parseInt(filterGameDay.value, 10))
+    const errs = Array.isArray(res?.errors) ? res.errors.filter(Boolean) : []
+    showToast(res?.success && errs.length === 0 ? 'success' : 'error', res?.message || '发布失败')
+    await fetchActions()
+  } catch {
+    showToast('error', '额外劳动发布异常')
+  } finally {
+    publishing.value = false
+  }
 }
 
 async function fetchActions() {
@@ -59,6 +101,11 @@ async function submitFeedback() {
   }
 }
 
+function showToast(type, text) {
+  toast.value = { type, text }
+  setTimeout(() => { toast.value = null }, 3500)
+}
+
 function formatPayload(payload) {
   if (!payload || typeof payload !== 'object') return ''
   return Object.entries(payload)
@@ -71,7 +118,11 @@ function formatPayload(payload) {
     .join('\n')
 }
 
-onMounted(() => fetchActions())
+onMounted(async () => {
+  await loadGameState()
+  filterGameDay.value = String(currentGameDay.value || 1)
+  await fetchActions()
+})
 </script>
 
 <template>
@@ -86,9 +137,9 @@ onMounted(() => fetchActions())
           <div>
             <label class="block text-gray-500 text-xs mb-1.5">天数</label>
             <select v-model="filterGameDay" class="filter-select" @change="fetchActions">
-              <option value="1">第1天</option>
-              <option value="2">第2天</option>
-              <option value="3">第3天</option>
+              <option v-for="d in dayOptions" :key="d" :value="String(d)">
+                第{{ d }}天{{ d === currentGameDay ? '（当前）' : '' }}
+              </option>
             </select>
           </div>
           <div>
@@ -105,7 +156,34 @@ onMounted(() => fetchActions())
             </select>
           </div>
         </div>
-        <p class="text-xs text-gray-500 mt-3">待反馈：<span class="text-amber-400 font-medium">{{ pendingCount }}</span></p>
+        <p class="text-xs text-gray-500 mt-3">
+          待反馈：<span class="text-amber-400 font-medium">{{ pendingCount }}</span>
+          <span class="mx-2">·</span>
+          额外劳动待结算：<span class="text-cyan-400 font-medium">{{ extraLaborUnsettledCount }}</span>
+          <span class="mx-2">·</span>
+          额外劳动待发布：<span class="text-cyan-400 font-medium">{{ extraLaborPendingCount }}</span>
+        </p>
+        <p class="text-xs text-gray-600 mt-2">
+          额外劳动：先结算算出 +50% 产出，发布后才发放到背包。也可在「行动反馈」用一键结算 / 发布反馈一并处理。
+        </p>
+        <div class="flex flex-wrap gap-2 mt-3">
+          <button
+            type="button"
+            class="px-3 py-1.5 text-xs rounded-lg bg-cyan-600/20 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-600/30 disabled:opacity-50"
+            :disabled="resolving"
+            @click="resolveExtraLabor"
+          >
+            {{ resolving ? '结算中…' : '结算额外劳动' }}
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1.5 text-xs rounded-lg bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-600/30 disabled:opacity-50"
+            :disabled="publishing || extraLaborPendingCount === 0"
+            @click="publishExtraLabor"
+          >
+            {{ publishing ? '发布中…' : '发布额外劳动物资' }}
+          </button>
+        </div>
       </div>
 
       <div v-if="loading" class="flex justify-center py-20">
@@ -130,9 +208,13 @@ onMounted(() => fetchActions())
             <span class="text-gray-600 text-xs">第{{ action.gameDay }}天</span>
             <span
               class="ml-auto text-xs px-2 py-0.5 rounded-full"
-              :class="action.status === 'pending' ? 'bg-amber-500/20 text-amber-400' : 'bg-green-500/20 text-green-400'"
+              :class="action.extraLaborDispatched
+                ? 'bg-green-500/20 text-green-400'
+                : action.extraLaborPending
+                  ? 'bg-cyan-500/20 text-cyan-400'
+                  : action.status === 'pending' ? 'bg-amber-500/20 text-amber-400' : 'bg-green-500/20 text-green-400'"
             >
-              {{ action.status === 'pending' ? '待反馈' : '已反馈' }}
+              {{ action.extraLaborDispatched ? '已发放' : action.extraLaborPending ? '待发布' : (action.status === 'pending' ? '待反馈' : '已反馈') }}
             </span>
           </div>
 

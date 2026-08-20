@@ -2,6 +2,7 @@ package com.example.snowisland.service;
 
 import com.example.snowisland.entity.*;
 import com.example.snowisland.repository.*;
+import com.example.snowisland.util.PlayerStatusCatalog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,7 @@ public class ActionService {
     @Autowired private ActivityLogService activityLogService;
     @Autowired private NpcCognitionService npcCognitionService;
     @Autowired private PlayerMarkerRepository playerMarkerRepository;
+    @Autowired private TradeRestrictionService tradeRestrictionService;
 
     private static final Random INVESTIGATE_ROLL = new Random();
 
@@ -40,6 +42,9 @@ public class ActionService {
     private static final String DM_FEEDBACK_MARKER = "\n\n【DM反馈】\n";
     private static final String DM_FEEDBACK_MARKER_INLINE = "【DM反馈】";
     public static final String ACTION_FAILED_MARKER = "【行动失败】";
+    public static final String EXTRA_LABOR_HEADER = "【额外劳动结算】";
+    public static final String EXTRA_LABOR_PENDING_MARKER = "\n\n【额外劳动待发布】\n";
+    public static final String EXTRA_LABOR_DISPATCHED_MARKER = "【额外劳动已发放】";
 
     private static final Map<String, String> PRODUCTION_JOB_MAP = new LinkedHashMap<>();
     private static final Map<String, Map<String, Object>> PRODUCTION_OUTPUT_MAP = new LinkedHashMap<>();
@@ -90,12 +95,54 @@ public class ActionService {
     public Map<String, Object> submitAction(Integer playerId, Integer actionSlot, String actionType,
                                               Integer targetId, Integer npcId, String notes, Integer gameDay) {
         Map<String, Object> result = new HashMap<>();
+        if (actionSlot == null || actionSlot < 1 || actionSlot > 2) {
+            result.put("success", false);
+            result.put("message", "无效的行动槽位");
+            return result;
+        }
+        if ("transport".equals(actionType)) {
+            TransportSettlementService.TransportPlan preview =
+                    transportSettlementService.parseNotes(notes, targetId);
+            if ("free".equalsIgnoreCase(preview.tier)) {
+                result.put("success", false);
+                result.put("message", "免费搬运请通过快速行动提交");
+                return result;
+            }
+        }
+        return persistSubmittedAction(playerId, actionSlot, actionType, targetId, npcId, notes, gameDay);
+    }
+
+    /** 免费搬运：actionSlot=0，不占个人行动 1/2；额度由快速行动配额约束。 */
+    @Transactional
+    public Map<String, Object> submitFreeTransportAction(Integer playerId, String notes, Integer gameDay) {
+        return persistSubmittedAction(playerId, 0, "transport", null, null, forceTransportTier(notes, "free"), gameDay);
+    }
+
+    private static String forceTransportTier(String notes, String tier) {
+        String tag = "[tier:" + tier + "]";
+        if (notes == null || notes.trim().isEmpty()) {
+            return tag;
+        }
+        if (notes.contains("[tier:")) {
+            return notes.replaceAll("\\[tier:[^\\]]*\\]", tag);
+        }
+        return notes + "\n" + tag;
+    }
+
+    private Map<String, Object> persistSubmittedAction(Integer playerId, Integer actionSlot, String actionType,
+                                                        Integer targetId, Integer npcId, String notes, Integer gameDay) {
+        Map<String, Object> result = new HashMap<>();
         Optional<Player> optPlayer = playerRepository.findById(playerId);
         if (!optPlayer.isPresent()) {
             result.put("success", false); result.put("message", "玩家不存在");
             return result;
         }
         Player player = optPlayer.get();
+        if (tradeRestrictionService.isBoundActive(player)) {
+            result.put("success", false);
+            result.put("message", PlayerStatusCatalog.BOUND_DENY_MESSAGE);
+            return result;
+        }
 
         String editDeny = gameStateService.denyDaytimeSubmit(gameDay);
         if (editDeny != null) {
@@ -104,7 +151,8 @@ public class ActionService {
             return result;
         }
 
-        if (actionRepository.existsByPlayerIdAndGameDayAndActionSlot(playerId, gameDay, actionSlot)) {
+        if (actionSlot != null && actionSlot != 0
+                && actionRepository.existsByPlayerIdAndGameDayAndActionSlot(playerId, gameDay, actionSlot)) {
             result.put("success", false); result.put("message", "该行动槽位已提交");
             return result;
         }
@@ -124,6 +172,11 @@ public class ActionService {
         if ("go_location".equals(actionType)) {
             autoResult = resolveGoLocation(targetId, npcId, player);
             if (notes != null && notes.contains("[overnight:1]") && targetId != null) {
+                if (!notes.contains("[overnight_prev:")) {
+                    Integer prev = player.getOvernightLocationId();
+                    notes = notes + "\n[overnight_prev:" + (prev != null ? prev : "") + "]";
+                    action.setNotes(notes);
+                }
                 player.setOvernightLocationId(targetId);
                 playerRepository.save(player);
                 autoResult = (autoResult != null ? autoResult : "") + "\n【过夜】已登记今晚在此地点过夜（默认在家；仅勾选时变更）。";
@@ -183,7 +236,7 @@ public class ActionService {
         logActionSubmit(gameDay, player, actionSlot, actionType, action, notes);
 
         result.put("success", true);
-        result.put("message", "个人行动提交成功");
+        result.put("message", actionSlot != null && actionSlot == 0 ? "免费搬运提交成功" : "个人行动提交成功");
         result.put("data", toMapForPlayer(action));
         return result;
     }
@@ -352,9 +405,7 @@ public class ActionService {
             actions = actions.stream().filter(a -> status.equals(a.getStatus().name())).collect(Collectors.toList());
         }
         List<Map<String, Object>> rows = actions.stream().map(this::toMap).collect(Collectors.toList());
-        if ("dm".equalsIgnoreCase(userRole)) {
-            enrichInvestigateTargetMarkers(rows);
-        }
+        enrichInvestigateTargetMarkers(rows);
         return rows;
     }
 
@@ -399,6 +450,7 @@ public class ActionService {
 
         if (markFailed) {
             refundPlayerTransportIfDeducted(action);
+            undoHideAndOvernight(action);
             String base = stripActionFailed(stripDmFeedback(action.getResult() != null ? action.getResult() : ""));
             base = TransportSettlementService.stripPendingBlock(base);
             action.setResult(attachDmFeedbackWithFlags(base, feedbackText, true));
@@ -456,15 +508,29 @@ public class ActionService {
                 pending++;
             }
         }
+        Map<String, Object> extraLabor = publishExtraLabor(gameDay);
+        int extraLaborPublished = extraLabor.get("published") instanceof Number
+                ? ((Number) extraLabor.get("published")).intValue() : 0;
+        @SuppressWarnings("unchecked")
+        List<String> extraLaborErrors = extraLabor.get("errors") instanceof List
+                ? (List<String>) extraLabor.get("errors") : Collections.emptyList();
+        if (extraLaborErrors != null) {
+            errors.addAll(extraLaborErrors);
+        }
         result.put("success", errors.isEmpty());
         result.put("publishedCount", published);
         result.put("pendingCount", pending);
+        result.put("extraLaborPublished", extraLaborPublished);
         if (!errors.isEmpty()) {
             result.put("errors", errors);
-            result.put("message", "发布完成 " + published + " 条，以下搬运未能执行：" + String.join("；", errors));
+            result.put("message", "发布完成 " + published + " 条，额外劳动发放 " + extraLaborPublished
+                    + " 条；以下未能执行：" + String.join("；", errors));
         } else {
+            String extraNote = extraLaborPublished > 0 ? "，额外劳动物资已发放 " + extraLaborPublished + " 条" : "";
             result.put("message", published > 0
-                    ? "已发布 " + published + " 条行动反馈" + (pending > 0 ? "（另有 " + pending + " 条仍待处理）" : "")
+                    ? "已发布 " + published + " 条行动反馈" + extraNote + (pending > 0 ? "（另有 " + pending + " 条仍待处理）" : "")
+                    : extraLaborPublished > 0
+                    ? "已发放 " + extraLaborPublished + " 条额外劳动物资" + (pending > 0 ? "（另有 " + pending + " 条个人行动仍待处理）" : "")
                     : (pending > 0 ? "暂无新反馈可发布，仍有 " + pending + " 条待处理" : "当日暂无行动记录"));
         }
         return result;
@@ -514,26 +580,36 @@ public class ActionService {
         Map<String, Object> prod = batchResolveProduce(gameDay);
         int simpleResolved = batchResolveGoLocationAndHide(gameDay);
         Map<String, Object> transport = batchResolveTransport(gameDay);
+        Map<String, Object> extraLabor = resolveExtraLabor(gameDay);
         Map<String, Object> result = new LinkedHashMap<>();
         int invResolved = inv.get("resolved") != null ? ((Number) inv.get("resolved")).intValue() : 0;
         int prodResolved = prod.get("resolved") != null ? ((Number) prod.get("resolved")).intValue() : 0;
         int transportResolved = transport.get("resolved") != null ? ((Number) transport.get("resolved")).intValue() : 0;
+        int extraLaborResolved = extraLabor.get("resolved") != null ? ((Number) extraLabor.get("resolved")).intValue() : 0;
         result.put("success", true);
         result.put("investigateResolved", invResolved);
         result.put("produceResolved", prodResolved);
         result.put("simpleResolved", simpleResolved);
         result.put("transportResolved", transportResolved);
+        result.put("extraLaborResolved", extraLaborResolved);
         StringBuilder msg = new StringBuilder("已结算调查 ").append(invResolved)
                 .append(" 条、生产 ").append(prodResolved)
                 .append(" 条、前往/隐藏 ").append(simpleResolved)
-                .append(" 条、搬运 ").append(transportResolved).append(" 条");
+                .append(" 条、搬运 ").append(transportResolved)
+                .append(" 条、额外劳动 ").append(extraLaborResolved).append(" 条");
         @SuppressWarnings("unchecked")
         List<String> transportErrors = (List<String>) transport.get("errors");
         if (transportErrors != null && !transportErrors.isEmpty()) {
             msg.append("；搬运跳过/失败：").append(String.join("；", transportErrors));
         }
+        @SuppressWarnings("unchecked")
+        List<String> extraLaborErrors = (List<String>) extraLabor.get("errors");
+        if (extraLaborErrors != null && !extraLaborErrors.isEmpty()) {
+            msg.append("；额外劳动：").append(String.join("；", extraLaborErrors));
+        }
         result.put("message", msg.toString());
         result.put("transportErrors", transport.get("errors"));
+        result.put("extraLaborErrors", extraLabor.get("errors"));
         return result;
     }
 
@@ -732,6 +808,46 @@ public class ActionService {
         action.setNotes(updatedNotes);
     }
 
+    private void undoHideAndOvernight(PlayerAction action) {
+        if (action == null) {
+            return;
+        }
+        if ("hide".equals(action.getActionType()) && action.getId() != null) {
+            stealthRepository.deleteBySourceActionId(action.getId());
+        }
+        if (!"go_location".equals(action.getActionType()) || action.getPlayerId() == null) {
+            return;
+        }
+        String notes = action.getNotes() != null ? action.getNotes() : "";
+        if (!notes.contains("[overnight:1]")) {
+            return;
+        }
+        Integer prev = parseOvernightPrev(notes);
+        playerRepository.findById(action.getPlayerId()).ifPresent(p -> {
+            p.setOvernightLocationId(prev);
+            playerRepository.save(p);
+        });
+    }
+
+    private static Integer parseOvernightPrev(String notes) {
+        if (notes == null) {
+            return null;
+        }
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\[overnight_prev:(\\d*)\\]").matcher(notes);
+        if (!m.find()) {
+            return null;
+        }
+        String raw = m.group(1);
+        if (raw == null || raw.isEmpty()) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(raw);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private Map<String, Object> toMapForPlayer(PlayerAction action) {
         Map<String, Object> map = toMap(action);
         boolean published = Boolean.TRUE.equals(action.getFeedbackPublished());
@@ -770,13 +886,27 @@ public class ActionService {
                 if (targetActions.isEmpty()) {
                     sb.append("（当日未提交个人行动）\n");
                 } else {
+                    boolean listed = false;
                     for (PlayerAction ta : targetActions) {
-                        sb.append("行动").append(ta.getActionSlot()).append("：")
+                        Integer slot = ta.getActionSlot();
+                        if (slot != null && slot == 0 && "transport".equals(ta.getActionType())) {
+                            sb.append("免费搬运：搬运\n");
+                            listed = true;
+                            continue;
+                        }
+                        if (slot == null || slot < 1) {
+                            continue;
+                        }
+                        sb.append("行动").append(slot).append("：")
                           .append(getActionTypeLabel(ta.getActionType()));
                         if (ta.getTargetName() != null) {
                             sb.append(" → ").append(ta.getTargetName());
                         }
                         sb.append("\n");
+                        listed = true;
+                    }
+                    if (!listed) {
+                        sb.append("（当日未提交个人行动）\n");
                     }
                 }
                 appendFactionInvestigateIntel(sb, action.getTargetName(), targetPlayerId, gameDay);
@@ -864,6 +994,213 @@ public class ActionService {
         result.put("message", "已结算" + resolved + "条生产行动");
         result.put("resolved", resolved);
         return result;
+    }
+
+    /**
+     * 计算额外劳动 +50% 产出并写入结果，物资在 {@link #publishExtraLabor} / 发布反馈后才入包。
+     */
+    @Transactional
+    public Map<String, Object> resolveExtraLabor(Integer gameDay) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        List<String> errors = new ArrayList<>();
+        int resolved = 0;
+        if (gameDay == null || gameDay < 1) {
+            result.put("success", false);
+            result.put("message", "无效的游戏日");
+            result.put("resolved", 0);
+            result.put("errors", errors);
+            return result;
+        }
+        List<FactionAction> actions = factionActionRepository.findByGameDayOrderByCreatedAtAsc(gameDay);
+        for (FactionAction action : actions) {
+            if (!"extra_labor".equals(action.getActionType())) {
+                continue;
+            }
+            String existing = action.getResult() != null ? action.getResult() : "";
+            if (existing.contains(EXTRA_LABOR_HEADER) || existing.contains(EXTRA_LABOR_DISPATCHED_MARKER)
+                    || existing.contains("【额外劳动待发布】")) {
+                continue;
+            }
+            Integer playerId = action.getPlayerId();
+            Optional<Player> optPlayer = playerRepository.findById(playerId);
+            if (!optPlayer.isPresent()) {
+                errors.add((action.getPlayerName() != null ? action.getPlayerName() : "玩家") + "：玩家不存在");
+                continue;
+            }
+            Player player = optPlayer.get();
+            if (player.getJobId() == null) {
+                errors.add(player.getName() + "：无职业，无法结算额外劳动");
+                continue;
+            }
+            Optional<Job> optJob = jobRepository.findById(player.getJobId());
+            if (!optJob.isPresent()) {
+                errors.add(player.getName() + "：职业不存在");
+                continue;
+            }
+            String productionKey = PRODUCTION_JOB_MAP.get(optJob.get().getName());
+            if (productionKey == null) {
+                errors.add(player.getName() + "：当前职业没有生产产出");
+                continue;
+            }
+            int produceCount = countEligibleProduceActions(playerId, gameDay);
+            if (produceCount <= 0) {
+                errors.add(player.getName() + "：当日没有可加成的生产行动");
+                continue;
+            }
+            Map<String, Object> output = PRODUCTION_OUTPUT_MAP.get(productionKey);
+            int baseQty = resolveProductionQuantity(playerId, output);
+            int bonusQty = extraLaborBonusQuantity(baseQty, produceCount);
+            String itemType = (String) output.get("itemType");
+            Integer itemId = (Integer) output.get("itemId");
+            String itemName = String.valueOf(output.get("itemName"));
+            String unit = String.valueOf(output.get("unit"));
+
+            StringBuilder sb = new StringBuilder();
+            if (!existing.trim().isEmpty()) {
+                sb.append(existing.trim()).append("\n\n");
+            }
+            sb.append(EXTRA_LABOR_HEADER).append("\n");
+            sb.append("提交者：").append(player.getName()).append("\n");
+            sb.append("职业：").append(optJob.get().getName()).append("\n");
+            sb.append("今日生产：").append(itemName).append(" ").append(baseQty).append(unit)
+                    .append(" × ").append(produceCount).append(" 次\n");
+            sb.append("额外劳动 +50%：").append(itemName).append(" ").append(bonusQty).append(unit).append("\n");
+            sb.append("（物资将在发布后发放到背包）");
+            if (bonusQty > 0) {
+                sb.append(EXTRA_LABOR_PENDING_MARKER)
+                        .append(itemType).append("|").append(itemId).append("|").append(bonusQty)
+                        .append("|").append(itemName).append("|").append(unit);
+            }
+            action.setResult(sb.toString());
+            action.setStatus(FactionAction.ActionStatus.feedbacked);
+            factionActionRepository.save(action);
+            resolved++;
+        }
+        result.put("success", true);
+        result.put("resolved", resolved);
+        result.put("errors", errors);
+        result.put("message", "已结算 " + resolved + " 条额外劳动（物资待发布后发放）");
+        return result;
+    }
+
+    @Transactional
+    public Map<String, Object> publishExtraLabor(Integer gameDay) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        List<String> errors = new ArrayList<>();
+        int published = 0;
+        if (gameDay == null || gameDay < 1) {
+            result.put("success", false);
+            result.put("message", "无效的游戏日");
+            result.put("published", 0);
+            result.put("errors", errors);
+            return result;
+        }
+        List<FactionAction> actions = factionActionRepository.findByGameDayOrderByCreatedAtAsc(gameDay);
+        for (FactionAction action : actions) {
+            if (!"extra_labor".equals(action.getActionType())) {
+                continue;
+            }
+            String existing = action.getResult() != null ? action.getResult() : "";
+            if (existing.contains(EXTRA_LABOR_DISPATCHED_MARKER)) {
+                continue;
+            }
+            if (!existing.contains("【额外劳动待发布】")) {
+                continue;
+            }
+            String payload = extractExtraLaborPendingPayload(existing);
+            String[] parts = payload != null ? payload.split("\\|") : new String[0];
+            if (parts.length < 5) {
+                errors.add((action.getPlayerName() != null ? action.getPlayerName() : "玩家") + "：额外劳动待发布数据缺失");
+                continue;
+            }
+            try {
+                String itemType = parts[0];
+                int itemId = Integer.parseInt(parts[1]);
+                int quantity = Integer.parseInt(parts[2]);
+                String itemName = parts[3];
+                String unit = parts[4];
+                if (quantity > 0) {
+                    addItemToPlayer(action.getPlayerId(), itemType, itemId, quantity);
+                }
+                String base = stripExtraLaborPendingBlock(existing)
+                        .replace("（物资将在发布后发放到背包）", "（已发放到背包：" + itemName + " " + quantity + unit + "）");
+                if (!base.contains(EXTRA_LABOR_DISPATCHED_MARKER)) {
+                    base = base.trim() + "\n" + EXTRA_LABOR_DISPATCHED_MARKER;
+                }
+                action.setResult(base);
+                action.setStatus(FactionAction.ActionStatus.feedbacked);
+                factionActionRepository.save(action);
+                published++;
+            } catch (Exception e) {
+                errors.add((action.getPlayerName() != null ? action.getPlayerName() : "玩家")
+                        + "：发放失败 " + e.getMessage());
+            }
+        }
+        result.put("success", errors.isEmpty());
+        result.put("published", published);
+        result.put("errors", errors);
+        result.put("message", published > 0
+                ? "已发放 " + published + " 条额外劳动物资"
+                : (errors.isEmpty() ? "没有待发布的额外劳动物资" : "额外劳动发放未完成"));
+        return result;
+    }
+
+    private int countEligibleProduceActions(Integer playerId, Integer gameDay) {
+        int count = 0;
+        for (PlayerAction a : actionRepository.findByPlayerIdAndGameDayOrderByActionSlotAsc(playerId, gameDay)) {
+            if (!"produce".equals(a.getActionType())) {
+                continue;
+            }
+            Integer slot = a.getActionSlot();
+            if (slot == null || slot < 1) {
+                continue;
+            }
+            if (isActionFailed(a.getResult())) {
+                continue;
+            }
+            count++;
+        }
+        return count;
+    }
+
+    static int extraLaborBonusQuantity(int baseQty, int produceCount) {
+        if (baseQty <= 0 || produceCount <= 0) {
+            return 0;
+        }
+        int bonus = (int) Math.round(baseQty * produceCount * 0.5);
+        return Math.max(1, bonus);
+    }
+
+    private static String extractExtraLaborPendingPayload(String result) {
+        if (result == null) {
+            return null;
+        }
+        int idx = result.indexOf("【额外劳动待发布】");
+        if (idx < 0) {
+            return null;
+        }
+        String rest = result.substring(idx + "【额外劳动待发布】".length()).trim();
+        int end = rest.indexOf('\n');
+        return (end >= 0 ? rest.substring(0, end) : rest).trim();
+    }
+
+    public static String stripExtraLaborPendingForDisplay(String result) {
+        return stripExtraLaborPendingBlock(result);
+    }
+
+    private static String stripExtraLaborPendingBlock(String result) {
+        if (result == null) {
+            return "";
+        }
+        int idx = result.indexOf(EXTRA_LABOR_PENDING_MARKER);
+        if (idx >= 0) {
+            return result.substring(0, idx).trim();
+        }
+        idx = result.indexOf("【额外劳动待发布】");
+        if (idx >= 0) {
+            return result.substring(0, idx).trim();
+        }
+        return result.trim();
     }
 
     /**
@@ -1177,7 +1514,9 @@ public class ActionService {
                 detail.append(ActivityLogService.truncate(notes.trim(), 240));
             }
         }
-        String summary = "自由#" + actionSlot + "·" + getActionTypeLabel(actionType);
+        String summary = (actionSlot != null && actionSlot == 0)
+                ? "免费搬运"
+                : "自由#" + actionSlot + "·" + getActionTypeLabel(actionType);
         activityLogService.log(
                 gameDay,
                 player.getId(),

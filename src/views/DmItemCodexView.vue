@@ -1,9 +1,15 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { dmPlayerAPI } from '../utils/api.js'
-import { getWeaponThreatBadgeClass } from '../data/gameData.js'
+import { getMaterialImageUrl, getWeaponThreatBadgeClass, syncThreatInRemark } from '../data/gameData.js'
 
 const bundled = import.meta.glob('../assets/*.png', { eager: true, import: 'default' })
+
+/** 图鉴条目名与 assets 文件名不一致时的别名（食物/燃料已有 Food.png、Fuel.png） */
+const BUNDLED_NAME_ALIASES = {
+  食物: 'Food',
+  燃料: 'Fuel',
+}
 
 const TYPE_LABELS = {
   item: '道具',
@@ -36,23 +42,32 @@ const editSaving = ref(false)
 const editUploading = ref(false)
 const previewImageUrl = ref('')
 const selectedFile = ref(null)
+const savingThreatKey = ref(null)
+
+function isHiddenDagger(entry) {
+  if (!entry || entry.itemType !== 'weapon') return false
+  return Number(entry.itemId) === 14 || entry.name === '匕首'
+}
 
 function bundledAssetUrl(name) {
+  if (!name) return null
   const key = `../assets/${name}.png`
-  return bundled[key] || null
+  if (bundled[key]) return bundled[key]
+  const alias = BUNDLED_NAME_ALIASES[name]
+  return alias ? bundled[`../assets/${alias}.png`] || null : null
 }
 
 function resolveImageUrl(entry) {
   if (entry.imageUrl) return entry.imageUrl
-  return bundledAssetUrl(entry.name) || null
+  return bundledAssetUrl(entry.name) || getMaterialImageUrl(entry.itemType, entry.itemId) || null
 }
 
 function hasImage(entry) {
-  return Boolean(entry.imageUrl || bundledAssetUrl(entry.name))
+  return Boolean(resolveImageUrl(entry))
 }
 
 const filteredRows = computed(() => {
-  let rows = catalogRows.value
+  let rows = catalogRows.value.filter((r) => !isHiddenDagger(r))
   if (filterType.value !== 'all') {
     rows = rows.filter((r) => r.itemType === filterType.value)
   }
@@ -78,6 +93,11 @@ async function loadCatalog() {
     const result = await dmPlayerAPI.getCatalog()
     if (result?.success !== false && Array.isArray(result?.items)) {
       catalogRows.value = result.items
+        .filter((r) => !isHiddenDagger(r))
+        .map((r) => ({
+          ...r,
+          editThreat: r.threatLevel ?? 0,
+        }))
     } else {
       error.value = result?.message || '无法加载图鉴'
     }
@@ -85,6 +105,47 @@ async function loadCatalog() {
     error.value = '加载失败：' + (e.message || '未知错误')
   } finally {
     loading.value = false
+  }
+}
+
+function threatDirty(entry) {
+  if (!entry || entry.itemType !== 'weapon') return false
+  const v = Number(entry.editThreat)
+  return Number.isFinite(v) && v !== Number(entry.threatLevel)
+}
+
+async function saveThreat(entry) {
+  if (!entry || entry.itemType !== 'weapon') return
+  const threat = Math.floor(Number(entry.editThreat))
+  if (!Number.isFinite(threat) || threat < 0 || threat > 99) {
+    error.value = `${entry.name}：威胁值需在 0-99 之间`
+    return
+  }
+  const key = `${entry.itemType}-${entry.itemId}`
+  savingThreatKey.value = key
+  message.value = ''
+  error.value = ''
+  try {
+    const body = { threatLevel: threat }
+    const synced = syncThreatInRemark(entry.remark || '', threat)
+    if (synced !== (entry.remark || '')) {
+      body.remark = synced
+    }
+    const result = await dmPlayerAPI.updateWeapon(entry.itemId, body)
+    if (result?.success) {
+      entry.threatLevel = threat
+      entry.editThreat = threat
+      if (body.remark != null) {
+        entry.remark = body.remark
+      }
+      message.value = result.message || `已保存威胁值：${entry.name}`
+    } else {
+      error.value = result?.message || '保存威胁值失败'
+    }
+  } catch (e) {
+    error.value = '保存威胁值失败：' + (e.message || '未知错误')
+  } finally {
+    savingThreatKey.value = null
   }
 }
 
@@ -183,7 +244,7 @@ onMounted(loadCatalog)
   <div>
     <div class="mb-6">
       <h1 class="text-white mb-1 tracking-tight text-2xl">图鉴管理</h1>
-      <p class="text-gray-500 text-sm">浏览物品目录，编辑标签、描述与图片</p>
+      <p class="text-gray-500 text-sm">浏览物品目录，编辑标签、描述与图片；武器可在卡片上直接改威胁值</p>
     </div>
 
     <div v-if="message" class="mb-4 rounded-lg bg-emerald-900/40 border border-emerald-700/50 px-4 py-2 text-emerald-300 text-sm">
@@ -227,48 +288,69 @@ onMounted(loadCatalog)
       没有匹配的条目
     </div>
 
-    <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2">
       <div
         v-for="entry in filteredRows"
         :key="`${entry.itemType}-${entry.itemId}`"
-        class="rounded-xl border border-slate-700/60 bg-slate-900/60 overflow-hidden flex flex-col"
+        class="rounded-lg border border-slate-700/60 bg-slate-900/60 overflow-hidden flex flex-col"
       >
-        <div class="aspect-square bg-slate-800/80 flex items-center justify-center overflow-hidden">
+        <div class="h-20 bg-slate-800/80 flex items-center justify-center overflow-hidden">
           <img
             v-if="resolveImageUrl(entry)"
             :src="resolveImageUrl(entry)"
             :alt="entry.name"
-            class="w-full h-full object-contain p-2"
+            class="w-full h-full object-contain p-1"
           />
-          <span v-else class="text-gray-500 text-sm">缺图</span>
+          <span v-else class="text-gray-500 text-xs">缺图</span>
         </div>
-        <div class="p-3 flex-1 flex flex-col gap-2">
-          <div class="flex items-start justify-between gap-2">
+        <div class="p-2 flex-1 flex flex-col gap-1">
+          <div class="flex items-start justify-between gap-1">
             <div class="min-w-0">
-              <h3 class="text-white font-medium truncate">{{ entry.name }}</h3>
-              <p class="text-gray-500 text-xs">{{ entry.unit }}</p>
+              <h3 class="text-white text-sm font-medium truncate">{{ entry.name }}</h3>
+              <p class="text-gray-500 text-[11px]">{{ entry.unit }}</p>
             </div>
-            <span class="shrink-0 rounded px-1.5 py-0.5 text-xs bg-slate-700 text-gray-300">
+            <span class="shrink-0 rounded px-1 py-0.5 text-[10px] bg-slate-700 text-gray-300">
               {{ TYPE_LABELS[entry.itemType] || entry.itemType }}
             </span>
           </div>
-          <span
-            v-if="entry.itemType === 'weapon' && entry.threatLevel != null"
-            class="inline-block self-start rounded px-1.5 py-0.5 text-xs"
-            :class="getWeaponThreatBadgeClass(entry.threatLevel)"
+          <div
+            v-if="entry.itemType === 'weapon'"
+            class="flex flex-wrap items-center gap-1"
           >
-            威胁 {{ entry.threatLevel }}
-          </span>
+            <span
+              class="inline-block rounded px-1 py-0.5 text-[10px]"
+              :class="getWeaponThreatBadgeClass(entry.threatLevel)"
+            >
+              威胁 {{ entry.threatLevel ?? 0 }}
+            </span>
+            <input
+              v-model.number="entry.editThreat"
+              type="number"
+              min="0"
+              max="99"
+              class="w-12 rounded border bg-slate-800 px-1 py-0.5 text-xs text-white tabular-nums text-center focus:outline-none focus:border-blue-500"
+              :class="threatDirty(entry) ? 'border-amber-500/60' : 'border-slate-600'"
+            />
+            <button
+              type="button"
+              class="rounded px-1.5 py-0.5 text-[10px] font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+              :class="threatDirty(entry) ? 'bg-cyan-600 text-white hover:bg-cyan-500' : 'bg-slate-700 text-gray-400'"
+              :disabled="!threatDirty(entry) || savingThreatKey === `${entry.itemType}-${entry.itemId}`"
+              @click="saveThreat(entry)"
+            >
+              {{ savingThreatKey === `${entry.itemType}-${entry.itemId}` ? '…' : '保存' }}
+            </button>
+          </div>
           <span
             v-if="entry.tag"
-            class="inline-block self-start rounded-full px-2 py-0.5 text-xs bg-indigo-900/60 text-indigo-300 border border-indigo-700/50"
+            class="inline-block self-start rounded-full px-1.5 py-0.5 text-[10px] bg-indigo-900/60 text-indigo-300 border border-indigo-700/50"
           >
             {{ entry.tag }}
           </span>
-          <p class="text-gray-400 text-xs line-clamp-3 flex-1">{{ entry.remark || '（无描述）' }}</p>
+          <p class="text-gray-400 text-[11px] line-clamp-2 flex-1">{{ entry.remark || '（无描述）' }}</p>
           <button
             type="button"
-            class="mt-auto w-full rounded-lg bg-blue-600/80 py-1.5 text-sm text-white hover:bg-blue-600 transition-colors"
+            class="mt-auto w-full rounded-md bg-blue-600/80 py-1 text-xs text-white hover:bg-blue-600 transition-colors"
             @click="openEdit(entry)"
           >
             编辑

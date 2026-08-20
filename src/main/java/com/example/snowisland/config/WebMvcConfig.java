@@ -22,14 +22,37 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns(
+                        "/api/auth/reset-password",
+                        "/api/auth/users",
                         "/api/ark/**",
                         "/api/player-markers",
                         "/api/player-markers/**",
-                        "/api/actions/all",
-                        "/api/dm/players",
-                        "/api/dm/players/**",
-                        "/api/jobs/all",
-                        "/api/dm/catalog-entry/**",
-                        "/api/dm/catalog-image/**");
+                        "/api/actions/**",
+                        "/api/night-actions/**",
+                        "/api/faction-actions/**",
+                        "/api/quick-interactions/**",
+                        "/api/dm/**",
+                        "/api/jobs",
+                        "/api/jobs/**",
+                        "/api/skills",
+                        "/api/skills/**",
+                        "/api/locations",
+                        "/api/locations/**",
+                        "/api/players",
+                        "/api/players/**",
+                        "/api/game-reset/**",
+                        "/api/game-state",
+                        "/api/game-state/**",
+                        "/api/catastrophe/**",
+                        "/api/warehouses/**",
+                        "/api/shelter/**",
+                        "/api/npc/manage/**",
+                        "/api/npc/favor/set",
+                        "/api/lore/**",
+                        "/api/milestones/**",
+                        "/api/special-clue/**",
+                        "/api/exploration/**",
+                        "/api/notebook",
+                        "/api/notebook/**");
     }
 }

@@ -114,35 +114,65 @@ INSERT INTO warehouse_config (warehouse_key, warehouse_name, table_name, key_ite
 ('rebel', '反叛者基地', 'warehouse_rebel', 23, 'flag', 5),
 ('ark', '方舟仓库', 'warehouse_ark', 24, 'ship', 6);
 
--- 插入一些初始仓库数据
-INSERT INTO warehouse_general (item_type, item_id, quantity) VALUES
-('material', 1, 50),
-('material', 2, 30),
-('material', 3, 20),
-('item', 15, 10),
-('item', 13, 15);
-
+-- 开局库存（《仓库物资.doc》）
 INSERT INTO warehouse_fuel (item_type, item_id, quantity) VALUES
-('material', 9, 100),
-('material', 4, 40);
+('material', 8, 500),
+('material', 2, 50000),
+('item', 15, 2),
+('item', 13, 20),
+('item', 2, 8),
+('material', 6, 50);
 
 INSERT INTO warehouse_armory (item_type, item_id, quantity) VALUES
-('weapon', 1, 5),
+('weapon', 1, 2),
+('ammo', 1, 4),
+('weapon', 2, 1),
+('ammo', 2, 2),
+('weapon', 7, 1),
+('ammo', 4, 4),
+('weapon', 4, 2),
 ('weapon', 3, 3),
-('weapon', 5, 2),
-('ammo', 1, 50),
-('ammo', 2, 30),
-('item', 5, 10),
-('item', 6, 5);
+('item', 6, 4),
+('item', 5, 1),
+('item', 3, 2),
+('material', 12, 1);
+
+INSERT INTO warehouse_general (item_type, item_id, quantity) VALUES
+('material', 1, 50000),
+('material', 2, 5000),
+('material', 7, 5000),
+('material', 4, 100),
+('material', 3, 100),
+('material', 9, 100),
+('weapon', 8, 2),
+('weapon', 9, 1),
+('item', 8, 2),
+('material', 12, 1);
 
 INSERT INTO warehouse_dock (item_type, item_id, quantity) VALUES
-('material', 5, 15),
-('material', 10, 5),
-('material', 11, 3),
-('item', 12, 8);
+('material', 5, 800),
+('item', 18, 1),
+('item', 10, 20),
+('item', 14, 5),
+('item', 1, 2),
+('item', 11, 3),
+('item', 12, 1),
+('weapon', 6, 2),
+('item', 7, 1),
+('ammo', 3, 2),
+('item', 17, 1),
+('material', 11, 3);
+
+INSERT INTO warehouse_rebel (item_type, item_id, quantity) VALUES
+('weapon', 2, 1),
+('ammo', 2, 2),
+('weapon', 7, 2),
+('ammo', 4, 4),
+('material', 6, 20);
 
 INSERT INTO warehouse_ark (item_type, item_id, quantity) VALUES
-('material', 10, 2),
-('material', 11, 1),
-('material', 5, 10),
-('material', 3, 15);
+('weapon', 7, 2),
+('ammo', 4, 12),
+('weapon', 6, 1),
+('weapon', 1, 1),
+('ammo', 1, 2);

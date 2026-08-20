@@ -35,6 +35,15 @@ public class IslandEvent {
     @Column(name = "is_special", nullable = false)
     private Boolean isSpecial = false;
 
+    @Column(name = "pack_id")
+    private Integer packId;
+
+    @Column(name = "pack_name", length = 100)
+    private String packName;
+
+    @Column(name = "source_number")
+    private Integer sourceNumber;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -70,6 +79,12 @@ public class IslandEvent {
     public void setLoreFragment(String loreFragment) { this.loreFragment = loreFragment; }
     public Boolean getIsSpecial() { return isSpecial; }
     public void setIsSpecial(Boolean isSpecial) { this.isSpecial = isSpecial; }
+    public Integer getPackId() { return packId; }
+    public void setPackId(Integer packId) { this.packId = packId; }
+    public String getPackName() { return packName; }
+    public void setPackName(String packName) { this.packName = packName; }
+    public Integer getSourceNumber() { return sourceNumber; }
+    public void setSourceNumber(Integer sourceNumber) { this.sourceNumber = sourceNumber; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

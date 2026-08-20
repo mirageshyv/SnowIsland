@@ -1,12 +1,19 @@
+import { normalizeShelterTransportAlias } from '@/utils/transportForm.js'
+
 /** Parse transport notes saved on PlayerAction. */
 export function parseTransportNotes(notes) {
-  const out = { mode: '', source: '', dest: '', items: [] }
+  const out = { mode: '', source: '', dest: '', items: [], tier: '' }
   if (!notes || typeof notes !== 'string') return out
   for (const line of notes.split('\n')) {
     const trimmed = line.trim()
     let m = trimmed.match(/^\[mode:(.+)\]$/)
     if (m) {
       out.mode = m[1]
+      continue
+    }
+    m = trimmed.match(/^\[tier:(.+)\]$/)
+    if (m) {
+      out.tier = m[1]
       continue
     }
     m = trimmed.match(/^\[source:(.+)\]$/)
@@ -28,7 +35,7 @@ export function parseTransportNotes(notes) {
       })
     }
   }
-  return out
+  return normalizeShelterTransportAlias(out)
 }
 
 export function applyTransportQuantities(transportItems, parsedItems) {
@@ -158,6 +165,23 @@ export function applyNightPayload(type, payload, forms) {
         ? payload.participantIds.map((id) => Number(id))
         : []
       f.raidOutcome = payload.raidOutcome || ''
+      f.note = payload.note || ''
+      break
+    case 'raid_location':
+      f.targetLocationId =
+        payload.targetLocationId != null ? String(payload.targetLocationId) : ''
+      f.raidOutcome = payload.raidOutcome || ''
+      f.participantIds = Array.isArray(payload.participantIds)
+        ? payload.participantIds.map((id) => Number(id))
+        : []
+      f.note = payload.note || ''
+      break
+    case 'assassinate_target':
+      f.targetPlayerId =
+        payload.targetPlayerId != null ? String(payload.targetPlayerId) : ''
+      f.participantIds = Array.isArray(payload.participantIds)
+        ? payload.participantIds.map((id) => Number(id))
+        : []
       f.note = payload.note || ''
       break
     default:

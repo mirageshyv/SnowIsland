@@ -540,7 +540,7 @@ DROP TABLE IF EXISTS `game_day_settings`;
 CREATE TABLE `game_day_settings` (
   `game_day` int(11) NOT NULL COMMENT '游戏天数',
   `required_food_units` int(11) NOT NULL DEFAULT '2' COMMENT '每人每日所需食物（单位）',
-  `required_fuel_kg` int(11) NOT NULL DEFAULT '15' COMMENT '每人每日取暖燃料（千克，木材或燃料）',
+  `required_fuel_kg` int(11) NOT NULL DEFAULT '25' COMMENT '每人每日取暖燃料（千克，木材或燃料）',
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`game_day`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='每日全局消耗需求（DM在游戏设置中配置）';
@@ -548,7 +548,7 @@ CREATE TABLE `game_day_settings` (
 -- ----------------------------
 -- Records of game_day_settings
 -- ----------------------------
-INSERT INTO `game_day_settings` VALUES ('1', '2', '15', '2026-06-26 15:46:49');
+INSERT INTO `game_day_settings` VALUES ('1', '2', '25', '2026-06-26 15:46:49');
 
 -- ----------------------------
 -- Table structure for game_state
@@ -1238,7 +1238,7 @@ CREATE TABLE `location_npc` (
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `avatar_url` varchar(255) DEFAULT NULL,
-  `dialogue_style` varchar(50) DEFAULT NULL,
+  `dialogue_style` text,
   `personality` text,
   `status` varchar(50) DEFAULT NULL,
   `daily_trade_limit` int(11) DEFAULT NULL,
@@ -1248,22 +1248,23 @@ CREATE TABLE `location_npc` (
   KEY `idx_location_id` (`location_id`),
   KEY `idx_job` (`job`),
   CONSTRAINT `fk_npc_location` FOREIGN KEY (`location_id`) REFERENCES `location` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COMMENT='地点NPC表';
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COMMENT='地点NPC表';
 
 -- ----------------------------
 -- Records of location_npc
 -- ----------------------------
-INSERT INTO `location_npc` VALUES ('1', '克拉拉·南丁格尔', '渔民', '女', '一位家中贫困的普通渔民，只希望镇上保持平静。', '7', '忽视', '忽视', '喜好', '厌恶', '2026-05-14 20:44:38', '2026-06-25 20:04:15', null, '', '', '正常', '1', 'lighthouse, tower, secret room', 'The old lighthouse has a hidden basement that was used by smugglers. The entrance is behind a loose brick on the north wall. Inside you\'ll find an old sea chart marking the location of a sunken ship.');
-INSERT INTO `location_npc` VALUES ('2', '杰克·塔克', '水手', '男', '曾在商船当水手，船沉后困在岛上，做梦都想再上一次船。', '7', '忽视', '厌恶', '喜好', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, null, null, null, null, null, null);
-INSERT INTO `location_npc` VALUES ('3', '鲍勃·塔克', '装卸工', '男', '一名一直在港口讨生活的搬运工。', '7', '厌恶', '喜好', '忽视', '忽视', '2026-05-14 20:44:38', '2026-05-23 01:29:01', null, null, null, null, null, null, null);
-INSERT INTO `location_npc` VALUES ('4', '托马斯·伍德', '伐木工', '男', '沉默寡言的伐木工，靠砍树和做木工为生，只求安稳度日。', '15', '喜好', '厌恶', '忽视', '忽视', '2026-05-14 20:44:38', '2026-05-20 09:44:29', null, null, null, null, null, null, null);
-INSERT INTO `location_npc` VALUES ('5', '卡尔·铁锤', '矿工', '男', '脾气火爆的矿场工人，谁给好处就帮谁。', '18', '喜好', '厌恶', '忽视', '厌恶', '2026-05-14 20:44:38', '2026-06-25 19:54:21', null, '', '', '??', '1', null, null);
-INSERT INTO `location_npc` VALUES ('6', '维克多·斯通', '矿工', '男', '体格强壮的矿工，相信权力才是活下去的依靠。', '18', '喜好', '厌恶', '忽视', '厌恶', '2026-05-14 20:44:38', '2026-06-24 11:44:07', null, '', '', '正常', '1', null, null);
-INSERT INTO `location_npc` VALUES ('7', '塞缪尔·格雷', '农户', '男', '善良而质朴的普通农户，乐于帮助他人。', '10', '厌恶', '忽视', '喜好', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, null, null, null, null, null, null);
-INSERT INTO `location_npc` VALUES ('8', '弗雷德里克·波特', '农户', '男', '性格孤僻的，住在镇外，对别人的生死毫不在意。', '10', '厌恶', '喜好', '忽视', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, null, null, null, null, null, null);
-INSERT INTO `location_npc` VALUES ('9', '米玛·雷铁斯托', '手工艺人', '女', '老实本分的手工艺人，喜欢待在自己的小屋偶尔出门。', '10', '厌恶', '忽视', '喜好', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, null, null, null, null, null, null);
-INSERT INTO `location_npc` VALUES ('10', '汉斯·施密特', '工匠', '男', '什么都能修的工匠，从钟表到农具都难不倒他，只认工钱不认人。', '10', '喜好', '忽视', '忽视', '厌恶', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, null, null, null, null, null, null);
-INSERT INTO `location_npc` VALUES ('11', '乔克·汤姆', '民兵', '男', '初始就跟着统治者干的监狱看守，一名很忠诚的下属。只是他有点小小的缺点，但统治者们也只能视而不见。', '19', '喜好', '厌恶', '忽视', '厌恶', '2026-05-14 20:44:39', '2026-05-14 20:44:39', null, null, null, null, null, null, null);
+INSERT INTO `location_npc` VALUES ('1', '克拉拉·南丁格尔', '渔民', '女', '家中贫困的普通渔民，只希望镇上保持平静。她每天修补渔网，数着日子过，祈祷暴雪别落到她头上。', '7', '忽视', '忽视', '喜好', '厌恶', '2026-05-14 20:44:38', '2026-06-25 20:04:15', null, '声音小，经常低头说话，提到“暴雪”时会下意识攥紧衣角。', '胆怯温和，只想安稳过日子。', '正常', '1', 'lighthouse, tower, secret room', 'The old lighthouse has a hidden basement that was used by smugglers. The entrance is behind a loose brick on the north wall. Inside you\'ll find an old sea chart marking the location of a sunken ship.');
+INSERT INTO `location_npc` VALUES ('2', '杰克·塔克', '水手', '男', '曾在商船当水手，船沉后困在岛上，做梦都想再上一次船。他每天在码头踱步，盯着海平线发呆。', '7', '忽视', '厌恶', '喜好', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, '说话带着海风味的粗犷，每三句话里有一句是“等船来了我就走”。', '焦躁不安，像被困在笼子里的海鸟。', '正常', '1', null, null);
+INSERT INTO `location_npc` VALUES ('3', '鲍勃·塔克', '装卸工', '男', '一直在港口讨生活的搬运工，膀大腰圆，嘴里永远叼着半根烟。他谁都不信，只信工钱和拳头。', '7', '喜好', '厌恶', '忽视', '忽视', '2026-05-14 20:44:38', '2026-05-23 01:29:01', null, '话不多，用“嗯”“行”“钱呢”三个词就能完成一次交易。', '粗鲁务实，谁给钱多就给谁干活。', '正常', '1', null, null);
+INSERT INTO `location_npc` VALUES ('4', '托马斯·伍德', '伐木工', '男', '沉默寡言的伐木工，靠砍树和做木工为生，只求安稳度日。他住在林中小屋，镇上的人很少见到他。', '15', '喜好', '厌恶', '忽视', '忽视', '2026-05-14 20:44:38', '2026-05-20 09:44:29', null, '答话永远慢半拍，好像你说话他要先翻译成木头语言。使用单音节词为主。', '孤僻寡言，对政治毫无兴趣。', '正常', '1', null, null);
+INSERT INTO `location_npc` VALUES ('5', '卡尔·铁锤', '矿工', '男', '脾气火爆的矿场工人，谁给好处就帮谁。他嗓门大、拳头硬，在矿场里混得开，没人敢惹他。', '18', '喜好', '厌恶', '忽视', '厌恶', '2026-05-14 20:44:38', '2026-06-25 19:54:21', null, '说话像在吼，每句话都带脏字，谈到“好处”时眼睛会亮起来。', '暴躁直率，利益至上，不在乎对错。', '正常', '1', null, null);
+INSERT INTO `location_npc` VALUES ('6', '维克多·斯通', '矿工', '男', '体格强壮的矿工，相信权力才是活下去的依靠。他崇拜强者，认为统治者镇得住场子，镇上才不至于乱套。', '18', '喜好', '厌恶', '忽视', '厌恶', '2026-05-14 20:44:38', '2026-06-24 11:44:07', null, '说话简短有力，像在砸石头。提到“统治者”时语气会放尊重点。', '务实忠诚，迷信权力，看不起弱者。', '正常', '1', null, null);
+INSERT INTO `location_npc` VALUES ('7', '塞缪尔·格雷', '农户', '男', '善良而质朴的普通农户，乐于帮助他人。他种的菜总有多余的分给邻居，从不计较回报。', '10', '厌恶', '忽视', '喜好', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, '语速舒缓，像在慢悠悠地翻土。喜欢用“我总觉得啊”开头，但从不强加观点。', '温和宽厚，发自内心地相信善良。', '正常', '1', null, null);
+INSERT INTO `location_npc` VALUES ('8', '弗雷德里克·波特', '农户', '男', '性格孤僻的住在镇外的农户，对别人的生死毫不在意。他种自己的地，吃自己的粮，从不参与镇上任何事。', '10', '厌恶', '喜好', '忽视', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, '能用点头摇头解决的绝不开腔，开了腔也是“关我什么事”。', '冷漠自私，独来独往，不关心任何人。', '正常', '1', null, null);
+INSERT INTO `location_npc` VALUES ('9', '米玛·雷铁斯托', '手工艺人', '女', '老实本分的手工艺人，喜欢待在自己的小屋偶尔出门。她编篮子、织布，手艺好但不爱张扬。', '10', '厌恶', '忽视', '喜好', '忽视', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, '说话轻声细语，手上永远在忙活——编东西、缝东西、磨东西。句子短，不议论人。', '安静本分，不惹事也不怕事。', '正常', '1', null, null);
+INSERT INTO `location_npc` VALUES ('10', '汉斯·施密特', '工匠', '男', '什么都能修的工匠，从钟表到农具都难不倒他，只认工钱不认人。他修东西时从不说话，修完报价，拿钱走人。', '10', '喜好', '忽视', '忽视', '厌恶', '2026-05-14 20:44:38', '2026-05-14 20:44:38', null, '除非在谈工钱，否则不开口。谈价格时句句精准，一句废话没有。', '理性冷漠，技术至上，人情淡薄。', '正常', '1', null, null);
+INSERT INTO `location_npc` VALUES ('11', '乔克·汤姆', '民兵', '男', '初始就跟着统治者干的监狱看守，一名很忠诚的下属。只是他有点小小的缺点，但统治者们也只能视而不见。', '19', '喜好', '厌恶', '忽视', '厌恶', '2026-05-14 20:44:39', '2026-05-14 20:44:39', null, '话多，喜欢吹嘘自己和统治者的关系，说到一半会突然压低声音说“其实我告诉你个小秘密”。', '忠诚但管不住嘴，有小毛病但不致命。', '正常', '1', null, null);
+INSERT INTO `location_npc` VALUES ('12', '斯特·贝斯', '民兵', '女', '初始就跟着统治者干活的一名很忠心的下属。她会一直遵从统治者的决定，除非她看不到希望。', '19', '喜好', '厌恶', '忽视', '厌恶', '2026-08-19 14:56:00', '2026-08-19 14:56:00', null, '话少，回答简洁。提到“统治者”时语气恭敬，提到“暴雪”时语气会变犹豫。', '忠诚可靠，但有自己的底线。', '正常', '1', null, null);
 
 -- ----------------------------
 -- Table structure for lore_player_grant
@@ -1302,7 +1303,7 @@ CREATE TABLE `material` (
 -- Records of material
 -- ----------------------------
 INSERT INTO `material` VALUES ('1', '金属制品', 'kg', '加工后的铁件、钉子、铁丝等金属材料。可用于锻造武器或工具，或修建设施的基础材料。', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
-INSERT INTO `material` VALUES ('2', '木材', 'kg', '从岛上砍伐的原木，未经过加工。可直接作为燃料（15kg/天取暖），或加工成木板用于建筑。', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
+INSERT INTO `material` VALUES ('2', '木材', 'kg', '从岛上砍伐的原木，未经过加工。可直接作为燃料（25kg/天取暖），或加工成木板用于建筑。', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `material` VALUES ('3', '绳索', '米', '麻绳或钢丝绳，直径1-2厘米。用于捆绑、拖拽、登山或船只系泊。可以提升探索成功程度。', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `material` VALUES ('4', '木板', 'kg', '原木经蒸汽箱加工后的标准化板材。用于建造避难所、修理船只或制作家具，比原木更易使用。', '2026-04-27 11:36:23', '2026-04-27 11:36:23');
 INSERT INTO `material` VALUES ('5', '食物', 'kg', '泛指各种可食用物资，包括面粉、鱼干、咸肉、土豆等。', '2026-04-27 11:36:23', '2026-05-16 12:00:00');
@@ -1757,7 +1758,7 @@ CREATE TABLE `player_daily_consumption` (
   `player_id` int(11) NOT NULL,
   `game_day` int(11) NOT NULL,
   `required_food_units` int(11) NOT NULL DEFAULT '2',
-  `required_fuel_kg` int(11) NOT NULL DEFAULT '15',
+  `required_fuel_kg` int(11) NOT NULL DEFAULT '25',
   `consumed_food_units` int(11) NOT NULL DEFAULT '0',
   `consumed_fuel_kg` int(11) NOT NULL DEFAULT '0',
   `fuel_from_wood_kg` int(11) NOT NULL DEFAULT '0',
@@ -2235,6 +2236,12 @@ CREATE TABLE `warehouse_ark` (
 -- ----------------------------
 -- Records of warehouse_ark
 -- ----------------------------
+INSERT INTO `warehouse_ark` (`item_type`, `item_id`, `quantity`) VALUES
+('weapon', 7, 2),
+('ammo', 4, 12),
+('weapon', 6, 1),
+('weapon', 1, 1),
+('ammo', 1, 2);
 
 -- ----------------------------
 -- Table structure for warehouse_armory
@@ -2256,6 +2263,19 @@ CREATE TABLE `warehouse_armory` (
 -- ----------------------------
 -- Records of warehouse_armory
 -- ----------------------------
+INSERT INTO `warehouse_armory` (`item_type`, `item_id`, `quantity`) VALUES
+('weapon', 1, 2),
+('ammo', 1, 4),
+('weapon', 2, 1),
+('ammo', 2, 2),
+('weapon', 7, 1),
+('ammo', 4, 4),
+('weapon', 4, 2),
+('weapon', 3, 3),
+('item', 6, 4),
+('item', 5, 1),
+('item', 3, 2),
+('material', 12, 1);
 
 -- ----------------------------
 -- Table structure for warehouse_config
@@ -2303,6 +2323,19 @@ CREATE TABLE `warehouse_dock` (
 -- ----------------------------
 -- Records of warehouse_dock
 -- ----------------------------
+INSERT INTO `warehouse_dock` (`item_type`, `item_id`, `quantity`) VALUES
+('material', 5, 800),
+('item', 18, 1),
+('item', 10, 20),
+('item', 14, 5),
+('item', 1, 2),
+('item', 11, 3),
+('item', 12, 1),
+('weapon', 6, 2),
+('item', 7, 1),
+('ammo', 3, 2),
+('item', 17, 1),
+('material', 11, 3);
 
 -- ----------------------------
 -- Table structure for warehouse_fuel
@@ -2324,6 +2357,13 @@ CREATE TABLE `warehouse_fuel` (
 -- ----------------------------
 -- Records of warehouse_fuel
 -- ----------------------------
+INSERT INTO `warehouse_fuel` (`item_type`, `item_id`, `quantity`) VALUES
+('material', 8, 500),
+('material', 2, 50000),
+('item', 15, 2),
+('item', 13, 20),
+('item', 2, 8),
+('material', 6, 50);
 
 -- ----------------------------
 -- Table structure for warehouse_general
@@ -2345,6 +2385,17 @@ CREATE TABLE `warehouse_general` (
 -- ----------------------------
 -- Records of warehouse_general
 -- ----------------------------
+INSERT INTO `warehouse_general` (`item_type`, `item_id`, `quantity`) VALUES
+('material', 1, 50000),
+('material', 2, 5000),
+('material', 7, 5000),
+('material', 4, 100),
+('material', 3, 100),
+('material', 9, 100),
+('weapon', 8, 2),
+('weapon', 9, 1),
+('item', 8, 2),
+('material', 12, 1);
 
 -- ----------------------------
 -- Table structure for warehouse_rebel
@@ -2366,6 +2417,12 @@ CREATE TABLE `warehouse_rebel` (
 -- ----------------------------
 -- Records of warehouse_rebel
 -- ----------------------------
+INSERT INTO `warehouse_rebel` (`item_type`, `item_id`, `quantity`) VALUES
+('weapon', 2, 1),
+('ammo', 2, 2),
+('weapon', 7, 2),
+('ammo', 4, 4),
+('material', 6, 20);
 
 -- ----------------------------
 -- Table structure for weapon

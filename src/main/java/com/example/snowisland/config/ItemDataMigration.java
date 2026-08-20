@@ -44,7 +44,7 @@ public class ItemDataMigration implements CommandLineRunner {
             ).getSingleResult();
             int nextId = maxIdResult.intValue() + 1;
 
-            if (nextId < 26) nextId = 26;
+            if (nextId < 25) nextId = 25;
 
             entityManager.createNativeQuery(
                 "INSERT INTO item (id, name, unit, remark, created_at, updated_at) " +

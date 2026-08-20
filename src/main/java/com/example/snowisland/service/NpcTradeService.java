@@ -2,11 +2,13 @@ package com.example.snowisland.service;
 
 import com.example.snowisland.entity.*;
 import com.example.snowisland.repository.*;
+import com.example.snowisland.util.NpcSurvivalMath;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
@@ -46,6 +48,19 @@ public class NpcTradeService {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private NpcInventoryService npcInventoryService;
+
+    @Autowired
+    private PlayerConsumptionService playerConsumptionService;
+
+    @Autowired
+    private ActivityLogService activityLogService;
+
+    @Autowired
+    @Lazy
+    private NpcTradeProposalService npcTradeProposalService;
+
     private static final String CONFIG_TYPE_DEMAND = "demand";
     private static final String CONFIG_TYPE_SUPPLY = "supply";
 
@@ -59,6 +74,12 @@ public class NpcTradeService {
 
     /** 每日最大好感度特殊奖励次数 */
     private static final int MAX_FREE_REWARD_PER_DAY = 1;
+    /** 赠予换算：2 食物 = 1 好感，25 木材 = 1 好感，25 燃料 = 1 好感 */
+    public static final int GIFT_FOOD_PER_FAVOR = 2;
+    public static final int GIFT_WOOD_PER_FAVOR = 25;
+    public static final int GIFT_FUEL_PER_FAVOR = 25;
+    /** 同一 NPC 送礼加好感全程上限 */
+    public static final int MAX_GIFT_FAVOR = 15;
 
     /**
      * 获取好感度档位
@@ -206,8 +227,20 @@ public class NpcTradeService {
             }
 
             LocationNpc npc = npcOpt.get();
+            String unavailable = unavailableReason(npc);
+            if (unavailable != null) {
+                result.put("success", false);
+                result.put("message", unavailable);
+                result.put("npcStatus", npc.getStatus());
+                result.put("unavailable", true);
+                return result;
+            }
+
             int currentDay = gameStateService.getCurrentDay();
             int favorValue = getFavorValue(npcId, playerId);
+            int[] need = currentRequirements();
+            int requiredFood = need[0];
+            int requiredHeat = need[1];
             
             if (isHostile(favorValue)) {
                 result.put("success", false);
@@ -215,70 +248,40 @@ public class NpcTradeService {
                 result.put("hostile", true);
                 result.put("favorValue", favorValue);
                 result.put("favorTier", getFavorTierInfo(favorValue));
+                result.put("proposal", npcTradeProposalService.getOpenProposalMap(npcId, playerId));
+                result.put("giftAllowed", false);
                 return result;
             }
             
-            // 好感度档位信息
             Map<String, Object> favorTierInfo = getFavorTierInfo(favorValue);
-            double demandDiscount = getDemandDiscountRate(favorValue);
-            double supplyBonus = getSupplyBonusRate(favorValue);
-
-            List<NpcTradeConfig> demandConfigs = tradeConfigRepository.findByNpcIdAndConfigType(npcId, CONFIG_TYPE_DEMAND);
-            List<NpcTradeConfig> supplyConfigs = tradeConfigRepository.findByNpcIdAndConfigType(npcId, CONFIG_TYPE_SUPPLY);
-
-            List<Map<String, Object>> demandItems = new ArrayList<>();
-            for (NpcTradeConfig config : demandConfigs) {
-                if (isFavorValid(config, favorValue)) {
-                    Map<String, Object> item = configToMap(config);
-                    int originalQuantity = config.getQuantity();
-                    int actualQuantity = calculateDiscountedDemand(originalQuantity, demandDiscount);
-                    int playerHas = getPlayerStockSmart(playerId, config.getItemType(), config.getItemId());
-
-                    item.put("originalQuantity", originalQuantity);
-                    item.put("actualQuantity", actualQuantity);
-                    item.put("discountRate", demandDiscount);
-                    item.put("savedQuantity", originalQuantity - actualQuantity);
-                    item.put("playerHas", playerHas);
-                    demandItems.add(item);
-                }
-            }
-
-            List<Map<String, Object>> supplyItems = new ArrayList<>();
-            for (NpcTradeConfig config : supplyConfigs) {
-                if (isFavorValid(config, favorValue) && rollProbability(config.getProbability())) {
-                    Map<String, Object> item = configToMap(config);
-                    int originalQuantity = config.getQuantity();
-                    int actualQuantity = calculateBonusSupply(originalQuantity, supplyBonus);
-                    
-                    item.put("originalQuantity", originalQuantity);
-                    item.put("actualQuantity", actualQuantity);
-                    item.put("bonusRate", supplyBonus);
-                    item.put("extraQuantity", actualQuantity - originalQuantity);
-                    supplyItems.add(item);
-                }
-            }
-
-            long todayTrades = tradeRecordRepository.countTodayTrades(npcId, playerId, currentDay);
-            int dailyLimit = npc.getDailyTradeLimit() != null ? npc.getDailyTradeLimit() : 1;
-            int remainingTrades = Math.max(0, dailyLimit - (int) todayTrades);
-
-            // 检查今日是否已使用免费奖励
             boolean freeRewardUsed = checkFreeRewardUsed(npcId, playerId, currentDay);
+            List<Map<String, Object>> freeReward = npcTradeProposalService.surplusForFreeReward(
+                    npcId, requiredFood, requiredHeat);
+            Map<String, Object> proposal = npcTradeProposalService.getOpenProposalMap(npcId, playerId);
 
             result.put("success", true);
             result.put("npcId", npcId);
             result.put("npcName", npc.getName());
             result.put("npcJob", npc.getJob());
-            result.put("demandItems", demandItems);
-            result.put("supplyItems", supplyItems);
+            result.put("demandItems", new ArrayList<>());
+            result.put("supplyItems", new ArrayList<>());
+            result.put("proposal", proposal);
             result.put("favorValue", favorValue);
             result.put("favorTier", favorTierInfo);
-            result.put("dailyLimit", dailyLimit);
-            result.put("todayTrades", (int) todayTrades);
-            result.put("remainingTrades", remainingTrades);
-            result.put("canTrade", remainingTrades > 0 && !demandItems.isEmpty() && !supplyItems.isEmpty());
-            result.put("canFreeReward", favorValue >= 100 && !freeRewardUsed);
+            result.put("canTrade", proposal != null && "open".equals(proposal.get("status")));
+            result.put("canFreeReward", favorValue >= 100 && !freeRewardUsed && !freeReward.isEmpty());
+            result.put("freeReward", freeReward);
             result.put("freeRewardUsed", freeRewardUsed);
+            result.put("npcStatus", npc.getStatus());
+            result.put("giftAllowed", true);
+            result.putAll(npcInventoryService.survivalSnapshot(npcId, requiredFood, requiredHeat));
+            result.put("playerFoodKg", getPlayerStock(playerId, TradeItem.ItemType.material,
+                    com.example.snowisland.util.ItemCatalog.FOOD_MATERIAL_ID));
+            result.put("playerWoodKg", getPlayerStock(playerId, TradeItem.ItemType.material,
+                    com.example.snowisland.util.ItemCatalog.WOOD_MATERIAL_ID));
+            result.put("playerFuelKg", getPlayerStock(playerId, TradeItem.ItemType.material,
+                    com.example.snowisland.util.ItemCatalog.FUEL_MATERIAL_ID));
+            putGiftFavorCaps(result, npcId, playerId);
 
         } catch (Exception e) {
             result.put("success", false);
@@ -306,6 +309,14 @@ public class NpcTradeService {
             }
 
             LocationNpc npc = npcOpt.get();
+            String unavailable = unavailableReason(npc);
+            if (unavailable != null) {
+                result.put("success", false);
+                result.put("message", unavailable);
+                result.put("npcStatus", npc.getStatus());
+                return result;
+            }
+
             int dailyLimit = npc.getDailyTradeLimit() != null ? npc.getDailyTradeLimit() : 1;
             
             long todayTrades = tradeRecordRepository.countTodayTrades(npcId, playerId, currentDay);
@@ -333,6 +344,9 @@ public class NpcTradeService {
             
             double demandDiscount = getDemandDiscountRate(favorValue);
             double supplyBonus = getSupplyBonusRate(favorValue);
+            int[] need = currentRequirements();
+            int requiredFood = need[0];
+            int requiredHeat = need[1];
             logger.debug("交易参数: 好感度={}, 需求折扣率={}, 供给加成率={}", favorValue, demandDiscount, supplyBonus);
             
             List<NpcTradeConfig> demandConfigs = tradeConfigRepository.findByNpcIdAndConfigType(npcId, CONFIG_TYPE_DEMAND);
@@ -357,10 +371,27 @@ public class NpcTradeService {
                 return result;
             }
 
-            if (validSupply.isEmpty()) {
-                logger.warn("交易失败: NPC当前没有可提供的物资, playerId={}, npcId={}", playerId, npcId);
+            List<NpcTradeConfig> stockedSupply = new ArrayList<>();
+            List<Integer> stockedQty = new ArrayList<>();
+            int[] working = currentSurvivalStock(npcId);
+            for (NpcTradeConfig config : validSupply) {
+                TradeItem.ItemType supplyType = parseItemType(config.getItemType());
+                int stock = npcInventoryService.getQuantity(npcId, supplyType, config.getItemId());
+                int sellable = sellableFromWorking(supplyType, config.getItemId(), stock,
+                        working[0], working[1], working[2], requiredFood, requiredHeat);
+                int actualQuantity = Math.min(calculateBonusSupply(config.getQuantity(), supplyBonus), sellable);
+                if (actualQuantity <= 0) {
+                    continue;
+                }
+                deductWorking(working, supplyType, config.getItemId(), actualQuantity);
+                stockedSupply.add(config);
+                stockedQty.add(actualQuantity);
+            }
+
+            if (stockedSupply.isEmpty()) {
+                logger.warn("交易失败: NPC存货不足, playerId={}, npcId={}", playerId, npcId);
                 result.put("success", false);
-                result.put("message", "NPC当前没有可提供的物资");
+                result.put("message", "NPC存货不足，或剩余食物/燃料需留给自己过活");
                 return result;
             }
 
@@ -389,21 +420,24 @@ public class NpcTradeService {
                 actualDemandItems.add(item);
             }
 
-            // 执行物资转移（使用折扣后的实际数量）
             logger.info("开始转移玩家物资...");
-            for (int i = 0; i < validDemand.size(); i++) {
-                NpcTradeConfig config = validDemand.get(i);
+            for (NpcTradeConfig config : validDemand) {
                 int actualQuantity = calculateDiscountedDemand(config.getQuantity(), demandDiscount);
+                if (actualQuantity <= 0) {
+                    continue;
+                }
                 TradeItem.ItemType demandType = parseItemType(config.getItemType());
                 reducePlayerItem(playerId, demandType, config.getItemId(), actualQuantity);
+                npcInventoryService.addItem(npcId, demandType, config.getItemId(), actualQuantity);
             }
 
-            // 给予玩家物资（使用加成后的实际数量）
             logger.info("开始给予玩家物资...");
             List<Map<String, Object>> actualSupplyItems = new ArrayList<>();
-            for (NpcTradeConfig config : validSupply) {
-                int actualQuantity = calculateBonusSupply(config.getQuantity(), supplyBonus);
+            for (int i = 0; i < stockedSupply.size(); i++) {
+                NpcTradeConfig config = stockedSupply.get(i);
+                int actualQuantity = stockedQty.get(i);
                 TradeItem.ItemType supplyType = parseItemType(config.getItemType());
+                npcInventoryService.deductItem(npcId, supplyType, config.getItemId(), actualQuantity);
                 addPlayerItem(playerId, supplyType, config.getItemId(), actualQuantity);
                 Map<String, Object> item = configToMap(config);
                 item.put("originalQuantity", config.getQuantity());
@@ -473,6 +507,13 @@ public class NpcTradeService {
             }
 
             LocationNpc npc = npcOpt.get();
+            String unavailable = unavailableReason(npc);
+            if (unavailable != null) {
+                result.put("success", false);
+                result.put("message", unavailable);
+                return result;
+            }
+
             int favorValue = getFavorValue(npcId, playerId);
 
             // 验证好感度达到最大
@@ -489,28 +530,28 @@ public class NpcTradeService {
                 return result;
             }
 
-            // 获取供给配置作为免费奖励
-            List<NpcTradeConfig> supplyConfigs = tradeConfigRepository.findByNpcIdAndConfigType(npcId, CONFIG_TYPE_SUPPLY);
-            List<NpcTradeConfig> validSupply = supplyConfigs.stream()
-                    .filter(c -> isFavorValid(c, favorValue))
-                    .collect(Collectors.toList());
-
-            if (validSupply.isEmpty()) {
+            int[] need = currentRequirements();
+            List<Map<String, Object>> freeLines = npcTradeProposalService.surplusForFreeReward(
+                    npcId, need[0], need[1]);
+            if (freeLines.isEmpty()) {
                 result.put("success", false);
                 result.put("message", "该NPC暂无可领取的物资");
                 return result;
             }
 
-            // 免费给予玩家基础量物资（挚友特权；不再双倍）
             List<Map<String, Object>> rewardItems = new ArrayList<>();
-            for (NpcTradeConfig config : validSupply) {
-                int rewardQuantity = Math.max(1, config.getQuantity());
-                TradeItem.ItemType supplyType = parseItemType(config.getItemType());
-                addPlayerItem(playerId, supplyType, config.getItemId(), rewardQuantity);
-                Map<String, Object> item = configToMap(config);
+            for (Map<String, Object> line : freeLines) {
+                TradeItem.ItemType supplyType = parseItemType(String.valueOf(line.get("itemType")));
+                int itemId = ((Number) line.get("itemId")).intValue();
+                int rewardQuantity = ((Number) line.get("quantity")).intValue();
+                npcInventoryService.deductItem(npcId, supplyType, itemId, rewardQuantity);
+                addPlayerItem(playerId, supplyType, itemId, rewardQuantity);
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("itemType", supplyType.name());
+                item.put("itemId", itemId);
+                item.put("itemName", getItemName(supplyType, itemId));
+                item.put("quantity", rewardQuantity);
                 item.put("actualQuantity", rewardQuantity);
-                item.put("originalQuantity", config.getQuantity());
-                item.put("bonusRate", 0.0);
                 rewardItems.add(item);
             }
 
@@ -547,6 +588,20 @@ public class NpcTradeService {
      */
     private boolean checkFreeRewardUsed(Integer npcId, Integer playerId, Integer gameDay) {
         return tradeRecordRepository.countFreeRewardToday(npcId, playerId, gameDay) > 0;
+    }
+
+    private int sumGiftFavor(Integer npcId, Integer playerId) {
+        return Math.max(0, tradeRecordRepository.sumGiftFavor(npcId, playerId));
+    }
+
+    private void putGiftFavorCaps(Map<String, Object> result, Integer npcId, Integer playerId) {
+        int total = sumGiftFavor(npcId, playerId);
+        result.put("giftFavorTotal", total);
+        result.put("giftFavorCap", MAX_GIFT_FAVOR);
+        result.put("giftFavorRemaining", Math.max(0, MAX_GIFT_FAVOR - total));
+        result.put("giftFoodPerFavor", GIFT_FOOD_PER_FAVOR);
+        result.put("giftWoodPerFavor", GIFT_WOOD_PER_FAVOR);
+        result.put("giftFuelPerFavor", GIFT_FUEL_PER_FAVOR);
     }
 
     /**
@@ -865,7 +920,7 @@ public class NpcTradeService {
         }
     }
 
-    private int calculateTradeFavorChange(int currentFavor) {
+    public static int calculateTradeFavorChange(int currentFavor) {
         if (currentFavor >= 60) return 1;
         if (currentFavor >= 20) return 2;
         if (currentFavor >= -20) return 3;
@@ -1197,4 +1252,235 @@ public class NpcTradeService {
         }
         return result;
     }
+
+    /**
+     * Gift food / wood / fuel that is not on the demand list, to keep the NPC alive.
+     * Does not consume the daily trade slot.
+     */
+    @Transactional
+    public Map<String, Object> giftSurvival(Integer playerId, Integer npcId,
+                                            int foodUnits, int woodKg, int fuelKg) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        try {
+            if (playerId == null || npcId == null) {
+                result.put("success", false);
+                result.put("message", "参数无效");
+                return result;
+            }
+            Optional<LocationNpc> npcOpt = npcRepository.findById(npcId);
+            if (!npcOpt.isPresent()) {
+                result.put("success", false);
+                result.put("message", "NPC不存在");
+                return result;
+            }
+            LocationNpc npc = npcOpt.get();
+            String unavailable = unavailableReason(npc);
+            if (unavailable != null) {
+                result.put("success", false);
+                result.put("message", unavailable);
+                return result;
+            }
+            foodUnits = Math.max(0, foodUnits);
+            woodKg = Math.max(0, woodKg);
+            fuelKg = Math.max(0, fuelKg);
+            if (foodUnits == 0 && woodKg == 0 && fuelKg == 0) {
+                result.put("success", false);
+                result.put("message", "请至少赠送一项食物、木材或燃料");
+                return result;
+            }
+
+            int favorValue = getFavorValue(npcId, playerId);
+            if (isHostile(favorValue)) {
+                result.put("success", false);
+                result.put("message", "该NPC对你抱有敌意，拒绝接受赠予");
+                return result;
+            }
+
+            if (foodUnits > 0) {
+                int have = getPlayerStock(playerId, TradeItem.ItemType.material,
+                        com.example.snowisland.util.ItemCatalog.FOOD_MATERIAL_ID);
+                if (have < foodUnits) {
+                    result.put("success", false);
+                    result.put("message", "食物不足（需要 " + foodUnits + "，当前 " + have + "）");
+                    return result;
+                }
+            }
+            if (woodKg > 0) {
+                int have = getPlayerStock(playerId, TradeItem.ItemType.material,
+                        com.example.snowisland.util.ItemCatalog.WOOD_MATERIAL_ID);
+                if (have < woodKg) {
+                    result.put("success", false);
+                    result.put("message", "木材不足（需要 " + woodKg + "，当前 " + have + "）");
+                    return result;
+                }
+            }
+            if (fuelKg > 0) {
+                int have = getPlayerStock(playerId, TradeItem.ItemType.material,
+                        com.example.snowisland.util.ItemCatalog.FUEL_MATERIAL_ID);
+                if (have < fuelKg) {
+                    result.put("success", false);
+                    result.put("message", "燃料不足（需要 " + fuelKg + "，当前 " + have + "）");
+                    return result;
+                }
+            }
+
+            if (foodUnits > 0) {
+                reducePlayerItem(playerId, TradeItem.ItemType.material,
+                        com.example.snowisland.util.ItemCatalog.FOOD_MATERIAL_ID, foodUnits);
+                npcInventoryService.addItem(npcId, TradeItem.ItemType.material,
+                        com.example.snowisland.util.ItemCatalog.FOOD_MATERIAL_ID, foodUnits);
+            }
+            if (woodKg > 0) {
+                reducePlayerItem(playerId, TradeItem.ItemType.material,
+                        com.example.snowisland.util.ItemCatalog.WOOD_MATERIAL_ID, woodKg);
+                npcInventoryService.addItem(npcId, TradeItem.ItemType.material,
+                        com.example.snowisland.util.ItemCatalog.WOOD_MATERIAL_ID, woodKg);
+            }
+            if (fuelKg > 0) {
+                reducePlayerItem(playerId, TradeItem.ItemType.material,
+                        com.example.snowisland.util.ItemCatalog.FUEL_MATERIAL_ID, fuelKg);
+                npcInventoryService.addItem(npcId, TradeItem.ItemType.material,
+                        com.example.snowisland.util.ItemCatalog.FUEL_MATERIAL_ID, fuelKg);
+            }
+
+            int currentDay = gameStateService.getCurrentDay();
+            NpcTradeRecord record = new NpcTradeRecord();
+            record.setNpcId(npcId);
+            record.setPlayerId(playerId);
+            record.setGameDay(currentDay);
+            List<Map<String, Object>> given = new ArrayList<>();
+            if (foodUnits > 0) {
+                given.add(giftLine("material", com.example.snowisland.util.ItemCatalog.FOOD_MATERIAL_ID,
+                        "食物", foodUnits));
+            }
+            if (woodKg > 0) {
+                given.add(giftLine("material", com.example.snowisland.util.ItemCatalog.WOOD_MATERIAL_ID,
+                        "木材", woodKg));
+            }
+            if (fuelKg > 0) {
+                given.add(giftLine("material", com.example.snowisland.util.ItemCatalog.FUEL_MATERIAL_ID,
+                        "燃料", fuelKg));
+            }
+            int fromQty = (foodUnits / GIFT_FOOD_PER_FAVOR)
+                    + (woodKg / GIFT_WOOD_PER_FAVOR)
+                    + (fuelKg / GIFT_FUEL_PER_FAVOR);
+            int alreadyGiftFavor = sumGiftFavor(npcId, playerId);
+            int remainingCap = Math.max(0, MAX_GIFT_FAVOR - alreadyGiftFavor);
+            int roomToMax = Math.max(0, 100 - favorValue);
+            int favorChange = Math.min(fromQty, Math.min(remainingCap, roomToMax));
+            int newFavor = favorValue;
+            if (favorChange > 0) {
+                newFavor = Math.min(100, favorValue + favorChange);
+                updateOrCreateFavor(npcId, playerId, newFavor);
+            }
+
+            record.setDemandItems(toJson(given));
+            record.setSupplyItems(toJson(new ArrayList<>()));
+            record.setFavorChange(favorChange);
+            tradeRecordRepository.save(record);
+
+            Optional<Player> playerOpt = playerRepository.findById(playerId);
+            String playerName = playerOpt.map(Player::getName).orElse("玩家" + playerId);
+            activityLogService.log(currentDay, playerId, playerName,
+                    ActivityLogService.factionOf(playerOpt.orElse(null)),
+                    ActivityLogService.CAT_TRADE,
+                    "赠予 " + npc.getName() + " 食" + foodUnits + " 木" + woodKg + " 燃" + fuelKg
+                            + (favorChange > 0 ? " 好感+" + favorChange : ""),
+                    null);
+
+            String message = "已将物资交给" + npc.getName();
+            if (favorChange > 0) {
+                message += "（好感+" + favorChange + "）";
+            } else if (fromQty > 0 && remainingCap <= 0) {
+                message += "（送礼好感已达上限，物资仍已转交）";
+            }
+
+            result.put("success", true);
+            result.put("message", message);
+            result.put("giftItems", given);
+            result.put("favorChange", favorChange);
+            result.put("newFavor", newFavor);
+            result.putAll(npcInventoryService.survivalSnapshot(npcId, currentRequirements()[0], currentRequirements()[1]));
+            putGiftFavorCaps(result, npcId, playerId);
+        } catch (RuntimeException e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+        return result;
+    }
+
+    private static Map<String, Object> giftLine(String itemType, int itemId, String name, int qty) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("itemType", itemType);
+        row.put("itemId", itemId);
+        row.put("itemName", name);
+        row.put("quantity", qty);
+        row.put("actualQuantity", qty);
+        return row;
+    }
+
+    private String unavailableReason(LocationNpc npc) {
+        String status = npc.getStatus() != null ? npc.getStatus() : NpcSurvivalMath.STATUS_NORMAL;
+        if (NpcSurvivalMath.STATUS_DEAD.equals(status)) {
+            return "对方已经死去，无法交易";
+        }
+        if (NpcSurvivalMath.STATUS_MISSING.equals(status)) {
+            return "找不到此人，无法交易";
+        }
+        if (NpcSurvivalMath.STATUS_ARRESTED.equals(status)) {
+            return "对方已被捕，无法交易";
+        }
+        return null;
+    }
+
+    private int[] currentRequirements() {
+        int day = gameStateService.getCurrentDay();
+        GameDaySettings settings = playerConsumptionService.getOrCreateDaySettings(Math.max(1, day));
+        int food = settings.getRequiredFoodUnits() != null
+                ? settings.getRequiredFoodUnits() : PlayerConsumptionService.DEFAULT_FOOD_UNITS;
+        int heat = settings.getRequiredFuelKg() != null
+                ? settings.getRequiredFuelKg() : PlayerConsumptionService.DEFAULT_FUEL_KG;
+        return new int[]{food, heat};
+    }
+
+    private int[] currentSurvivalStock(Integer npcId) {
+        return new int[]{
+                npcInventoryService.getMaterialKg(npcId, com.example.snowisland.util.ItemCatalog.FOOD_MATERIAL_ID),
+                npcInventoryService.getMaterialKg(npcId, com.example.snowisland.util.ItemCatalog.WOOD_MATERIAL_ID),
+                npcInventoryService.getMaterialKg(npcId, com.example.snowisland.util.ItemCatalog.FUEL_MATERIAL_ID)
+        };
+    }
+
+    private static int sellableFromWorking(TradeItem.ItemType itemType, Integer itemId, int stock,
+                                           int food, int wood, int fuel,
+                                           int requiredFood, int requiredHeat) {
+        if (itemType != TradeItem.ItemType.material || itemId == null) {
+            return stock;
+        }
+        if (itemId == com.example.snowisland.util.ItemCatalog.FOOD_MATERIAL_ID) {
+            return Math.min(stock, NpcSurvivalMath.sellableFood(food, requiredFood));
+        }
+        if (itemId == com.example.snowisland.util.ItemCatalog.WOOD_MATERIAL_ID) {
+            return Math.min(stock, NpcSurvivalMath.sellableWood(wood, fuel, requiredHeat));
+        }
+        if (itemId == com.example.snowisland.util.ItemCatalog.FUEL_MATERIAL_ID) {
+            return Math.min(stock, NpcSurvivalMath.sellableFuel(wood, fuel, requiredHeat));
+        }
+        return stock;
+    }
+
+    private static void deductWorking(int[] working, TradeItem.ItemType itemType, Integer itemId, int qty) {
+        if (itemType != TradeItem.ItemType.material || itemId == null) {
+            return;
+        }
+        if (itemId == com.example.snowisland.util.ItemCatalog.FOOD_MATERIAL_ID) {
+            working[0] = Math.max(0, working[0] - qty);
+        } else if (itemId == com.example.snowisland.util.ItemCatalog.WOOD_MATERIAL_ID) {
+            working[1] = Math.max(0, working[1] - qty);
+        } else if (itemId == com.example.snowisland.util.ItemCatalog.FUEL_MATERIAL_ID) {
+            working[2] = Math.max(0, working[2] - qty);
+        }
+    }
 }
+

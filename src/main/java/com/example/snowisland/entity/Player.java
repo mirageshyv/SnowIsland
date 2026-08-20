@@ -59,8 +59,14 @@ public class Player {
     @Column(name = "hidden_job_id")
     private Integer hiddenJobId;
 
+    @Column(name = "trade_banned")
+    private Boolean tradeBanned = false;
+
+    @Column(name = "is_bound")
+    private Boolean isBound = false;
+
     public enum Faction {
-        统治者, 反叛者, 冒险者, 天灾使者, 平民
+        统治者, 反叛者, 冒险者, 天灾使者, 平民, 外来者, 原住民
     }
 
     @PrePersist
@@ -124,4 +130,10 @@ public class Player {
     @JsonIgnore
     public Integer getHiddenJobId() { return hiddenJobId; }
     public void setHiddenJobId(Integer hiddenJobId) { this.hiddenJobId = hiddenJobId; }
+
+    public Boolean getTradeBanned() { return tradeBanned; }
+    public void setTradeBanned(Boolean tradeBanned) { this.tradeBanned = tradeBanned; }
+
+    public Boolean getIsBound() { return isBound; }
+    public void setIsBound(Boolean isBound) { this.isBound = isBound; }
 }

@@ -182,6 +182,7 @@
 import { ref, computed, reactive, onMounted } from 'vue'
 import { loreAPI, playerAPI } from '@/utils/api.js'
 import { LORE_DISCOVERY_WARNING } from '@/data/loreDocuments.js'
+import mapImageUrl from '@/assets/小镇地图.png?url'
 
 const props = defineProps({
   embedded: { type: Boolean, default: false },
@@ -246,26 +247,13 @@ const defaultRules = {
 }
 
 const tabs = computed(() => {
-  const fixedTabs = [
+  // 规则正文已归档：玩家/DM 规则书只保留地图与线索文献。defaultRules 仍留在代码中备查。
+  return [
     { key: 'map', label: '海岛地图' },
     { key: 'lore', label: '线索文献' }
   ]
-  const sectionKeys = Object.keys(rules.value).filter(k => {
-    const arr = rules.value[k]
-    if (!Array.isArray(arr) || arr.length === 0) return false
-    // Permission filtering
-    if (isDm.value) return true // DM sees everything
-    // 天灾牌: only 天灾使者 can see
-    if (k === '天灾牌' && props.playerFaction !== '天灾使者') return false
-    // 方舟建造: only 冒险者 can see
-    if (k === '方舟建造' && props.playerFaction !== '冒险者') return false
-    return true
-  })
-  const sectionTabs = sectionKeys.map(key => ({ key, label: key }))
-  return [...fixedTabs, ...sectionTabs]
 })
 
-const mapImageUrl = '/src/assets/小镇地图.png'
 const locations = [
   { name: '镇长厅', icon: '🏛️', desc: '统治者办公地点' },
   { name: '警察局', icon: '🏢', desc: '维持治安' },

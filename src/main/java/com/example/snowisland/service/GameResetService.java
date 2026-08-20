@@ -1,5 +1,6 @@
 package com.example.snowisland.service;
 
+import com.example.snowisland.entity.EventPack;
 import com.example.snowisland.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -124,6 +126,39 @@ public class GameResetService {
     private NpcTradeRecordRepository npcTradeRecordRepository;
 
     @Autowired
+    private NpcTradeProposalRepository npcTradeProposalRepository;
+
+    @Autowired
+    private NpcItemRepository npcItemRepository;
+
+    @Autowired
+    private NpcDailyConsumptionRepository npcDailyConsumptionRepository;
+
+    @Autowired
+    private PlayerNotebookRepository playerNotebookRepository;
+
+    @Autowired
+    private NpcDialogueRepository npcDialogueRepository;
+
+    @Autowired
+    private NpcFavorAdjustmentRepository npcFavorAdjustmentRepository;
+
+    @Autowired
+    private PlayerMarkerRepository playerMarkerRepository;
+
+    @Autowired
+    private IslandEventRepository islandEventRepository;
+
+    @Autowired
+    private EventPackRepository eventPackRepository;
+
+    @Autowired
+    private NpcInventoryService npcInventoryService;
+
+    @Autowired
+    private NpcRosterService npcRosterService;
+
+    @Autowired
     private ArkRequiredSkillRepository arkRequiredSkillRepository;
 
     @Autowired
@@ -131,6 +166,9 @@ public class GameResetService {
 
     @Autowired
     private CatastropheService catastropheService;
+
+    @Autowired
+    private WarehouseService warehouseService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -145,42 +183,50 @@ public class GameResetService {
             return result;
         }
 
+        logger.info("=== 开始执行游戏数据重置 ===");
+        LocalDateTime startTime = LocalDateTime.now();
+
+        Map<String, Object> deletedCounts = new LinkedHashMap<>();
+
+        setForeignKeyChecks(false);
         try {
-            logger.info("=== 开始执行游戏数据重置 ===");
-            LocalDateTime startTime = LocalDateTime.now();
-
-            Map<String, Object> deletedCounts = new LinkedHashMap<>();
-
+            unlinkUsersFromPlayers();
             deleteFirstLevel(deletedCounts);
             deleteSecondLevel(deletedCounts);
             deleteThirdLevel(deletedCounts);
             deleteFourthLevel(deletedCounts);
             deleteFifthLevel(deletedCounts);
-
             entityManager.flush();
             entityManager.clear();
-
-            initializeInitialData(deletedCounts);
-
-            LocalDateTime endTime = LocalDateTime.now();
-
-            result.put("success", true);
-            result.put("message", "游戏数据已成功恢复至初始状态");
-            result.put("deletedCounts", deletedCounts);
-            result.put("startTime", startTime.toString());
-            result.put("endTime", endTime.toString());
-            result.put("durationMs", java.time.Duration.between(startTime, endTime).toMillis());
-
-            logger.info("=== 游戏数据重置完成 ===");
-
-            return result;
-
-        } catch (Exception e) {
-            logger.error("游戏数据重置失败", e);
-            result.put("success", false);
-            result.put("message", "重置失败: " + e.getMessage());
-            return result;
+        } finally {
+            setForeignKeyChecks(true);
         }
+
+        initializeInitialData(deletedCounts);
+
+        LocalDateTime endTime = LocalDateTime.now();
+
+        result.put("success", true);
+        result.put("message", "游戏数据已成功恢复至初始状态");
+        result.put("deletedCounts", deletedCounts);
+        result.put("startTime", startTime.toString());
+        result.put("endTime", endTime.toString());
+        result.put("durationMs", java.time.Duration.between(startTime, endTime).toMillis());
+
+        logger.info("=== 游戏数据重置完成 ===");
+        return result;
+    }
+
+    private void unlinkUsersFromPlayers() {
+        int updated = entityManager.createNativeQuery(
+                "UPDATE user SET player_id = NULL WHERE player_id IS NOT NULL"
+        ).executeUpdate();
+        logger.info("已解除 user.player_id 关联: {} 行", updated);
+    }
+
+    private void setForeignKeyChecks(boolean enabled) {
+        entityManager.createNativeQuery("SET FOREIGN_KEY_CHECKS = " + (enabled ? "1" : "0"))
+                .executeUpdate();
     }
 
     private void deleteFirstLevel(Map<String, Object> deletedCounts) {
@@ -195,11 +241,16 @@ public class GameResetService {
         deleteTable("faction_action", factionActionRepository);
         deleteTable("night_action", nightActionRepository);
         deleteTable("quick_interaction", quickInteractionRepository);
+        deleteTable("player_notebook", playerNotebookRepository);
+        deleteTable("npc_dialogue", npcDialogueRepository);
+        deleteTable("npc_favor_adjustment", npcFavorAdjustmentRepository);
+        deleteTable("player_marker", playerMarkerRepository);
 
-        deleteTable("trade_item", tradeItemRepository);
+        deleteTable("trade_items", tradeItemRepository);
         deleteTable("trade", tradeRepository);
 
         deleteTable("npc_help_record", npcHelpRecordRepository);
+        deleteTable("npc_trade_proposal", npcTradeProposalRepository);
         deleteTable("npc_trade_record", npcTradeRecordRepository);
 
         deleteTable("lore_player_grant", lorePlayerGrantRepository);
@@ -211,7 +262,7 @@ public class GameResetService {
 
     private void deleteSecondLevel(Map<String, Object> deletedCounts) {
         deleteTable("player_daily_consumption", playerDailyConsumptionRepository);
-        deleteTable("player_item", playerItemRepository);
+        deleteTable("player_items", playerItemRepository);
 
         deleteTable("drawn_cards", drawnCardsRepository);
         deleteTable("selected_catastrophe", selectedCatastropheRepository);
@@ -224,6 +275,8 @@ public class GameResetService {
         deleteTable("npc_daily_dialogue_count", npcDailyDialogueCountRepository);
         deleteTable("npc_daily_trade_count", npcDailyTradeCountRepository);
         deleteTable("npc_favor", npcFavorRepository);
+        deleteTable("npc_items", npcItemRepository);
+        deleteTable("npc_daily_consumption", npcDailyConsumptionRepository);
 
         deletedCounts.put("第二级（依赖player或无关键依赖）", "已清除");
     }
@@ -285,6 +338,27 @@ public class GameResetService {
         logger.info("开始初始化初始数据...");
 
         try {
+            int milestones = milestoneRepository.resetAllCompletion();
+            deletedCounts.put("重置里程碑完成状态", "完成（" + milestones + "）");
+        } catch (Exception e) {
+            logger.warn("重置里程碑完成状态失败: {}", e.getMessage());
+        }
+
+        try {
+            int events = islandEventRepository.resetAllTriggered();
+            deletedCounts.put("重置探索事件触发标记", "完成（" + events + "）");
+        } catch (Exception e) {
+            logger.warn("重置探索事件触发标记失败: {}", e.getMessage());
+        }
+
+        try {
+            resetEventPackEnabledDefaults();
+            deletedCounts.put("重置事件包启用状态", "完成（仅基础包开启）");
+        } catch (Exception e) {
+            logger.warn("重置事件包启用状态失败: {}", e.getMessage());
+        }
+
+        try {
             arkService.initializeProgress();
             deletedCounts.put("初始化方舟建造进度", "完成");
         } catch (Exception e) {
@@ -300,13 +374,8 @@ public class GameResetService {
         }
 
         try {
-            executeNativeDelete("warehouse_ark");
-            executeNativeDelete("warehouse_armory");
-            executeNativeDelete("warehouse_dock");
-            executeNativeDelete("warehouse_fuel");
-            executeNativeDelete("warehouse_general");
-            executeNativeDelete("warehouse_rebel");
-            deletedCounts.put("初始化仓库数据", "完成");
+            int seeded = warehouseService.seedInitialInventories();
+            deletedCounts.put("初始化仓库数据", "完成（" + seeded + " 种物资）");
         } catch (Exception e) {
             logger.warn("初始化仓库数据失败: {}", e.getMessage());
         }
@@ -318,7 +387,24 @@ public class GameResetService {
             logger.warn("初始化天灾牌组失败: {}", e.getMessage());
         }
 
+        try {
+            int synced = npcRosterService.resetToCanonical();
+            int seeded = npcInventoryService.seedAllEmptyInventories();
+            deletedCounts.put("初始化NPC", "完成（" + synced + " 人，背包 " + seeded + " 种物资）");
+        } catch (Exception e) {
+            logger.warn("初始化NPC失败: {}", e.getMessage());
+        }
+
         logger.info("初始数据初始化完成");
+    }
+
+    private void resetEventPackEnabledDefaults() {
+        List<EventPack> packs = eventPackRepository.findAll();
+        for (EventPack pack : packs) {
+            boolean enable = EventPack.PACK_BASE.equals(pack.getName());
+            pack.setEnabled(enable);
+            eventPackRepository.save(pack);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -366,7 +452,10 @@ public class GameResetService {
                 "trade", "trade_item", "faction_action", "night_action", "quick_interaction",
                 "lore_player_grant", "clue_trigger_log", "milestone_player_status",
                 "location_governance", "npc_daily_dialogue_count", "npc_daily_trade_count",
-                "npc_favor", "npc_help_record", "npc_trade_record", "ark_required_skill"
+                "npc_favor", "npc_help_record", "npc_trade_proposal", "npc_trade_record", "ark_required_skill",
+                "npc_items", "npc_daily_consumption", "player_notebook",
+                "npc_dialogue", "npc_favor_adjustment", "player_marker",
+                "milestone.is_completed", "island_event.triggered", "event_pack.enabled"
         };
     }
 
@@ -375,9 +464,9 @@ public class GameResetService {
                 "user", "item", "weapon", "ammo", "material", "skill", "job", "job_initial_items",
                 "rule_book", "island_event", "island_event_reward", "special_clue",
                 "location", "location_facility", "location_npc",
-                "npc_dialogue", "npc_favor_adjustment", "npc_help_config", "npc_trade_config",
+                "npc_help_config", "npc_trade_config",
                 "warehouse_config", "ark_config", "milestone", "catastrophe_card",
-                "endgame_ark_event", "endgame_shelter_event"
+                "event_pack", "endgame_ark_event", "endgame_shelter_event"
         };
     }
 }

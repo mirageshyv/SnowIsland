@@ -12,6 +12,7 @@ import FactionActionFeedbackView from './FactionActionFeedbackView.vue'
 import NightActionSettlementView from './NightActionSettlementView.vue'
 import QuickInteractionFeedbackView from './QuickInteractionFeedbackView.vue'
 import DmPlayerInventoryView from './DmPlayerInventoryView.vue'
+import DmPlayerNotebookView from './DmPlayerNotebookView.vue'
 import DmCombatAssistView from './DmCombatAssistView.vue'
 import GameSettingsView from './GameSettingsView.vue'
 import DmItemCodexView from './DmItemCodexView.vue'
@@ -34,14 +35,76 @@ import { useSidebar } from '../composables/useSidebar.js'
 
 const { collapsed, mobileOpen, isMobile, toggle: toggleSidebar, closeMobile, sidebarVisible } = useSidebar()
 
-const FACTIONS = ['统治者', '反叛者', '冒险者', '天灾使者', '平民']
-/** 创建玩家时可选的四个阵营 */
-const CREATE_FACTIONS = ['统治者', '反叛者', '冒险者', '天灾使者', '平民']
+const FACTIONS = ['统治者', '反叛者', '冒险者', '天灾使者', '平民', '外来者', '原住民']
+/** 创建玩家时可选阵营 */
+const CREATE_FACTIONS = ['统治者', '反叛者', '冒险者', '天灾使者', '平民', '外来者', '原住民']
 
 const router = useRouter()
 const username = localStorage.getItem('username') || ''
 const activeTab = ref('players')
 const inventoryInitialPlayerId = ref(null)
+
+const DM_NAV = [
+  { type: 'item', key: 'players', icon: '👥', label: '玩家管理' },
+  { type: 'item', key: 'settings', icon: '⚙️', label: '游戏设置' },
+  { type: 'item', key: 'codex', icon: '📚', label: '图鉴' },
+  {
+    type: 'folder',
+    id: 'settlement',
+    icon: '📅',
+    label: '每日行动结算',
+    children: [
+      { key: 'actionFeedback', icon: '📋', label: '行动反馈' },
+      { key: 'factionActionFeedback', icon: '🏴', label: '阵营行动反馈' },
+      { key: 'nightActionSettlement', icon: '🌙', label: '夜晚行动结算' },
+      { key: 'explorationSettlement', icon: '🗺️', label: '探索岛屿结算' },
+      { key: 'quickInteractionFeedback', icon: '💬', label: '快速交互反馈' },
+    ],
+  },
+  { type: 'item', key: 'combatAssist', icon: '⚔️', label: '战斗辅助' },
+  { type: 'item', key: 'inventories', icon: '🎒', label: '玩家背包' },
+  { type: 'item', key: 'playerNotebook', icon: '📓', label: '玩家笔记本' },
+  { type: 'item', key: 'warehouse', icon: '📦', label: '仓库管理' },
+  { type: 'item', key: 'trades', icon: '🤝', label: '交易一览' },
+  {
+    type: 'folder',
+    id: 'factionPage',
+    icon: '🏰',
+    label: '阵营页面',
+    children: [
+      { key: 'shelter', icon: '🏠', label: '统治者避难所' },
+      { key: 'ark', icon: '🚢', label: '方舟建造进度' },
+      { key: 'milestones', icon: '🏁', label: '里程碑管理' },
+      { key: 'catastrophe', icon: '⛈️', label: '天灾降临' },
+    ],
+  },
+  { type: 'item', key: 'endgame', icon: '🏁', label: '终局结算' },
+  { type: 'item', key: 'logs', icon: '📜', label: '系统日志' },
+  { type: 'item', key: 'npc', icon: '👥', label: 'NPC 管理' },
+  { type: 'item', key: 'reset', icon: '🔄', label: '游戏重置' },
+  { type: 'item', key: 'game', icon: '🎮', label: '小游戏' },
+  { type: 'item', key: 'ruleBook', icon: '📖', label: '规则书' },
+]
+
+const folderOpen = reactive({ settlement: false, factionPage: false })
+
+function isFolderActive(folder) {
+  return folder.children.some((child) => child.key === activeTab.value)
+}
+
+function toggleFolder(id) {
+  if (!isMobile.value && collapsed.value) {
+    collapsed.value = false
+    folderOpen[id] = true
+    return
+  }
+  folderOpen[id] = !folderOpen[id]
+}
+
+function selectDmTab(key) {
+  activeTab.value = key
+  if (isMobile.value) closeMobile()
+}
 
 const playerList = ref([])
 const jobs = ref([])
@@ -85,6 +148,7 @@ const createForm = reactive({
   isWeak: false,
   isOverworked: false,
   isInjured: 0,
+  isBound: false,
   dmNotes: '',
   hiddenJobId: ''
 })
@@ -130,15 +194,21 @@ function normalizePlayer(raw) {
     dailyConsumptionMet: Boolean(raw.dailyConsumptionMet),
     dmNotes: raw.dmNotes ?? raw.dm_notes ?? '',
     hiddenJobId: raw.hiddenJobId ?? raw.hidden_job_id ?? null,
-    hiddenJobName: raw.hiddenJobName ?? raw.hidden_job_name ?? ''
+    hiddenJobName: raw.hiddenJobName ?? raw.hidden_job_name ?? '',
+    tradeBanned: Boolean(raw.tradeBanned ?? raw.trade_banned),
+    isBound: Boolean(raw.isBound ?? raw.is_bound),
+    tradeBanReasons: Array.isArray(raw.tradeBanReasons) ? raw.tradeBanReasons : [],
+    tradeBanActive: Boolean(raw.tradeBanActive)
   }
 }
 
-/** 阵营专属特性 + 平民特性（全员可选） */
+/** 阵营专属特性 + 平民特性（全员可选）；外来者/原住民与平民相同 */
+const CIVILIAN_LIKE_FACTIONS = new Set(['平民', '外来者', '原住民'])
 const skillsForFaction = (faction) => {
   return skills.value.filter((s) => {
     const f = s.faction
     if (!f || f === '平民') return true
+    if (CIVILIAN_LIKE_FACTIONS.has(faction)) return false
     return faction ? f === faction : true
   })
 }
@@ -171,7 +241,9 @@ const getFactionColor = (faction) => {
     反叛者: 'text-red-400 bg-red-500/20',
     冒险者: 'text-emerald-400 bg-emerald-500/20',
     天灾使者: 'text-purple-400 bg-purple-500/20',
-    平民: 'text-gray-400 bg-gray-500/20'
+    平民: 'text-gray-400 bg-gray-500/20',
+    外来者: 'text-teal-400 bg-teal-500/20',
+    原住民: 'text-lime-400 bg-lime-500/20'
   }
   return colors[faction] || colors['平民']
 }
@@ -183,8 +255,42 @@ const getStatusBadges = (player) => {
   if (player.isInjured === 3) badges.push({ text: '死亡', color: 'text-gray-400 bg-gray-600/30' })
   else if (player.isInjured === 2) badges.push({ text: '重伤', color: 'text-red-300 bg-red-600/30' })
   else if (player.isInjured === 1) badges.push({ text: '受伤', color: 'text-red-400 bg-red-500/20' })
+  if (player.isBound) badges.push({ text: '束缚', color: 'text-orange-300 bg-orange-600/25' })
   if (badges.length === 0) badges.push({ text: '健康', color: 'text-emerald-400 bg-emerald-500/20' })
   return badges
+}
+
+function autoTradeBanReasons(player) {
+  return (player.tradeBanReasons || []).filter((r) => r && r !== '手动禁止')
+}
+
+function tradeBanHint(player) {
+  const auto = autoTradeBanReasons(player)
+  if (auto.length) return `自动禁止：${auto.join('；')}（勾选为手动覆盖）`
+  return '勾选后手动禁止该玩家交易'
+}
+
+async function toggleTradeBanned(player, event) {
+  const next = Boolean(event?.target?.checked)
+  const prev = Boolean(player.tradeBanned)
+  player.tradeBanned = next
+  savingPlayer.value = true
+  try {
+    const result = await dmPlayerAPI.update(player.id, { tradeBanned: next })
+    if (result?.success) {
+      await loadPlayers()
+    } else {
+      player.tradeBanned = prev
+      if (event?.target) event.target.checked = prev
+      alert(result?.message || '更新禁止交易失败')
+    }
+  } catch (e) {
+    player.tradeBanned = prev
+    if (event?.target) event.target.checked = prev
+    alert('更新禁止交易失败: ' + (e.message || '未知错误'))
+  } finally {
+    savingPlayer.value = false
+  }
 }
 
 function getPlayerMarkers(playerId) {
@@ -346,6 +452,7 @@ function openEditModal(player) {
     isWeak: player.isWeak,
     isOverworked: player.isOverworked,
     isInjured: player.isInjured ?? 0,
+    isBound: Boolean(player.isBound),
     dmNotes: player.dmNotes ?? '',
     hiddenJobId: player.hiddenJobId ?? ''
   }
@@ -398,6 +505,7 @@ function openCreateModal() {
   createForm.isWeak = false
   createForm.isOverworked = false
   createForm.isInjured = 0
+  createForm.isBound = false
   createForm.dmNotes = ''
   createForm.hiddenJobId = ''
   createStartingItems.value = []
@@ -423,6 +531,7 @@ async function saveEditPlayer() {
       isWeak: editingPlayer.value.isWeak,
       isOverworked: editingPlayer.value.isOverworked,
       isInjured: editingPlayer.value.isInjured,
+      isBound: Boolean(editingPlayer.value.isBound),
       isSeverelyInjured: editingPlayer.value.isSeverelyInjured,
       isDead: editingPlayer.value.isDead,
       loginUsername: editingPlayer.value.loginUsername?.trim() || undefined,
@@ -473,6 +582,7 @@ async function createPlayer() {
       isWeak: createForm.isWeak,
       isOverworked: createForm.isOverworked,
       isInjured: createForm.isInjured,
+      isBound: Boolean(createForm.isBound),
       isSeverelyInjured: createForm.isSeverelyInjured,
       isDead: createForm.isDead,
       loginUsername: createForm.loginUsername.trim(),
@@ -525,6 +635,11 @@ async function handleDelete(player) {
 }
 
 watch(activeTab, (tab) => {
+  for (const item of DM_NAV) {
+    if (item.type === 'folder' && item.children.some((child) => child.key === tab)) {
+      folderOpen[item.id] = true
+    }
+  }
   if (tab === 'players' && playerList.value.length === 0 && !playersLoading.value) {
     refreshPlayers()
   }
@@ -605,38 +720,58 @@ onMounted(() => {
       </div>
 
       <nav class="min-h-0 flex-1 overflow-y-auto py-2" :class="isMobile ? 'p-4' : (collapsed ? 'px-1' : 'p-4')">
-        <button v-for="tab in [
-          { key: 'players', icon: '👥', label: '玩家管理' },
-          { key: 'settings', icon: '⚙️', label: '游戏设置' },
-          { key: 'codex', icon: '📚', label: '图鉴' },
-          { key: 'ruleBook', icon: '📖', label: '规则书' },
-          { key: 'actionFeedback', icon: '📋', label: '📋 行动反馈' },
-          { key: 'factionActionFeedback', icon: '🏴', label: '阵营行动反馈' },
-          { key: 'nightActionSettlement', icon: '🌙', label: '夜晚行动结算' },
-          { key: 'explorationSettlement', icon: '🗺️', label: '探索岛屿结算' },
-          { key: 'quickInteractionFeedback', icon: '💬', label: '快速交互反馈' },
-          { key: 'combatAssist', icon: '⚔️', label: '战斗辅助' },
-          { key: 'inventories', icon: '🎒', label: '玩家背包' },
-          { key: 'warehouse', icon: '📦', label: '📦 仓库管理' },
-          { key: 'trades', icon: '🤝', label: '交易一览' },
-          { key: 'shelter', icon: '🏠', label: '统治者避难所' },
-          { key: 'ark', icon: '🚢', label: '方舟建造进度' },
-          { key: 'milestones', icon: '🏁', label: '里程碑管理' },
-          { key: 'catastrophe', icon: '⛈️', label: '天灾降临' },
-          { key: 'endgame', icon: '🏁', label: '终局结算' },
-          { key: 'logs', icon: '📜', label: '系统日志' },
-          { key: 'npc', icon: '👥', label: 'NPC 管理' },
-          { key: 'reset', icon: '🔄', label: '游戏重置' },
-          { key: 'game', icon: '🎮', label: '小游戏' }
-        ]" :key="tab.key"
-          type="button"
-          class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
-          :class="[activeTab === tab.key ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300', (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center']"
-          :title="(!isMobile && collapsed) ? tab.label : ''"
-          @click="activeTab = tab.key; isMobile && closeMobile()"
-        >
-          <span v-if="!isMobile && collapsed">{{ tab.icon }}</span><span v-else>{{ tab.label }}</span>
-        </button>
+        <template v-for="item in DM_NAV" :key="item.id || item.key">
+          <button
+            v-if="item.type === 'item'"
+            type="button"
+            class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[44px]"
+            :class="[activeTab === item.key ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300', (isMobile || !collapsed) ? 'px-4 py-3' : 'px-2 py-3 flex items-center justify-center']"
+            :title="(!isMobile && collapsed) ? item.label : ''"
+            @click="selectDmTab(item.key)"
+          >
+            <span v-if="!isMobile && collapsed">{{ item.icon }}</span><span v-else>{{ item.label }}</span>
+          </button>
+          <div v-else class="mb-1">
+            <button
+              type="button"
+              class="w-full text-left rounded-xl transition-colors font-medium min-h-[44px] flex items-center"
+              :class="[
+                isFolderActive(item)
+                  ? (folderOpen[item.id] && (isMobile || !collapsed) ? 'text-white' : 'bg-[#2d4263] text-white')
+                  : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300',
+                (isMobile || !collapsed) ? 'px-4 py-3 justify-between' : 'px-2 py-3 justify-center'
+              ]"
+              :title="(!isMobile && collapsed) ? item.label : ''"
+              @click="toggleFolder(item.id)"
+            >
+              <span v-if="!isMobile && collapsed">{{ item.icon }}</span>
+              <span v-else>{{ item.label }}</span>
+              <svg
+                v-if="isMobile || !collapsed"
+                class="w-4 h-4 shrink-0 transition-transform duration-200"
+                :class="folderOpen[item.id] ? 'rotate-90' : ''"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <div v-if="folderOpen[item.id] && (isMobile || !collapsed)" class="ml-3 mt-1 border-l border-white/10 pl-2">
+              <button
+                v-for="child in item.children"
+                :key="child.key"
+                type="button"
+                class="w-full text-left rounded-xl mb-1 transition-colors font-medium min-h-[40px] px-3 py-2 text-sm"
+                :class="activeTab === child.key ? 'bg-[#2d4263] text-white' : 'text-gray-400 hover:bg-[#151b2e] hover:text-gray-300'"
+                @click="selectDmTab(child.key)"
+              >
+                {{ child.label }}
+              </button>
+            </div>
+          </div>
+        </template>
       </nav>
 
       <div class="shrink-0 border-t border-[#1f2937] p-3">
@@ -717,11 +852,7 @@ onMounted(() => {
                 class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-gray-200 text-sm focus:outline-none focus:border-blue-500/50"
               >
                 <option value="">全部阵营</option>
-                <option value="统治者">统治者</option>
-                <option value="反叛者">反叛者</option>
-                <option value="冒险者">冒险者</option>
-                <option value="天灾使者">天灾使者</option>
-                <option value="平民">平民</option>
+                <option v-for="f in FACTIONS" :key="f" :value="f">{{ f }}</option>
               </select>
             </div>
             <div class="flex gap-2 items-center">
@@ -760,6 +891,7 @@ onMounted(() => {
                   <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">状态</th>
                   <th class="text-left text-gray-400 text-xs font-medium px-2 py-4 max-w-[80px]">备注</th>
                   <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">当日需求</th>
+                  <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">禁止交易</th>
                   <th class="text-left text-gray-400 text-xs font-medium px-4 py-4">操作</th>
                 </tr>
               </thead>
@@ -824,6 +956,25 @@ onMounted(() => {
                       class="text-red-400 text-sm font-bold"
                       title="未满足当日进食与取暖需求"
                     >✗</span>
+                  </td>
+                  <td class="px-4 py-4">
+                    <label
+                      class="inline-flex items-center gap-1.5 cursor-pointer"
+                      :title="tradeBanHint(player)"
+                    >
+                      <input
+                        type="checkbox"
+                        class="rounded"
+                        :checked="player.tradeBanned"
+                        :disabled="savingPlayer"
+                        @change="toggleTradeBanned(player, $event)"
+                      />
+                      <span
+                        v-if="autoTradeBanReasons(player).length"
+                        class="text-[10px] text-red-400/80 max-w-[72px] truncate"
+                        :title="autoTradeBanReasons(player).join('；')"
+                      >{{ autoTradeBanReasons(player).join('；') }}</span>
+                    </label>
                   </td>
                   <td class="px-4 py-4">
                     <div class="flex gap-2">
@@ -900,6 +1051,7 @@ onMounted(() => {
               <div class="flex flex-wrap gap-4 text-sm text-gray-300">
                 <label class="flex items-center gap-2"><input v-model="editingPlayer.isWeak" type="checkbox" class="rounded" />虚弱</label>
                 <label class="flex items-center gap-2"><input v-model="editingPlayer.isOverworked" type="checkbox" class="rounded" />过劳</label>
+                <label class="flex items-center gap-2"><input v-model="editingPlayer.isBound" type="checkbox" class="rounded" />束缚</label>
                 <label class="flex items-center gap-2">
                   <span class="text-gray-300">身体状态</span>
                   <select v-model.number="editingPlayer.isInjured" class="bg-black/30 border border-white/10 rounded px-2 py-1 text-white text-sm">
@@ -918,12 +1070,12 @@ onMounted(() => {
                 </select>
               </div>
               <div>
-                <label class="block text-gray-400 text-xs mb-1">秘密身份 / DM备注（玩家不可见）</label>
+                <label class="block text-gray-400 text-xs mb-1">DM备注（玩家不可见）</label>
                 <textarea
                   v-model="editingPlayer.dmNotes"
                   rows="3"
                   class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm resize-y"
-                  placeholder="例如：原住民 / 外来者 等隐藏身份"
+                  placeholder="内部备注，例如开局互认地点、飞机残骸位置等"
                 />
               </div>
               <div>
@@ -1072,6 +1224,7 @@ onMounted(() => {
               <div class="flex flex-wrap gap-4 text-sm text-gray-300">
                 <label class="flex items-center gap-2"><input v-model="createForm.isWeak" type="checkbox" class="rounded" />虚弱</label>
                 <label class="flex items-center gap-2"><input v-model="createForm.isOverworked" type="checkbox" class="rounded" />过劳</label>
+                <label class="flex items-center gap-2"><input v-model="createForm.isBound" type="checkbox" class="rounded" />束缚</label>
                 <label class="flex items-center gap-2">
                   <span class="text-gray-300">身体状态</span>
                   <select v-model.number="createForm.isInjured" class="bg-black/30 border border-white/10 rounded px-2 py-1 text-white text-sm">
@@ -1093,18 +1246,19 @@ onMounted(() => {
                 </select>
               </div>
               <div>
-                <label class="block text-gray-400 text-xs mb-1">秘密身份 / DM备注（玩家不可见）</label>
+                <label class="block text-gray-400 text-xs mb-1">DM备注（玩家不可见）</label>
                 <textarea
                   v-model="createForm.dmNotes"
                   rows="3"
                   class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm resize-y"
-                  placeholder="例如：原住民 / 外来者 等隐藏身份"
+                  placeholder="内部备注，例如开局互认地点、飞机残骸位置等"
                 />
               </div>
               <DmPlayerModalInventory
                 ref="createInventoryRef"
                 v-model="createStartingItems"
                 :job-id="createForm.jobId || null"
+                :hidden-job-id="createForm.hiddenJobId || null"
                 compact
               />
             </div>
@@ -1121,6 +1275,10 @@ onMounted(() => {
           ref="inventoryViewRef"
           :initial-player-id="inventoryInitialPlayerId"
         />
+      </div>
+
+      <div v-else-if="activeTab === 'playerNotebook'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">
+        <DmPlayerNotebookView />
       </div>
 
       <div v-else-if="activeTab === 'ark'" style="background: rgba(15, 20, 35, 0.9);" class="rounded-xl p-6">

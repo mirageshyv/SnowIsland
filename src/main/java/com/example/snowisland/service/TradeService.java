@@ -39,6 +39,9 @@ public class TradeService {
     @Autowired
     private GameStateService gameStateService;
 
+    @Autowired
+    private TradeRestrictionService tradeRestrictionService;
+
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -395,6 +398,12 @@ public class TradeService {
     public Map<String, Object> createTrade(Trade trade, List<Map<String, Object>> items) {
         Map<String, Object> result = new HashMap<>();
         try {
+            String banError = tradeRestrictionService.rejectIfBanned(trade.getFromPlayerId(), trade.getToPlayerId());
+            if (banError != null) {
+                result.put("success", false);
+                result.put("message", banError);
+                return result;
+            }
             String tradableError = validateNonTradableItems(items);
             if (tradableError != null) {
                 result.put("success", false);
@@ -451,6 +460,12 @@ public class TradeService {
             if (trade.getStatus() != Trade.TradeStatus.pending) {
                 result.put("success", false);
                 result.put("message", "交易状态不是待处理");
+                return result;
+            }
+            String banError = tradeRestrictionService.rejectIfBanned(trade.getFromPlayerId(), trade.getToPlayerId());
+            if (banError != null) {
+                result.put("success", false);
+                result.put("message", banError);
                 return result;
             }
             List<TradeItem> tradeItems = tradeItemRepository.findByTradeId(id);

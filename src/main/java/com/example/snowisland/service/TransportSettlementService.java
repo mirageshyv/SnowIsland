@@ -23,6 +23,10 @@ public class TransportSettlementService {
     public static final String SETTLEMENT_HEADER = "【搬运结算】";
     public static final String SHELTER_KEY = "shelter";
 
+    private static final Set<String> VALID_WAREHOUSE_KEYS = new HashSet<>(Arrays.asList(
+            "general", "fuel", "armory", "dock", "rebel", "ark", SHELTER_KEY
+    ));
+
     @Autowired private EntityManager entityManager;
     @Autowired private WarehouseConfigRepository warehouseConfigRepository;
     @Autowired private WarehouseService warehouseService;
@@ -93,7 +97,41 @@ public class TransportSettlementService {
         if (plan.targetPlayerId == null && actionTargetId != null) {
             plan.targetPlayerId = actionTargetId;
         }
+        normalizeShelterAliases(plan);
         return plan;
+    }
+
+    /** 旧版避难所专属模式视为普通仓库搬运（库存仍写入 shelter_stock）。 */
+    private void normalizeShelterAliases(TransportPlan plan) {
+        if (plan == null || plan.mode == null) return;
+        switch (plan.mode) {
+            case "warehouse_to_shelter":
+                plan.mode = "warehouse_to_warehouse";
+                if (plan.destWarehouse == null || plan.destWarehouse.isEmpty()) {
+                    plan.destWarehouse = SHELTER_KEY;
+                }
+                break;
+            case "shelter_to_warehouse":
+                plan.mode = "warehouse_to_warehouse";
+                if (plan.sourceWarehouse == null || plan.sourceWarehouse.isEmpty()) {
+                    plan.sourceWarehouse = SHELTER_KEY;
+                }
+                break;
+            case "shelter_to_player":
+                plan.mode = "warehouse_to_player";
+                if (plan.sourceWarehouse == null || plan.sourceWarehouse.isEmpty()) {
+                    plan.sourceWarehouse = SHELTER_KEY;
+                }
+                break;
+            case "player_to_shelter":
+                plan.mode = "player_to_warehouse";
+                if (plan.destWarehouse == null || plan.destWarehouse.isEmpty()) {
+                    plan.destWarehouse = SHELTER_KEY;
+                }
+                break;
+            default:
+                break;
+        }
     }
 
     /** 将结构化搬运备注转为中文摘要（供日志与展示） */
@@ -131,6 +169,7 @@ public class TransportSettlementService {
             errors.add("未指定搬运模式");
             return errors;
         }
+        normalizeShelterAliases(plan);
         switch (plan.mode) {
             case "warehouse_to_warehouse":
                 requireKey(playerId, plan.sourceWarehouse, "源仓库", errors);
@@ -145,33 +184,14 @@ public class TransportSettlementService {
             case "player_to_warehouse":
                 requireKey(playerId, plan.destWarehouse, "目标仓库", errors);
                 break;
-            case "warehouse_to_shelter":
-                requireKey(playerId, plan.sourceWarehouse, "源仓库", errors);
-                break;
-            case "shelter_to_warehouse":
-                requireRuler(playerId, "从避难所搬出物资", errors);
-                requireKey(playerId, plan.destWarehouse, "目标仓库", errors);
-                break;
-            case "shelter_to_player":
-                requireRuler(playerId, "从避难所搬出物资", errors);
-                break;
-            case "player_to_shelter":
-                break;
             default:
                 errors.add("未知的搬运模式: " + plan.mode);
         }
         return errors;
     }
 
-    private void requireRuler(Integer playerId, String action, List<String> errors) {
-        if (playerId == null) {
-            errors.add(action + "需要统治者权限");
-            return;
-        }
-        Player player = playerRepository.findById(playerId).orElse(null);
-        if (player == null || player.getFaction() != Player.Faction.统治者) {
-            errors.add(action + "需要统治者权限");
-        }
+    private boolean isShelterWarehouse(String warehouseKey) {
+        return SHELTER_KEY.equals(warehouseKey);
     }
 
     private void requireKey(Integer playerId, String warehouseKey, String label, List<String> errors) {
@@ -190,6 +210,7 @@ public class TransportSettlementService {
             errors.add("搬运数据格式错误：缺少模式");
             return errors;
         }
+        normalizeShelterAliases(plan);
         if (plan.items.isEmpty()) {
             errors.add("未选择任何搬运物资");
         }
@@ -205,16 +226,6 @@ public class TransportSettlementService {
             case "player_to_warehouse":
                 if (plan.destWarehouse == null) errors.add("个人→仓库需要选择目标仓库");
                 break;
-            case "warehouse_to_shelter":
-                if (plan.sourceWarehouse == null) errors.add("仓库→避难所需要选择源仓库");
-                break;
-            case "shelter_to_warehouse":
-                if (plan.destWarehouse == null) errors.add("避难所→仓库需要选择目标仓库");
-                break;
-            case "shelter_to_player":
-                break;
-            case "player_to_shelter":
-                break;
             default:
                 errors.add("未知的搬运模式");
         }
@@ -222,25 +233,25 @@ public class TransportSettlementService {
     }
 
     /**
-     * 规则书137：
-     * 玩家↔仓库：小镇免费50/行动300；海岛免费30/行动300
+     * 规则书137（免费玩家↔仓库已统一为 50kg）：
+     * 玩家↔仓库：免费50/行动300（小镇与海岛相同）
      * 仓库↔仓库：小镇免费100/行动500；海岛免费50/行动300
      * 避难所相关按海岛仓库额度；装卸工职业搬运量×2
      */
     public int resolveMaxWeight(TransportPlan plan, Integer actingPlayerId) {
+        if (plan != null) {
+            normalizeShelterAliases(plan);
+        }
         boolean free = plan != null && "free".equalsIgnoreCase(plan.tier);
         String area = resolveTransportArea(plan);
         boolean island = area != null && (area.contains("海岛") || "特殊".equals(area));
-        boolean warehouseLink = plan != null && (
-                "warehouse_to_warehouse".equals(plan.mode)
-                        || "warehouse_to_shelter".equals(plan.mode)
-                        || "shelter_to_warehouse".equals(plan.mode));
+        boolean warehouseLink = plan != null && "warehouse_to_warehouse".equals(plan.mode);
 
         int max;
         if (warehouseLink) {
             max = free ? (island ? 50 : 100) : (island ? 300 : 500);
         } else {
-            max = free ? (island ? 30 : 50) : 300;
+            max = free ? 50 : 300;
         }
         if (actingPlayerId != null && isStevedore(actingPlayerId)) {
             max *= 2;
@@ -295,6 +306,7 @@ public class TransportSettlementService {
 
     /** Compute actualQty; returns error messages if any line cannot be satisfied. */
     public List<String> computeTransfer(TransportPlan plan, Integer actingPlayerId) {
+        normalizeShelterAliases(plan);
         List<String> errors = new ArrayList<>();
         errors.addAll(validatePlanStructure(plan));
         if (!errors.isEmpty()) return errors;
@@ -338,22 +350,21 @@ public class TransportSettlementService {
         switch (plan.mode) {
             case "warehouse_to_warehouse":
             case "warehouse_to_player":
-            case "warehouse_to_shelter":
-                // sourceWarehouse 应该是实际仓库名（general/fuel/armory等），不是 shelter
-                // shelter 模式使用专门的 shelter_stock 表，不走 warehouse 表
-                if (plan.sourceWarehouse == null || plan.sourceWarehouse.isEmpty() || SHELTER_KEY.equals(plan.sourceWarehouse)) {
-                    return 0;
-                }
-                return getWarehouseStock("warehouse_" + plan.sourceWarehouse, itemType, itemId);
-            case "shelter_to_warehouse":
-            case "shelter_to_player":
-                return getShelterStock(itemType, itemId);
+                return getStockFromWarehouseOrShelter(plan.sourceWarehouse, itemType, itemId);
             case "player_to_warehouse":
-            case "player_to_shelter":
                 return getPlayerItemQuantity(actingPlayerId, itemType, itemId);
             default:
                 return 0;
         }
+    }
+
+    private int getStockFromWarehouseOrShelter(String warehouseKey, String itemType, int itemId) {
+        if (warehouseKey == null || warehouseKey.isEmpty()) return 0;
+        if (!VALID_WAREHOUSE_KEYS.contains(warehouseKey)) return 0;
+        if (isShelterWarehouse(warehouseKey)) {
+            return getShelterStock(itemType, itemId);
+        }
+        return getWarehouseStock("warehouse_" + warehouseKey, itemType, itemId);
     }
 
     private int getShelterStock(String itemType, int itemId) {
@@ -409,10 +420,7 @@ public class TransportSettlementService {
         }
         sb.append("总计搬运：").append(totalKg).append("千克");
         boolean needsDeferred = "player_to_warehouse".equals(plan.mode) && plan.playerDeducted;
-        boolean needsDeferredShelter = "player_to_shelter".equals(plan.mode) && plan.playerDeducted;
         if (needsDeferred) {
-            sb.append("\n（个人背包已扣除，入仓将在发布反馈后生效）");
-        } else if (needsDeferredShelter) {
             sb.append("\n（个人背包已扣除，入仓将在发布反馈后生效）");
         } else {
             sb.append("\n（库存变更将在发布反馈后生效）");
@@ -420,10 +428,11 @@ public class TransportSettlementService {
         return sb.toString();
     }
 
-    /** 个人→仓库/避难所：提交行动时从玩家背包扣除（须在事务内调用）。 */
+    /** 个人→仓库：提交行动时从玩家背包扣除（须在事务内调用）。 */
     public String deductPlayerItemsForSubmit(TransportPlan plan, Integer playerId) {
-        if (!"player_to_warehouse".equals(plan.mode) && !"player_to_shelter".equals(plan.mode)) {
-            return "仅个人→仓库/避难所可在提交时扣除背包";
+        normalizeShelterAliases(plan);
+        if (!"player_to_warehouse".equals(plan.mode)) {
+            return "仅个人→仓库可在提交时扣除背包";
         }
         List<String> errors = computeTransfer(plan, playerId);
         if (!errors.isEmpty()) {
@@ -488,6 +497,7 @@ public class TransportSettlementService {
                 }
             }
         }
+        normalizeShelterAliases(plan);
         return plan;
     }
 
@@ -511,6 +521,7 @@ public class TransportSettlementService {
 
     /** Apply inventory changes; returns error message or null on success. */
     public String executePlan(TransportPlan plan, Integer actingPlayerId) {
+        normalizeShelterAliases(plan);
         boolean needsCompute = plan.items.stream().allMatch(i -> i.actualQty <= 0);
         if (needsCompute) {
             List<String> errors = computeTransfer(plan, actingPlayerId);
@@ -536,22 +547,6 @@ public class TransportSettlementService {
                         executePlayerToWarehouse(plan, actingPlayerId);
                     }
                     break;
-                case "warehouse_to_shelter":
-                    executeWarehouseToShelter(plan);
-                    break;
-                case "shelter_to_warehouse":
-                    executeShelterToWarehouse(plan);
-                    break;
-                case "shelter_to_player":
-                    executeShelterToPlayer(plan, actingPlayerId);
-                    break;
-                case "player_to_shelter":
-                    if (plan.playerDeducted) {
-                        executePlayerToShelterInboundOnly(plan);
-                    } else {
-                        executePlayerToShelter(plan, actingPlayerId);
-                    }
-                    break;
                 default:
                     return "未知的搬运模式";
             }
@@ -561,53 +556,18 @@ public class TransportSettlementService {
         }
     }
 
-    private void executeWarehouseToShelter(TransportPlan plan) {
-        // sourceWarehouse 应该是实际仓库名，不是 shelter
-        if (plan.sourceWarehouse == null || plan.sourceWarehouse.isEmpty() || SHELTER_KEY.equals(plan.sourceWarehouse)) {
-            throw new RuntimeException("仓库→避难所模式需要指定有效的源仓库");
+    private void applyStockDelta(String warehouseKey, String itemType, int itemId, int delta) {
+        if (warehouseKey == null || warehouseKey.isEmpty()) {
+            throw new RuntimeException("未指定仓库");
         }
-        String sourceTable = "warehouse_" + plan.sourceWarehouse;
-        for (TransportItem item : plan.items) {
-            if (item.actualQty <= 0) continue;
-            updateWarehouseStock(sourceTable, item.itemType, item.itemId, -item.actualQty);
-            updateShelterStock(item.itemType, item.itemId, item.actualQty);
+        if (!VALID_WAREHOUSE_KEYS.contains(warehouseKey)) {
+            throw new RuntimeException("无效仓库");
         }
-    }
-
-    private void executeShelterToWarehouse(TransportPlan plan) {
-        // destWarehouse 应该是实际仓库名，不是 shelter
-        if (plan.destWarehouse == null || plan.destWarehouse.isEmpty() || SHELTER_KEY.equals(plan.destWarehouse)) {
-            throw new RuntimeException("避难所→仓库模式需要指定有效的目标仓库");
+        if (isShelterWarehouse(warehouseKey)) {
+            updateShelterStock(itemType, itemId, delta);
+            return;
         }
-        String destTable = "warehouse_" + plan.destWarehouse;
-        for (TransportItem item : plan.items) {
-            if (item.actualQty <= 0) continue;
-            updateShelterStock(item.itemType, item.itemId, -item.actualQty);
-            updateWarehouseStock(destTable, item.itemType, item.itemId, item.actualQty);
-        }
-    }
-
-    private void executeShelterToPlayer(TransportPlan plan, Integer playerId) {
-        for (TransportItem item : plan.items) {
-            if (item.actualQty <= 0) continue;
-            updateShelterStock(item.itemType, item.itemId, -item.actualQty);
-            addItemToPlayer(playerId, item.itemType, item.itemId, item.actualQty);
-        }
-    }
-
-    private void executePlayerToShelter(TransportPlan plan, Integer playerId) {
-        for (TransportItem item : plan.items) {
-            if (item.actualQty <= 0) continue;
-            removeItemFromPlayer(playerId, item.itemType, item.itemId, item.actualQty);
-            updateShelterStock(item.itemType, item.itemId, item.actualQty);
-        }
-    }
-
-    private void executePlayerToShelterInboundOnly(TransportPlan plan) {
-        for (TransportItem item : plan.items) {
-            if (item.actualQty <= 0) continue;
-            updateShelterStock(item.itemType, item.itemId, item.actualQty);
-        }
+        updateWarehouseStock("warehouse_" + warehouseKey, itemType, itemId, delta);
     }
 
     private void updateShelterStock(String itemType, int itemId, int delta) {
@@ -636,57 +596,48 @@ public class TransportSettlementService {
     }
 
     private void executeWarehouseToWarehouse(TransportPlan plan) {
-        // 验证源仓库和目标仓库都是有效的仓库名（不是 shelter）
-        if (plan.sourceWarehouse == null || plan.sourceWarehouse.isEmpty() || SHELTER_KEY.equals(plan.sourceWarehouse)) {
-            throw new RuntimeException("仓库→仓库模式需要指定有效的源仓库");
+        if (plan.sourceWarehouse == null || plan.sourceWarehouse.isEmpty()) {
+            throw new RuntimeException("仓库→仓库模式需要指定源仓库");
         }
-        if (plan.destWarehouse == null || plan.destWarehouse.isEmpty() || SHELTER_KEY.equals(plan.destWarehouse)) {
-            throw new RuntimeException("仓库→仓库模式需要指定有效的目标仓库");
+        if (plan.destWarehouse == null || plan.destWarehouse.isEmpty()) {
+            throw new RuntimeException("仓库→仓库模式需要指定目标仓库");
         }
-        String sourceTable = "warehouse_" + plan.sourceWarehouse;
-        String destTable = "warehouse_" + plan.destWarehouse;
         for (TransportItem item : plan.items) {
             if (item.actualQty <= 0) continue;
-            updateWarehouseStock(sourceTable, item.itemType, item.itemId, -item.actualQty);
-            updateWarehouseStock(destTable, item.itemType, item.itemId, item.actualQty);
+            applyStockDelta(plan.sourceWarehouse, item.itemType, item.itemId, -item.actualQty);
+            applyStockDelta(plan.destWarehouse, item.itemType, item.itemId, item.actualQty);
         }
     }
 
     private void executeWarehouseToPlayer(TransportPlan plan, Integer playerId) {
-        // 验证源仓库是有效的仓库名（不是 shelter）
-        if (plan.sourceWarehouse == null || plan.sourceWarehouse.isEmpty() || SHELTER_KEY.equals(plan.sourceWarehouse)) {
-            throw new RuntimeException("仓库→个人模式需要指定有效的源仓库");
+        if (plan.sourceWarehouse == null || plan.sourceWarehouse.isEmpty()) {
+            throw new RuntimeException("仓库→个人模式需要指定源仓库");
         }
-        String sourceTable = "warehouse_" + plan.sourceWarehouse;
         for (TransportItem item : plan.items) {
             if (item.actualQty <= 0) continue;
-            updateWarehouseStock(sourceTable, item.itemType, item.itemId, -item.actualQty);
+            applyStockDelta(plan.sourceWarehouse, item.itemType, item.itemId, -item.actualQty);
             addItemToPlayer(playerId, item.itemType, item.itemId, item.actualQty);
         }
     }
 
     private void executePlayerToWarehouse(TransportPlan plan, Integer playerId) {
-        // 验证目标仓库是有效的仓库名（不是 shelter）
-        if (plan.destWarehouse == null || plan.destWarehouse.isEmpty() || SHELTER_KEY.equals(plan.destWarehouse)) {
-            throw new RuntimeException("个人→仓库模式需要指定有效的目标仓库");
+        if (plan.destWarehouse == null || plan.destWarehouse.isEmpty()) {
+            throw new RuntimeException("个人→仓库模式需要指定目标仓库");
         }
-        String destTable = "warehouse_" + plan.destWarehouse;
         for (TransportItem item : plan.items) {
             if (item.actualQty <= 0) continue;
             removeItemFromPlayer(playerId, item.itemType, item.itemId, item.actualQty);
-            updateWarehouseStock(destTable, item.itemType, item.itemId, item.actualQty);
+            applyStockDelta(plan.destWarehouse, item.itemType, item.itemId, item.actualQty);
         }
     }
 
     private void executePlayerToWarehouseInboundOnly(TransportPlan plan) {
-        // 验证目标仓库是有效的仓库名（不是 shelter）
-        if (plan.destWarehouse == null || plan.destWarehouse.isEmpty() || SHELTER_KEY.equals(plan.destWarehouse)) {
-            throw new RuntimeException("个人→仓库模式需要指定有效的目标仓库");
+        if (plan.destWarehouse == null || plan.destWarehouse.isEmpty()) {
+            throw new RuntimeException("个人→仓库模式需要指定目标仓库");
         }
-        String destTable = "warehouse_" + plan.destWarehouse;
         for (TransportItem item : plan.items) {
             if (item.actualQty <= 0) continue;
-            updateWarehouseStock(destTable, item.itemType, item.itemId, item.actualQty);
+            applyStockDelta(plan.destWarehouse, item.itemType, item.itemId, item.actualQty);
         }
     }
 

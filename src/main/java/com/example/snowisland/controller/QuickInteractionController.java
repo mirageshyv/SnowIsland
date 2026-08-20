@@ -32,6 +32,14 @@ public class QuickInteractionController {
         return ResponseEntity.ok(quickInteractionService.submitInteraction(playerId, interactionType, content, gameDay));
     }
 
+    @PostMapping("/submit-free-transport")
+    public ResponseEntity<Map<String, Object>> submitFreeTransport(@RequestBody Map<String, Object> body) {
+        Integer playerId = toInt(body.get("playerId"));
+        String notes = body.get("notes") != null ? body.get("notes").toString() : null;
+        Integer gameDay = toInt(body.get("gameDay"));
+        return ResponseEntity.ok(quickInteractionService.submitFreeTransport(playerId, notes, gameDay));
+    }
+
     @GetMapping("/all")
     public ResponseEntity<List<Map<String, Object>>> getAll(
             @RequestParam(required = false) Integer gameDay,

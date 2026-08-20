@@ -1,5 +1,10 @@
 const API_BASE = '/api'
 
+function authHeaders() {
+  const userId = localStorage.getItem('userId')
+  return userId ? { userId } : {}
+}
+
 async function request(url, options = {}) {
   try {
     const controller = new AbortController()
@@ -8,6 +13,7 @@ async function request(url, options = {}) {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders(),
         ...options.headers
       },
       signal: controller.signal
@@ -44,6 +50,22 @@ export const authAPI = {
     method: 'POST',
     body: JSON.stringify({ username, password })
   })
+}
+
+function notebookHeaders() {
+  return { userId: localStorage.getItem('userId') }
+}
+
+export const notebookAPI = {
+  list: () => request(`${API_BASE}/notebook`, { headers: notebookHeaders() }),
+  create: () => request(`${API_BASE}/notebook`, { method: 'POST', headers: notebookHeaders() }),
+  get: (id) => request(`${API_BASE}/notebook/${id}`, { headers: notebookHeaders() }),
+  patch: (id, body) => request(`${API_BASE}/notebook/${id}`, {
+    method: 'PATCH',
+    headers: notebookHeaders(),
+    body: JSON.stringify(body)
+  }),
+  remove: (id) => request(`${API_BASE}/notebook/${id}`, { method: 'DELETE', headers: notebookHeaders() })
 }
 
 export const playerAPI = {
@@ -162,36 +184,93 @@ export const explorationAPI = {
     body: JSON.stringify({ playerId, gameDay, investItems })
   }),
   getPlayerExplorations: (playerId) => request(`${API_BASE}/exploration/player/${playerId}`),
-  getPendingExplorations: (gameDay) => request(`${API_BASE}/exploration/pending/${gameDay}`),
+  getPendingExplorations: (gameDay) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/exploration/pending/${gameDay}`, { headers: { userId } })
+  },
   getAllEvents: () => request(`${API_BASE}/exploration/events`),
-  createEvent: (payload) => request(`${API_BASE}/exploration/events`, {
-    method: 'POST',
-    body: JSON.stringify(payload)
-  }),
-  updateEvent: (eventId, payload) => request(`${API_BASE}/exploration/events/${eventId}`, {
-    method: 'PUT',
-    body: JSON.stringify(payload)
-  }),
-  deleteEvent: (eventId) => request(`${API_BASE}/exploration/events/${eventId}`, {
-    method: 'DELETE'
-  }),
-  triggerEvent: (explorationId, eventId) => request(`${API_BASE}/exploration/${explorationId}/trigger`, {
-    method: 'POST',
-    body: JSON.stringify({ eventId })
-  }),
-  triggerRandomEvent: (explorationId) => request(`${API_BASE}/exploration/${explorationId}/trigger`, {
-    method: 'POST',
-    body: JSON.stringify({})
-  }),
-  settle: (explorationId, rewards) => request(`${API_BASE}/exploration/${explorationId}/settle`, {
-    method: 'POST',
-    body: JSON.stringify({ rewards })
-  }),
+  createEvent: (payload) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/exploration/events`, {
+      method: 'POST',
+      headers: { userId },
+      body: JSON.stringify(payload)
+    })
+  },
+  updateEvent: (eventId, payload) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/exploration/events/${eventId}`, {
+      method: 'PUT',
+      headers: { userId },
+      body: JSON.stringify(payload)
+    })
+  },
+  deleteEvent: (eventId) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/exploration/events/${eventId}`, {
+      method: 'DELETE',
+      headers: { userId }
+    })
+  },
+  triggerEvent: (explorationId, eventId) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/exploration/${explorationId}/trigger`, {
+      method: 'POST',
+      headers: { userId },
+      body: JSON.stringify({ eventId })
+    })
+  },
+  triggerRandomEvent: (explorationId) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/exploration/${explorationId}/trigger`, {
+      method: 'POST',
+      headers: { userId },
+      body: JSON.stringify({})
+    })
+  },
+  settle: (explorationId, rewards) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/exploration/${explorationId}/settle`, {
+      method: 'POST',
+      headers: { userId },
+      body: JSON.stringify({ rewards })
+    })
+  },
   reimportEvents: () => {
     const userId = localStorage.getItem('userId')
     return request(`${API_BASE}/exploration/admin/reimport`, {
       method: 'POST',
       headers: { userId }
+    })
+  },
+  getPacks: () => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/exploration/admin/packs`, {
+      headers: { userId }
+    })
+  },
+  setPackEnabled: (packId, enabled) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/exploration/admin/packs/${packId}/enabled`, {
+      method: 'PUT',
+      headers: { userId },
+      body: JSON.stringify({ enabled })
+    })
+  },
+  previewPackImport: (rawText) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/exploration/admin/packs/preview`, {
+      method: 'POST',
+      headers: { userId },
+      body: JSON.stringify({ rawText })
+    })
+  },
+  importPack: (packName, rawText) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/exploration/admin/packs/import`, {
+      method: 'POST',
+      headers: { userId },
+      body: JSON.stringify({ packName, rawText })
     })
   },
   getEventRewards: (eventId) => request(`${API_BASE}/exploration/events/${eventId}/rewards`)
@@ -406,8 +485,20 @@ export const dmPlayerAPI = {
     const userId = localStorage.getItem('userId')
     return request(`${API_BASE}/dm/players/${playerId}?userRole=dm`, { method: 'DELETE', headers: { userId } })
   },
-  previewStartingInventory: (jobId) =>
-    request(`${API_BASE}/dm/jobs/${jobId}/starting-inventory-preview?userRole=dm`),
+  listNotebook: (playerId) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/dm/players/${playerId}/notebook`, { headers: { userId } })
+  },
+  getNotebookPage: (playerId, noteId) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/dm/players/${playerId}/notebook/${noteId}`, { headers: { userId } })
+  },
+  previewStartingInventory: (jobId, hiddenJobId) => {
+    const qs = hiddenJobId
+      ? `&hiddenJobId=${encodeURIComponent(hiddenJobId)}`
+      : ''
+    return request(`${API_BASE}/dm/jobs/${jobId}/starting-inventory-preview?userRole=dm${qs}`)
+  },
   grantStartingInventory: (playerId, mode = 'add') => {
     const userId = localStorage.getItem('userId')
     return request(
@@ -424,17 +515,26 @@ export const dmPlayerAPI = {
     })
   },
   getCatalog: () => request(`${API_BASE}/dm/item-catalog?userRole=dm`),
-  getWeapons: () => request(`${API_BASE}/dm/weapons?userRole=dm`),
-  updateWeapon: (weaponId, body) =>
-    request(`${API_BASE}/dm/weapons/${weaponId}?userRole=dm`, {
+  getWeapons: () => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/dm/weapons?userRole=dm`, { headers: { userId } })
+  },
+  updateWeapon: (weaponId, body) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/dm/weapons/${weaponId}?userRole=dm`, {
       method: 'PUT',
+      headers: { userId },
       body: JSON.stringify(body)
-    }),
-  updateCatalogItem: (itemType, itemId, body) =>
-    request(`${API_BASE}/dm/catalog/${itemType}/${itemId}?userRole=dm`, {
+    })
+  },
+  updateCatalogItem: (itemType, itemId, body) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/dm/catalog/${itemType}/${itemId}?userRole=dm`, {
       method: 'PUT',
+      headers: { userId },
       body: JSON.stringify(body)
-    }),
+    })
+  },
   updateCatalogEntry: (itemType, itemId, body) => {
     const userId = localStorage.getItem('userId')
     return request(`${API_BASE}/dm/catalog-entry/${itemType}/${itemId}?userRole=dm`, {
@@ -557,6 +657,10 @@ export const factionActionAPI = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ feedback }),
     }),
+  resolveExtraLabor: (gameDay = 1) =>
+    request(`${API_BASE}/faction-actions/resolve-extra-labor?gameDay=${gameDay}`, { method: 'POST' }),
+  publishExtraLabor: (gameDay = 1) =>
+    request(`${API_BASE}/faction-actions/publish-extra-labor?gameDay=${gameDay}`, { method: 'POST' }),
 }
 
 export const quickInteractionAPI = {
@@ -564,6 +668,12 @@ export const quickInteractionAPI = {
     request(`${API_BASE}/quick-interactions/context/${playerId}${gameDay ? '?gameDay=' + gameDay : ''}`),
   submit: (data) =>
     request(`${API_BASE}/quick-interactions/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
+  submitFreeTransport: (data) =>
+    request(`${API_BASE}/quick-interactions/submit-free-transport`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -680,8 +790,13 @@ export const npcAPI = {
   },
   getTradeConfig: (playerId, npcId) =>
     request(`${API_BASE}/npc/trade/config?playerId=${playerId}&npcId=${npcId}`),
-  executeTrade: (playerId, npcId) =>
-    request(`${API_BASE}/npc/trade/execute`, {
+  acceptNpcProposal: (playerId, npcId) =>
+    request(`${API_BASE}/npc/trade/proposal/accept`, {
+      method: 'POST',
+      body: JSON.stringify({ playerId, npcId })
+    }),
+  rejectNpcProposal: (playerId, npcId) =>
+    request(`${API_BASE}/npc/trade/proposal/reject`, {
       method: 'POST',
       body: JSON.stringify({ playerId, npcId })
     }),
@@ -706,6 +821,31 @@ export const npcAPI = {
       method: 'POST',
       body: JSON.stringify({ playerId, npcId })
     }),
+  giftSurvival: (playerId, npcId, foodUnits, woodKg, fuelKg) =>
+    request(`${API_BASE}/npc/trade/gift`, {
+      method: 'POST',
+      body: JSON.stringify({ playerId, npcId, foodUnits, woodKg, fuelKg })
+    }),
+  getNpcInventory: (npcId) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/manage/${npcId}/inventory`, { headers: { userId } })
+  },
+  setNpcInventoryItem: (npcId, itemType, itemId, quantity) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/manage/${npcId}/inventory/set`, {
+      method: 'POST',
+      headers: { userId },
+      body: JSON.stringify({ itemType, itemId, quantity })
+    })
+  },
+  seedNpcInventory: (npcId, mode) => {
+    const userId = localStorage.getItem('userId')
+    return request(`${API_BASE}/npc/manage/${npcId}/inventory/seed`, {
+      method: 'POST',
+      headers: { userId },
+      body: JSON.stringify({ mode })
+    })
+  },
   // 对话限制API
   getDialogueLimit: (playerId, npcId) =>
     request(`${API_BASE}/npc/dialogue/limit?playerId=${playerId}&npcId=${npcId}`),

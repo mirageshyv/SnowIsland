@@ -43,10 +43,16 @@ public class DmPlayerManagementService {
     private PlayerItemRepository playerItemRepository;
 
     @Autowired
+    private PlayerNotebookRepository playerNotebookRepository;
+
+    @Autowired
     private GameStateService gameStateService;
 
     @Autowired
     private PlayerDailyConsumptionRepository playerDailyConsumptionRepository;
+
+    @Autowired
+    private TradeRestrictionService tradeRestrictionService;
 
     public Map<String, Object> listPlayersForDm(String userRole) {
         Map<String, Object> result = new LinkedHashMap<>();
@@ -78,16 +84,25 @@ public class DmPlayerManagementService {
         return result;
     }
 
-    public Map<String, Object> previewJobStartingInventory(Integer jobId, String userRole) {
+    public Map<String, Object> previewJobStartingInventory(Integer jobId, Integer hiddenJobId, String userRole) {
         Map<String, Object> result = new LinkedHashMap<>();
         if (!isDm(userRole)) {
             return deny(result, "只有DM可以预览初始背包");
         }
-        if (jobId == null || !jobRepository.findById(jobId).isPresent()) {
+        boolean hasPublic = jobId != null && jobRepository.findById(jobId).isPresent();
+        boolean hasHidden = hiddenJobId != null && jobRepository.findById(hiddenJobId).isPresent();
+        if (!hasPublic && !hasHidden) {
             return deny(result, "职业不存在");
         }
+        List<Map<String, Object>> rows = new ArrayList<>();
+        if (hasPublic) {
+            rows.addAll(buildStartingItemRows(jobId));
+        }
+        if (hasHidden && !hiddenJobId.equals(jobId)) {
+            rows.addAll(buildStartingItemRows(hiddenJobId));
+        }
         result.put("success", true);
-        result.put("items", buildStartingItemRows(jobId));
+        result.put("items", mergeItemRows(rows));
         return result;
     }
 
@@ -292,6 +307,7 @@ public class DmPlayerManagementService {
         }
         try {
             userRepository.findByPlayerId(playerId).ifPresent(userRepository::delete);
+            playerNotebookRepository.deleteByPlayerId(playerId);
             playerItemRepository.deleteByPlayerId(playerId);
             playerRepository.deleteById(playerId);
             result.put("success", true);
@@ -398,6 +414,12 @@ public class DmPlayerManagementService {
         if (body.containsKey("hiddenJobId")) {
             player.setHiddenJobId(intOrNull(body.get("hiddenJobId")));
         }
+        if (body.containsKey("tradeBanned")) {
+            player.setTradeBanned(boolVal(body.get("tradeBanned")));
+        }
+        if (body.containsKey("isBound")) {
+            player.setIsBound(boolVal(body.get("isBound")));
+        }
     }
 
     private void updateCredentials(Integer playerId, Map<String, Object> body, Map<String, Object> result) {
@@ -448,7 +470,13 @@ public class DmPlayerManagementService {
         row.put("dmNotes", player.getDmNotes());
         row.put("hiddenJobId", player.getHiddenJobId());
         row.put("hiddenJobName", player.getHiddenJobId() != null ? jobNames.getOrDefault(player.getHiddenJobId(), "—") : null);
-        row.put("statuses", com.example.snowisland.util.PlayerStatusCatalog.buildStatusList(player));
+        row.put("tradeBanned", Boolean.TRUE.equals(player.getTradeBanned()));
+        row.put("isBound", Boolean.TRUE.equals(player.getIsBound()));
+        List<String> tradeBanReasons = tradeRestrictionService.reasonsFor(player);
+        row.put("tradeBanReasons", tradeBanReasons);
+        row.put("tradeBanActive", !tradeBanReasons.isEmpty());
+        boolean boundActive = tradeRestrictionService.isBoundActive(player);
+        row.put("statuses", com.example.snowisland.util.PlayerStatusCatalog.buildStatusList(player, boundActive));
         row.put("dailyConsumptionMet", consumptionStatus.getOrDefault(player.getId(), false));
 
         userRepository.findByPlayerId(player.getId()).ifPresent(user -> {

@@ -5,6 +5,7 @@ import com.example.snowisland.entity.QuickInteraction;
 import com.example.snowisland.entity.QuickInteraction.InteractionStatus;
 import com.example.snowisland.repository.PlayerRepository;
 import com.example.snowisland.repository.QuickInteractionRepository;
+import com.example.snowisland.util.PlayerStatusCatalog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,12 +18,18 @@ import java.util.stream.Collectors;
 public class QuickInteractionService {
 
     private static final int CONTENT_MAX_LENGTH = 2000;
+    private static final int QUICK_ACTION_DAILY_LIMIT = 2;
+    private static final String TYPE_QUICK_ACTION = "quick_action";
+    private static final String TYPE_FREE_TRANSPORT = "free_transport";
+    private static final Set<String> QUOTA_TYPES = new HashSet<>(Arrays.asList(
+            TYPE_QUICK_ACTION, TYPE_FREE_TRANSPORT));
     private static final Set<String> VALID_TYPES = new HashSet<>(Arrays.asList(
-            "quick_action", "supplementary_action", "rule_consult", "ask_dm"));
+            TYPE_QUICK_ACTION, TYPE_FREE_TRANSPORT, "supplementary_action", "rule_consult", "ask_dm"));
 
     private static final Map<String, String> TYPE_LABELS = new LinkedHashMap<>();
     static {
         TYPE_LABELS.put("quick_action", "快速行动");
+        TYPE_LABELS.put("free_transport", "免费搬运");
         TYPE_LABELS.put("supplementary_action", "补充行动");
         TYPE_LABELS.put("rule_consult", "规则咨询");
         TYPE_LABELS.put("ask_dm", "询问DM");
@@ -39,6 +46,15 @@ public class QuickInteractionService {
 
     @Autowired
     private GameStateService gameStateService;
+
+    @Autowired
+    private TradeRestrictionService tradeRestrictionService;
+
+    @Autowired
+    private ActionService actionService;
+
+    @Autowired
+    private TransportSettlementService transportSettlementService;
 
     public Map<String, Object> getPlayerContext(Integer playerId, Integer gameDay) {
         Map<String, Object> result = new LinkedHashMap<>();
@@ -62,6 +78,7 @@ public class QuickInteractionService {
         result.put("playerName", player.getName());
         result.put("faction", player.getFaction() != null ? player.getFaction().name() : "");
         result.put("gameDay", gameDay);
+        putQuickActionQuota(result, playerId, gameDay);
 
         List<QuickInteraction> history = quickInteractionRepository
                 .findByPlayerIdOrderByCreatedAtDesc(playerId);
@@ -87,6 +104,12 @@ public class QuickInteractionService {
         if (interactionType == null || !VALID_TYPES.contains(interactionType)) {
             return deny(result, "无效的交互类型");
         }
+        if (TYPE_FREE_TRANSPORT.equals(interactionType)) {
+            return deny(result, "免费搬运请使用专用提交入口");
+        }
+        if (countsTowardQuickQuota(interactionType) && tradeRestrictionService.isBoundActive(player)) {
+            return deny(result, PlayerStatusCatalog.BOUND_DENY_MESSAGE);
+        }
         if (content == null || content.trim().isEmpty()) {
             return deny(result, "请填写交互内容");
         }
@@ -95,6 +118,12 @@ public class QuickInteractionService {
         }
         if (gameDay == null) {
             gameDay = gameStateService.getCurrentDay();
+        }
+        if (countsTowardQuickQuota(interactionType)) {
+            long used = countQuotaUsed(playerId, gameDay);
+            if (used >= QUICK_ACTION_DAILY_LIMIT) {
+                return deny(result, "快速行动一天最多两条，每条一个动作");
+            }
         }
 
         QuickInteraction qi = new QuickInteraction();
@@ -120,6 +149,69 @@ public class QuickInteractionService {
         result.put("success", true);
         result.put("message", "提交成功");
         result.put("data", toMap(qi));
+        return result;
+    }
+
+    @Transactional
+    public Map<String, Object> submitFreeTransport(Integer playerId, String notes, Integer gameDay) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (playerId == null) {
+            return deny(result, "缺少玩家ID");
+        }
+        Player player = playerRepository.findById(playerId).orElse(null);
+        if (player == null) {
+            return deny(result, "玩家不存在");
+        }
+        if (tradeRestrictionService.isBoundActive(player)) {
+            return deny(result, PlayerStatusCatalog.BOUND_DENY_MESSAGE);
+        }
+        if (notes == null || notes.trim().isEmpty()) {
+            return deny(result, "请填写搬运内容");
+        }
+        if (gameDay == null) {
+            gameDay = gameStateService.getCurrentDay();
+        }
+        long used = countQuotaUsed(playerId, gameDay);
+        if (used >= QUICK_ACTION_DAILY_LIMIT) {
+            return deny(result, "快速行动一天最多两条，每条一个动作");
+        }
+
+        Map<String, Object> actionResult = actionService.submitFreeTransportAction(playerId, notes.trim(), gameDay);
+        if (!Boolean.TRUE.equals(actionResult.get("success"))) {
+            return actionResult;
+        }
+
+        String content = transportSettlementService.formatNotesChinese(notes.trim());
+        if (content == null || content.isEmpty()) {
+            content = notes.trim();
+        }
+        if (content.length() > CONTENT_MAX_LENGTH) {
+            content = content.substring(0, CONTENT_MAX_LENGTH);
+        }
+
+        QuickInteraction qi = new QuickInteraction();
+        qi.setPlayerId(playerId);
+        qi.setPlayerName(player.getName());
+        qi.setFaction(player.getFaction() != null ? player.getFaction().name() : "平民");
+        qi.setInteractionType(TYPE_FREE_TRANSPORT);
+        qi.setContent(content);
+        qi.setGameDay(gameDay);
+        qi.setStatus(InteractionStatus.pending);
+        qi = quickInteractionRepository.save(qi);
+
+        activityLogService.log(
+                gameDay,
+                playerId,
+                player.getName(),
+                ActivityLogService.factionOf(player),
+                ActivityLogService.CAT_QUICK,
+                TYPE_LABELS.get(TYPE_FREE_TRANSPORT),
+                ActivityLogService.truncate(content, 300));
+
+        result.put("success", true);
+        result.put("message", "提交成功");
+        result.put("data", toMap(qi));
+        result.put("action", actionResult.get("data"));
         return result;
     }
 
@@ -201,6 +293,27 @@ public class QuickInteractionService {
             return deny(result, "无效的状态值");
         }
         return result;
+    }
+
+    private void putQuickActionQuota(Map<String, Object> result, Integer playerId, Integer gameDay) {
+        long used = countQuotaUsed(playerId, gameDay);
+        int remaining = (int) Math.max(0, QUICK_ACTION_DAILY_LIMIT - used);
+        result.put("quickActionDailyLimit", QUICK_ACTION_DAILY_LIMIT);
+        result.put("quickActionUsed", (int) used);
+        result.put("quickActionRemaining", remaining);
+    }
+
+    private long countQuotaUsed(Integer playerId, Integer gameDay) {
+        long used = 0;
+        for (String type : QUOTA_TYPES) {
+            used += quickInteractionRepository.countByPlayerIdAndGameDayAndInteractionType(
+                    playerId, gameDay, type);
+        }
+        return used;
+    }
+
+    private static boolean countsTowardQuickQuota(String interactionType) {
+        return QUOTA_TYPES.contains(interactionType);
     }
 
     public static String getTypeLabel(String type) {

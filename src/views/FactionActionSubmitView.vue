@@ -841,7 +841,7 @@ onMounted(async () => {
               <!-- 额外劳动 -->
               <template v-else-if="selectedType === 'extra_labor'">
                 <p v-if="!context?.hasProduceToday" class="text-red-400 text-sm">须今日已提交生产类自由行动。</p>
-                <p v-else class="text-cyan-300/90 text-sm">结算后今日生产产出 +50%。</p>
+                <p v-else class="text-cyan-300/90 text-sm">结算后今日生产产出 +50%。物资在主持人发布后才会发放到背包。</p>
                 <div class="mt-2">
                   <label class="block text-gray-500 text-xs mb-2 ml-0.5">备注（可选）</label>
                   <textarea v-model="forms.extra_labor.note" rows="2" :class="textareaClass" />
@@ -1131,9 +1131,9 @@ onMounted(async () => {
                 <span class="text-white text-sm font-medium">{{ item.actionTypeLabel }}</span>
                 <span
                   class="text-xs px-2 py-0.5 rounded-full"
-                  :class="item.status === 'pending' ? 'bg-amber-500/20 text-amber-400' : 'bg-green-500/20 text-green-400'"
+                  :class="item.resultPending || item.status === 'pending' ? 'bg-amber-500/20 text-amber-400' : 'bg-green-500/20 text-green-400'"
                 >
-                  {{ item.status === 'pending' ? '待反馈' : '已反馈' }}
+                  {{ item.resultPending ? '待发布' : (item.status === 'pending' ? '待反馈' : '已反馈') }}
                 </span>
               </div>
               <div v-if="item.result" class="text-gray-400 text-xs whitespace-pre-wrap bg-black/20 rounded-lg p-3 mt-2">{{ item.result }}</div>
